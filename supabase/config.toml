@@ -67,6 +67,7 @@ entrypoint = "./functions/send-notification/index.ts"
 
 [functions.send-auth-email]
 enabled = true
+# Supabase Auth send-email hook: signed with SEND_EMAIL_HOOK_SECRET, checked in-function.
 verify_jwt = false
 import_map = "./functions/send-auth-email/deno.json"
 entrypoint = "./functions/send-auth-email/index.ts"
@@ -80,33 +81,39 @@ entrypoint = "./functions/custom-domain/index.ts"
 
 [functions.create-enrolment-intake]
 enabled = true
+# Public guest enrolment (no sign-in): tenant from subdomain; the person must belong to it.
 verify_jwt = false
 import_map = "./functions/create-enrolment-intake/deno.json"
 entrypoint = "./functions/create-enrolment-intake/index.ts"
 
 [functions.create-checkout]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/create-checkout/index.ts"
 
 [functions.prepare-enrolment-checkout]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/prepare-enrolment-checkout/index.ts"
 
 [functions.confirm-mock-payment]
 enabled = true
+# Dev/CI mock payments only: refused unless a mock provider flag is set (deploy-prod checks none is).
 verify_jwt = false
 import_map = "./functions/import_map.json"
 entrypoint = "./functions/confirm-mock-payment/index.ts"
 
 [functions.get-waiver-engagement]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/get-waiver-engagement/index.ts"
 
 [functions.get-enrolment-completion]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/get-enrolment-completion/index.ts"
 
@@ -124,97 +131,116 @@ entrypoint = "./functions/twilio-inbound/index.ts"
 
 [functions.waiver-viewed]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/waiver-viewed/index.ts"
 
 [functions.accept-waiver]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/accept-waiver/index.ts"
 
 [functions.save-enrolment-resume]
 enabled = true
+# Guest enrolment draft: the random resume key (crypto.randomUUID) is the credential.
 verify_jwt = false
 entrypoint = "./functions/save-enrolment-resume/index.ts"
 
 [functions.load-enrolment-resume]
 enabled = true
+# Guest enrolment draft: the random resume key (crypto.randomUUID) is the credential.
 verify_jwt = false
 entrypoint = "./functions/load-enrolment-resume/index.ts"
 
 [functions.clear-enrolment-resume]
 enabled = true
+# Guest enrolment draft: the random resume key (crypto.randomUUID) is the credential.
 verify_jwt = false
 entrypoint = "./functions/clear-enrolment-resume/index.ts"
 
 [functions.issue-document]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/issue-document/index.ts"
 
 [functions.check-missing-documents]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/check-missing-documents/index.ts"
 
 [functions.verify-invoicing-credentials]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/verify-invoicing-credentials/index.ts"
 
 [functions.handle-payment-event]
 enabled = true
+# Provider webhook (no JWT): each provider's notice is checked in-function before anything is settled.
 verify_jwt = false
 import_map = "./functions/import_map.json"
 entrypoint = "./functions/handle-payment-event/index.ts"
 
 [functions.handle-invoice-event]
 enabled = true
+# Provider webhook (no JWT): each provider's notice is checked in-function before anything is settled.
 verify_jwt = false
 entrypoint = "./functions/handle-invoice-event/index.ts"
 
 [functions.get-payment-status]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/get-payment-status/index.ts"
 
 [functions.verify-grow-credentials]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/verify-grow-credentials/index.ts"
 
 [functions.verify-icount-credentials]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/verify-icount-credentials/index.ts"
 
 [functions.verify-invoice4u-credentials]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/verify-invoice4u-credentials/index.ts"
 
 [functions.record-payment]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/record-payment/index.ts"
 
 [functions.run-monthly-billing]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/run-monthly-billing/index.ts"
 
 [functions.run-enrolment-payment-dunning]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/run-enrolment-payment-dunning/index.ts"
 
 [functions.process-refund]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/process-refund/index.ts"
 
 [functions.check-invoicing-auth]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/check-invoicing-auth/index.ts"
 
@@ -222,17 +248,20 @@ entrypoint = "./functions/check-invoicing-auth/index.ts"
 # Public / anon-callable booking endpoints (no user session).
 [functions.prepare-booking-checkout]
 enabled = true
+# Public booking checkout: needs a live scheduling hold (hold_id) for that studio, checked in-function.
 verify_jwt = false
 entrypoint = "./functions/prepare-booking-checkout/index.ts"
 
 [functions.get-available-slots]
 enabled = true
+# Public booking page: read-only free slots for a studio.
 verify_jwt = false
 entrypoint = "./functions/get-available-slots/index.ts"
 
 # Cron-invoked (authorised via x-cron-secret header, not JWT).
 [functions.expire-scheduling-holds]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/expire-scheduling-holds/index.ts"
 
@@ -240,21 +269,25 @@ entrypoint = "./functions/expire-scheduling-holds/index.ts"
 # gateway verify_jwt=false so browser preflight gets full CORS headers).
 [functions.google-calendar-oauth-start]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser). OAuth state is HMAC-signed.
 verify_jwt = false
 entrypoint = "./functions/google-calendar-oauth-start/index.ts"
 
 [functions.google-calendar-oauth-callback]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser). OAuth state is HMAC-signed.
 verify_jwt = false
 entrypoint = "./functions/google-calendar-oauth-callback/index.ts"
 
 [functions.google-calendar-disconnect]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/google-calendar-disconnect/index.ts"
 
 [functions.google-calendar-sync-event]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/google-calendar-sync-event/index.ts"
 
@@ -275,6 +308,7 @@ entrypoint = "./functions/google-calendar-freebusy/index.ts"
 # x-cron-secret against CRON_SECRET itself.
 [functions.send-waiver-reminder]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/send-waiver-reminder/index.ts"
 
@@ -283,6 +317,7 @@ entrypoint = "./functions/send-waiver-reminder/index.ts"
 # same as handle-invoice-event / handle-payment-event.
 [functions.handle-payment-document]
 enabled = true
+# Provider webhook (no JWT): each provider's notice is checked in-function before anything is settled.
 verify_jwt = false
 entrypoint = "./functions/handle-payment-document/index.ts"
 
@@ -336,6 +371,7 @@ entrypoint = "./functions/verify-ypay-credentials/index.ts"
 # re-checked with Takbull before anything settles (takbull/process-ipn.ts).
 [functions.takbull-ipn]
 enabled = true
+# Takbull IPN (unsigned): each notice is confirmed with Takbull in-function before settling.
 verify_jwt = false
 entrypoint = "./functions/takbull-ipn/index.ts"
 
@@ -368,6 +404,7 @@ entrypoint = "./functions/crm-contacts/index.ts"
 # Auth is the CRM_INGEST_SECRET bearer token (fail-closed), not a user JWT.
 [functions.crm-lead-ingest]
 enabled = true
+# Machine-to-machine: Bearer CRM_INGEST_SECRET, refused when unset.
 verify_jwt = false
 entrypoint = "./functions/crm-lead-ingest/index.ts"
 
@@ -375,6 +412,7 @@ entrypoint = "./functions/crm-lead-ingest/index.ts"
 # No JWT by design - it captures leads from tenant sites and capture links.
 [functions.crm-lead-capture]
 enabled = true
+# Public lead form: Turnstile captcha and rate limit checked in-function.
 verify_jwt = false
 entrypoint = "./functions/crm-lead-capture/index.ts"
 
@@ -392,6 +430,7 @@ entrypoint = "./functions/notify-problem-report/index.ts"
 # Cron: daily lead follow-up digest to studio admins (step 4). CRON_SECRET auth.
 [functions.run-lead-followup-digest]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/run-lead-followup-digest/index.ts"
 
@@ -399,23 +438,27 @@ entrypoint = "./functions/run-lead-followup-digest/index.ts"
 # Public pay page backend: the request's public_token is the capability.
 [functions.job-payment-request-public]
 enabled = true
+# Public pay page: the payment request's token is the credential.
 verify_jwt = false
 entrypoint = "./functions/job-payment-request-public/index.ts"
 
 # JWT verified in-function (tenant_admin) so browser preflight gets full CORS headers.
 [functions.send-job-payment-link]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/send-job-payment-link/index.ts"
 
 [functions.record-job-payment]
 enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/record-job-payment/index.ts"
 
 # pg_cron (x-cron-secret), see 20261030000200_job_payment_requests.sql.
 [functions.run-job-payment-reminders]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 entrypoint = "./functions/run-job-payment-reminders/index.ts"
 
@@ -423,6 +466,7 @@ entrypoint = "./functions/run-job-payment-reminders/index.ts"
 # credential; accept_quote() runs the whole booking in one transaction.
 [functions.accept-quote]
 enabled = true
+# Public: the quote's random public token is the credential.
 verify_jwt = false
 import_map = "./functions/accept-quote/deno.json"
 entrypoint = "./functions/accept-quote/index.ts"
@@ -431,12 +475,14 @@ entrypoint = "./functions/accept-quote/index.ts"
 # (deposit pay link or client portal). WaiverToken is the credential.
 [functions.job-next-step]
 enabled = true
+# Signed waiver/enrolment token (or sign-in) checked in-function.
 verify_jwt = false
 entrypoint = "./functions/job-next-step/index.ts"
 
 # Hourly cron: shoot reminder / thank-you / gallery-ready emails (CRON_SECRET, fail-closed).
 [functions.run-shoot-emails]
 enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
 verify_jwt = false
 import_map = "./functions/run-shoot-emails/deno.json"
 entrypoint = "./functions/run-shoot-emails/index.ts"
