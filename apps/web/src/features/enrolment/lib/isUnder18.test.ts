@@ -6,7 +6,9 @@ describe('isUnder18', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 10, 3)); // 3 Nov 2026
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('treats a missing or invalid date as adult', () => {
     expect(isUnder18(null)).toBe(false);

@@ -23,7 +23,9 @@ function makeService(hasCreds = true) {
   } as never;
 }
 
-beforeEach(() => vi.stubEnv('GROW_API_BASE', 'https://grow.test/api/light/server/1.0'));
+beforeEach(() => {
+  vi.stubEnv('GROW_API_BASE', 'https://grow.test/api/light/server/1.0');
+});
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();

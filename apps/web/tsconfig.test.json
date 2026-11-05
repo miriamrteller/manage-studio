@@ -1,0 +1,22 @@
+{
+  // Type-checks the tests too (tsconfig.json leaves them out so the app build
+  // stays fast). Tests import edge-function code, so Deno-style specifiers map
+  // to the node packages Vitest resolves them to (vite.config.ts aliases).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vitest/globals", "@testing-library/jest-dom/vitest", "node"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["../../packages/shared/src/*"],
+      "@shared": ["../../packages/shared/src/index.ts"],
+      "https://esm.sh/@supabase/supabase-js@*": ["./src/test/deno-specifiers/supabase-js.d.ts"],
+      "npm:zod@*": ["./src/test/deno-specifiers/zod.d.ts"],
+      "npm:@hebcal/core@*": ["./src/test/deno-specifiers/hebcal-core.d.ts"],
+      "https://esm.sh/stripe@*": ["./src/test/deno-specifiers/stripe.d.ts"]
+    }
+  },
+  "include": ["src", "worker", "src/test/deno-globals.d.ts"],
+  "exclude": []
+}

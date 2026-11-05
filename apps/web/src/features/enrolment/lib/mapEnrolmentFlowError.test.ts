@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { fakeT } from '@/test/fakeT';
 import { mapEnrolmentFlowError } from './mapEnrolmentFlowError';
 
 describe('mapEnrolmentFlowError', () => {
-  const t = (key: string) => key;
+  const t = fakeT();
 
   it('maps duplicate enrolment errors to translated copy', () => {
     expect(

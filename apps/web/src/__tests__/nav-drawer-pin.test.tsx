@@ -22,7 +22,9 @@ beforeEach(() => {
   localStorage.clear();
   setWidth(1280);
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('pinned menu', () => {
   it('starts pinned from the saved choice', () => {

@@ -138,7 +138,7 @@ describe('contract {{price}} (resolveJobContractPrice / loadJobContractPrice)', 
           eq: (c: string, v: string) => (filters[table].push(`${c}=${v}`), builder),
           neq: (c: string, v: string) => (filters[table].push(`${c}!=${v}`), builder),
           limit: () => builder,
-          then: <T,>(ok: (r: typeof result) => T) => Promise.resolve(result).then(ok),
+          then: ((ok, fail) => Promise.resolve(result).then(ok, fail)) as PromiseLike<typeof result>['then'],
         };
         return { select: () => ({ eq: builder.eq }) };
       },

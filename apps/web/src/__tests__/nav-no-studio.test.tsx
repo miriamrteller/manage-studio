@@ -20,7 +20,6 @@ function nav(opts: { roles: string[]; hasStudio: boolean; authenticated?: boolea
       isAuthenticated: opts.authenticated ?? true,
       hasStudio: opts.hasStudio,
       hasFeature: () => true,
-      vertical: null,
     }),
   ).result.current.sections;
 }

@@ -139,7 +139,9 @@ describe('screenshot strings', () => {
 describe('Snapshot with text hidden', () => {
   const snapshotFile = () => png('screenshot.png', 64);
 
-  afterEach(() => snap.capture.mockReset());
+  afterEach(() => {
+    snap.capture.mockReset();
+  });
 
   it('is an optional button with its explanation, and needs no attached image', () => {
     render(<ReportProblemDialog isOpen onClose={() => {}} />);

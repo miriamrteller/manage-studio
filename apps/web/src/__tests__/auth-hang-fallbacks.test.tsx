@@ -34,7 +34,9 @@ beforeEach(() => {
   h.getSession.mockReset();
   h.signOut.mockReset();
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('withTimeout', () => {
   it('gives the result when it arrives in time, the fallback when it does not', async () => {

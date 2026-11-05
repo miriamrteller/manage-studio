@@ -166,6 +166,8 @@ jobs:
           node-version: "22"
           cache: "pnpm"
       - run: pnpm install
+      - name: Type-check the tests (tsconfig.test.json)
+        run: pnpm --filter web typecheck:tests
       - name: Run unit tests
         run: pnpm --filter web test
 

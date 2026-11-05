@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabase';
  * All feature services (LevelService, PersonService, etc.) extend this.
  */
 export abstract class BaseService {
-  protected static readonly MAX_RETRIES = 3;
-  protected static readonly RETRY_DELAY_MS = 1000;
+  protected static readonly MAX_RETRIES: number = 3;
+  protected static readonly RETRY_DELAY_MS: number = 1000;
 
   /**
    * Retry wrapper for transient failures (network, timeouts).
