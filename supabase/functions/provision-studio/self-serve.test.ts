@@ -2,7 +2,7 @@
  * provision-studio, action "self_serve": who may create their own studio.
  * Run: cd supabase/functions && deno test --allow-env provision-studio/self-serve.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   SelfServeStudioSchema,
   selfServeRefusalFor,

@@ -11,7 +11,7 @@ import {
   assertEquals,
   assertRejects,
   assertThrows,
-} from "https://deno.land/std@0.168.0/testing/asserts.ts";
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { parseGrowInvoiceNotify, parseGrowNotify } from "../../providers/grow.ts";
 import { processGrowNotifyWith as processGrowNotify } from "../process-notify-core.ts";
 

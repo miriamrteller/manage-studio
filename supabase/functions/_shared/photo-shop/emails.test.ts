@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { buildClientDeliveredEmail, buildStudioOrderEmail } from "./email-copy.ts";
 
 Deno.test("studio email lists every photo with its gallery key, and the shoot link", () => {

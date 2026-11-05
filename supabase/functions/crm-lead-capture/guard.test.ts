@@ -2,7 +2,7 @@
  * crm-lead-capture guards: Turnstile gate and campaign tag.
  * Run: cd supabase/functions && deno test crm-lead-capture/guard.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   CAMPAIGN_MAX_LENGTH,
   leadCaptchaPasses,

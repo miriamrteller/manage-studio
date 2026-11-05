@@ -3,7 +3,7 @@
  * opalswift.com contact form (channel website, filed in the hq studio).
  * Run: cd supabase/functions && deno test crm-lead-ingest/payload.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { leadFromPayload, payloadSchema } from "./payload.ts";
 
 const NOW = "2026-11-03T08:00:00.000Z";

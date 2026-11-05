@@ -2,7 +2,7 @@
  * Custom-domain hostname rules.
  * Run: cd supabase/functions && deno test --allow-env --allow-read --allow-net _shared/custom-domain/hostname.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { checkHostname, type HostnameErrorCode } from "./hostname.ts";
 
 const ok = (input: string, hostname: string, registrableDomain: string) =>

@@ -2,7 +2,7 @@
  * Every new studio gets the forms its clients sign, at creation (provision-studio).
  * Run: cd supabase/functions && deno test --allow-env provision-studio/seed-template.test.ts
  */
-import { assert, assertEquals, assertStringIncludes } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assert, assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { seedSignedTemplate, sha256Hex, type SeedDeps, type SeedTenant } from "../_shared/signed-template-seed.ts";
 
 type Row = Parameters<SeedDeps["insertTemplate"]>[0];

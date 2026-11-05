@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { cleanInviteToken, inviteTokenHash, inviteUrl, newInviteToken } from "./lead-form-invite.ts";
 
 Deno.test("tokens are random base64url, 43 characters", () => {
