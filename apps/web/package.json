@@ -52,7 +52,6 @@
     "@tanstack/react-table": "^8.21.3",
     "clsx": "^2.0.0",
     "cmdk": "^1.1.1",
-    "date-fns": "^2.30.0",
     "i18next": "^23.7.6",
     "libphonenumber-js": "^1.13.1",
     "lucide-react": "^0.294.0",
