@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { refreshInvoicingToken } from "../refresh-token.ts";
 import type {
   AuthHealthResult,

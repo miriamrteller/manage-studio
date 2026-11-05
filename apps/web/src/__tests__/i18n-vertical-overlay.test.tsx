@@ -37,7 +37,7 @@ function flatten(obj: Json, prefix = '', out: Record<string, string> = {}): Reco
   return out;
 }
 
-const base = { en: flatten(enBase as Json), he: flatten(heBase as Json) };
+const base = { en: flatten(enBase as unknown as Json), he: flatten(heBase as unknown as Json) };
 const overlay = { en: flatten(enOverlay as Json), he: flatten(heOverlay as Json) };
 
 /** Visible wording only: interpolation variable names ({{classes}}) are code, not copy. */
@@ -189,6 +189,10 @@ describe('dance overlay: health declaration for dance, neutral form for everyone
     for (const lng of ['en', 'he'] as const) {
       for (const key of Object.keys(danceFlat[lng])) expect(base[lng], key).toHaveProperty([key]);
     }
+  });
+
+  it('en and he define the same keys, so Hebrew dance studios get the same wording', () => {
+    expect(Object.keys(danceFlat.he).sort()).toEqual(Object.keys(danceFlat.en).sort());
   });
 
   it('never calls the document a waiver, in any vertical or language', () => {

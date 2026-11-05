@@ -16,7 +16,7 @@
  * app-internal `types/contact` import and its `satisfies z.ZodType<...>`
  * clauses are stripped; the types are exported via z.infer instead.
  */
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 
 export const CONTRACT_VERSION = 1 as const;
 

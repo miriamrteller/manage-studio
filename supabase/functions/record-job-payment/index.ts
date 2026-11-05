@@ -1,5 +1,5 @@
-import { z } from "npm:zod@3.22.4";
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { z } from "npm:zod@4.6.7";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import { paidAtFor } from "../_shared/payments/paid-on.ts";
@@ -16,7 +16,7 @@ import { sendNoDocumentPaymentConfirmation } from "../_shared/payments/send-paym
  * provider. Gross amounts (pretax/VAT 0) — the provider computes VAT.
  */
 const BodySchema = z.object({
-  request_id: z.string().uuid(),
+  request_id: z.string().guid(),
   method: z.enum(["cash", "bank_transfer", "bit"]),
   note: z.string().max(500).optional(),
   /** YYYY-MM-DD the money was received; defaults to today. */
@@ -117,7 +117,7 @@ Deno.serve(withMonitoring("record-job-payment", async (req) => {
     .select("id")
     .single();
   if (insertError || !paymentRow) {
-    return jsonResponse({ error: insertError?.message ?? "Insert failed" }, 500);
+    return internalError("record-job-payment", insertError ?? "Insert failed");
   }
 
   const marked = await markJobPaymentRequestPaid(service, {

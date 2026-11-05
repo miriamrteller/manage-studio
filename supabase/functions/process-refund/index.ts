@@ -1,5 +1,5 @@
-import { z } from "npm:zod@3.22.4";
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { z } from "npm:zod@4.6.7";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import {
@@ -11,7 +11,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 import { planRefund } from "../_shared/payments/refund-amounts.ts";
 
 const ProcessRefundBodySchema = z.object({
-  payment_id: z.string().uuid(),
+  payment_id: z.string().guid(),
   amount_minor: z.number().int().positive().optional(),
   reason: z.string().max(500).optional(),
   /**
@@ -151,7 +151,7 @@ Deno.serve(withMonitoring("process-refund", async (req) => {
     .single();
 
   if (refundInsertError || !refundRow) {
-    return jsonResponse({ error: refundInsertError?.message ?? "Refund insert failed" }, 500);
+    return internalError("process-refund", refundInsertError ?? "Refund insert failed");
   }
 
   await service.from("audit_log").insert({

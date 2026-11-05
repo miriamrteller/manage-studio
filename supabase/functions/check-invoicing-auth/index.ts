@@ -1,9 +1,9 @@
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { getInvoicingProviderForTenant } from "../_shared/invoicing/index.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 20;
 
 Deno.serve(withMonitoring("check-invoicing-auth", async (req) => {
@@ -11,13 +11,8 @@ Deno.serve(withMonitoring("check-invoicing-auth", async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  if (CRON_SECRET) {
-    const authHeader = req.headers.get("authorization") ?? "";
-    const cronHeader = req.headers.get("x-cron-secret") ?? "";
-    if (authHeader !== `Bearer ${CRON_SECRET}` && cronHeader !== CRON_SECRET) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   const service = createServiceClient();
   const { data: tenants } = await service

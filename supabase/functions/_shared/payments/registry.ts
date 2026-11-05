@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 
 /**
  * `stripe` remains parseable (adapter code dormant) but is not offered in product UI.

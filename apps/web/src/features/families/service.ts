@@ -14,15 +14,15 @@ export type { AccountWithContact, GuardianContactFields } from './lib/accountCon
 // Input schema for account creation — used only by EnrolmentOnboardingService.
 export const FamilyInputSchema = z.object({
   name: z.string().min(1, 'Family name required').optional(),
-  person_id: z.string().uuid(),
+  person_id: z.string().guid(),
 });
 
 // Input schema for account member creation.
 export const AccountMemberInputSchema = z.object({
-  account_id: z.string().uuid(),
-  person_id: z.string().uuid(),
+  account_id: z.string().guid(),
+  person_id: z.string().guid(),
   role: z.enum(['account_holder', 'member', 'sibling', 'adult_student']),
-  user_profile_id: z.string().uuid().nullable().optional(),
+  user_profile_id: z.string().guid().nullable().optional(),
 });
 
 export type AccountContactUpdate = {

@@ -5,15 +5,15 @@ const blastScopeFields = {
   scope: z.enum(BLAST_SCOPES),
   categoryId: z.preprocess(
     (val) => (val === '' || val == null ? undefined : val),
-    z.string().uuid().optional(),
+    z.string().guid().optional(),
   ),
   offeringId: z.preprocess(
     (val) => (val === '' || val == null ? undefined : val),
-    z.string().uuid().optional(),
+    z.string().guid().optional(),
   ),
   accountId: z.preprocess(
     (val) => (val === '' || val == null ? undefined : val),
-    z.string().uuid().optional(),
+    z.string().guid().optional(),
   ),
 };
 

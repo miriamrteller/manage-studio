@@ -3,11 +3,11 @@ import { z } from "zod";
 import { backoffMinutes } from "../../../../supabase/functions/_shared/invoicing/backoff.ts";
 
 const ChargeMetadataSchema = z.object({
-  tenant_id: z.string().uuid(),
-  engagement_id: z.string().uuid(),
-  billing_account_id: z.string().uuid(),
+  tenant_id: z.string().guid(),
+  engagement_id: z.string().guid(),
+  billing_account_id: z.string().guid(),
   charge_type: z.enum(["initial", "renewal"]),
-  billing_schedule_id: z.string().uuid().optional(),
+  billing_schedule_id: z.string().guid().optional(),
 });
 
 function buildChargeMetadata(input: {

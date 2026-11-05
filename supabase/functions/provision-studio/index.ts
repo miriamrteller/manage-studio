@@ -10,7 +10,7 @@
  * admin. Off unless SELF_SERVE_SIGNUP_ENABLED=true. If TURNSTILE_SECRET_KEY is
  * set, a Turnstile token (captchaToken) is required.
  */
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
@@ -267,7 +267,7 @@ Deno.serve(withMonitoring("provision-studio", async (req) => {
     let query = service.from("tenants").select(SEED_TENANT_COLUMNS);
     if (target) query = query.eq("id", target);
     const { data: tenants, error } = await query;
-    if (error) return jsonResponse({ error: error.message }, 500);
+    if (error) return internalError("provision-studio", error);
     let seeded = 0;
     for (const t of tenants ?? []) {
       seeded += await seedSignedTemplate(seedDeps(service), t as SeedTenant, { fillMissing });

@@ -52,7 +52,7 @@ describe('expense correction', () => {
       supplier_name: 'Glass Ltd',
       supplier_vat_number: '514123456',
     } as unknown as Expense;
-    wrap(<ExpenseForm correctsExpense={original} onSuccess={() => {}} onCancel={() => {}} />);
+    wrap(<ExpenseForm correctsExpense={original} onSuccess={() => {}} onCancel={() => {}} onSubmit={vi.fn()} />);
     expect(screen.getByDisplayValue('1170')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Glass Ltd')).toBeInTheDocument();
     expect(screen.getByDisplayValue('514123456')).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('expense correction', () => {
   it('a new expense is dated today in local time', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 10, 3, 23, 30));
-    wrap(<ExpenseForm onSuccess={() => {}} onCancel={() => {}} />);
+    wrap(<ExpenseForm onSuccess={() => {}} onCancel={() => {}} onSubmit={vi.fn()} />);
     expect(screen.getByDisplayValue('2026-11-03')).toBeInTheDocument();
     vi.useRealTimers();
   });

@@ -20,15 +20,15 @@ const EnrolmentStatusSchema = z.enum([
 // Validation schema for enrolment creation/update (without system fields)
 const EnrolmentInputSchema = z
   .object({
-    person_id: z.string().uuid().optional(),
-    offering_id: z.string().uuid().optional(),
-    season_id: z.string().uuid().optional(),
+    person_id: z.string().guid().optional(),
+    offering_id: z.string().guid().optional(),
+    season_id: z.string().guid().optional(),
     status: EnrolmentStatusSchema.optional(),
-    billing_account_id: z.string().uuid().nullable().optional(),
+    billing_account_id: z.string().guid().nullable().optional(),
     payment_received_at: z.string().nullable().optional(),
     age_override_confirmed: z.boolean().optional(),
     age_override_reason: z.string().max(500).nullable().optional(),
-    waiver_evidence_id: z.string().uuid().nullable().optional(),
+    waiver_evidence_id: z.string().guid().nullable().optional(),
   })
   .refine(
     (data) => data.status == null || !['cancelled', 'withdrawn'].includes(data.status),

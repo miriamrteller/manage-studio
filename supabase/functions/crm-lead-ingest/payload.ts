@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { parseLeadEmail } from "../_shared/crm-contract/parse-lead-email.ts";
 
 /** What crm-lead-ingest accepts, and how each kind becomes a lead (see index.ts). */
@@ -19,7 +19,7 @@ const contactPayload = z.object({
   tenantSubdomain: z.string().min(1),
   contact: z.object({
     /** One id per submission: a retried call is a duplicate, not a second lead. */
-    submissionId: z.string().uuid(),
+    submissionId: z.string().guid(),
     name: z.string().trim().min(1).max(200),
     email: z.string().trim().email().max(320),
     message: z.string().max(5000),

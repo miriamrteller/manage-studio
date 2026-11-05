@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";

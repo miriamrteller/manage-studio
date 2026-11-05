@@ -3,7 +3,7 @@
  * number or address.
  * Run: cd supabase/functions && deno test _shared/guest-signer-prefill.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { pickGuestSignerPrefill } from "./guest-signer-prefill.ts";
 
 const parent = { name: "Dana Cohen", email: "Dana@Example.test", phone: "050-000-0001" };

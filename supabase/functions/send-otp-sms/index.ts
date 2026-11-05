@@ -1,4 +1,3 @@
-import { serve } from 'std/http/server.ts';
 import { createServiceClient } from '../_shared/edge-runtime/supabase.ts';
 import { checkAndIncrementAttempt, normaliseContactPoint } from '../_shared/rate-limit.ts';
 import { withMonitoring } from "../_shared/monitoring.ts";
@@ -109,7 +108,7 @@ async function logToNotificationLog(
   }
 }
 
-serve(withMonitoring("send-otp-sms", async (req) => {
+Deno.serve(withMonitoring("send-otp-sms", async (req) => {
   if (req.method !== 'POST') {
     return new Response(
       JSON.stringify({ error: 'method_not_allowed' }),

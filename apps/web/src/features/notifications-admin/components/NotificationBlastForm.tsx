@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -91,7 +91,9 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
   const [selectedAccountLabel, setSelectedAccountLabel] = useState<string | null>(null);
 
   const form = useForm<NotificationBlastFormValues>({
-    resolver: zodResolver(notificationBlastSchema),
+    // The id fields are preprocessed ('' -> undefined), so zod 4 types their raw
+    // input as unknown; the form holds the parsed shape, as it did on zod 3.
+    resolver: zodResolver(notificationBlastSchema) as unknown as Resolver<NotificationBlastFormValues>,
     defaultValues: {
       scope: 'all',
       purpose: 'service',

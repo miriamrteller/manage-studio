@@ -3,7 +3,7 @@
  * version while it is current; a changed form or another audience needs a new one.
  * Run: cd supabase/functions && deno test _shared/signature-match.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { readerLanguage, signatureMatchesActiveForm } from "./studio-legal.ts";
 
 const activeEn = { id: "en-child", version: 1, audience: "child" as const };

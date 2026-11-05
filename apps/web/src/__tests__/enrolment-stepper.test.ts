@@ -6,6 +6,7 @@ import {
 } from '@/features/enrolment/lib/buildEnrolmentSteps';
 import { evaluateCheckoutPreparation } from '@/features/enrolment/lib/prepareEnrolmentCheckout';
 import { buildEnrolledOfferingKey } from '@/features/enrolment/lib/enrolled-offerings';
+import { fakeT } from '@/test/fakeT';
 
 describe('buildEnrolmentSteps', () => {
   it('includes all steps for full parent flow with waiver', () => {
@@ -77,7 +78,7 @@ describe('evaluateCheckoutPreparation', () => {
     classAgeOverride: { confirmed: false, reason: '' },
     waiverEvidenceId: null,
     constraints: {},
-    t: (key: string) => key,
+    t: fakeT(),
     showWaiverStep: false,
     waiverSignedInFlow: false,
     getSelectedClassAgeError: () => null,

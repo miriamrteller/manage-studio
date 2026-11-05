@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
 const h = vi.hoisted(() => ({
-  invoke: vi.fn(async () => ({ data: { outcome: 'created' }, error: null })),
+  invoke: vi.fn(async (..._args: unknown[]): Promise<{ data: unknown; error: unknown }> => ({ data: { outcome: 'created' }, error: null })),
 }));
 // Signed out: the public form starts blank (signed-in prefill: prefill-enrolment.test.tsx).
 vi.mock('@/hooks/useCurrentUser', () => ({
@@ -113,7 +113,9 @@ describe('InquiryForm without Turnstile', () => {
 });
 
 describe('InquiryForm with Turnstile', () => {
-  beforeEach(() => vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'site-key-1'));
+  beforeEach(() => {
+    vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'site-key-1');
+  });
 
   it('does not send until the check is passed, then sends the token', async () => {
     renderAt('/embed/inquire', <InquiryForm embedded />);

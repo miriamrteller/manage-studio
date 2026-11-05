@@ -12,14 +12,19 @@ function client() {
   return { c: new FakeSupabaseClient({ tables, rpcs: {}, functions: baseFunctions }), tables };
 }
 
+type SignerPrefillResponse = { signerPrefill?: Record<string, string> };
+
 const invoke = (c: FakeSupabaseClient, token: string) =>
-  c.functions.invoke('get-waiver-engagement', { body: {}, headers: { Authorization: `WaiverToken ${token}` } });
+  c.functions.invoke('get-waiver-engagement', {
+    body: {},
+    headers: { Authorization: `WaiverToken ${token}` },
+  }) as Promise<{ data: SignerPrefillResponse | null; error: unknown }>;
 
 describe('demo guest contract link prefill', () => {
   it("prefills Yossi's name, email and phone, never ID or address", async () => {
     const { c } = client();
     const { data } = await invoke(c, contractToken(engagementId(2)));
-    expect(data.signerPrefill).toEqual({
+    expect(data?.signerPrefill).toEqual({
       full_name: 'Yossi Ben-David',
       email: 'yossi.bendavid@example.com',
       phone: '+972 54-772-1903',

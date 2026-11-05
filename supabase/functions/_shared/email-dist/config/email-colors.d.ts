@@ -16,19 +16,7 @@ export declare const EmailColorConfigSchema: z.ZodObject<{
     text: z.ZodDefault<z.ZodString>;
     bg: z.ZodDefault<z.ZodString>;
     neutral: z.ZodDefault<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    primary: string;
-    accent: string;
-    text: string;
-    bg: string;
-    neutral: string;
-}, {
-    primary?: string | undefined;
-    accent?: string | undefined;
-    text?: string | undefined;
-    bg?: string | undefined;
-    neutral?: string | undefined;
-}>;
+}, z.core.$strip>;
 export type EmailColorConfig = z.infer<typeof EmailColorConfigSchema>;
 /**
  * Default email colors matching SPEC.md white-label defaults

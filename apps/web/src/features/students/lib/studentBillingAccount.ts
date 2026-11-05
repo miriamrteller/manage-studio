@@ -11,7 +11,7 @@ export const STUDENT_BILLING_ACCOUNT_SELECT =
   'id, tenant_id, person_id, account_id, status, business_name, created_at, updated_at, payer:people!billing_accounts_person_id_fkey(name, email)';
 
 const RowSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().guid(),
   status: z.string(),
   business_name: z.string().nullable().optional(),
   payer: z
@@ -50,7 +50,7 @@ export function pickSavedCard(rows: unknown): SavedCard | null {
   if (!Array.isArray(rows)) return null;
   const cards = rows
     .map((r) => CardRowSchema.safeParse(r))
-    .filter((r): r is z.SafeParseSuccess<z.infer<typeof CardRowSchema>> => r.success && Boolean(r.data.last4))
+    .filter((r): r is z.ZodSafeParseSuccess<z.infer<typeof CardRowSchema>> => r.success && Boolean(r.data.last4))
     .map((r) => r.data);
   const card = cards.find((c) => c.is_default) ?? cards[0];
   if (!card?.last4) return null;

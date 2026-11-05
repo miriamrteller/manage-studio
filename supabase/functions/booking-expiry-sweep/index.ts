@@ -12,13 +12,12 @@
  * Configurable per tenant: payment_expiry_minutes, payment_nudge_minutes.
  */
 
-import { serve }        from "https://deno.land/std@0.168.0/http/server.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 type ServiceClient = ReturnType<typeof createServiceClient>;
 
-serve(withMonitoring("booking-expiry-sweep", async (_req: Request): Promise<Response> => {
+Deno.serve(withMonitoring("booking-expiry-sweep", async (_req: Request): Promise<Response> => {
   try {
     const supabase = createServiceClient();
 

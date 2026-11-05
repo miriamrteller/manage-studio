@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTenantQuery } from '@/hooks/useTenant';
 import { signupFormSchema, type SignupForm } from '@/schemas/auth';
+import type { z } from 'zod';
 import { useSignup } from '@/features/auth/hooks/useSignup';
 import { resolveAuthErrorMessage } from '@/lib/authErrors';
 import SignupStep1 from '@/features/auth/components/SignupStep1';
@@ -28,7 +29,7 @@ export default function SignupPage() {
   const [captchaMissing, setCaptchaMissing] = useState(false);
   const captcha = useCaptcha();
 
-  const form = useForm<SignupForm>({
+  const form = useForm<z.input<typeof signupFormSchema>, unknown, SignupForm>({
     resolver: zodResolver(signupFormSchema),
     mode: 'onChange',
     defaultValues: {
@@ -86,7 +87,8 @@ export default function SignupPage() {
       return;
     }
     setCaptchaMissing(false);
-    await sendCode(values);
+    // getValues() is the raw form input; channel defaults to email as in the schema.
+    await sendCode({ ...values, channel: values.channel ?? 'email' });
   };
 
   const onSubmitStep3 = (_data: { code: string }) => {

@@ -1,5 +1,6 @@
-import { z } from "npm:zod@3.22.4";
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { z } from "npm:zod@4.6.7";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { processBillingSchedule } from "../_shared/payments/renewal-billing.ts";
 import {
@@ -8,29 +9,20 @@ import {
 } from "../_shared/payments/billing-time.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 50;
 
 const BodySchema = z.object({
   mode: z.enum(["batch", "single"]).optional(),
-  schedule_id: z.string().uuid().optional(),
+  schedule_id: z.string().guid().optional(),
 });
-
-function authorizeCron(req: Request): boolean {
-  if (!CRON_SECRET) return true;
-  const authHeader = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
-}
 
 Deno.serve(withMonitoring("run-monthly-billing", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  if (!authorizeCron(req)) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   let body: z.infer<typeof BodySchema> = { mode: "batch" };
   try {
@@ -62,7 +54,7 @@ Deno.serve(withMonitoring("run-monthly-billing", async (req) => {
 
   const { data: schedules, error } = await query;
   if (error) {
-    return jsonResponse({ error: error.message }, 500);
+    return internalError("run-monthly-billing", error);
   }
 
   let processed = 0;

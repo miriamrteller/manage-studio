@@ -6,7 +6,7 @@ import type { Tenant } from '@shared/schemas';
 
 // Validation schema for teacher creation/update (without system fields)
 const TeacherInputSchema = z.object({
-  user_profile_id: z.string().uuid().optional(),
+  user_profile_id: z.string().guid().optional(),
   name: z.string().min(1, 'Teacher name required').optional(),
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),

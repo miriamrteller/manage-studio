@@ -18,7 +18,7 @@ const credentials = { apiKey: 'key-1', apiSecret: 'secret-1' };
 type FetchInit = { method?: string; headers?: Record<string, string>; body?: string };
 
 function fakeFetch(body: unknown, status = 200) {
-  return vi.fn<(url: string, init?: FetchInit) => Promise<Response>>(async () =>
+  return vi.fn(async (_url: string, _init?: FetchInit) =>
     new Response(typeof body === 'string' ? body : JSON.stringify(body), { status }),
   );
 }

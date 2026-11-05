@@ -92,7 +92,9 @@ describe('with no Turnstile site key: unchanged', () => {
 });
 
 describe('with a Turnstile site key', () => {
-  beforeEach(() => vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'site-key-1'));
+  beforeEach(() => {
+    vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'site-key-1');
+  });
 
   it('password sign-in waits for the check, sends the token, then asks for a fresh check', async () => {
     const { result } = renderHook(() => useLogin(), { wrapper });

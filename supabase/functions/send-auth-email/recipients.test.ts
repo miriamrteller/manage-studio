@@ -3,7 +3,7 @@
  * (reversed) mapping: current address ← token + token_hash_new; new address ← token_new + token_hash.
  * Run: cd supabase/functions && deno test send-auth-email/recipients.test.ts
  */
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { authEmailRecipients } from "./recipients.ts";
 import { composeLoginEmailChangedNotice } from "./compose.ts";
 import type { TenantEmailConfig } from "../_shared/tenant-email.ts";

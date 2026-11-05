@@ -3,7 +3,7 @@
  * against a fake Cloudflare and an in-memory table.
  * Run: cd supabase/functions && deno test --allow-env --allow-read --allow-net _shared/custom-domain/service.test.ts
  */
-import { assert, assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { CfCustomHostname, CloudflareSaas } from "./cloudflare.ts";
 import type { TurnstileHostnames } from "./turnstile.ts";
 import {

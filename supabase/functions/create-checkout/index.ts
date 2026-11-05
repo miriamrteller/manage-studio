@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createCheckoutCharge } from "../_shared/create-checkout-charge.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
@@ -11,7 +10,7 @@ interface CreateCheckoutBody {
   is_mobile?: boolean;
 }
 
-serve(withMonitoring("create-checkout", async (req) => {
+Deno.serve(withMonitoring("create-checkout", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 
