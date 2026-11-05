@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
-import type { TakbullApi, TakbullOrderRequest } from "../takbull/client.ts";
+import type { TakbullApi, TakbullOrderRequest, TakbullRefundRequest } from "../takbull/client.ts";
+import { ManualRefundRequiredError } from "../refund-errors.ts";
 import { takbullPaymentPageUrl } from "../takbull/client.ts";
 import { takbullApiForTenant } from "../takbull/index.ts";
 import { insertPendingTakbullPayment, markTakbullOrderFailed, setTakbullOrderRef } from "../takbull/pending-charge.ts";
@@ -19,6 +20,33 @@ function appUrl(path: string): string {
   const base = env()?.get("APP_URL")?.trim();
   if (!base) throw new Error("APP_URL is not set: required for the Takbull return URLs");
   return `${base.replace(/\/+$/, "")}${path}`;
+}
+
+/**
+ * Pure: the Refund request (docs: RefundType 2 "Cancel with document", 4 "Partial refund with
+ * document"; RefundAmount "Required for partial refund"). The whole payment, with nothing
+ * refunded before, cancels the deal with its document; anything else is a partial refund with
+ * its document, for the amount asked.
+ */
+export function buildTakbullRefund(input: {
+  transactionInternalNumber: string;
+  amountMinor: number;
+  totalMinor: number;
+  alreadyRefundedMinor: number;
+  comments?: string;
+}): TakbullRefundRequest {
+  const whole = input.alreadyRefundedMinor <= 0 && input.amountMinor === input.totalMinor;
+  return {
+    RefundType: whole ? 2 : 4,
+    RefundAmount: whole ? null : input.amountMinor / 100,
+    TransactionInternalNumber: input.transactionInternalNumber,
+    ...(input.comments ? { Comments: input.comments.slice(0, 200) } : {}),
+  };
+}
+
+/** Takbull's transaction number (digits), stored as provider_payment_ref when a payment settles. */
+function isTakbullTransactionNumber(ref: string): boolean {
+  return /^\d+$/.test(ref);
 }
 
 export interface TakbullPayer {
@@ -45,12 +73,17 @@ export function buildTakbullOrder(input: {
   lineName: string;
   lineDescription?: string;
   installments?: number;
+  /** Bit (PaymentMethodType 21); on a phone, IsMobile asks for the link that opens the Bit app. */
+  payWith?: "bit";
+  isMobile?: boolean;
   ipnUrl: string;
   successUrl: string;
   cancelUrl: string;
 }): TakbullOrderRequest {
   const total = input.amountMinor / 100;
-  const instalments = input.installments && input.installments > 1 ? Math.min(input.installments, 36) : 1;
+  const bit = input.payWith === "bit";
+  // Bit is one payment: the docs give instalments (DealType 2) for the card page only.
+  const instalments = !bit && input.installments && input.installments > 1 ? Math.min(input.installments, 36) : 1;
   const currency = input.currency.toUpperCase();
   return {
     order_reference: input.paymentId,
@@ -60,6 +93,7 @@ export function buildTakbullOrder(input: {
     IPNAddress: input.ipnUrl,
     DisplayType: "redirect",
     PostProcessMethod: "0",
+    ...(bit ? { PaymentMethodType: 21 as const, ...(input.isMobile ? { IsMobile: true } : {}) } : {}),
     Language: input.language,
     ...(currency === "ILS" || currency === "USD" || currency === "EUR" ? { Currency: currency } : {}),
     CustomerFullName: input.payer.name,
@@ -115,7 +149,7 @@ async function loadPayer(service: SupabaseClient, billingAccountId: string): Pro
 /**
  * Takbull card payments (docs/plans/TAKBULL-INTEGRATION.md, PR 2). A hosted Takbull page per
  * payment; the result arrives only through the takbull-ipn function, which re-checks it with
- * Takbull before anything settles. Saved-card charges (monthly) and refunds come in PR 3 / 4.
+ * Takbull before anything settles. Refunds go through Refund (PR 4); saved-card charges come in PR 3.
  */
 export class TakbullPaymentProvider implements PaymentProvider {
   readonly slug = "takbull";
@@ -158,21 +192,57 @@ export class TakbullPaymentProvider implements PaymentProvider {
       lineName: params.lineItem?.name ?? "Enrolment",
       lineDescription: params.lineItem?.description,
       installments: params.installments,
+      payWith: params.payWith,
+      isMobile: params.isMobile,
       ipnUrl: takbullIpnUrl(),
       successUrl: params.returnUrls?.success ?? appUrl("/enrol/complete"),
       cancelUrl: params.returnUrls?.failure ?? appUrl("/enrol/failed"),
     });
 
     let uniqId: string;
+    let bitAppUrl: string | undefined;
     try {
-      ({ uniqId } = await api.getPaymentPageRedirectUrl(order));
+      ({ uniqId, url: bitAppUrl } = await api.getPaymentPageRedirectUrl(order));
     } catch (err) {
       await markTakbullOrderFailed(this.service, paymentId);
       throw err;
     }
     await setTakbullOrderRef(this.service, paymentId, uniqId);
 
-    return { providerPaymentRef: uniqId, pageUrl: takbullPaymentPageUrl(uniqId), pendingWebhook: true };
+    // Bit on a phone: Takbull's link opens the Bit app; otherwise its payment page.
+    const pageUrl = params.payWith === "bit" && params.isMobile && bitAppUrl ? bitAppUrl : takbullPaymentPageUrl(uniqId);
+    return { providerPaymentRef: uniqId, pageUrl, pendingWebhook: true };
+  }
+
+  /**
+   * Refund through Takbull (Refund), with Takbull's credit document. It needs Takbull's
+   * transactionInternalNumber, which takbull-ipn stores as provider_payment_ref on settle.
+   */
+  async refundCharge(params: { providerPaymentRef: string; amountMinor: number }): Promise<{ providerRefundRef: string }> {
+    const { data: payment } = await this.service
+      .from("payments")
+      .select("id, tenant_id, total_amount_minor, refund_amount_minor")
+      .eq("provider_payment_ref", params.providerPaymentRef)
+      .eq("provider", "takbull")
+      .maybeSingle();
+    if (!payment?.tenant_id) throw new Error("Payment not found for refund");
+    if (!isTakbullTransactionNumber(params.providerPaymentRef)) {
+      throw new ManualRefundRequiredError(
+        "takbull",
+        "This Takbull payment has no Takbull transaction number on record. Refund it in Takbull, " +
+          "then record the refund here.",
+      );
+    }
+    const api = await this.apiFor(payment.tenant_id as string);
+    // Throws (TakbullApiError) unless Takbull answers internalCode 0.
+    const result = await api.refund(buildTakbullRefund({
+      transactionInternalNumber: params.providerPaymentRef,
+      amountMinor: params.amountMinor,
+      totalMinor: Number(payment.total_amount_minor),
+      alreadyRefundedMinor: Number(payment.refund_amount_minor ?? 0),
+    }));
+    const ref = result.documentId ? `takbull_doc_${result.documentId}` : `takbull_refund_${params.providerPaymentRef}_${Date.now()}`;
+    return { providerRefundRef: ref };
   }
 
   /** Takbull notices go to the takbull-ipn function, never through handle-payment-event. */

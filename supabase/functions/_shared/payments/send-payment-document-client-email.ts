@@ -105,7 +105,7 @@ export async function sendPaymentDocumentClientEmail(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select(`name, language_default, invoicing_provider, ypay_document_type, green_invoice_document_type, ${TENANT_SENDER_COLUMNS}`)
+    .select(`name, language_default, invoicing_provider, ypay_document_type, green_invoice_document_type, takbull_document_type, ${TENANT_SENDER_COLUMNS}`)
     .eq("id", params.tenantId)
     .maybeSingle();
 
@@ -199,7 +199,12 @@ export type ClientDocumentKind = "receipt" | "invoice_receipt";
  */
 export function clientDocumentKind(
   tenant:
-    | { invoicing_provider?: unknown; ypay_document_type?: unknown; green_invoice_document_type?: unknown }
+    | {
+      invoicing_provider?: unknown;
+      ypay_document_type?: unknown;
+      green_invoice_document_type?: unknown;
+      takbull_document_type?: unknown;
+    }
     | null
     | undefined,
 ): ClientDocumentKind | null {
@@ -208,6 +213,9 @@ export function clientDocumentKind(
   }
   if (tenant?.invoicing_provider === "green_invoice") {
     return Number(tenant.green_invoice_document_type) === 400 ? "receipt" : "invoice_receipt";
+  }
+  if (tenant?.invoicing_provider === "takbull") {
+    return Number(tenant.takbull_document_type) === 400 ? "receipt" : "invoice_receipt";
   }
   return null;
 }

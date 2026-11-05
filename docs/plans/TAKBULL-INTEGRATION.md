@@ -83,10 +83,30 @@ What already exists and Takbull plugs into:
    - What: `chargeWithToken` → `ChargeToken`; the result comes back through the same notice handler, with dunning on failure; `takbull` in the renewal and card-link lists.
 4. **Refunds.**
    - What: `refundCharge` → `Refund`, full (type 2) or partial (type 4) with document. It needs Takbull's `transactionInternalNumber`, stored as `provider_payment_ref` once the notice settles; `refundDocumentNoteKey` covers Takbull too.
+   - How (built):
+     - The whole payment, with nothing refunded before, is type 2 with no amount. Anything else, including what is left after a partial refund, is type 4 with `RefundAmount`. Docs: types 1–4, and "Required for partial refund".
+     - Takbull's refusal (`internalCode` not 0) reaches the admin and nothing is recorded. A payment with no transaction number is refunded in Takbull and recorded here.
+     - A refund made through Takbull queues no document of ours, since Takbull issues it ("with document"). A refund recorded by hand is still queued (the Takbull invoicing adapter is PR 5).
+     - The docs don't say which document type types 2 / 4 issue, or when `documentId` is set; neither is relied on.
 5. **Documents for recorded payments.**
    - What: the Takbull invoicing adapter (`DocumentApi/Create`); the 400/320 setting; pairing (`takbull` invoicing with `takbull` or offline payments); issued-document-kind mapping; the accountant export.
+   - How (built):
+     - `TakbullInvoicingProvider` (`invoicing/providers/takbull.ts`) documents cash (`cashes`), bank transfer (`wireTransfers`) and Bit (`customPayments`, `creationDate` required) recorded by hand. The type is the studio's setting (400 / 320). `sendToCustomer: false`, because OpalSwift emails the client for money recorded by hand (decision 6).
+     - Refunds recorded by hand: `isNegativeDocument`, 401 for a receipt studio and 330 for a tax invoice-receipt studio (lawyer list row 23, `[[ACCOUNTANT: confirm]]`).
+     - Card money is never documented here: a Takbull card payment's document comes with the charge (`documentRouteFor`: `skip_issued_with_charge`). A refund of a Takbull card payment recorded by hand is `not_issued`, to be done in Takbull.
+     - Takbull returns the document number and id but no link (none in the docs), so the client email has no link.
+     - Pairing: `takbull` invoicing pairs with `takbull` or `offline` payments (web + edge), but is **not** in `PAIRABLE_INVOICING_PROVIDERS`, so it isn't offered until PR 8.
+     - The accountant export uses the issued document kind; "Takbull" / "תקבול" added to the provider names.
+     - `documentDate` is not sent (its format isn't documented), so Takbull dates the document itself.
 6. **Online Bit, instalments and project payment links.**
    - What: `PaymentMethodType: 21` with the `IsMobile` deep link in the checkout shells; `DealType: 2` for instalments; `takbull` in `JOB_ONLINE_PAYMENT_PROVIDERS`.
+   - How (built):
+     - **The Takbull checkout page:** the enrolment checkout shows Takbull's payment page in the hosted-page shell, and waits for the notice like Grow. Until now there was no Takbull shell.
+     - **Bit, on a phone only:** "Pay with Bit" makes a Bit order (`PaymentMethodType: 21`, `IsMobile: true`) and opens the link Takbull returns, which opens the Bit app. The docs only describe Bit on a phone (open question 10), so it isn't offered on a computer.
+       - Where: the enrolment checkout and the project pay page (`/pay/:token`).
+       - Bit is one payment: no instalments with Bit.
+     - **Instalments:** unchanged from PR 2. `DealType: 2` with `MaxNumberOfPayments` and `NumberOfPayments: 1`. The docs don't say what `MaxNumberOfPayments` does (open question 10); at worst the client pays in one go.
+     - **Project payment links:** `takbull` in `JOB_ONLINE_PAYMENT_PROVIDERS` (web + edge). `takbull-ipn` already settles the request (PR 2).
 7. **Open the studio's Takbull account from signup** (after the owner's agreement and legal review).
    - What: `CreateAccount`, prefilled from the studio profile (name, business number, business status → BusinessType, address, phone, email, MCC from the field); the account notice; `UpdateDocumentSettings`.
 8. **Make it the default.**
@@ -135,5 +155,6 @@ The providers studios use for their own clients don't change.
 6. Allocation numbers (מספר הקצאה) on tax invoices.
 7. Are payment notices retried? (Retries are documented only for account notices.)
 8. Sandbox credentials and test cards.
+10. Bit on a computer: does Takbull's page show Bit (for example, a QR code)? And on the card page, does `MaxNumberOfPayments` let the client choose up to that many instalments?
 
 The sample keys in the docs' examples look like real keys. Takbull should confirm they aren't live.

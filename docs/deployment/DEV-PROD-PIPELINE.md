@@ -1,7 +1,7 @@
 # Dev → prod pipeline (database + Edge Functions)
 
 **Written:** 2026-11-01 · Workflows: `ci.yml` (database jobs; db-ci.yml was merged into it), `deploy-dev.yml`,
-`deploy-prod.yml`, `db-health.yml`, `backup-prod.yml`
+`deploy-prod.yml`, `deploy-dev-web.yml`, `db-health.yml`, `backup-prod.yml`
 
 If you know Azure DevOps release pipelines, this is the same shape:
 
@@ -35,6 +35,8 @@ If you know Azure DevOps release pipelines, this is the same shape:
                  → summary
 
   deploy-web ── ⏸ APPROVAL ──► app-only release (same web steps), Run workflow or prod-web-* tag
+
+  deploy-dev-web (automatic on app changes) ──► dev website on the dev database (see Dev website)
 
   every night ─► backup-prod (encrypted dump to R2) · rls-check (dev) · db-health (dev + prod)
 ```
@@ -274,6 +276,80 @@ approves). See [LEAD-EMAIL.md](LEAD-EMAIL.md).
    deployer, so the app never ships ahead of its migrations.
 6. First run: Actions → deploy-web → Run workflow → tick **build_only** → approve. Then run it again
    without the tick.
+
+## Dev website
+
+`deploy-dev-web` builds the web app against the **dev** Supabase project and
+deploys it to its own Cloudflare Worker, `opalswift-app-dev`, on its own
+address. It runs by itself after every merge to `main` that touches the app
+(`apps/web/**`, `packages/shared/**`, the lockfile), with no approval. Use it
+to try changes before you release them.
+
+```
+  merge to main ──► deploy-dev      (database changes → dev database)
+                └─► deploy-dev-web  (app changes → dev website, dev database)
+  you release   ──► deploy-prod     (live database + live website)
+```
+
+- The dev site shows only what is in the dev database: test studios, test
+  people, mock payments. Nothing on it is real, and nothing on it reaches the
+  live site.
+- It never touches the live Worker `opalswift-app` or its routes: the job
+  writes a config of its own with only the dev routes, and refuses to run if
+  the build points at the prod project or the address is `opalswift.com`.
+- The two dev jobs run side by side, so for a minute after a merge with both a
+  migration and app code the dev site may run ahead of the dev database.
+- Run it by hand any time: Actions → **deploy-dev-web** → **Run workflow**.
+- Until the setup below is done, the job skips with a notice.
+
+### Owner setup for the dev website (one time)
+
+The address is `<studio>.<dev root>`, for example
+`creativeballet.opalswift-dev.com`, and `app.<dev root>` for sign-up and the
+platform pages. Pick the dev root first:
+
+- **A separate domain** (e.g. `opalswift-dev.com`): Cloudflare dashboard →
+  **Domain Registration → Register Domains** → buy it. It is added to your
+  account as its own zone. Dev root and zone are both that domain.
+- **Or `dev.opalswift.com`**: Cloudflare → `opalswift.com` → **SSL/TLS → Edge
+  Certificates → Order an advanced certificate** → hostnames
+  `dev.opalswift.com` and `*.dev.opalswift.com` (a paid add-on: the free
+  certificate covers only one level below `opalswift.com`). Dev root is
+  `dev.opalswift.com`, zone is `opalswift.com`.
+
+Then:
+
+1. **DNS.** In the zone → **DNS → Records → Add record**: Type `AAAA`, Name
+   `*` (or `*.dev` for `dev.opalswift.com`), IPv6 address `100::`, Proxy
+   status **Proxied** → **Save**. This lets Cloudflare answer every studio
+   address with the dev Worker.
+2. **Cloudflare token for dev.** **My Profile → API Tokens → Create Token** →
+   template **Edit Cloudflare Workers** → *Account Resources*: your account;
+   *Zone Resources*: the dev zone only → **Continue → Create Token** → copy it.
+   This is its own token: do not reuse the production one.
+3. **GitHub** → **Settings → Environments → development**:
+   - **Environment secrets → Add**: `CLOUDFLARE_DEV_API_TOKEN` (step 2) and
+     `CLOUDFLARE_ACCOUNT_ID` (the same account id as production).
+   - **Environment variables → Add**:
+
+     | Variable | Value |
+     |---|---|
+     | `VITE_SUPABASE_URL` | `https://acmujrhavgbamdilzuew.supabase.co` |
+     | `VITE_SUPABASE_PUBLISHABLE_KEY` | the **dev** publishable key (`sb_publishable_…`): dev project → Project Settings → API Keys |
+     | `DEV_ROOT_DOMAIN` | e.g. `opalswift-dev.com` |
+     | `DEV_ZONE_NAME` | e.g. `opalswift-dev.com` (or `opalswift.com`) |
+     | `SMOKE_TENANT_SUBDOMAIN` | optional, a studio on dev; defaults to `creativeballet` |
+     | `VITE_SENTRY_DSN` | optional; errors are tagged `development` |
+
+     Do not add `VITE_DEMO_MODE`; the job refuses it.
+4. **Sign-in links on dev.** Supabase → **dev** project → **Authentication →
+   URL Configuration** → under *Redirect URLs* **Add URL**
+   `https://*.<dev root>/**` → **Save**. Leave *Site URL* as it is.
+5. **Email links on dev.** Supabase → **dev** project → **Edge Functions →
+   Secrets** → set `APP_ROOT_DOMAIN` to the dev root, so emails sent from dev
+   link to the dev website.
+6. GitHub → **Actions → deploy-dev-web → Run workflow** → branch `main`. The
+   run summary shows the address and whether it answered.
 
 ## Owner setup (one time)
 

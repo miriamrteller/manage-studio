@@ -114,7 +114,7 @@ origin the person used, so every studio origin needs an entry: a wildcard such a
 `https://<custom domain>/**` (see CUSTOM-DOMAIN.md). The reset email is sent by the Send Email
 Hook (`send-auth-email`, action `recovery`).
 
-### Changing the login email (Settings → Security, portals)
+### Changing the login email (Settings → Sign-in & security, portals)
 
 "Change login email" uses Supabase's **secure email change**: a confirmation goes to the current
 and the new address, and the login changes only after both are confirmed.

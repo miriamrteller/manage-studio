@@ -8,6 +8,9 @@
  *  - ypay issues the document with its own card charge, and standalone documents for cash /
  *    bank transfer, but refuses other providers' card payments: ypay or offline payments.
  *  - green_invoice issues standalone documents for any payment.
+ *  - takbull issues the document with its own card charge, and standalone documents for money
+ *    recorded by hand: takbull or offline payments. Not offered yet (hidden until Takbull is
+ *    launched), so it is not in PAIRABLE_INVOICING_PROVIDERS.
  *  - none: no documents through OpalSwift; pairs with anything.
  *  - yesh and tranzila invoicing are not built yet, so they are never offered.
  */
@@ -41,6 +44,7 @@ export function invoicingPairsWithPayment(paymentProvider: string, invoicingProv
   if (invoicingProvider === 'none' || invoicingProvider === 'green_invoice') return true;
   if (BUNDLED_ONLY.has(invoicingProvider)) return invoicingProvider === paymentProvider;
   if (invoicingProvider === 'ypay') return paymentProvider === 'ypay' || paymentProvider === 'offline';
+  if (invoicingProvider === 'takbull') return paymentProvider === 'takbull' || paymentProvider === 'offline';
   return false;
 }
 
@@ -51,11 +55,11 @@ export function invoicingOptionsFor(paymentProvider: string): string[] {
 
 /**
  * Payment providers whose callback settles a photographer's job payment request (deposit /
- * balance link): YPay, and Grow since the notice handler settles job requests (payments audit
- * P2 #11). Others take the money but never mark the request paid, so they are not offered.
+ * balance link): YPay, Grow since the notice handler settles job requests (payments audit
+ * P2 #11), and Takbull (takbull-ipn settles them). Others take the money but never mark the request paid, so they are not offered.
  * `mock` is the dev/CI stand-in.
  */
-export const JOB_ONLINE_PAYMENT_PROVIDERS = ['ypay', 'grow', 'mock'] as const;
+export const JOB_ONLINE_PAYMENT_PROVIDERS = ['ypay', 'grow', 'takbull', 'mock'] as const;
 
 export function jobOnlinePaymentSupported(paymentProvider: string | null | undefined): boolean {
   return (JOB_ONLINE_PAYMENT_PROVIDERS as readonly string[]).includes(paymentProvider ?? '');

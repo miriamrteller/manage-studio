@@ -103,7 +103,12 @@
     "handoff_sign_in": "כניסה",
     "platform_owner_title": "נכנסת כבעלת הפלטפורמה של OpalSwift",
     "platform_owner_body": "דפי הניהול של הסטודיו מיועדים למנהלי הסטודיו עצמו.",
-    "platform_owner_back": "חזרה ל-app.opalswift.com"
+    "platform_owner_back": "חזרה ל-app.opalswift.com",
+    "set_password_prompt": {
+      "title": "הגדרת סיסמה",
+      "description": "בחרו סיסמה, ובפעם הבאה תוכלו להיכנס מהר יותר עם האימייל והסיסמה, בלי לחכות לקישור.",
+      "not_now": "לא עכשיו"
+    }
   },
   "report_problem": {
     "menu_item": "דיווח על בעיה",
@@ -1712,6 +1717,7 @@
       "notFound": "קישור התשלום אינו תקין.",
       "noPage": "לא ניתן לפתוח את דף התשלום.",
       "payNow": "לתשלום",
+      "payWithBit": "תשלום בביט",
       "paidThanks": "תודה — התשלום התקבל. חשבונית מס קבלה נשלחה אליך במייל.",
       "confirming": "מאמתים את התשלום…",
       "confirmLater": "התשלום בטיפול. חשבונית מס קבלה תישלח אליך במייל.",
@@ -2578,6 +2584,7 @@
     },
     "csv": {
       "language": "שפת הקובץ",
+      "lang_code": "he",
       "enrolment_id": "מזהה הרשמה",
       "expenses": {
         "expense_date": "תאריך הוצאה",
@@ -2695,7 +2702,11 @@
       "name": "שם",
       "vat_eligible": "חייב במע״מ",
       "active": "פעיל",
-      "sort_order": "סדר תצוגה"
+      "sort_order": "סדר תצוגה",
+      "common_title": "קטגוריות נפוצות",
+      "common_hint": "הפעילו את אלה שאתם צריכים. קטגוריה כבויה לא תופיע בהוצאות חדשות, והוצאות שכבר נרשמו בה נשארות בה.",
+      "common_suggested": "מתאימות לסוג העסק שלכם",
+      "common_more": "קטגוריות נוספות"
     },
     "record_payment": {
       "any": {
@@ -2771,6 +2782,7 @@
       "partial_amount": "סכום להחזר ({{currency}})",
       "partial_invalid": "הזינו סכום עד {{remaining}}",
       "document_credit_note": "תופק תעודת זיכוי על ההחזר הזה.",
+      "document_takbull": "מסמך הזיכוי יופק בתקבול יחד עם ההחזר.",
       "document_in_provider": "{{provider}} לא מפיקה מסמך זיכוי על החזרים שנעשים מ-OpalSwift: הפיקו אותו ב-{{provider}}.",
       "document_none": "לא מופק מסמך: הסטודיו שלכם לא מפיק מסמכי מס.",
       "open": "החזר",
@@ -2839,6 +2851,12 @@
     "grow_waiting": "ממתינים לאישור התשלום… זה עשוי לקחת כמה שניות.",
     "grow_timeout": "טרם התקבל אישור. אם השלמת את התשלום, המתן רגע ונסה שוב.",
     "grow_retry": "נסה שוב",
+    "takbull_payment_title": "תשלום מאובטח",
+    "takbull_waiting": "ממתינים לאישור התשלום… זה יכול לקחת כמה שניות.",
+    "takbull_timeout": "עדיין לא קיבלנו אישור. אם כבר שילמתם, חכו רגע ונסו שוב.",
+    "takbull_retry": "לנסות שוב",
+    "takbull_pay_with_bit": "תשלום בביט",
+    "takbull_bit_failed": "לא הצלחנו לפתוח את ביט. אפשר לשלם בכרטיס למטה, או לנסות שוב.",
     "icount_payment_title": "תשלום מאובטח",
     "icount_mock_title": "עמוד תשלום iCount (הדמיה)",
     "icount_mock_hint": "מצב ICOUNT_MOCK פעיל, ולכן עמוד התשלום מדומה והתשלום מאושר אוטומטית.",
@@ -2851,6 +2869,15 @@
     "invoice4u_waiting": "ממתינים לאישור התשלום… זה עשוי לקחת כמה שניות.",
     "invoice4u_timeout": "טרם התקבל אישור. אם השלמת את התשלום, המתן רגע ונסה שוב.",
     "invoice4u_retry": "נסה שוב",
+    "ypay_mock_title": "עמוד תשלום YPay (הדמיה)",
+    "ypay_mock_hint": "מצב הדמיה פעיל, ולכן עמוד התשלום מדומה. התשלום מאושר כשמגיעה הודעת הבדיקה.",
+    "ypay_redirect_hint": "התשלום מתבצע בעמוד המאובטח של YPay, ואחריו חוזרים לכאן.",
+    "ypay_continue": "להמשך לתשלום",
+    "ypay_waiting": "ממתינים לאישור התשלום… זה יכול לקחת כמה שניות.",
+    "ypay_timeout": "עדיין לא קיבלנו אישור. אם כבר שילמתם, חכו רגע ובדקו שוב.",
+    "ypay_check_again": "לבדוק שוב",
+    "ypay_failed": "התשלום לא עבר.",
+    "ypay_retry": "לנסות שוב",
     "pending_action": {
       "complete_payment": "השלמת תשלום",
       "complete_waiver": "חתימה על הטופס",
@@ -2999,7 +3026,7 @@
         "unknown": "משהו השתבש. נסו שוב."
       }
     },
-    "provider_names": {"offline": "תשלום בסטודיו", "none": "ללא", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "חשבונית ירוקה", "mock": "מצב ניסיון"},
+    "provider_names": {"offline": "תשלום בסטודיו", "none": "ללא", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "חשבונית ירוקה", "takbull": "תקבול", "mock": "מצב ניסיון"},
     "ypay": {
       "save": "שמירת פרטי YPay",
       "title": "חיבור YPay",
@@ -3156,7 +3183,7 @@
       "invoicing": "חשבוניות",
       "leads": "לידים",
       "legal": "מסמכים משפטיים",
-      "security": "אבטחה"
+      "security": "התחברות ואבטחה"
     },
     "branding": {
       "colors": "צבעים",
@@ -3425,7 +3452,10 @@
       "business_email": "אימייל העסק",
       "business_email_hint": "לקוחות רואים אותו. התשובות שלהם והתראות על פניות חדשות מגיעות לכאן. אתם מתחברים עם אימייל ההתחברות: {{login}}.",
       "business_email_hint_no_login": "לקוחות רואים אותו. התשובות שלהם והתראות על פניות חדשות מגיעות לכאן. אתם מתחברים עם אימייל ההתחברות, לא עם זה.",
-      "change_login_link": "אפשר לשנות אותו באבטחה"
+      "business_same_as_login": "זהה לאימייל ההתחברות שלי ({{login}})",
+      "business_follows_login": "לקוחות רואים אותו. התשובות שלהם והתראות על פניות חדשות מגיעות לכאן. אם תשנו את אימייל ההתחברות, גם הוא ישתנה.",
+      "filled_for_you": "פרטים שמילאנו בשבילך",
+      "change_login_link": "אפשר לשנות אותו בהתחברות ואבטחה"
     },
     "onboarding": {
       "title": "הקמת דייר חדש",
@@ -3503,6 +3533,56 @@
       "all_photos_hint": "אם משאירים ריק, התמונות נמכרות רק אחת-אחת.",
       "open_days": "מספר הימים שהגלריה פתוחה לקנייה",
       "saved": "נשמר."
+    },
+    "smugmug": {
+      "title": "SmugMug",
+      "intro": "התמונות נשארות ב-SmugMug. OpalSwift משתמשת במפתח ה-API שלך ב-SmugMug כדי להציג את גלריות ההגהה בחנות התמונות שלך.",
+      "help_title": "איך מקבלים מפתח API של SmugMug",
+      "step_sign_in": "נכנסים לחשבון ב-smugmug.com (צריך מנוי SmugMug בתוקף).",
+      "step_open": "פותחים את הדף הזה:",
+      "step_fill": "ממלאים:",
+      "field_name": "שם (Name): OpalSwift",
+      "field_type": "סוג (Type): Web application",
+      "field_description": "תיאור (Description): Client shop for my proofing galleries, read-only",
+      "field_app_url": "כתובת האפליקציה (Application URL):",
+      "field_callback_url": "כתובת החזרה (Callback URL):",
+      "step_submit": "שולחים ומחכים למייל האישור מ-SmugMug.",
+      "step_copy": "פותחים את דף התיעוד של ה-API ‏({{url}}), לוחצים על Manage Applications (למעלה מימין) ואז על OpalSwift, ומעתיקים את ה-API Key ואת ה-API Secret.",
+      "step_paste": "מדביקים אותם כאן למטה ולוחצים על שמירה. אין לשלוח אותם לאף אחד.",
+      "step_connect": "ואז לוחצים על חיבור SmugMug.",
+      "copy": "העתקה",
+      "copied": "הועתק",
+      "copy_label": "העתקת {{value}}",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "saved_placeholder": "נשמר. כדי להחליף, מקלידים ערך חדש.",
+      "keys_saved_on": "המפתחות נשמרו ב-{{date}}.",
+      "save": "שמירה",
+      "saved": "נשמר. עכשיו אפשר ללחוץ על בדיקת חיבור או על חיבור SmugMug.",
+      "test": "בדיקת חיבור",
+      "connect": "חיבור SmugMug",
+      "reconnect": "חיבור מחדש",
+      "disconnect": "ניתוק",
+      "disconnected": "החיבור נותק. ה-API Key וה-API Secret עדיין שמורים.",
+      "connected_since": "מחובר ל-SmugMug מאז {{date}}.",
+      "not_connected": "כדי לפתוח את החנות, צריך לחבר את SmugMug.",
+      "shop_locked": "לקוחות עדיין לא יכולים לקנות תמונות מגלריות SmugMug. האפשרות תיפתח אחרי בדיקה אחרונה של גלריות SmugMug.",
+      "result": {
+        "keys": "ה-API Key וה-API Secret תקינים. כדי לסיים, לוחצים על חיבור SmugMug.",
+        "account": "מחובר ועובד.",
+        "keys_rejected": "SmugMug לא קיבלו את ה-API Key וה-API Secret האלה. כדאי לבדוק ששניהם הועתקו נכון.",
+        "token_rejected": "SmugMug כבר לא מקבלים את החיבור. לוחצים על חיבור מחדש.",
+        "unreachable": "אין כרגע תקשורת עם SmugMug. כדאי לנסות שוב בעוד כמה דקות.",
+        "no_keys": "קודם צריך לשמור את ה-API Key וה-API Secret.",
+        "failed": "זה לא הצליח. כדאי לנסות שוב."
+      },
+      "callback": {
+        "title": "מתחברים ל-SmugMug",
+        "expired": "הכניסה ל-SmugMug לקחה יותר מדי זמן או התחילה מחשבון אחר. לוחצים שוב על חיבור SmugMug.",
+        "refused": "SmugMug לא אישרו את החיבור. לוחצים שוב על חיבור SmugMug.",
+        "missing": "SmugMug לא החזירו את הפרטים הדרושים. לוחצים שוב על חיבור SmugMug.",
+        "back": "חזרה להגדרות"
+      }
     }
   },
   "accessibility": {
@@ -3686,7 +3766,7 @@
       "marketing_hint": "נשלח רק למי שהסכים לקבל דיוור בדוא\"ל. שורת הנושא מתחילה ב\"פרסומת\" ומתווסף קישור הסרה אוטומטית."
     },
     "security": {
-      "title": "אבטחה",
+      "title": "התחברות ואבטחה",
       "description": "הגנה על חשבון המנהל והורדת עותק של מידע הסטודיו.",
       "mfa_title": "כניסה בשני שלבים",
       "mfa_description": "אחרי הקוד או הקישור בדוא\"ל, מזינים גם קוד בן 6 ספרות מאפליקציית אימות (Google Authenticator,‏ Microsoft Authenticator,‏ 1Password…). מומלץ מאוד לכל מנהל.",
@@ -3744,7 +3824,8 @@
       "password_description": "אפשר לקבוע סיסמה כדי להתחבר בלי לחכות למייל. קישורים וקודים במייל ממשיכים לעבוד.",
       "password_button": "קביעה או שינוי של הסיסמה",
       "login_email_title": "אימייל ההתחברות",
-      "login_email_hint": "אתם מתחברים איתו. לקוחות לא רואים אותו."
+      "login_email_hint": "אתם מתחברים איתו. לקוחות לא רואים אותו.",
+      "login_email_change": "שינוי"
     },
     "lawyer": {
       "title": "גרסאות שנבדקו על ידי עורך/ת דין",
@@ -3989,7 +4070,6 @@
     "change_description": "האימייל שאיתו אתם מתחברים. נשלח אישור גם לכתובת הנוכחית וגם לחדשה; השינוי נכנס לתוקף רק אחרי האישור, ועד אז ההתחברות הנוכחית ממשיכה לעבוד.",
     "dialog_description": "אימייל ההתחברות ישתנה רק אחרי אישור משתי הכתובות.",
     "new_label": "אימייל התחברות חדש",
-    "also_business": "להשתמש בו גם כאימייל העסק",
     "send": "שליחת אישור",
     "sent": "שלחנו קישור לאישור אל {{from}} ואל {{to}}. יש לפתוח את שניהם. עד אז ממשיכים להתחבר עם {{from}}.",
     "refused_taken": "לאימייל הזה כבר יש חשבון OpalSwift (אולי בסטודיו אחר). יש להשתמש בכתובת אחרת.",

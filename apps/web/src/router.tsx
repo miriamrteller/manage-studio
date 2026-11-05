@@ -36,11 +36,13 @@ import AdminAppointmentsPage from "./pages/AdminAppointmentsPage";
 import BookingSettingsPage from "./pages/BookingSettingsPage";
 import BookingServicesPage from "./pages/BookingServicesPage";
 import GoogleCalendarCallbackPage from "./pages/GoogleCalendarCallbackPage";
+import SmugMugCallbackPage from "./pages/SmugMugCallbackPage";
 import WaiversPage from "./pages/WaiversPage";
 import BookingPage from "./pages/BookingPage";
 import PortalDashboard from "./pages/PortalDashboard";
 import { EnrolEntryRoute } from "./layouts/EnrolEntryRoute";
 import EnrolPayPage from "./pages/EnrolPayPage";
+import EnrolReturnPage from "./pages/EnrolReturnPage";
 import EnrolCompletePage from "./pages/EnrolCompletePage";
 import PayRequestPage from "./pages/PayRequestPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -168,6 +170,8 @@ const router = createBrowserRouter([
           { path: 'signup', element: <SignupPage /> },
           { path: 'enrol', element: <EnrolEntryRoute /> },
           { path: 'enrol/pay/:engagementId', element: <EnrolPayPage /> },
+          // Where YPay sends the parent back after its payment page.
+          { path: 'enrol/return/:engagementId', element: <EnrolReturnPage /> },
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
           // Public pay link for a job (shoot) deposit/balance request — token is the capability.
           { path: 'pay/:token', element: <PayRequestPage /> },
@@ -213,6 +217,7 @@ const router = createBrowserRouter([
           { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
           { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
+          { path: "admin/setup/integrations/smugmug/callback", element: <AdminRoute><SmugMugCallbackPage /></AdminRoute> },
           { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
           { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
           { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },

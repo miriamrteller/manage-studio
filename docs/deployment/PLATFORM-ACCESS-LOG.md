@@ -2,7 +2,7 @@
 
 Studios can see when the OpalSwift platform owner (the single `super_admin`
 account, reserved by `20260827000100_super_admin_lockdown.sql`) opens or
-changes their data: **Settings → Security → OpalSwift access**.
+changes their data: **Settings → Sign-in & security → OpalSwift access**.
 
 Migration: `supabase/migrations/20261101140810_platform_access_log.sql`.
 Tests: `supabase/tests/platform-access-log/run.sh` (CI `local-stack`).

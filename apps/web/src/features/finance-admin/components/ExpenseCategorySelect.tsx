@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useExpenseCategories } from '../hooks/useExpenses';
+import { expenseCategoryName, expenseLanguage } from '../lib/expenseCategoryName';
 
 const CREATE_CATEGORY_VALUE = '__create__';
 
@@ -16,7 +17,8 @@ export function ExpenseCategorySelect({
   onChange,
   required = true,
 }: ExpenseCategorySelectProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = expenseLanguage(i18n.language);
   const { categories, createCategoryAsync, isCreating } = useExpenseCategories();
   const activeCategories = categories.filter((c) => c.is_active);
 
@@ -90,7 +92,7 @@ export function ExpenseCategorySelect({
           <option value="">{t('common.select')}</option>
           {activeCategories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {expenseCategoryName(category, lang)}
             </option>
           ))}
           <option value={CREATE_CATEGORY_VALUE}>{t('finance.categories.add_new')}</option>

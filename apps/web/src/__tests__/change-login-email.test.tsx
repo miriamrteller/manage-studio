@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 /**
- * "Change login email" (Settings → Security and the portals): checked first (taken /
- * reserved / same), then Supabase's secure change (both addresses confirm; the old
- * login works until then). Admins can move the business email with it. The
+ * "Change login email" (Settings → Sign-in & security and the portals): checked first
+ * (taken / reserved / same), then Supabase's secure change (both addresses confirm; the
+ * old login works until then). A business email that matches the login follows it
+ * (database trigger). The
  * confirmation link is always verified, even when someone is signed in.
  * Run: pnpm -C apps/web test change-login-email.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -63,32 +64,18 @@ describe('Change login email', () => {
     expect(emailChangeRedirect('https://lumen.opalswift.com')).toBe('https://lumen.opalswift.com/auth/callback?next=email-change');
   });
 
-  it('an admin whose business email is still the login: the tick starts on and is sent with the request', async () => {
-    wrap(<ChangeLoginEmail businessEmail="Owner@Lumen.test" />);
-    const tick = screen.getByRole('checkbox', { name: 'Also use this as my business email' });
-    expect(tick).toBeChecked();
+  it('checks the address, then asks Supabase for the secure change (no business-email tick any more)', async () => {
+    wrap(<ChangeLoginEmail />);
+    expect(screen.queryByRole('checkbox')).toBeNull();
     submit(' New@Lumen.Studio ');
     expect(await screen.findByRole('status')).toHaveTextContent(
       'We sent a confirmation link to owner@lumen.test and to new@lumen.studio. Open both. Until then, keep signing in with owner@lumen.test.',
     );
     expect(h.rpc).toHaveBeenCalledWith('login_email_status', { p_email: 'new@lumen.studio' });
     expect(h.updateUser).toHaveBeenCalledWith(
-      { email: 'new@lumen.studio', data: { business_email_follow: true } },
+      { email: 'new@lumen.studio' },
       { emailRedirectTo: `${window.location.origin}/auth/callback?next=email-change` },
     );
-  });
-
-  it('a different business email: the tick starts off', () => {
-    wrap(<ChangeLoginEmail businessEmail="hello@lumen.studio" />);
-    expect(screen.getByRole('checkbox', { name: 'Also use this as my business email' })).not.toBeChecked();
-  });
-
-  it('the portals (no business email): no tick, and the studio is never touched', async () => {
-    wrap(<ChangeLoginEmail />);
-    expect(screen.queryByRole('checkbox')).toBeNull();
-    submit('parent@new.test');
-    await waitFor(() => expect(h.updateUser).toHaveBeenCalled());
-    expect(h.updateUser.mock.calls[0][0]).toEqual({ email: 'parent@new.test', data: { business_email_follow: false } });
   });
 
   it.each([
@@ -112,9 +99,8 @@ describe('Change login email', () => {
 
   it('is in Hebrew too', async () => {
     await i18n.changeLanguage('he');
-    wrap(<ChangeLoginEmail businessEmail="owner@lumen.test" />);
+    wrap(<ChangeLoginEmail />);
     expect(screen.getByRole('heading', { name: 'שינוי אימייל ההתחברות' })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'להשתמש בו גם כאימייל העסק' })).toBeChecked();
   });
 });
 

@@ -7,6 +7,7 @@ import { Invoice4uInvoicingProvider } from "./providers/invoice4u.ts";
 import { YpayInvoicingProvider } from "./providers/ypay.ts";
 import { TranzilaInvoicingProvider } from "./providers/tranzila.ts";
 import { YeshInvoicingProvider } from "./providers/yesh.ts";
+import { TakbullInvoicingProvider } from "./providers/takbull.ts";
 import { parseInvoicingProviderSlug, type InvoicingProviderSlug } from "./registry.ts";
 import type { InvoicingProvider } from "./types.ts";
 
@@ -18,6 +19,7 @@ const invoice4uProvider = new Invoice4uInvoicingProvider();
 const ypayProvider = new YpayInvoicingProvider();
 const tranzilaProvider = new TranzilaInvoicingProvider();
 const yeshProvider = new YeshInvoicingProvider();
+const takbullProvider = new TakbullInvoicingProvider();
 
 export function getInvoicingProvider(slug: string | null | undefined): InvoicingProvider {
   const parsed: InvoicingProviderSlug = parseInvoicingProviderSlug(slug);
@@ -38,6 +40,8 @@ export function getInvoicingProvider(slug: string | null | undefined): Invoicing
       return tranzilaProvider;
     case "yesh":
       return yeshProvider;
+    case "takbull":
+      return takbullProvider;
     case "none":
       // enqueueDocument() never queues for these tenants; reaching here is a bug.
       throw new Error("This studio issues no tax documents (invoicing_provider=none)");

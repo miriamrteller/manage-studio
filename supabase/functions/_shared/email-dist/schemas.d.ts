@@ -1083,6 +1083,18 @@ export declare const ExpenseCategorySchema: z.ZodObject<{
     is_vat_eligible: z.ZodDefault<z.ZodBoolean>;
     is_active: z.ZodDefault<z.ZodBoolean>;
     sort_order: z.ZodDefault<z.ZodNumber>;
+    /** Set when the row is a common category (expense_category_catalog): shown in the reader's language. */
+    catalog_key: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    catalog: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        name_en: z.ZodString;
+        name_he: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        name_en: string;
+        name_he: string;
+    }, {
+        name_en: string;
+        name_he: string;
+    }>>>;
     created_at: z.ZodEffects<z.ZodString, string, string>;
     updated_at: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
@@ -1094,6 +1106,11 @@ export declare const ExpenseCategorySchema: z.ZodObject<{
     updated_at: string;
     is_vat_eligible: boolean;
     is_active: boolean;
+    catalog_key?: string | null | undefined;
+    catalog?: {
+        name_en: string;
+        name_he: string;
+    } | null | undefined;
     description?: string | null | undefined;
     color?: string | null | undefined;
 }, {
@@ -1102,6 +1119,11 @@ export declare const ExpenseCategorySchema: z.ZodObject<{
     name: string;
     created_at: string;
     updated_at: string;
+    catalog_key?: string | null | undefined;
+    catalog?: {
+        name_en: string;
+        name_he: string;
+    } | null | undefined;
     sort_order?: number | undefined;
     description?: string | null | undefined;
     color?: string | null | undefined;

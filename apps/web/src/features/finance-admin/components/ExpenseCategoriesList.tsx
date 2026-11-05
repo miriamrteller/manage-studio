@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import { useExpenseCategories } from '../hooks/useExpenses';
+import { useExpenseCatalog, useExpenseCategories } from '../hooks/useExpenses';
+import { expenseCategoryName, expenseLanguage, type ExpenseCatalogItem } from '../lib/expenseCategoryName';
 
 export function ExpenseCategoriesList() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = expenseLanguage(i18n.language);
+  const catalog = useExpenseCatalog();
   const {
+    setCatalogEnabled,
+    isSwitching,
+    switchError,
     categories,
     isLoading,
     error,
@@ -44,19 +50,67 @@ export function ExpenseCategoriesList() {
   };
 
   const handleSaveEdit = () => {
-    if (!editingId || !editName.trim()) return;
+    const editingCatalog = !!categories.find((c) => c.id === editingId)?.catalog_key;
+    if (!editingId || (!editingCatalog && !editName.trim())) return;
     updateCategory(
       {
         id: editingId,
-        input: { name: editName.trim(), is_vat_eligible: editVatEligible },
+        // A common category keeps its catalogue names; only the VAT switch is edited.
+        input: editingCatalog
+          ? { is_vat_eligible: editVatEligible }
+          : { name: editName.trim(), is_vat_eligible: editVatEligible },
       },
       { onSuccess: () => setEditingId(null) },
     );
   };
 
+  const isOn = (key: string) => categories.some((c) => c.catalog_key === key && c.is_active);
+  const catalogList = (items: ExpenseCatalogItem[]) => (
+    <ul className="grid gap-2 sm:grid-cols-2">
+      {items.map((item) => {
+        const id = `expense-catalog-${item.key}`;
+        return (
+          <li key={item.key} className="flex items-center gap-2 text-sm">
+            <input
+              id={id}
+              type="checkbox"
+              role="switch"
+              checked={isOn(item.key)}
+              disabled={isSwitching || isLoading}
+              onChange={(e) => setCatalogEnabled(item, e.target.checked)}
+            />
+            <label htmlFor={id}>{lang === 'he' ? item.name_he : item.name_en}</label>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">{t('finance.categories.title')}</h1>
+
+      {(catalog.suggested.length > 0 || catalog.more.length > 0) && (
+        <section className="card p-4 space-y-4" aria-labelledby="expense-common-title">
+          <div className="space-y-1">
+            <h2 id="expense-common-title" className="font-semibold">{t('finance.categories.common_title')}</h2>
+            <p className="text-sm text-muted-foreground">{t('finance.categories.common_hint')}</p>
+          </div>
+          {catalog.suggested.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t('finance.categories.common_suggested')}</legend>
+              {catalogList(catalog.suggested)}
+            </fieldset>
+          )}
+          {catalog.more.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">{t('finance.categories.common_more')}</summary>
+              <div className="mt-2">{catalogList(catalog.more)}</div>
+            </details>
+          )}
+          {switchError && <div className="alert-error text-sm" role="alert">{switchError.message}</div>}
+        </section>
+      )}
 
       <div className="card p-4 space-y-3">
         <h2 className="font-semibold">{t('finance.categories.add')}</h2>
@@ -101,14 +155,14 @@ export function ExpenseCategoriesList() {
               {categories.map((category) => (
                 <tr key={category.id}>
                   <td className="px-3 py-2">
-                    {editingId === category.id ? (
+                    {editingId === category.id && !category.catalog_key ? (
                       <input
                         className="border rounded px-2 py-1"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                       />
                     ) : (
-                      category.name
+                      expenseCategoryName(category, lang)
                     )}
                   </td>
                   <td className="px-3 py-2">
