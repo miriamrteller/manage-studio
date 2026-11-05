@@ -18,8 +18,8 @@ export declare const TenantSchema: z.ZodObject<{
     name: z.ZodString;
     subdomain: z.ZodString;
     language: z.ZodDefault<z.ZodEnum<{
-        he: "he";
         en: "en";
+        he: "he";
     }>>;
     country: z.ZodDefault<z.ZodEnum<{
         IL: "IL";
@@ -49,8 +49,8 @@ export declare const UserProfileSchema: z.ZodObject<{
     role: z.ZodArray<z.ZodString>;
     person_id: z.ZodNullable<z.ZodString>;
     language: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
-        he: "he";
         en: "en";
+        he: "he";
     }>>>;
     country: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
         IL: "IL";
@@ -90,8 +90,8 @@ export declare const PublicOfferingSchema: z.ZodObject<{
     max_age: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     cover_image_path: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     billing_mode: z.ZodDefault<z.ZodEnum<{
-        one_time: "one_time";
         recurring: "recurring";
+        one_time: "one_time";
     }>>;
     billing_interval: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
         monthly: "monthly";
@@ -184,8 +184,8 @@ export declare const ContactPreferencesSchema: z.ZodObject<{
         voice: "voice";
     }>>;
     language: z.ZodDefault<z.ZodEnum<{
-        he: "he";
         en: "en";
+        he: "he";
     }>>;
 }, z.core.$strip>;
 export type ContactPreferences = z.infer<typeof ContactPreferencesSchema>;
@@ -270,8 +270,8 @@ export declare const OfferingSchema: z.ZodObject<{
     end_time: z.ZodOptional<z.ZodNullable<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>>;
     is_public: z.ZodDefault<z.ZodBoolean>;
     billing_mode: z.ZodDefault<z.ZodEnum<{
-        one_time: "one_time";
         recurring: "recurring";
+        one_time: "one_time";
     }>>;
     delivery_mode: z.ZodDefault<z.ZodEnum<{
         scheduled: "scheduled";
@@ -283,9 +283,9 @@ export declare const OfferingSchema: z.ZodObject<{
         annual: "annual";
     }>>>;
     status: z.ZodDefault<z.ZodEnum<{
+        full: "full";
         active: "active";
         cancelled: "cancelled";
-        full: "full";
     }>>;
     waiver_required: z.ZodDefault<z.ZodBoolean>;
     location: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -592,11 +592,11 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     }>;
     provider: z.ZodString;
     payment_method: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        other: "other";
         card: "card";
         cash: "cash";
         bank_transfer: "bank_transfer";
         bit: "bit";
-        other: "other";
     }>>>;
     paid_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     created_at: z.ZodString;
@@ -697,18 +697,18 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version: z.ZodNumber;
     version_hash: z.ZodString;
     status: z.ZodEnum<{
+        draft: "draft";
         active: "active";
         archived: "archived";
         approved: "approved";
-        draft: "draft";
     }>;
     audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
         child: "child";
         adult: "adult";
     }>>>;
     language: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
-        he: "he";
         en: "en";
+        he: "he";
     }>>>;
     lawyer_reviewed_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     created_at: z.ZodString;
@@ -720,8 +720,8 @@ export declare const WaiverSigningConsentTemplateSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
     language: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
-        he: "he";
         en: "en";
+        he: "he";
     }>>>;
     version: z.ZodNumber;
     content: z.ZodString;
