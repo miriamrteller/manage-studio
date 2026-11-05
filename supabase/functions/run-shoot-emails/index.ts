@@ -12,6 +12,7 @@
  * unset — this endpoint sends email.
  */
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   AUTOMATIC_EMAIL_TENANT_COLUMNS,
@@ -25,13 +26,8 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  const secret = Deno.env.get("CRON_SECRET") ?? "";
-  const bearer = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  if (!secret) return jsonResponse({ error: "CRON_SECRET is not configured" }, 500);
-  if (cronHeader !== secret && bearer !== `Bearer ${secret}`) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   const service = createServiceClient();
   const { data, error } = await service.rpc("list_due_shoot_emails", {});

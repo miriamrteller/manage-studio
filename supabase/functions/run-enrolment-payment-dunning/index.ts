@@ -8,19 +8,12 @@
  */
 
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { applyEnrolmentPaymentDunningStep } from "../_shared/collections/apply-enrolment-payment-dunning-step.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 100;
-
-function authorizeCron(req: Request): boolean {
-  if (!CRON_SECRET) return true;
-  const authHeader = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
-}
 
 Deno.serve(withMonitoring("run-enrolment-payment-dunning", async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,9 +23,8 @@ Deno.serve(withMonitoring("run-enrolment-payment-dunning", async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  if (!authorizeCron(req)) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   const service = createServiceClient();
   const nowIso = new Date().toISOString();

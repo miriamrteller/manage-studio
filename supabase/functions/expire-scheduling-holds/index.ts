@@ -2,7 +2,7 @@
  * expire-scheduling-holds
  *
  * Invoked by pg_cron every minute (see 003500 migration).
- * Also callable manually by admin as a POST with no body.
+ * Also callable manually as a POST with the cron secret and no body.
  *
  * Responsibilities:
  *   1. Pre-expiry reminder: email the client N minutes before a hold expires
@@ -13,16 +13,17 @@
  *   3. Optional "slot released" email when the tenant has reminders enabled.
  *
  * Security: invoked via pg_cron net.http_post with x-cron-secret header.
+ * Refuses every request when CRON_SECRET is not set.
  */
 
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 200;
 
 interface HoldRow {
@@ -80,11 +81,8 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}` && cronHeader !== CRON_SECRET) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   const service = createServiceClient();
   const nowIso = new Date().toISOString();
