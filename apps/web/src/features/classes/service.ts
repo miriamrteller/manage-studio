@@ -17,9 +17,9 @@ import { deleteOfferingCover, offeringCoverPath } from './lib/offeringImageStora
 // Validation schema for class creation/update (without system fields)
 // Aligns with DB classes table — see Migration 004 + 004100 (staff_id added)
 const ClassInputSchema = z.object({
-  season_id: z.string().uuid().optional(),
-  category_id: z.string().uuid().nullable().optional(),
-  staff_id: z.string().uuid().nullable().optional(),
+  season_id: z.string().guid().optional(),
+  category_id: z.string().guid().nullable().optional(),
+  staff_id: z.string().guid().nullable().optional(),
   name: z.string().min(1, 'Class name required').optional(),
   max_capacity: z.number().positive('Max capacity must be > 0').optional(),
   min_age: z.number().int().nonnegative().nullable().optional(),

@@ -22,7 +22,7 @@ import {
 
 const h = vi.hoisted(() => ({
   invoke: vi.fn(async () => ({ data: { outcome: 'created' }, error: null as unknown })),
-  rpc: vi.fn<[string, unknown?], Promise<{ data: unknown; error: unknown }>>(async () => ({ data: null, error: null })),
+  rpc: vi.fn<(fn: string, args?: unknown) => Promise<{ data: unknown; error: unknown }>>(async () => ({ data: null, error: null })),
   slugFree: vi.fn(async () => true),
   save: vi.fn(async () => 'f-new'),
 }));

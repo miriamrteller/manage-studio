@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { checkAndIncrementAttempt, normaliseContactPoint } from "../_shared/rate-limit.ts";
 import { isAllowedCrmOrigin } from "../_shared/crm-contract/allowed-origin.ts";
@@ -59,7 +59,7 @@ const payloadSchema = z.object({
   /** Cloudflare Turnstile token; required only when TURNSTILE_SECRET_KEY is set. */
   captchaToken: z.string().max(4096).nullable().optional(),
   /** Answers to the studio's extra questions, keyed by question key (validated below). */
-  answers: z.record(z.unknown()).nullable().optional(),
+  answers: z.record(z.string(), z.unknown()).nullable().optional(),
   /** Named form (/f/<slug>); absent for the general /inquire form. */
   formSlug: z.string().max(40).nullable().optional(),
   /** Token from an admin's "Send form" link (#invite=…): links the lead to that invite. */

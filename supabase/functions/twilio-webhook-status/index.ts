@@ -1,7 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-serve(withMonitoring("twilio-webhook-status", async (req: Request) => {
+Deno.serve(withMonitoring("twilio-webhook-status", async (req: Request) => {
   // Body fields (MessageSid, MessageStatus, ErrorCode) are not used yet.
   await req.json();
 

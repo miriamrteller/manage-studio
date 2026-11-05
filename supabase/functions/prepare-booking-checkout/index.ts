@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import {
   parsePrepareBookingCheckoutBody,
@@ -6,7 +5,7 @@ import {
 } from "../_shared/prepare-booking-checkout.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-serve(withMonitoring("prepare-booking-checkout", async (req) => {
+Deno.serve(withMonitoring("prepare-booking-checkout", async (req) => {
   const options = handleOptions(req);
   if (options) return options;
 

@@ -2,7 +2,7 @@
  * I4 provider isolation — renewals and refunds dispatch by payment/tenant provider slug.
  * Run: pnpm -C apps/web test provider-isolation-renewal-refund.test.ts
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { processBillingSchedule } from '../../../../supabase/functions/_shared/payments/renewal-billing.ts';
@@ -545,9 +545,15 @@ describe('credential RPC token invalidation (I4-T5)', () => {
 });
 
 describe('Grow regression (I4 mock DoD)', () => {
-  it('grow-renewal-charge and grow-refund test files remain importable', async () => {
-    await expect(import('./grow-renewal-charge.test.ts')).resolves.toBeDefined();
-    await expect(import('./grow-refund.test.ts')).resolves.toBeDefined();
+  // Vitest runs those files itself; importing a test file inside a test is not
+  // allowed, so check the files are there and the Grow code they test loads.
+  it('grow-renewal-charge and grow-refund tests and the Grow providers remain', async () => {
+    expect(existsSync(resolve(__dirname, 'grow-renewal-charge.test.ts'))).toBe(true);
+    expect(existsSync(resolve(__dirname, 'grow-refund.test.ts'))).toBe(true);
+    const grow = await import('../../../../supabase/functions/_shared/payments/providers/grow.ts');
+    const mockGrow = await import('../../../../supabase/functions/_shared/payments/providers/mock-grow.ts');
+    expect(grow.GrowPaymentProvider).toBeTypeOf('function');
+    expect(mockGrow.MockGrowPaymentProvider).toBeTypeOf('function');
   });
 });
 

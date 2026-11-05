@@ -115,7 +115,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
     expect(headings).toContain(baseValue('pages.jobs.payments.title'));
     for (const h of headings) expect(h).not.toMatch(/returned an object|\[object Object\]/);
     expect(document.body.textContent).not.toMatch(/returned an object/);
-    const objectWarnings = warn.mock.calls.filter((c) => String(c[0]).includes('returned an object'));
+    const objectWarnings = warn.mock.calls.filter((c: unknown[]) => String(c[0]).includes('returned an object'));
     expect(objectWarnings).toEqual([]);
   });
 

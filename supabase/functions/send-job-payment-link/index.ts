@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { loadJobPaymentRequestById } from "../_shared/jobs/load-request.ts";
@@ -12,7 +12,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
  * Each admin click is a fresh send (salted key); the request moves to `sent`.
  */
 const BodySchema = z.object({
-  request_id: z.string().uuid(),
+  request_id: z.string().guid(),
 });
 
 Deno.serve(withMonitoring("send-job-payment-link", async (req) => {

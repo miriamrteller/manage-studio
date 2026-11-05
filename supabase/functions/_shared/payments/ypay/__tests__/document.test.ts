@@ -3,7 +3,7 @@
  *
  * Run: deno test --allow-read supabase/functions/_shared/payments/ypay/__tests__/document.test.ts
  */
-import { assert, assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   buildYpayDocumentPayload,
   isRetryableYpayDocumentError,

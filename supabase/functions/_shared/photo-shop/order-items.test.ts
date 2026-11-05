@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { GalleryNotReadyError, listGalleryPhotos, mockGalleryPhotos, MOCK_PHOTO_COUNT } from "./gallery.ts";
 import { photoOrderLabel, resolveOrderItems } from "./order-items.ts";
 

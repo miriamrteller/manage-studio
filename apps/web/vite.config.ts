@@ -27,7 +27,7 @@ function denoNpmImportMap() {
   return {
     name: 'deno-npm-import-map',
     resolveId(source: string) {
-      if (source === 'npm:zod@3.22.4' || /^npm:zod@/.test(source)) {
+      if (/^npm:zod@/.test(source)) {
         return zodEntry;
       }
       if (source === 'zod') {
@@ -179,6 +179,9 @@ export default defineConfig({
     host: '0.0.0.0',
   },
   resolve: {
+    // Edge-function code under supabase/ imports react (email renderer) but has no
+    // node_modules of its own; resolve it from this app, as one copy.
+    dedupe: ['react', 'react-dom'],
     alias: [
       { find: '@shared', replacement: path.resolve(__dirname, '../../packages/shared/src') },
       { find: '@', replacement: path.resolve(__dirname, './src') },
@@ -189,7 +192,6 @@ export default defineConfig({
         replacement: path.resolve(__dirname, '../../packages/shared/src/email/render-template.ts'),
       },
       // Edge functions use Deno-style specifiers; map them to node packages for Vitest.
-      { find: 'npm:zod@3.22.4', replacement: 'zod' },
       { find: /^npm:zod(@.*)?$/, replacement: 'zod' },
       // npm:@hebcal/core is handled by the denoNpmImportMap() plugin above (it needs
       // to resolve to an absolute path, not a bare specifier — see that plugin for why).
@@ -226,8 +228,9 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./src/test/setup.ts'],
-    // Parallel workers OOM on Windows when transforming edge-function graphs.
-    threads: false,
+    // Parallel workers OOM on Windows when transforming edge-function graphs,
+    // so cap them; one file at a time made the suite ~7x slower on Vitest 5.
+    maxWorkers: 2,
     // Provide placeholder Supabase config so modules that read import.meta.env
     // at init time don't throw in the CI/Vitest environment.
     env: {

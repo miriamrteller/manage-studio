@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { formatCurrency } from "../_shared/email-dist/format.js";
@@ -19,7 +19,7 @@ import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
  * provider's payment page for the month that is due, with "save this card" on, and emails it
  * to the parent. Grow only; see _shared/payments/card-link.ts.
  */
-const BodySchema = z.object({ engagement_id: z.string().uuid() });
+const BodySchema = z.object({ engagement_id: z.string().guid() });
 
 Deno.serve(withMonitoring("send-card-link", async (req) => {
   const options = handleOptions(req);

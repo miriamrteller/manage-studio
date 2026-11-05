@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { handlePaymentDocumentInternal } from "../_shared/payments/handle-payment-document.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
@@ -14,7 +13,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
  * Idempotent: safe to replay. Duplicate calls with the same externalDocumentId are
  * detected and return { ok: true, duplicate: true } without re-uploading the PDF.
  */
-serve(withMonitoring("handle-payment-document", async (req: Request) => {
+Deno.serve(withMonitoring("handle-payment-document", async (req: Request) => {
   try {
     const body = await req.json() as Record<string, unknown>;
     const supabase = createServiceClient();

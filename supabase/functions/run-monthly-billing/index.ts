@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
@@ -13,7 +13,7 @@ const BATCH_LIMIT = 50;
 
 const BodySchema = z.object({
   mode: z.enum(["batch", "single"]).optional(),
-  schedule_id: z.string().uuid().optional(),
+  schedule_id: z.string().guid().optional(),
 });
 
 Deno.serve(withMonitoring("run-monthly-billing", async (req) => {

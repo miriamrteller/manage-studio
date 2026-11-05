@@ -150,7 +150,7 @@ export function validateOverrides(
  * Type-safe override merger with Zod validation
  * Ensures overrides are plain objects (no functions, etc.)
  */
-const OverridesSchema = z.record(z.unknown()).nullable().optional();
+const OverridesSchema = z.record(z.string(), z.unknown()).nullable().optional();
 
 export function mergeWithValidation(
   baseStrings: Record<string, unknown>,

@@ -1,5 +1,4 @@
 import { buildMarketingFooter, loadMarketingFooterContext, withAdvertisementPrefix } from "./marketing.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
@@ -104,7 +103,7 @@ interface TwilioVerifyResponse {
   date_created: string;
 }
 
-serve(withMonitoring("send-notification", async (req: Request) => {
+Deno.serve(withMonitoring("send-notification", async (req: Request) => {
   const options = handleOptions(req);
   if (options) return options;
 

@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
@@ -11,7 +11,7 @@ import { recordStandalonePayment, StandalonePaymentSchema } from "../_shared/pay
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 
 const RecordPaymentBodySchema = z.object({
-  engagement_id: z.string().uuid(),
+  engagement_id: z.string().guid(),
   method: z.enum(["cash", "bank_transfer", "bit"]),
   amount_minor: z.number().int().positive().optional(),
   note: z.string().max(500).optional(),

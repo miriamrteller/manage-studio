@@ -22,7 +22,7 @@ const isoDate = z
   .nullable();
 
 export const quoteLineSchema = z.object({
-  offering_id: z.string().uuid().nullable(),
+  offering_id: z.string().guid().nullable(),
   description: z.string().trim().min(1).max(500),
   qty: z.number().int().min(1).max(100),
   unit_price_minor: z.number().int().min(0).max(10_000_000),
@@ -33,9 +33,9 @@ export type QuoteLineDraft = z.infer<typeof quoteLineSchema>;
 
 export const quoteDraftSchema = z
   .object({
-    id: z.string().uuid().nullable(),
-    lead_id: z.string().uuid().nullable(),
-    engagement_id: z.string().uuid().nullable(),
+    id: z.string().guid().nullable(),
+    lead_id: z.string().guid().nullable(),
+    engagement_id: z.string().guid().nullable(),
     title: z.string().trim().max(200).nullable(),
     shoot_date: isoDate,
     valid_until: isoDate,
@@ -53,8 +53,8 @@ export type QuoteDraft = z.infer<typeof quoteDraftSchema>;
 
 export const publicAcceptSchema = z.object({
   token: z.string().regex(/^[0-9a-f]{64}$/),
-  tenantId: z.string().uuid(),
-  selectedLineIds: z.array(z.string().uuid()).max(100),
+  tenantId: z.string().guid(),
+  selectedLineIds: z.array(z.string().guid()).max(100),
 });
 export type PublicAcceptInput = z.infer<typeof publicAcceptSchema>;
 

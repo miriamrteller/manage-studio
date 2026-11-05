@@ -13,7 +13,7 @@ import { useDefaultClassLocation } from '../hooks/useDefaultClassLocation';
 
 const optionalUuidField = z.preprocess(
   (val) => (val === '' ? null : val),
-  z.string().uuid().nullable().optional(),
+  z.string().guid().nullable().optional(),
 );
 
 const optionalLocationField = z.preprocess(
@@ -30,7 +30,7 @@ const optionalLocationField = z.preprocess(
 
 const ClassFormSchema = z.object({
   // Empty only when the studio has no terms: the class then goes in the "Ongoing" term.
-  season_id: z.union([z.string().uuid('Term is required'), z.literal('')]),
+  season_id: z.union([z.string().guid('Term is required'), z.literal('')]),
   category_id: optionalUuidField,
   staff_id: optionalUuidField,
   name: z.string().min(1, 'Class name required'),
@@ -159,11 +159,11 @@ export function ClassForm({
   const schema = useMemo(
     () =>
       hasTerms
-        ? ClassFormSchema.extend({ season_id: z.string().uuid(t('form.class.term_required')) })
+        ? ClassFormSchema.extend({ season_id: z.string().guid(t('form.class.term_required')) })
         : ClassFormSchema,
     [hasTerms, t],
   );
-  const form = useForm<OfferingFormValues>({
+  const form = useForm<z.input<typeof ClassFormSchema>, unknown, OfferingFormValues>({
     resolver: zodResolver(schema),
     defaultValues: toFormValues(classItem, tenant?.currency || 'ILS', monthlyAllowed),
     mode: 'onBlur',

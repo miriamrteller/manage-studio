@@ -2,7 +2,7 @@
  * send-auth-email: which email each auth action gets.
  * Run: cd supabase/functions && deno test --allow-env --allow-read send-auth-email/compose.test.ts
  */
-import { assert, assertEquals, assertStringIncludes } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assert, assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { composeAuthEmail } from "./compose.ts";
 import { renderAuthMagicLinkHtml } from "../_shared/render-auth-email.ts";
 import type { TenantEmailConfig } from "../_shared/tenant-email.ts";

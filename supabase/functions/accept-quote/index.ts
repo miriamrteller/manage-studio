@@ -17,7 +17,7 @@
  * same links go into the booking confirmation, sign first, then pay. A replay
  * returns them again (a fresh, equivalent signing token; nothing is written).
  */
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
@@ -42,8 +42,8 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 
 const payloadSchema = z.object({
   token: z.string().regex(/^[0-9a-f]{64}$/),
-  tenantId: z.string().uuid(),
-  selectedLineIds: z.array(z.string().uuid()).max(100).default([]),
+  tenantId: z.string().guid(),
+  selectedLineIds: z.array(z.string().guid()).max(100).default([]),
 });
 
 Deno.serve(withMonitoring("accept-quote", async (req) => {

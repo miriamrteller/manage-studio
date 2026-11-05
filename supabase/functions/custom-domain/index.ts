@@ -14,7 +14,7 @@
  * Rules and their tests: _shared/custom-domain/service.ts. Only this function
  * writes tenant_custom_domains (service role). Feature switch: custom_domain_rollout.
  */
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";

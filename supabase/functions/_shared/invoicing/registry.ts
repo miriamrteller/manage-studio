@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 
 /** `none`: the studio issues no tax documents (e.g. not a registered business yet). */
 export const INVOICING_PROVIDER_SLUGS = ["green_invoice", "mock", "grow", "icount", "invoice4u", "ypay", "tranzila", "yesh", "takbull", "none"] as const;
