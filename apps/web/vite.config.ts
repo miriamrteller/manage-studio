@@ -147,6 +147,15 @@ function sentryUpload() {
 }
 
 // https://vitejs.dev/config/
+/** Libraries every page needs, cached apart from the app code. */
+const VENDOR_CHUNKS: [string, string[]][] = [
+  ['react-vendor', ['react', 'react-dom', 'react-router-dom', 'react-router', '@remix-run/router', 'scheduler']],
+  ['query-vendor', ['@tanstack/react-query', '@tanstack/react-query-devtools', '@tanstack/query-core']],
+  ['form-vendor', ['react-hook-form', '@hookform/resolvers', 'zod']],
+  ['i18n-vendor', ['i18next', 'react-i18next']],
+  ['ui-vendor', ['lucide-react']],
+];
+
 export default defineConfig({
   plugins: [react(), denoNpmImportMap(), ...(DEMO_MODE ? [demoMode()] : []), ...sentryUpload()],
   ...(DEMO_MODE
@@ -201,22 +210,16 @@ export default defineConfig({
     ...(DEMO_MODE ? { outDir: DEMO_STUDIO === 'ballet' ? 'dist-demo-ballet' : 'dist-demo' } : {}),
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
-          'table-vendor': ['@tanstack/react-table'],
-          'calendar-vendor': [
-            '@fullcalendar/core',
-            '@fullcalendar/daygrid',
-            '@fullcalendar/interaction',
-            '@fullcalendar/react',
-            '@fullcalendar/timegrid',
-          ],
-          'charts-vendor': ['recharts'],
-          'stripe-vendor': ['@stripe/react-stripe-js', '@stripe/stripe-js'],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'i18n-vendor': ['i18next', 'react-i18next'],
-          'ui-vendor': ['lucide-react'],
+        // Vendor chunks only for libraries every page needs. Libraries used by a
+        // few pages (charts, calendar, tables, Stripe) are left to Rollup, so they
+        // load with those pages: a vendor chunk also takes in shared helpers
+        // (clsx, react-is), which made every page load the whole chart library.
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return undefined;
+          for (const [chunk, packages] of VENDOR_CHUNKS) {
+            if (packages.some((name) => id.includes(`/node_modules/${name}/`))) return chunk;
+          }
+          return undefined;
         },
       },
     },

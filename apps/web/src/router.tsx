@@ -1,74 +1,84 @@
 import { PlatformOwnerNotice } from '@/components/PlatformOwnerNotice';
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute } from "./layouts/RouteGuards";
 import { LabelsProvider } from "./contexts/LabelsContext";
-import ClassesRoute from "./pages/ClassesRoute";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import CreateStudioPage from '@/pages/CreateStudioPage';
-import SessionHandoffPage from '@/pages/auth/SessionHandoffPage';
-import NewPasswordPage from '@/pages/auth/NewPasswordPage';
-import EmailChangedPage from '@/pages/auth/EmailChangedPage';
-import LegalPackPrintPage from '@/pages/LegalPackPrintPage';
-import DashboardRedirectPage from "./pages/DashboardRedirectPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import StudentsPage from "./pages/StudentsPage";
-import FamiliesPage from "./pages/FamiliesPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import FamilyDetailPage from "./pages/FamilyDetailPage";
-import BillingPage from "./pages/BillingPage";
-import StripeSettingsPage from "./pages/StripeSettingsPage";
-import BundledPaymentsSettingsPage from "./pages/BundledPaymentsSettingsPage";
-import PaymentSettingsPage from "./pages/PaymentSettingsPage";
-import InvoicingSettingsPage from "./pages/InvoicingSettingsPage";
-import TenantSettingsPage from "./pages/TenantSettingsPage";
-import PlatformOnboardPage from "./pages/PlatformOnboardPage";
-import PlatformFeaturesPage from "./pages/PlatformFeaturesPage";
-import SkinsPage from "./features/skins/SkinsPage";
-import FinanceWalkthroughPage from "./pages/FinanceWalkthroughPage";
-import LevelsPage from "./pages/LevelsPage";
-import TermsPage from "./pages/TermsPage";
-import AdminClassesPage from "./pages/AdminClassesPage";
-import AdminAppointmentsPage from "./pages/AdminAppointmentsPage";
-import BookingSettingsPage from "./pages/BookingSettingsPage";
-import BookingServicesPage from "./pages/BookingServicesPage";
-import GoogleCalendarCallbackPage from "./pages/GoogleCalendarCallbackPage";
-import SmugMugCallbackPage from "./pages/SmugMugCallbackPage";
-import WaiversPage from "./pages/WaiversPage";
-import BookingPage from "./pages/BookingPage";
-import PortalDashboard from "./pages/PortalDashboard";
-import { EnrolEntryRoute } from "./layouts/EnrolEntryRoute";
-import EnrolPayPage from "./pages/EnrolPayPage";
-import EnrolReturnPage from "./pages/EnrolReturnPage";
-import EnrolCompletePage from "./pages/EnrolCompletePage";
-import PayRequestPage from "./pages/PayRequestPage";
-import NotFoundPage from "./pages/NotFoundPage";
 import { StudioHostGate } from "./layouts/StudioHostGate";
-import FinanceHubPage from "./pages/FinanceHubPage";
-import PaymentsLogPage from "./pages/PaymentsLogPage";
-import ExpensesPage from "./pages/ExpensesPage";
-import ExpenseCategoriesPage from "./pages/ExpenseCategoriesPage";
-import LeadsPage from "./pages/LeadsPage";
-import JobsPage from "./pages/JobsPage";
-import JobDetailPage from "./pages/JobDetailPage";
-import InquirePage from "./pages/InquirePage";
-import EmbedInquirePage, { EmbedNamedFormPage } from "./pages/EmbedInquirePage";
-import NamedFormPage from "./pages/NamedFormPage";
-import LeadFormsPage from "./pages/LeadFormsPage";
-import LeadsHelpPage from "./pages/LeadsHelpPage";
-import GetLeadsPage from "./pages/GetLeadsPage";
-import AdminQuotesPage from "./pages/AdminQuotesPage";
-import AdminQuoteEditorPage from "./pages/AdminQuoteEditorPage";
-import QuotePage from "./pages/QuotePage";
-import LegalPage from "./pages/LegalPage";
-import UnsubscribePage from "./pages/UnsubscribePage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { RouteErrorFallback } from "./components/RouteErrorFallback";
 import { MonitoringContextSync } from "./lib/monitoring/MonitoringContextSync";
 import { StudioFavicon } from "./components/StudioFavicon";
+import { RouteLoading } from "./components/RouteLoading";
+
+// Pages load on demand, so a visitor downloads only the area they open
+// (a parent on an enrolment link never downloads the admin or finance pages).
+const ClassesRoute = lazy(() => import("./pages/ClassesRoute"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const CreateStudioPage = lazy(() => import("@/pages/CreateStudioPage"));
+const SessionHandoffPage = lazy(() => import("@/pages/auth/SessionHandoffPage"));
+const NewPasswordPage = lazy(() => import("@/pages/auth/NewPasswordPage"));
+const EmailChangedPage = lazy(() => import("@/pages/auth/EmailChangedPage"));
+const LegalPackPrintPage = lazy(() => import("@/pages/LegalPackPrintPage"));
+const DashboardRedirectPage = lazy(() => import("./pages/DashboardRedirectPage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const StudentsPage = lazy(() => import("./pages/StudentsPage"));
+const FamiliesPage = lazy(() => import("./pages/FamiliesPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const FamilyDetailPage = lazy(() => import("./pages/FamilyDetailPage"));
+const BillingPage = lazy(() => import("./pages/BillingPage"));
+const StripeSettingsPage = lazy(() => import("./pages/StripeSettingsPage"));
+const BundledPaymentsSettingsPage = lazy(() => import("./pages/BundledPaymentsSettingsPage"));
+const PaymentSettingsPage = lazy(() => import("./pages/PaymentSettingsPage"));
+const InvoicingSettingsPage = lazy(() => import("./pages/InvoicingSettingsPage"));
+const TenantSettingsPage = lazy(() => import("./pages/TenantSettingsPage"));
+const PlatformOnboardPage = lazy(() => import("./pages/PlatformOnboardPage"));
+const PlatformFeaturesPage = lazy(() => import("./pages/PlatformFeaturesPage"));
+const SkinsPage = lazy(() => import("./features/skins/SkinsPage"));
+const FinanceWalkthroughPage = lazy(() => import("./pages/FinanceWalkthroughPage"));
+const LevelsPage = lazy(() => import("./pages/LevelsPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+const AdminClassesPage = lazy(() => import("./pages/AdminClassesPage"));
+const AdminAppointmentsPage = lazy(() => import("./pages/AdminAppointmentsPage"));
+const BookingSettingsPage = lazy(() => import("./pages/BookingSettingsPage"));
+const BookingServicesPage = lazy(() => import("./pages/BookingServicesPage"));
+const GoogleCalendarCallbackPage = lazy(() => import("./pages/GoogleCalendarCallbackPage"));
+const SmugMugCallbackPage = lazy(() => import("./pages/SmugMugCallbackPage"));
+const WaiversPage = lazy(() => import("./pages/WaiversPage"));
+const BookingPage = lazy(() => import("./pages/BookingPage"));
+const PortalDashboard = lazy(() => import("./pages/PortalDashboard"));
+const EnrolEntryRoute = lazy(() => import("./layouts/EnrolEntryRoute").then((m) => ({ default: m.EnrolEntryRoute })));
+const EnrolPayPage = lazy(() => import("./pages/EnrolPayPage"));
+const EnrolReturnPage = lazy(() => import("./pages/EnrolReturnPage"));
+const EnrolCompletePage = lazy(() => import("./pages/EnrolCompletePage"));
+const PayRequestPage = lazy(() => import("./pages/PayRequestPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+const FinanceHubPage = lazy(() => import("./pages/FinanceHubPage"));
+const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
+const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
+const ExpenseCategoriesPage = lazy(() => import("./pages/ExpenseCategoriesPage"));
+const LeadsPage = lazy(() => import("./pages/LeadsPage"));
+const JobsPage = lazy(() => import("./pages/JobsPage"));
+const JobDetailPage = lazy(() => import("./pages/JobDetailPage"));
+const InquirePage = lazy(() => import("./pages/InquirePage"));
+const EmbedInquirePage = lazy(() => import("./pages/EmbedInquirePage"));
+const EmbedNamedFormPage = lazy(() => import("./pages/EmbedInquirePage").then((m) => ({ default: m.EmbedNamedFormPage })));
+const NamedFormPage = lazy(() => import("./pages/NamedFormPage"));
+const LeadFormsPage = lazy(() => import("./pages/LeadFormsPage"));
+const LeadsHelpPage = lazy(() => import("./pages/LeadsHelpPage"));
+const GetLeadsPage = lazy(() => import("./pages/GetLeadsPage"));
+const AdminQuotesPage = lazy(() => import("./pages/AdminQuotesPage"));
+const AdminQuoteEditorPage = lazy(() => import("./pages/AdminQuoteEditorPage"));
+const QuotePage = lazy(() => import("./pages/QuotePage"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
+const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage"));
+
+function Page({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<RouteLoading />}>{children}</Suspense>;
+}
 
 function RootLayout() {
   return (
@@ -78,7 +88,9 @@ function RootLayout() {
         <LabelsProvider>
           <AppLayout>
             <MonitoringContextSync />
-            <Outlet />
+            <Page>
+              <Outlet />
+            </Page>
           </AppLayout>
         </LabelsProvider>
       </StudioHostGate>
@@ -90,27 +102,33 @@ const router = createBrowserRouter([
   {
     path: '/auth/callback',
     element: (
-      <LanguageProvider>
-        <AuthCallbackPage />
-      </LanguageProvider>
+      <Page>
+        <LanguageProvider>
+          <AuthCallbackPage />
+        </LanguageProvider>
+      </Page>
     ),
   },
   // Login-email change confirmations land here (through /auth/callback).
   {
     path: '/auth/email-changed',
     element: (
-      <LanguageProvider>
-        <EmailChangedPage />
-      </LanguageProvider>
+      <Page>
+        <LanguageProvider>
+          <EmailChangedPage />
+        </LanguageProvider>
+      </Page>
     ),
   },
   // "Forgot password?" emails land here (through /auth/callback, which signs the person in).
   {
     path: '/auth/new-password',
     element: (
-      <LanguageProvider>
-        <NewPasswordPage />
-      </LanguageProvider>
+      <Page>
+        <LanguageProvider>
+          <NewPasswordPage />
+        </LanguageProvider>
+      </Page>
     ),
   },
   // Self-serve studio signup (free beta) on app.opalswift.com. Off unless
@@ -119,39 +137,43 @@ const router = createBrowserRouter([
   {
     path: '/create-studio',
     element: (
-      <LanguageProvider>
-        <CreateStudioPage />
-      </LanguageProvider>
+      <Page>
+        <LanguageProvider>
+          <CreateStudioPage />
+        </LanguageProvider>
+      </Page>
     ),
   },
   // Enquiry form for an iframe on the studio's own site: no app chrome. The
   // only framable path (public/_headers, /embed/*).
   {
     path: '/embed/inquire',
-    element: <EmbedInquirePage />,
+    element: <Page><EmbedInquirePage /></Page>,
     errorElement: <RouteErrorFallback />,
   },
   // The studio's legal pack as one printable page (Save as PDF), on any host.
   {
     path: '/legal-pack/print',
     element: (
-      <LanguageProvider>
-        <LegalPackPrintPage />
-      </LanguageProvider>
+      <Page>
+        <LanguageProvider>
+          <LegalPackPrintPage />
+        </LanguageProvider>
+      </Page>
     ),
   },
   {
     path: '/embed/f/:slug',
-    element: <EmbedNamedFormPage />,
+    element: <Page><EmbedNamedFormPage /></Page>,
     errorElement: <RouteErrorFallback />,
   },
   {
     path: '/auth/session-handoff',
-    element: <SessionHandoffPage />,
+    element: <Page><SessionHandoffPage /></Page>,
   },
   {
     path: '/platform-owner',
-    element: <PlatformOwnerNotice />,
+    element: <Page><PlatformOwnerNotice /></Page>,
   },
   {
     path: '/',
