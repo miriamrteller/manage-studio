@@ -5,6 +5,8 @@ import './fonts'
 import './index.css'
 import { initMonitoring } from './lib/monitoring'
 import { enforceInactivityOnLoad } from './lib/inactivity/enforceOnLoad'
+import { isDevPickerActive, readDevStudioChoice } from './lib/devStudioPicker'
+import { DevSiteBar, DevStudioPickerPage } from './components/DevStudioPicker'
 
 initMonitoring()
 
@@ -13,10 +15,20 @@ if (!rootElement) throw new Error('Root element not found')
 
 // A browser reopened after a long break still holds a valid saved session. Sign it out BEFORE
 // anything is drawn, so no signed-in page flashes up. Normally this returns at once.
+// The dev website (one address, studio picked from a list) shows the picker until a studio is
+// chosen, then a thin bar above the app. Live builds never have the picker (devStudioPicker.ts).
+const devPicker = isDevPickerActive()
 const renderApp = () =>
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      {devPicker && !readDevStudioChoice() ? (
+        <DevStudioPickerPage />
+      ) : (
+        <>
+          {devPicker && <DevSiteBar />}
+          <App />
+        </>
+      )}
     </React.StrictMode>,
   )
 
