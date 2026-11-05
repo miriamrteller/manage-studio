@@ -5,7 +5,8 @@
  * link DUE_SOON_DAYS before due_date and one overdue reminder afterwards, for
  * every collectable job payment request. Idempotent per request/kind.
  */
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   applyJobPaymentReminderStep,
@@ -15,20 +16,13 @@ import {
 import { JOB_PAYMENT_REQUEST_COLUMNS, type JobPaymentRequestRow } from "../_shared/jobs/load-request.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 200;
-
-function authorizeCron(req: Request): boolean {
-  if (!CRON_SECRET) return true;
-  const authHeader = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
-}
 
 Deno.serve(withMonitoring("run-job-payment-reminders", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
-  if (!authorizeCron(req)) return jsonResponse({ error: "Unauthorized" }, 401);
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   const service = createServiceClient();
   const todayIso = todayInJerusalem();
@@ -46,7 +40,7 @@ Deno.serve(withMonitoring("run-job-payment-reminders", async (req) => {
 
   if (error) {
     console.error("[run-job-payment-reminders] fetch error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return internalError("run-job-payment-reminders", error);
   }
 
   const results: Record<string, string[]> = { reminded: [], skipped: [], errors: [] };

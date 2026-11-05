@@ -10,7 +10,8 @@
  *
  * Auth: x-cron-secret / Bearer CRON_SECRET. Fails closed when unset.
  */
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
@@ -29,12 +30,8 @@ interface Admin {
 
 Deno.serve(withMonitoring("run-lead-followup-digest", async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
-  const secret = Deno.env.get("CRON_SECRET") ?? "";
-  if (!secret) return jsonResponse({ error: "CRON_SECRET is not configured" }, 500);
-  const bearer = req.headers.get("authorization") ?? "";
-  if (req.headers.get("x-cron-secret") !== secret && bearer !== `Bearer ${secret}`) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
   const rootDomain = Deno.env.get("APP_ROOT_DOMAIN")?.trim();
   if (!rootDomain) return jsonResponse({ error: "APP_ROOT_DOMAIN is not configured" }, 500);
 
@@ -53,7 +50,7 @@ Deno.serve(withMonitoring("run-lead-followup-digest", async (req) => {
     .not("stage", "in", "(won,lost)")
     .order("next_follow_up_at", { ascending: true })
     .limit(10000);
-  if (leadError) return jsonResponse({ error: leadError.message }, 500);
+  if (leadError) return internalError("run-lead-followup-digest", leadError);
 
   const byTenant = new Map<string, DigestLead[]>();
   for (const row of (leadRows ?? []) as Array<DigestLead & { tenant_id: string }>) {

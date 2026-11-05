@@ -17,3 +17,13 @@ export function handleOptions(req: Request): Response | null {
   }
   return null;
 }
+
+/**
+ * A 500 for an unexpected failure (usually a database error). The details go to
+ * the function log only: database messages name tables and columns, so the
+ * caller gets the same plain "Internal error" as an unhandled throw.
+ */
+export function internalError(where: string, err: unknown): Response {
+  console.error(`[${where}]`, err);
+  return jsonResponse({ error: "Internal error" }, 500);
+}

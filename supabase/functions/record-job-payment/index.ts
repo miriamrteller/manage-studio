@@ -1,5 +1,5 @@
 import { z } from "npm:zod@3.22.4";
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
 import { paidAtFor } from "../_shared/payments/paid-on.ts";
@@ -117,7 +117,7 @@ Deno.serve(withMonitoring("record-job-payment", async (req) => {
     .select("id")
     .single();
   if (insertError || !paymentRow) {
-    return jsonResponse({ error: insertError?.message ?? "Insert failed" }, 500);
+    return internalError("record-job-payment", insertError ?? "Insert failed");
   }
 
   const marked = await markJobPaymentRequestPaid(service, {

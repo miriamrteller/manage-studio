@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { extractWaiverToken, verifyWaiverToken } from "../_shared/waiver-token.ts";
 import {
@@ -36,6 +36,6 @@ Deno.serve(withMonitoring("get-enrolment-completion", async (req) => {
     return jsonResponse(flattenCompletionContext(result.context));
   } catch (err) {
     console.error("[get-enrolment-completion]", err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("get-enrolment-completion", err);
   }
 }));
