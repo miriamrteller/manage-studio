@@ -30,7 +30,7 @@ This DPA is written to meet the Privacy Protection Law 5741-1981 as amended by A
 - OpalSwift applies the security measures in its **Information Security Procedure** ([11-security-procedure.en.md](11-security-procedure.en.md)) and at least the measures required for a database at the **medium security level** (רמת אבטחה בינונית) under the Data Security Regulations, because Studio databases may hold health data. The Studio is responsible for the level that applies to its own database and for its own users, devices and passwords. ([[LAWYER: confirm level per regulation 1 and the First Schedule]].)
 - Key measures: tenant isolation enforced in the database (row-level security), least-privilege server functions, encryption in transit (HTTPS/TLS) and at rest (provider-level), separate encryption of provider credentials, signed and sealed waiver records, an audit log of sensitive actions, nightly encrypted backups, and restricted administrative access.
 - People who access Studio data on OpalSwift's behalf are bound by confidentiality and receive only the access they need. (A regulation 15 agreement item.)
-- **Platform-owner access log.** Access by OpalSwift's platform owner (super-admin) to Studio data — opening a Studio page, or inserting, changing or deleting a record — is recorded automatically with the time, the kind of access and the area, without personal data values. The Studio sees its own log in **Settings → Security → OpalSwift access**. Entries are append-only and kept for 24 months. Service tasks that run without a signed-in person (backups, scheduled jobs) are not logged.
+- **Platform-owner access log.** Access by OpalSwift's platform owner (super-admin) to Studio data — opening a Studio page, or inserting, changing or deleting a record — is recorded automatically with the time, the kind of access and the area, without personal data values. The Studio sees its own log in **Settings → Sign-in & security → OpalSwift access**. Entries are append-only and kept for 24 months. Service tasks that run without a signed-in person (backups, scheduled jobs) are not logged.
 
 ## 4. Sub-processors
 
@@ -85,6 +85,9 @@ If this DPA and the Platform Terms conflict, this DPA governs on data-protection
 **Language.** This document is published in English and Hebrew. If the two versions differ, the English version prevails.
 
 ---
+
+### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
+- [[LAWYER: confirm]] Menu name only: "Settings → Security" is now "Settings → Sign-in & security" (the tab was renamed). Nothing else changed. (Platform-owner access log.)
 
 ### Sources relied on
 - Privacy Protection Law 5741-1981, as amended by Amendment 13 (Privacy Protection (Amendment No. 13) Law 5784-2024, in force 14 August 2025): definitions of controller and holder (מחזיק); §17 (holder's duty for security); "information of special sensitivity" (includes health data). *Section numbers after Amendment 13: verify with lawyer.*

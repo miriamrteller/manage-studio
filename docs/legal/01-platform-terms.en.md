@@ -44,7 +44,7 @@ We may improve, change or remove features. If a change materially reduces a feat
 - For that data **you are the controller** (בעל השליטה במאגר) and **OpalSwift is a processor / holder** (מחזיק) acting on your instructions. The [Data Processing Agreement](02-dpa.en.md) is part of these terms and governs how we handle it.
 - For your own account details (name, email, login and billing data of studio admins), OpalSwift is the controller under the [OpalSwift Privacy Policy](04-opalswift-privacy-policy.en.md).
 - You are responsible for having a lawful basis and the right notices and consents for the data you put into the Platform, including: giving your clients a privacy notice (a [template is provided](03-studio-privacy-policy.en.md)), getting a guardian's consent for children's data and photos, getting separate consent for marketing messages, and keeping health data only as needed.
-- **OpalSwift access to your data.** When the OpalSwift platform team opens or changes your studio's data (for example, for support), it is recorded in a log you can see in **Settings → Security → OpalSwift access**. Entries are kept for 2 years and cannot be edited.
+- **OpalSwift access to your data.** When the OpalSwift platform team opens or changes your studio's data (for example, for support), it is recorded in a log you can see in **Settings → Sign-in & security → OpalSwift access**. Entries are kept for 2 years and cannot be edited.
 
 ## 5. Acceptable use
 
@@ -105,6 +105,7 @@ These terms, the DPA and any order form are the whole agreement. If a clause is 
 
 ### Awaiting lawyer review (see [AWAITING-LAWYER-REVIEW](AWAITING-LAWYER-REVIEW.md))
 - [[LAWYER: confirm]] Operator identity removed at the owner's request; OpalSwift is about to be registered. Add the registered business name and number here on registration.
+- [[LAWYER: confirm]] Menu name only: "Settings → Security" is now "Settings → Sign-in & security" (the tab was renamed). Nothing else changed. (section on OpalSwift access to your data.)
 
 ### Sources relied on
 - Standard Contracts Law 5743-1982, §§3–4 (unfair terms in standard contracts; liability exemptions are presumed unfair). Relevant because these are standard terms; keep the liability cap reasonable. *Verify with lawyer whether a studio that is a small unregistered individual could be treated as a "customer" under that law (it applies to business customers too).*
