@@ -15,12 +15,12 @@
  * If >100 records are found, it logs a warning — schedule should be made more
  * frequent or batch size increased.
  *
- * Security: This function may be invoked via pg_cron net.http_post with no auth
- * header.  It checks for CRON_SECRET env var.  Set via:
- *   supabase secrets set CRON_SECRET=<random-string>
+ * Security: invoked via pg_cron net.http_post with the x-cron-secret header.
+ * Refuses every request when CRON_SECRET is not set.
  */
 
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   sendRenderedEmail,
@@ -34,7 +34,6 @@ import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const BATCH_LIMIT = 100;
 
 interface PendingEngagement {
@@ -83,16 +82,8 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  // Validate cron secret
-  const authHeader = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  if (
-    CRON_SECRET &&
-    authHeader !== `Bearer ${CRON_SECRET}` &&
-    cronHeader !== CRON_SECRET
-  ) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   const service = createServiceClient();
   const now = new Date();
@@ -114,7 +105,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
 
   if (fetchError) {
     console.error("[send-waiver-reminder] fetch error:", fetchError);
-    return jsonResponse({ error: fetchError.message }, 500);
+    return internalError("send-waiver-reminder", fetchError);
   }
 
   const rows = (engagements ?? []) as unknown as PendingEngagement[];

@@ -13,7 +13,7 @@
  * Failure policy: if the tenant is connected but free/busy fails after one retry,
  * we FAIL CLOSED (drop all slots for the window) to minimise double-booking risk.
  */
-import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { freeBusy, getValidAccessToken, type BusyInterval } from "../_shared/google-calendar.ts";
 import { filterHolidayDates } from "../_shared/holidays.ts";
@@ -111,7 +111,7 @@ Deno.serve(withMonitoring("get-available-slots", async (req) => {
     .select("session_date")
     .eq("offering_id", body.offering_id)
     .in("session_date", dates);
-  if (overrideError) return jsonResponse({ error: overrideError.message }, 500);
+  if (overrideError) return internalError("get-available-slots", overrideError);
 
   const overrideDates = (overrideRows ?? []).map(
     (row: { session_date: string }) => String(row.session_date).slice(0, 10),
@@ -130,7 +130,7 @@ Deno.serve(withMonitoring("get-available-slots", async (req) => {
   );
 
   for (const { error } of dayResults) {
-    if (error) return jsonResponse({ error: error.message }, 500);
+    if (error) return internalError("get-available-slots", error);
   }
 
   let slots = dayResults.flatMap(({ data }) => (data ?? []) as Slot[]);

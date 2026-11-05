@@ -65,6 +65,7 @@ function job(overrides: Partial<JobRow> = {}): JobRow {
     price_minor: 500000,
     currency: 'ILS',
     contract_signed_at: null,
+    contract_pdf_pending: false,
     ...overrides,
   };
 }

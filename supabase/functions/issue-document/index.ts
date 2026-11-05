@@ -11,7 +11,8 @@
 //      ); $$
 // );
 import { z } from "npm:zod@3.22.4";
-import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
+import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { DOCUMENT_BATCH_SIZE } from "../_shared/invoicing/backoff.ts";
 import {
@@ -21,8 +22,6 @@ import {
 } from "../_shared/invoicing/process-queue-row.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
-
 const IssueDocumentBodySchema = z.object({
   mode: z.literal("batch").optional(),
   queue_id: z.string().uuid().optional(),
@@ -30,21 +29,13 @@ const IssueDocumentBodySchema = z.object({
   document_kind: z.enum(["sale", "refund"]).optional(),
 });
 
-function authorizeCron(req: Request): boolean {
-  if (!CRON_SECRET) return true;
-  const authHeader = req.headers.get("authorization") ?? "";
-  const cronHeader = req.headers.get("x-cron-secret") ?? "";
-  return authHeader === `Bearer ${CRON_SECRET}` || cronHeader === CRON_SECRET;
-}
-
 Deno.serve(withMonitoring("issue-document", async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  if (!authorizeCron(req)) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
-  }
+  const denied = rejectUnlessCron(req);
+  if (denied) return denied;
 
   let body: z.infer<typeof IssueDocumentBodySchema> = {};
   try {
@@ -82,7 +73,7 @@ Deno.serve(withMonitoring("issue-document", async (req) => {
       .limit(DOCUMENT_BATCH_SIZE);
 
     if (error) {
-      return jsonResponse({ error: error.message }, 500);
+      return internalError("issue-document", error);
     }
 
     for (const row of (dueRows ?? []) as QueueRow[]) {

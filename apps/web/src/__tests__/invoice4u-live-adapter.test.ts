@@ -75,7 +75,7 @@ describe('invoice4u client — request and error handling', () => {
     const payload = await invoice4uPost('ProcessApiRequestV2', { request: { Sum: 1 } });
 
     expect(payload.ClearingRedirectUrl).toBe('https://pay');
-    const [url, init] = fetchMock.mock.calls[0] as [string, FetchInit];
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, FetchInit];
     expect(url).toBe(`${QA_BASE}/ProcessApiRequestV2`);
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({ request: { Sum: 1 } });
@@ -211,7 +211,7 @@ describe('callback verification', () => {
     const now = new Date('2026-07-21T12:00:00.000Z');
     await verifyInvoice4uPaymentSucceeded({ apiKey, paymentId: 'pay-1', now });
 
-    const [, init] = fetchMock.mock.calls[0] as [string, FetchInit];
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, FetchInit];
     const body = JSON.parse(init.body as string);
     expect(body.token).toBe(apiKey);
     expect(body.searchParams.IsSuccess).toBe(true);

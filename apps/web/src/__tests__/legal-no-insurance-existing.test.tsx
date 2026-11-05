@@ -41,7 +41,7 @@ import { formsMissingNoInsuranceNote, withNoInsuranceNote } from '@/legal/noInsu
 import { NoInsuranceFormUpdate } from '@/components/legal/NoInsuranceFormUpdate';
 import { NoInsuranceSendReminder } from '@/components/legal/NoInsuranceSendReminder';
 import { SendAdminWaiverLinkModal } from '@/features/enrolment/components/SendAdminWaiverLinkModal';
-import type { Tenant } from '@shared/schemas';
+import type { ConsentTemplate, Tenant } from '@shared/schemas';
 
 const ctx = (lang: 'he' | 'en', profile: Record<string, string>) => ({
   lang,
@@ -55,7 +55,7 @@ const healthForm = (lang: 'he' | 'en', profile: Record<string, string> = {}) =>
 /** A form stored before the no-insurance sentence existed (as an insured studio's form reads). */
 function stored(lang: 'he' | 'en', profile: Record<string, string> = { insurance_status: 'insured' }) {
   const f = healthForm(lang, profile);
-  return { id: `${lang}-1`, name: f.name, content: f.content, status: 'active', language: lang, audience: f.audience };
+  return { id: `${lang}-1`, name: f.name, content: f.content, status: 'active' as ConsentTemplate['status'], language: lang, audience: f.audience };
 }
 
 function wrap(node: ReactNode) {
@@ -108,7 +108,7 @@ describe('adding the sentence to a stored health declaration', () => {
   });
 
   it('only active forms are offered', () => {
-    const forms = [stored('en'), { ...stored('he'), status: 'archived' }];
+    const forms = [stored('en'), { ...stored('he'), status: 'archived' as const }];
     expect(formsMissingNoInsuranceNote(forms).map((f) => f.id)).toEqual(['en-1']);
   });
 });

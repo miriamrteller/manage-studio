@@ -10,7 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeFakeSupabase } from '../test/fakeSupabase';
 
-const sendHtmlEmail = vi.fn(async () => ({ id: 'msg-1' }));
+const sendHtmlEmail = vi.fn(async (..._args: unknown[]) => ({ id: 'msg-1' }));
 vi.mock('../../../../supabase/functions/_shared/email-client.ts', () => ({
   sendHtmlEmail: (...args: unknown[]) => sendHtmlEmail(...args),
 }));

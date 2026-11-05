@@ -16,7 +16,7 @@ function createMockService(handlers: {
     from(table: string) {
       const chain = {
         select: () => chain,
-        eq: (column: string, value: string) => {
+        eq: (_column: string, value: string) => {
           if (table === "people" && handlers.people?.[value]) {
             return {
               eq: () => ({

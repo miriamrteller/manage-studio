@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { resolveEnrolmentNotificationRecipient } from "../_shared/enrolment-recipient.ts";
@@ -225,6 +225,6 @@ Deno.serve(withMonitoring("send-admin-waiver-link", async (req) => {
     });
   } catch (err) {
     console.error("[send-admin-waiver-link]", err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("send-admin-waiver-link", err);
   }
 }));

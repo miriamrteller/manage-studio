@@ -33,7 +33,9 @@ import { InfoTip } from '@/components/ui/InfoTip';
 import LeadsHelpPage from '@/pages/LeadsHelpPage';
 
 beforeEach(() => window.localStorage.clear());
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const renderChecklist = (leadCount = 0) =>
   render(

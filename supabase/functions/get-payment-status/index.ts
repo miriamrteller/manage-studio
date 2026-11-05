@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { extractWaiverToken, verifyWaiverToken } from "../_shared/waiver-token.ts";
 import { resolveAllowedTokenRecipientEmails } from "../_shared/token-recipient.ts";
@@ -101,6 +101,6 @@ Deno.serve(withMonitoring("get-payment-status", async (req) => {
     return jsonResponse({ paid: false, failureReason });
   } catch (err) {
     console.error("[get-payment-status]", err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("get-payment-status", err);
   }
 }));

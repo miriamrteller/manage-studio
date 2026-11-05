@@ -104,7 +104,7 @@ describe('check-requirements', () => {
     });
 
     it('does not filter when no class has age bands', () => {
-      const noBands = [{ id: 'a' }, { id: 'b' }];
+      const noBands = [{ id: 'a', min_age: null }, { id: 'b', min_age: null }];
       const { ageFilteringActive } = filterClassesByAge(noBands, {
         date_of_birth: '2020-01-01',
       });
