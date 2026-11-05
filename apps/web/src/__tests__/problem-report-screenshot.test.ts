@@ -6,7 +6,7 @@ const sdk = vi.hoisted(() => ({
   addEventProcessor: vi.fn(),
   breadcrumbsIntegration: vi.fn(),
   captureException: vi.fn(),
-  captureFeedback: vi.fn(() => 'feedback-1'),
+  captureFeedback: vi.fn((..._args: unknown[]) => 'feedback-1'),
   lastEventId: vi.fn(() => 'evt-last'),
   setTag: vi.fn(),
   setUser: vi.fn(),

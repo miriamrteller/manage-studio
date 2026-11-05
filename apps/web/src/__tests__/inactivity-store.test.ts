@@ -12,7 +12,9 @@ import {
 import { INACTIVITY_LIMIT_MINUTES, INACTIVITY_LIMIT_MS } from '@/lib/inactivity/config';
 
 beforeEach(() => localStorage.clear());
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('the limit', () => {
   it('is one hour, set in one place', () => {

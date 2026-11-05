@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { makeFakeSupabase } from '../test/fakeSupabase';
 
-const finalise = vi.fn(async () => undefined);
+const finalise = vi.fn(async (..._args: unknown[]) => undefined);
 vi.mock('../../../../supabase/functions/_shared/payments/finalise-payment.ts', () => ({
   finalisePayment: (...args: unknown[]) => finalise(...args),
 }));

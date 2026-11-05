@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), func
 const state = vi.hoisted(() => ({
   flag: true,
   status: { hasKeys: false, connected: false, keysUpdatedAt: null, connectedAt: null } as SmugMugStatus,
-  saveKeys: vi.fn(async () => undefined),
+  saveKeys: vi.fn(async (_key: string, _secret: string) => undefined),
   test: vi.fn(async () => 'keys' as const),
   disconnect: vi.fn(async () => undefined),
 }));

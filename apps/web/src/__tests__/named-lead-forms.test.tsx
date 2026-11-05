@@ -78,7 +78,9 @@ function wrap(ui: ReactNode, url: string, path = '*') {
   );
 }
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('shared rules', () => {
   it.each([

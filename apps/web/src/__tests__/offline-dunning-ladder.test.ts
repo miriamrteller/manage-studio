@@ -19,7 +19,9 @@ import { renderPaymentReminderHtml } from '../../../../supabase/functions/_share
 const CREATED = '2026-06-01T10:00:00.000Z';
 const day = (n: number) => new Date(Date.parse(jerusalemMidnightIso('2026-06-01')) + n * 86400000 + 3600000);
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('dunning ladders: 30 days offline vs 14 days card', () => {
   it('picks the ladder from the payment provider', () => {

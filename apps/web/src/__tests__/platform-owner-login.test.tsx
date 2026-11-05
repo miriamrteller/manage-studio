@@ -41,7 +41,9 @@ beforeEach(() => {
   vi.stubEnv('VITE_APP_ROOT_DOMAIN', 'opalswift.com');
   h.signInWithOtp.mockClear();
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('who may sign in from which host', () => {
   it('platform host: no account is created from the sign-in page (the owner already has one; the app does not know who the owner is)', () => {
@@ -69,7 +71,7 @@ describe('useLogin on the platform host', () => {
     setHostname('app.opalswift.com');
     const { result } = renderHook(() => useLogin(), { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> });
     await act(async () => {
-      await result.current.onSubmit({ email: 'owner@example.test' } as unknown as FormData, 'magic_link');
+      await result.current.onSubmit({ email: 'owner@example.test' } as unknown as Parameters<ReturnType<typeof useLogin>['onSubmit']>[0], 'magic_link');
     });
     expect(h.signInWithOtp).toHaveBeenCalledWith({
       email: 'owner@example.test',
@@ -86,7 +88,7 @@ describe('useLogin on the platform host', () => {
     setHostname('app.opalswift.com');
     const { result } = renderHook(() => useLogin(), { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> });
     await act(async () => {
-      await result.current.onSubmit({ email: 'someone@example.com' } as unknown as FormData, 'magic_link');
+      await result.current.onSubmit({ email: 'someone@example.com' } as unknown as Parameters<ReturnType<typeof useLogin>['onSubmit']>[0], 'magic_link');
     });
     expect(h.signInWithOtp).toHaveBeenCalledWith(
       expect.objectContaining({ options: expect.objectContaining({ shouldCreateUser: false }) }),
