@@ -10,7 +10,7 @@
  * Authorization: Bearer <supabase session> (tenant admin)
  * Body: { engagementId, recipientEmail }
  */
-import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { corsHeaders, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../_shared/email-send.ts";
@@ -184,6 +184,6 @@ Deno.serve(withMonitoring("send-job-contract-link", async (req) => {
     return jsonResponse({ ok: true, emailSent: true, recipientEmail, expiresAt: new Date(expireAt * 1000).toISOString() });
   } catch (err) {
     console.error("[send-job-contract-link]", err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("send-job-contract-link", err);
   }
 }));

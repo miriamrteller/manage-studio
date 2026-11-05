@@ -60,7 +60,7 @@ Deno.serve(withMonitoring("save-enrolment-resume", async (req) => {
     return jsonResponse({ success: true });
   } catch (err) {
     console.error("[save-enrolment-resume]", err instanceof Error ? err.message : err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("save-enrolment-resume", err);
   }
 }));
 

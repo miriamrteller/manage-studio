@@ -24,7 +24,7 @@ Deno.serve(withMonitoring("clear-enrolment-resume", async (req) => {
     return jsonResponse({ success: true });
   } catch (err) {
     console.error("[clear-enrolment-resume]", err instanceof Error ? err.message : err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Internal error" }, 500);
+    return internalError("clear-enrolment-resume", err);
   }
 }));
 
