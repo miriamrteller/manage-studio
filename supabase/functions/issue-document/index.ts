@@ -10,7 +10,7 @@
 //        body := '{"mode":"batch"}'::jsonb
 //      ); $$
 // );
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { DOCUMENT_BATCH_SIZE } from "../_shared/invoicing/backoff.ts";
@@ -25,8 +25,8 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
 const IssueDocumentBodySchema = z.object({
   mode: z.literal("batch").optional(),
-  queue_id: z.string().uuid().optional(),
-  payment_id: z.string().uuid().optional(),
+  queue_id: z.string().guid().optional(),
+  payment_id: z.string().guid().optional(),
   document_kind: z.enum(["sale", "refund"]).optional(),
 });
 

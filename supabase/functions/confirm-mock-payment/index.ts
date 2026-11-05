@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { resolveCheckoutSession } from "../_shared/checkout-session.ts";
 import {
@@ -10,8 +10,8 @@ import { resolveMockConfirmEligibility } from "../_shared/payments/mock-confirm-
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 const ConfirmMockPaymentBodySchema = z.object({
-  offering_id: z.string().uuid(),
-  engagement_id: z.string().uuid(),
+  offering_id: z.string().guid(),
+  engagement_id: z.string().guid(),
   enrolment_token: z.string().optional(),
   scenario: z.enum(["success", "decline"]).optional(),
   mock_card_number: z.string().max(32).optional(),

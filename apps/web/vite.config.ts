@@ -27,7 +27,7 @@ function denoNpmImportMap() {
   return {
     name: 'deno-npm-import-map',
     resolveId(source: string) {
-      if (source === 'npm:zod@3.22.4' || /^npm:zod@/.test(source)) {
+      if (/^npm:zod@/.test(source)) {
         return zodEntry;
       }
       if (source === 'zod') {
@@ -192,7 +192,6 @@ export default defineConfig({
         replacement: path.resolve(__dirname, '../../packages/shared/src/email/render-template.ts'),
       },
       // Edge functions use Deno-style specifiers; map them to node packages for Vitest.
-      { find: 'npm:zod@3.22.4', replacement: 'zod' },
       { find: /^npm:zod(@.*)?$/, replacement: 'zod' },
       // npm:@hebcal/core is handled by the denoNpmImportMap() plugin above (it needs
       // to resolve to an absolute path, not a bare specifier — see that plugin for why).

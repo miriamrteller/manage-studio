@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 
 /**
  * Finance -> Payments -> "Record a payment" when it isn't linked to an enrolment, monthly plan,
@@ -11,14 +11,14 @@ import { z } from "npm:zod@3.22.4";
  */
 export const StandalonePaymentSchema = z
   .object({
-    person_id: z.string().uuid().optional(),
+    person_id: z.string().guid().optional(),
     new_person: z
       .object({
         name: z.string().trim().min(1).max(200),
         email: z.string().trim().toLowerCase().email().optional(),
       })
       .optional(),
-    offering_id: z.string().uuid().optional(),
+    offering_id: z.string().guid().optional(),
     amount_minor: z.number().int().positive(),
     method: z.enum(["cash", "bank_transfer", "bit"]),
     note: z.string().max(500).optional(),

@@ -27,7 +27,7 @@ const configByType = {
 const TemplateInputSchema = z.object({
   name: z.string().min(1),
   requirement_type: z.enum(['gender', 'level', 'document_submitted', 'manual_review']),
-  config: z.record(z.unknown()),
+  config: z.record(z.string(), z.unknown()),
   display_text: z.string().optional(),
   is_hard_block: z.boolean().optional(),
 }).superRefine((val, ctx) => {

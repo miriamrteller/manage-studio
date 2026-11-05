@@ -6,7 +6,7 @@ import type { Tenant } from '@shared/schemas';
 
 // Validation schema for session creation/update (without system fields)
 const SessionInputSchema = z.object({
-  offering_id: z.string().uuid().optional(),
+  offering_id: z.string().guid().optional(),
   session_date: z.string().date('Invalid date format').optional(),
   start_time: TimeSchema.optional(),
   end_time: TimeSchema.optional(),

@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { invoicingPairsWithPayment } from "./provider-pairing.ts";
 
 /**
@@ -123,7 +123,7 @@ export const ProvisionStudioSchema = ProvisionStudioFields.refine(PAIRING_RULE.c
 export type ProvisionStudioInput = z.infer<typeof ProvisionStudioSchema>;
 
 export const InviteOwnerSchema = z.object({
-  tenantId: z.string().uuid(),
+  tenantId: z.string().guid(),
   ownerEmail: z.string().trim().toLowerCase().email(),
 });
 

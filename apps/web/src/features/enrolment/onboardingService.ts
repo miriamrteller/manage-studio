@@ -21,7 +21,7 @@ export const NewMinorOnboardingInputSchema = z.object({
   guardian_email: z.string().email('Invalid email').optional(),
   guardian_phone: z.string().optional(),
   guardian_role: z.enum(['account_holder', 'member']).default('account_holder'),
-  user_profile_id: z.string().uuid().optional(),
+  user_profile_id: z.string().guid().optional(),
 });
 
 export type NewMinorOnboardingInput = z.infer<typeof NewMinorOnboardingInputSchema>;

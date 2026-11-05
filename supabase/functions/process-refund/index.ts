@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
@@ -11,7 +11,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 import { planRefund } from "../_shared/payments/refund-amounts.ts";
 
 const ProcessRefundBodySchema = z.object({
-  payment_id: z.string().uuid(),
+  payment_id: z.string().guid(),
   amount_minor: z.number().int().positive().optional(),
   reason: z.string().max(500).optional(),
   /**

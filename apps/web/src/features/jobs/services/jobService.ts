@@ -58,8 +58,8 @@ const JOB_SELECT =
 const JobStatusSchema = z.enum(JOB_STATUSES);
 
 const JobCreateSchema = z.object({
-  offering_id: z.string().uuid(),
-  person_id: z.string().uuid().nullable().optional(),
+  offering_id: z.string().guid(),
+  person_id: z.string().guid().nullable().optional(),
   client_name: z.string().trim().max(200).nullable().optional(),
   client_email: z.string().trim().email().nullable().optional().or(z.literal('')),
   client_phone: z.string().trim().max(40).nullable().optional(),
@@ -79,8 +79,8 @@ const JobDetailsUpdateSchema = z.object({
 export type JobDetailsUpdateInput = z.input<typeof JobDetailsUpdateSchema>;
 
 const ConvertLeadSchema = z.object({
-  lead_id: z.string().uuid(),
-  offering_id: z.string().uuid().nullable().optional(),
+  lead_id: z.string().guid(),
+  offering_id: z.string().guid().nullable().optional(),
   booked_starts_at: z.string().datetime({ offset: true }).nullable().optional(),
   location: z.string().trim().max(500).nullable().optional(),
 });

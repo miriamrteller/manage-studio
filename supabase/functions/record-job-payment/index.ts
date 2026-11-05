@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.22.4";
+import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
@@ -16,7 +16,7 @@ import { sendNoDocumentPaymentConfirmation } from "../_shared/payments/send-paym
  * provider. Gross amounts (pretax/VAT 0) — the provider computes VAT.
  */
 const BodySchema = z.object({
-  request_id: z.string().uuid(),
+  request_id: z.string().guid(),
   method: z.enum(["cash", "bank_transfer", "bit"]),
   note: z.string().max(500).optional(),
   /** YYYY-MM-DD the money was received; defaults to today. */
