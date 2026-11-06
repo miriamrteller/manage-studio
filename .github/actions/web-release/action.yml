@@ -128,7 +128,8 @@ runs:
         dist=apps/web/dist
         test -f "$dist/index.html"
         grep -rlq "$PROD_REF" "$dist/assets" || { echo "::error::built bundle does not reference the prod project"; exit 1; }
-        if grep -rlq "sb_secret_" "$dist"; then echo "::error::a secret key ended up in the bundle"; exit 1; fi
+        # A key, not the bare prefix: supabase-js itself contains the text `sb_secret_`.
+        if grep -rlqE "sb_secret_[A-Za-z0-9_-]{16,}" "$dist"; then echo "::error::a secret key ended up in the bundle"; exit 1; fi
         # The asset that carries this release id, for the live check below.
         probe=$(grep -rl "$SHA" "$dist/assets" --include='*.js' | head -1 || true)
         echo "PROBE_ASSET=${probe#"$dist"}" >> "$GITHUB_ENV"
