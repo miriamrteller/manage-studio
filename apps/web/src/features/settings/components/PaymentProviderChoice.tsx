@@ -14,22 +14,29 @@ import {
 /** The providers a studio chooses between when setting up or before its first payment. */
 export type ChoosablePaymentProvider = 'grow' | 'ypay' | 'invoice4u' | 'offline';
 
-/** Card providers behind "Different provider?": no monthly fees with these. */
-export const OTHER_PAYMENT_PROVIDERS = ['ypay', 'invoice4u'] as const;
+/**
+ * Providers behind "Have a different provider?" (owner decision 2026-11-06): YPay and paying
+ * at the studio are shown first; these stay available but are not offered up front.
+ */
+export const OTHER_PAYMENT_PROVIDERS = ['grow', 'invoice4u'] as const;
 
 export function isOtherPaymentProvider(slug: string): boolean {
   return (OTHER_PAYMENT_PROVIDERS as readonly string[]).includes(slug);
 }
 
+/** Providers OpalSwift can't charge monthly fees through today (no saved cards in our integration). */
+export const NO_MONTHLY_FEE_PAYMENT_PROVIDERS = ['ypay', 'invoice4u'] as const;
+
 /**
- * Pure: the provider to keep when the "monthly fees?" answer changes. Monthly fees need Grow
- * or pay at the studio, so YPay / Invoice4U fall back to Grow on Yes.
+ * Pure: the provider to keep when the "monthly fees?" answer changes. Invoice4U is not offered
+ * to studios with monthly fees, so it falls back to the default, YPay. YPay stays shown
+ * (owner decision 2026-11-06: to be tested with monthly fees before deciding).
  */
 export function providerForMonthlyAnswer(
   monthlyFees: boolean,
   provider: ChoosablePaymentProvider,
 ): ChoosablePaymentProvider {
-  return monthlyFees && isOtherPaymentProvider(provider) ? 'grow' : provider;
+  return monthlyFees && provider === 'invoice4u' ? 'ypay' : provider;
 }
 
 interface PaymentProviderChoiceProps {
@@ -42,16 +49,13 @@ interface PaymentProviderChoiceProps {
 }
 
 /**
- * How customers pay (owner decisions), used by the setup wizard and by Settings while the studio
- * may still choose:
- *  - Grow, or "No card payments yet: I'll record payments myself" (every business, registered or not;
- *    card payments can be connected later). The question is about CARD payments only.
- *  - Studios that do not charge monthly fees also get "Different provider?" revealing YPay and
- *    Invoice4U, with a warning that they cannot charge monthly fees.
- * Whether the studio charges monthly fees is not asked here: it follows the payment flow (monthly
- * or both = yes). Grow is pre-selected by the caller. The disclaimer says when changing stops
- * being free. Each option shows short, confirmed lines on what OpalSwift can't do with it
- * (lib/providerLimits.ts).
+ * How customers pay, used by the setup wizard and by Settings while the studio may still choose
+ * (owner decision 2026-11-06, docs/plans/PAYMENT-OPTIONS-DECISION.md):
+ *  - By card online through the studio's own YPay account (the default), or "No card payments
+ *    yet: I'll record payments myself".
+ *  - "Have a different provider?" reveals Grow, and Invoice4U for studios without monthly fees.
+ * Whether the studio charges monthly fees is not asked here: it follows the payment flow. With
+ * monthly fees, YPay shows a line that OpalSwift can't charge them through YPay yet.
  */
 export function PaymentProviderChoice({
   idPrefix,
@@ -61,7 +65,9 @@ export function PaymentProviderChoice({
 }: PaymentProviderChoiceProps) {
   const { t } = useTranslation();
   const [showOthers, setShowOthers] = useState(isOtherPaymentProvider(provider));
-  const othersVisible = !monthlyFees && (showOthers || isOtherPaymentProvider(provider));
+  const othersVisible = showOthers || isOtherPaymentProvider(provider);
+  // Invoice4U can't charge monthly fees, so it is not offered to studios that charge them.
+  const otherProviders = OTHER_PAYMENT_PROVIDERS.filter((slug) => !monthlyFees || slug !== 'invoice4u');
 
   const radio = (slug: ChoosablePaymentProvider) => {
     const limitsId = `${idPrefix}-payment-${slug}-limits`;
@@ -89,8 +95,14 @@ export function PaymentProviderChoice({
     <fieldset>
       <legend className={CHOICE_LEGEND}>{t('studio_setup.payment_question')}</legend>
       <div className={CHOICE_GROUP}>
-        {radio('grow')}
-        {!monthlyFees && !othersVisible && (
+        {radio('ypay')}
+        {monthlyFees && provider === 'ypay' && (
+          <p className="ms-11 pb-2 pe-3 text-xs text-muted-foreground" role="note">
+            {t('payment_choice.ypay_monthly_note')}
+          </p>
+        )}
+        {radio('offline')}
+        {!othersVisible && (
           <div className="px-3 py-2">
             <button
               type="button"
@@ -103,10 +115,9 @@ export function PaymentProviderChoice({
         )}
         {othersVisible && (
           <div id={`${idPrefix}-other-providers`} className="py-1">
-            <div className={CHOICE_NESTED}>{OTHER_PAYMENT_PROVIDERS.map((slug) => radio(slug))}</div>
+            <div className={CHOICE_NESTED}>{otherProviders.map((slug) => radio(slug))}</div>
           </div>
         )}
-        {radio('offline')}
       </div>
       <p className={CHOICE_NOTE} role="note">
         {t('payment_choice.disclaimer')}

@@ -32,6 +32,7 @@ import { fieldFromSearch, signupFieldSearch, skinColours, usePageSearch, wizardF
 import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
+  providerForMonthlyAnswer,
   type ChoosablePaymentProvider,
 } from '@/features/settings/components/PaymentProviderChoice';
 import {
@@ -167,9 +168,8 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
     const monthlyFees = monthlyFeesForFlow(defaults.paymentFlow);
     const healthDeclaration = healthDeclarationFor(vertical, skin);
     setForm((prev) => ({ ...prev, vertical, ...defaults, healthDeclaration, monthlyFees, ...skinColours(prev, liveSkins, skin) }));
-    if (monthlyFees && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
-      choosePayment('grow');
-    }
+    const kept = providerForMonthlyAnswer(monthlyFees, form.paymentProvider as ChoosablePaymentProvider);
+    if (kept !== form.paymentProvider) choosePayment(kept);
   }
 
   // A marketing industry page link (?field=<skin> or ?from=<page>) preselects the field once.
@@ -514,10 +514,9 @@ export function OperatorOnboardingWizard({ mode = 'operator', onSelfServeCreated
                       checked={form.paymentFlow === flow}
                       onChange={() => {
                         setForm((prev) => ({ ...prev, paymentFlow: flow, monthlyFees: monthlyFeesForFlow(flow) }));
-                        // YPay and Invoice4U cannot charge monthly fees.
-                        if (monthlyFeesForFlow(flow) && (form.paymentProvider === 'ypay' || form.paymentProvider === 'invoice4u')) {
-                          choosePayment('grow');
-                        }
+                        // Invoice4U cannot charge monthly fees.
+                        const kept = providerForMonthlyAnswer(monthlyFeesForFlow(flow), form.paymentProvider as ChoosablePaymentProvider);
+                        if (kept !== form.paymentProvider) choosePayment(kept);
                       }}
                     />
                     <span>{t(`settings.business.flow_${flow}`)}</span>

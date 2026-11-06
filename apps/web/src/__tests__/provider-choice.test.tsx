@@ -89,8 +89,9 @@ describe('rules', () => {
     expect(monthlyFeesDefaultFor('photographer')).toBe(false);
     expect(monthlyFeesDefaultFor('beautician')).toBe(false);
     expect(monthlyFeesDefaultFor('generic')).toBeNull();
-    expect(providerForMonthlyAnswer(true, 'ypay')).toBe('grow');
-    expect(providerForMonthlyAnswer(true, 'invoice4u')).toBe('grow');
+    expect(providerForMonthlyAnswer(true, 'ypay')).toBe('ypay');
+    expect(providerForMonthlyAnswer(true, 'invoice4u')).toBe('ypay');
+    expect(providerForMonthlyAnswer(true, 'grow')).toBe('grow');
     expect(providerForMonthlyAnswer(true, 'offline')).toBe('offline');
     expect(providerForMonthlyAnswer(false, 'ypay')).toBe('ypay');
     expect(monthlyFeesSupported('grow')).toBe(true);
@@ -122,7 +123,8 @@ describe('Settings → How customers pay', () => {
     expect(await screen.findByRole('radio', { name: 'studio_setup.payment_grow' })).toBeChecked();
     expect(screen.queryByRole('radio', { name: 'payment_choice.monthly_no' })).toBeNull();
     expect(screen.queryByRole('radio', { name: 'payment_choice.monthly_yes' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
+    // YPay is shown up front; Grow stays shown because it is the saved choice.
+    expect(screen.queryByRole('button', { name: 'payment_choice.different_provider' })).toBeNull();
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'ypay' })));

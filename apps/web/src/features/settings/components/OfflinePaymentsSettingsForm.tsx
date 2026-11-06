@@ -19,7 +19,7 @@ import {
 } from '@/lib/providerPairing';
 import { useTenantHasPayment, TENANT_HAS_PAYMENT_QUERY } from '../hooks/useTenantHasPayment';
 import {
-  isOtherPaymentProvider,
+  NO_MONTHLY_FEE_PAYMENT_PROVIDERS,
   PaymentProviderChoice,
   type ChoosablePaymentProvider,
 } from './PaymentProviderChoice';
@@ -44,11 +44,11 @@ export function resolvePaymentProviderToSave(input: { offline: boolean; onlinePr
   return input.offline ? OFFLINE_PAYMENTS : input.onlineProvider;
 }
 
-/** Pure: the provider the choice starts on. Anything not offered starts on Grow. */
+/** Pure: the provider the choice starts on. Anything not offered starts on YPay, the default. */
 export function initialChoice(savedProvider: string): ChoosablePaymentProvider {
   return (SWITCH_FREE_PAYMENT_PROVIDERS as readonly string[]).includes(savedProvider)
     ? (savedProvider as ChoosablePaymentProvider)
-    : 'grow';
+    : 'ypay';
 }
 
 export interface OfflineInstructionsDraftParts {
@@ -103,7 +103,7 @@ export function OfflinePaymentsSettingsForm() {
 
   const [choice, setChoice] = useState<ChoosablePaymentProvider>(initialChoice(savedProvider));
   // Not asked: monthly fees follow the studio's payment flow (YPay / Invoice4U mean "no monthly").
-  const monthlyFees = isOtherPaymentProvider(savedProvider)
+  const monthlyFees = (NO_MONTHLY_FEE_PAYMENT_PROVIDERS as readonly string[]).includes(savedProvider)
     ? false
     : monthlyFeesForFlow(tenant?.profile?.paymentFlow ?? 'recurring');
   const [instructions, setInstructions] = useState(savedInstructions);

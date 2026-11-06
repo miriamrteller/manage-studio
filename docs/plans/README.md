@@ -9,6 +9,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
+| 2026-11-06 | [Payment options studios see](PAYMENT-OPTIONS-DECISION.md) | **Owner decision** — YPay default, others behind "Have a different provider?" |
 | 2026-11-02 | [Leads: where they come from](LEADS.md) | **ACTIVE** — plan; lead form / channels / digest work references it |
 | 2026-11-02 | [Onboarding audit](ONBOARDING-AUDIT.md) | **ACTIVE** — legal steps to re-run; screenshots in [onboarding-audit/](onboarding-audit/) |
 | 2026-11-02 | [Payments and invoicing audit](PAYMENTS-AUDIT.md) | Audit — findings open |

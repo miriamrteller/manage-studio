@@ -2205,7 +2205,7 @@
     "payment_grow": "בכרטיס אשראי באתר, דרך Grow",
     "payment_icount": "בכרטיס אשראי באתר, דרך iCount",
     "payment_invoice4u": "בכרטיס אשראי באתר, דרך Invoice4U",
-    "payment_ypay": "בכרטיס אשראי באתר, דרך YPay",
+    "payment_ypay": "בכרטיס אשראי באתר, דרך חשבון ה-YPay שלי",
     "payment_tranzila": "בכרטיס אשראי באתר, דרך Tranzila",
     "payment_offline": "עדיין בלי תשלום בכרטיס: אני רושם/ת את התשלומים בעצמי",
     "invoicing_question": "מסמכי מס (קבלות וחשבוניות)",
@@ -3842,7 +3842,8 @@
     }
   },
   "payment_choice": {
-    "different_provider": "ספק אחר?",
+    "different_provider": "יש לכם ספק אחר?",
+    "ypay_monthly_note": "OpalSwift עדיין לא גובה תשלום חודשי דרך YPay. לחוג חודשי בחרו תשלום בסטודיו או ספק אחר.",
     "disclaimer": "אפשר להחליף את ספק התשלומים עד התשלום הראשון. אחרי זה, החלפה דורשת פנייה לתמיכה של OpalSwift."
   },
   "platform_features": {
