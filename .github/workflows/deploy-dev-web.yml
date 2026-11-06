@@ -182,8 +182,15 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         run: |
           set -uo pipefail
-          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "https://$DEV_HOST/")
-          echo "https://$DEV_HOST/ → $code"
+          # A new workers.dev address can answer 404 for a minute or two after the first deploy,
+          # and curl's --retry does not retry a 404, so try again for up to 3 minutes.
+          code=000
+          for _ in $(seq 1 18); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://$DEV_HOST/" || echo 000)
+            echo "https://$DEV_HOST/ → $code"
+            [ "$code" = 200 ] && break
+            sleep 10
+          done
           {
             echo "## Dev website \`${GITHUB_SHA::7}\`"
             echo "- Address: https://$DEV_HOST (pick a test studio on the start page)"
