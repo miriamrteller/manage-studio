@@ -6,11 +6,14 @@
  */
 import type { DemoContext, Row } from './fakeSupabase';
 
-const PUBLIC_TABLES = new Set(['tenants', 'offerings', 'consent_templates', 'categories', 'seasons', 'staff']);
+const PUBLIC_TABLES = new Set(['tenants', 'offerings', 'consent_templates', 'categories', 'seasons', 'staff', 'expense_category_catalog', 'verticals']);
 // Clients never read job_details (it holds the gallery URL) or quotes directly;
 // they go through get_client_job_gallery / get_public_quote.
 const ADMIN_ONLY = new Set([
   'leads', 'audit_log', 'notification_log', 'job_details', 'quotes', 'quote_lines', 'tenant_automatic_emails',
+  // Photo shop: the client sees its shop only through client-photo-shop.
+  'expenses', 'expense_categories',
+  'tenant_photo_shop_settings', 'job_photo_shops', 'job_photo_orders', 'job_photo_order_items',
 ]);
 const BY_ACCOUNT = new Set(['accounts']);
 const BY_ACCOUNT_COL = new Set(['people', 'account_members']);
