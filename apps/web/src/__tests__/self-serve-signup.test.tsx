@@ -188,7 +188,7 @@ describe('self-serve signup: wizard', () => {
       action: 'self_serve',
       name: 'Harbour Yoga',
       subdomain: 'harbour-yoga',
-      paymentProvider: 'grow',
+      paymentProvider: 'ypay',
       invoicingProvider: 'grow',
       primaryColor: '#5B6CFF',
       termsVersion: 'v-test-1',
