@@ -75,20 +75,21 @@ describe('provider limits', () => {
 });
 
 describe('How customers pay', () => {
-  it('each option points at its lines (YPay behind "Different provider?" as before)', () => {
+  it('each option points at its lines (Grow behind "Have a different provider?")', () => {
     const onChange = vi.fn();
-    render(<PaymentProviderChoice idPrefix="t" monthlyFees={false} provider="grow" onProviderChange={onChange} />);
-    expect(screen.getByRole('radio', { name: 'studio_setup.payment_grow' })).toHaveAccessibleDescription(
-      'provider_limits.payment.grow.recorded_receipts',
+    render(<PaymentProviderChoice idPrefix="t" monthlyFees={false} provider="ypay" onProviderChange={onChange} />);
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' })).toHaveAccessibleDescription(
+      'provider_limits.payment.ypay.no_refunds',
     );
     expect(screen.getByRole('radio', { name: 'studio_setup.payment_offline' })).toHaveAccessibleDescription(
       'provider_limits.payment.offline.no_cards',
     );
+    expect(screen.queryByRole('radio', { name: 'studio_setup.payment_grow' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
-    expect(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' })).toHaveAccessibleDescription(
-      'provider_limits.payment.ypay.no_refunds',
+    expect(screen.getByRole('radio', { name: 'studio_setup.payment_grow' })).toHaveAccessibleDescription(
+      'provider_limits.payment.grow.recorded_receipts',
     );
-    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
-    expect(onChange).toHaveBeenCalledWith('ypay');
+    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
+    expect(onChange).toHaveBeenCalledWith('grow');
   });
 });

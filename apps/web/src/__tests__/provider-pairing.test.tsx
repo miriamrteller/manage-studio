@@ -107,7 +107,7 @@ describe('Settings → How customers pay', () => {
     expect(screen.queryByText('settings.offline_payments.switch_contact_support')).toBeNull();
     expect(screen.getByText('payment_choice.disclaimer')).toBeTruthy();
     // No "monthly fees?" question: switching is not held up by one.
-    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
     expect(screen.getByRole('button', { name: 'common.save' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' }));

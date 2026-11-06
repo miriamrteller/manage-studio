@@ -2203,7 +2203,7 @@
     "payment_grow": "By card online, through Grow",
     "payment_icount": "By card online, through iCount",
     "payment_invoice4u": "By card online, through Invoice4U",
-    "payment_ypay": "By card online, through YPay",
+    "payment_ypay": "By card online, through my own YPay account",
     "payment_tranzila": "By card online, through Tranzila",
     "payment_offline": "No card payments yet: I'll record payments myself",
     "invoicing_question": "Tax documents (receipts and invoices)",
@@ -3909,7 +3909,8 @@
     }
   },
   "payment_choice": {
-    "different_provider": "Different provider?",
+    "different_provider": "Have a different provider?",
+    "ypay_monthly_note": "OpalSwift can't charge monthly fees through YPay yet. For a monthly class, choose pay at the studio or a different provider.",
     "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support."
   },
   "platform_features": {
