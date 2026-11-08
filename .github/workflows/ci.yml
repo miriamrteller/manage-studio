@@ -116,8 +116,10 @@ jobs:
       - name: Pipeline script unit tests
         run: node --test scripts/ci/*.test.mjs
 
-      - name: Prod tasks are data-only (supabase/prod-tasks)
-        run: node scripts/ci/prod-task.mjs check
+      - name: Prod and dev tasks are data-only (supabase/prod-tasks, supabase/dev-tasks)
+        run: |
+          node scripts/ci/prod-task.mjs check
+          if ls supabase/dev-tasks/*.sql >/dev/null 2>&1; then node scripts/ci/prod-task.mjs check supabase/dev-tasks/*.sql; fi
 
       - name: Append-only, unique, ordered migrations
         env:

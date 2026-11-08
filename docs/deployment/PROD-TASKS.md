@@ -62,3 +62,23 @@ On prod (a read-only query, e.g. in the SQL editor):
 ```sql
 SELECT file_name, git_sha, actor, ran_at, run_url FROM private.prod_task_runs ORDER BY ran_at DESC;
 ```
+
+## Dev tasks
+
+A **dev task** is the same thing for the **dev** database (`acmujrhavgbamdilzuew`): a reviewed,
+one-off data change, for example getting dev past a migration guard that prod passed with a prod
+task. Files go in `supabase/dev-tasks/`, follow every rule above (CI checks them the same way), and
+run with **Actions** → **dev-task** → **Run workflow** → branch `main` → file name → tick **dry_run**
+first. Differences from prod tasks:
+
+- environment `development` and its `SUPABASE_DEV_DB_URL` (the same as deploy-dev), so no approval
+  is needed; the run refuses an address that names the prod project;
+- it waits in deploy-dev's queue, so start it when no deploy-dev run is going;
+- each file runs once on dev, recorded in dev's own `private.prod_task_runs`.
+
+Dev tasks never run on prod, and prod tasks never run on dev.
+
+`20261108111500_dev_owner_email_switch.sql` gets dev past
+`20261104120500_platform_owner_release_2` (dev never ran the owner email switch). After it
+commits, re-run **deploy-dev** so dev gets every migration and edge function since 4 Nov.
+Test: `supabase/tests/dev-owner-switch/run.sh`.
