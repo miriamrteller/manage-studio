@@ -200,6 +200,13 @@ export const navigationConfig: NavItem[] = [
     indent: true,
   },
   {
+    path: '/admin/finance/import',
+    labelKey: 'finance.import.nav_title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'finance',
+    indent: true,
+  },
+  {
     path: '/admin/setup',
     labelKey: 'nav.setup_overview',
     requiredRoles: ['tenant_admin'],
