@@ -58,6 +58,7 @@ export const PROFILE_GATES: Partial<Record<FeatureKey, ProfileGate>> = {
   [FEATURES.scheduling.calendarView]: 'teaches_classes',
   [FEATURES.people.families]: 'family_accounts',
   [FEATURES.billing.photoShop]: 'opt_in',
+  [FEATURES.billing.takbullTesting]: 'opt_in',
 }
 
 export function profileHasGate(profile: StudioProfile, gate: ProfileGate): boolean {
