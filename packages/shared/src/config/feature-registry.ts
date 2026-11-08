@@ -126,6 +126,8 @@ export const FEATURES = {
     gatedDelivery: 'billing:delivery.gated',
     /** Photo shop: clients buy downloads from the studio's own gallery (SmugMug). Beta, opt-in only. */
     photoShop: 'billing:photo_shop',
+    /** Takbull keys and Test connection on Settings -> Payments. Testing only, opt-in only. */
+    takbullTesting: 'billing:takbull_testing',
   },
 
   // Financial management and reporting

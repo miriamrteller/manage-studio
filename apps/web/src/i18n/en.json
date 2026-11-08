@@ -3017,6 +3017,21 @@
       }
     },
     "provider_names": {"offline": "Pay at the studio", "none": "None", "grow": "Grow", "icount": "iCount", "invoice4u": "Invoice4U", "ypay": "YPay", "tranzila": "Tranzila", "yesh": "Yesh Invoice", "green_invoice": "Green Invoice", "takbull": "Takbull", "mock": "Test mode"},
+    "takbull": {
+      "title": "Takbull (testing)",
+      "hint": "Only for testing Takbull. Saving keys here doesn't change how your clients pay.",
+      "not_saved": "No Takbull keys saved yet.",
+      "saved_on": "Takbull keys saved {{date}}.",
+      "api_key": "API key",
+      "api_secret": "API secret",
+      "save": "Save Takbull keys",
+      "saved": "Takbull keys saved.",
+      "test": "Test connection",
+      "test_ok": "Takbull accepted the keys.",
+      "test_failed": "Takbull didn't accept the keys. Check both and try again.",
+      "need_both": "Enter both the API key and the API secret.",
+      "encryption_missing": "Keys can't be saved yet because encryption isn't set up on this site. Please contact support."
+    },
     "ypay": {
       "save": "Save YPay details",
       "title": "Connect YPay",
