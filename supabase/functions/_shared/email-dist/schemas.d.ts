@@ -638,6 +638,8 @@ export declare const FinancePeriodKeySchema: z.ZodEnum<{
     month_current: "month_current";
     month_previous: "month_previous";
     season_active: "season_active";
+    year_current: "year_current";
+    year_previous: "year_previous";
 }>;
 export type FinancePeriodKey = z.infer<typeof FinancePeriodKeySchema>;
 export declare const NotificationPayloadSchema: z.ZodObject<{

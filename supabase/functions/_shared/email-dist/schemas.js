@@ -537,6 +537,8 @@ export const FinancePeriodKeySchema = z.enum([
     'month_current',
     'month_previous',
     'season_active',
+    'year_current',
+    'year_previous',
 ]);
 // Notification payload for send-notification Edge Function
 export const NotificationPayloadSchema = z.object({
