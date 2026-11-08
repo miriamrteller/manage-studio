@@ -21,7 +21,7 @@ https://api.takbull.co.il/ApiDocs (read 2026-11-04). Anything the docs don't sta
 | Exempt dealer (עוסק פטור) | Yes (BusinessType 3 sets VAT handling) | |
 | Open a studio's account from our platform | Yes (affiliate: child merchant, clearing by UPay) | `Account/CreateAccount` |
 | Per-studio document settings | Yes (default type, sender name, email text, theme, numbering) | `Account/UpdateDocumentSettings` |
-| Sandbox | Credentials on request from Takbull support | |
+| Sandbox | Test keys from Takbull support (test charges up to 5 ILS) | no separate test host named; docs at `api.takbull.co.il/ApiDocs` |
 
 Owner confirmed: **a business that isn't registered can't take card payments through Takbull.**
 
@@ -145,16 +145,27 @@ What currently assumes Grow for platform billing:
 
 The providers studios use for their own clients don't change.
 
-## Open questions (for Takbull, not in the docs)
+## Takbull support's answers (email, 2026-11-08)
 
-1. Fees: setup, monthly, per transaction, Bit, Apple Pay and Google Pay. The affiliate terms, and who carries chargebacks.
-2. Can the owner's ID and bank details be entered on a Takbull-hosted page instead of passing through us?
-3. A saved card's expiry and decline behaviour for `ChargeToken`.
-4. The studio's logo on documents and payment pages (the docs only mention `ThemeId`).
-5. Linking deposit and balance receipts to one invoice.
-6. Allocation numbers (מספר הקצאה) on tax invoices.
-7. Are payment notices retried? (Retries are documented only for account notices.)
-8. Sandbox credentials and test cards.
+Takbull support answered most of the open questions by email. These are support's statements, not the API docs, so a feature that depends on one is checked in the sandbox before it is turned on. Prices and the partner offer are not kept in this public repo; the owner has them.
+
+- **Unregistered business:** can't open card processing. An account needs valid business details, owner details and bank details. (Matches the owner's earlier note, and PR 8's plan: pay at the studio and no documents.)
+- **Exempt dealer to licensed dealer:** yes, on the same account, as an update to the account details. No new account.
+- **Studio accounts (PR 7):** opening a child account needs the studio's details, the owner's details, business details and bank details. The API creates the child account and returns its API keys. The partner's own account needs a regular package.
+- **Chargebacks:** usually the business that runs the account carries them, and settles with its client.
+- **Logo:** each child account has its own document settings, including branding, and payment pages can be set per account.
+- **Allocation numbers (מספר הקצאה):** supported, but not on by default. They're set up through a separate module.
+- **Payment notices:** retried if our server doesn't answer. Takbull recommends always confirming with a second check call, which `takbull-ipn` already does (`ValidateNotification`, and `GetOrder` for token charges).
+- **Sandbox:** test keys, a test card and a demo login were sent to the owner. Test charges are limited to 5 ILS. They are for testing only and are never kept in this repo.
+
+## Open questions (still for Takbull)
+
+2. Can the owner's ID and bank details be entered on a Takbull-hosted page instead of passing through us? (Not answered.)
+3. A saved card's expiry and decline behaviour for `ChargeToken`. (Support offered to explain this.)
+5. Linking deposit and balance receipts to one invoice. (Support offered to look at the exact case.)
+6. The allocation number module: what it costs and how to turn it on.
+9. Does `ChargeToken` send a payment notice to `IPNAddress`? Is `DocumentType` honoured on `ChargeToken`, or only the account's `DefaultDocumentType`? (Can also be checked in the sandbox.)
 10. Bit on a computer: does Takbull's page show Bit (for example, a QR code)? And on the card page, does `MaxNumberOfPayments` let the client choose up to that many instalments?
+11. Fees for Bit, Apple Pay and Google Pay, and whether they differ from card.
 
 The sample keys in the docs' examples look like real keys. Takbull should confirm they aren't live.
