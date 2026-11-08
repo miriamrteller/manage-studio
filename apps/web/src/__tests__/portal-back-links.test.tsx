@@ -247,7 +247,7 @@ describe('menu per vertical', () => {
   it('dance admin menu: working pages first (Leads, Students, Families, Classes, Appointments, Notifications), then Finance and Setup', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
       '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/appointments', '/admin/notifications',
-      '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
+      '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
       '/admin/setup/levels', '/admin/setup/terms', '/admin/packages',
       '/admin/setup/booking', '/admin/setup/waivers',
@@ -257,7 +257,7 @@ describe('menu per vertical', () => {
   it('photographer admin menu: Leads, Clients, Shoots, Quotes, Appointments, Notifications; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
       '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/appointments', '/admin/notifications',
-      '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
+      '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing', '/admin/packages',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);

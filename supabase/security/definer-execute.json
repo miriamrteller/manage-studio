@@ -74,6 +74,7 @@
       "get_signed_record_details",
       "get_tenant_features",
       "get_tenant_today",
+      "import_finance_rows",
       "job_payment_requests_all_paid",
       "legal_admin_tenant",
       "link_auth_user_to_guardian_for_engagement",
@@ -120,7 +121,8 @@
       "smugmug_admin_tenant_id",
       "studio_feature_states",
       "tenant_smugmug_status",
-      "tenant_takbull_connected"
+      "tenant_takbull_connected",
+      "undo_finance_import"
     ]
   },
   "service": {

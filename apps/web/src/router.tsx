@@ -60,6 +60,7 @@ const FinanceHubPage = lazy(() => import("./pages/FinanceHubPage"));
 const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const ExpenseCategoriesPage = lazy(() => import("./pages/ExpenseCategoriesPage"));
+const FinanceImportPage = lazy(() => import("./pages/FinanceImportPage"));
 const LeadsPage = lazy(() => import("./pages/LeadsPage"));
 const JobsPage = lazy(() => import("./pages/JobsPage"));
 const JobDetailPage = lazy(() => import("./pages/JobDetailPage"));
@@ -226,6 +227,7 @@ const router = createBrowserRouter([
           { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
           { path: "admin/finance/expenses", element: <AdminRoute><ExpensesPage /></AdminRoute> },
           { path: "admin/finance/expenses/categories", element: <AdminRoute><ExpenseCategoriesPage /></AdminRoute> },
+          { path: "admin/finance/import", element: <AdminRoute><FinanceImportPage /></AdminRoute> },
           { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
           { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
           { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },

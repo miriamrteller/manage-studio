@@ -4,12 +4,18 @@ import { useEntityLabels } from '@/hooks/useEntityLabels';
 import type { FinancePeriodKey } from '@shared/schemas';
 import { parseFinancePeriodKey } from '../lib/periods';
 
-const PERIOD_OPTIONS: FinancePeriodKey[] = ['month_current', 'month_previous', 'season_active'];
+const PERIOD_OPTIONS: FinancePeriodKey[] = [
+  'month_current',
+  'month_previous',
+  'season_active',
+  'year_current',
+  'year_previous',
+];
 
 export function FinancePeriodSelector() {
   const { t } = useTranslation();
   const { vertical } = useEntityLabels();
-  // Photographers have no terms/seasons: only the month options apply.
+  // Photographers have no terms/seasons: the season option is hidden.
   const options =
     vertical === 'photographer' ? PERIOD_OPTIONS.filter((key) => key !== 'season_active') : PERIOD_OPTIONS;
   const [searchParams, setSearchParams] = useSearchParams();

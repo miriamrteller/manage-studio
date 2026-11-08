@@ -1172,6 +1172,9 @@ export type Database = {
           description: string
           expense_date: string
           id: string
+          import_batch_id: string | null
+          import_extra: Json | null
+          import_fingerprint: string | null
           pretax_amount_minor: number
           receipt_storage_path: string | null
           supplier_name: string | null
@@ -1189,6 +1192,9 @@ export type Database = {
           description: string
           expense_date: string
           id: string
+          import_batch_id?: string | null
+          import_extra?: Json | null
+          import_fingerprint?: string | null
           pretax_amount_minor: number
           receipt_storage_path?: string | null
           supplier_name?: string | null
@@ -1206,6 +1212,9 @@ export type Database = {
           description?: string
           expense_date?: string
           id?: string
+          import_batch_id?: string | null
+          import_extra?: Json | null
+          import_fingerprint?: string | null
           pretax_amount_minor?: number
           receipt_storage_path?: string | null
           supplier_name?: string | null
@@ -1234,6 +1243,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_import_batches"
             referencedColumns: ["id"]
           },
           {
@@ -1293,6 +1309,79 @@ export type Database = {
           },
         ]
       }
+      finance_import_batches: {
+        Row: {
+          created_at: string
+          created_by: string
+          expense_count: number
+          file_fingerprint: string | null
+          file_name: string
+          id: string
+          income_count: number
+          mapping: Json
+          receipts_matched_count: number
+          sheet_name: string | null
+          skipped_count: number
+          tenant_id: string
+          undone_at: string | null
+          undone_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expense_count?: number
+          file_fingerprint?: string | null
+          file_name: string
+          id?: string
+          income_count?: number
+          mapping?: Json
+          receipts_matched_count?: number
+          sheet_name?: string | null
+          skipped_count?: number
+          tenant_id: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expense_count?: number
+          file_fingerprint?: string | null
+          file_name?: string
+          id?: string
+          income_count?: number
+          mapping?: Json
+          receipts_matched_count?: number
+          sheet_name?: string | null
+          skipped_count?: number
+          tenant_id?: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_import_batches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_import_batches_undone_by_fkey"
+            columns: ["undone_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grow_webhook_secrets: {
         Row: {
           created_at: string
@@ -1324,6 +1413,94 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "grow_webhook_secrets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imported_income: {
+        Row: {
+          amount_minor: number
+          batch_id: string
+          created_at: string
+          description: string | null
+          exchange_rate: number | null
+          extra: Json
+          fingerprint: string
+          id: string
+          income_date: string
+          job_name: string | null
+          original_amount_minor: number | null
+          original_currency: string | null
+          payer_name: string | null
+          payment_method: string | null
+          receipt_batch_id: string | null
+          receipt_book: string | null
+          receipt_extra: Json
+          receipt_number: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_minor: number
+          batch_id: string
+          created_at?: string
+          description?: string | null
+          exchange_rate?: number | null
+          extra?: Json
+          fingerprint: string
+          id?: string
+          income_date: string
+          job_name?: string | null
+          original_amount_minor?: number | null
+          original_currency?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
+          receipt_batch_id?: string | null
+          receipt_book?: string | null
+          receipt_extra?: Json
+          receipt_number?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_minor?: number
+          batch_id?: string
+          created_at?: string
+          description?: string | null
+          exchange_rate?: number | null
+          extra?: Json
+          fingerprint?: string
+          id?: string
+          income_date?: string
+          job_name?: string | null
+          original_amount_minor?: number | null
+          original_currency?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
+          receipt_batch_id?: string | null
+          receipt_book?: string | null
+          receipt_extra?: Json
+          receipt_number?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_income_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_income_receipt_batch_id_fkey"
+            columns: ["receipt_batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_income_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -5383,6 +5560,16 @@ export type Database = {
         }
         Returns: Json
       }
+      import_finance_rows: {
+        Args: {
+          p_file_fingerprint: string
+          p_file_name: string
+          p_mapping: Json
+          p_rows: Json
+          p_sheet_name: string
+        }
+        Returns: Json
+      }
       increment_verification_attempt: {
         Args: {
           p_channel: string
@@ -5929,6 +6116,7 @@ export type Database = {
         }[]
       }
       tenant_takbull_connected: { Args: never; Returns: boolean }
+      undo_finance_import: { Args: { p_batch_id: string }; Returns: Json }
       update_tenant_google_access_token: {
         Args: {
           p_access_token: string

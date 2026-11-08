@@ -54,7 +54,7 @@ describe('finance period', () => {
   it('photographer: no "Active term"', () => {
     setTenant('photographer');
     renderInApp(<FinancePeriodSelector />);
-    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['This month', 'Last month']);
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['This month', 'Last month', 'This year', 'Last year']);
   });
 
   it('dance: keeps the active-season option', () => {

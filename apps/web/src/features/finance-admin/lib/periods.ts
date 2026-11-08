@@ -46,7 +46,14 @@ export function seasonToDateRange(
 }
 
 export function parseFinancePeriodKey(value: string | null): FinancePeriodKey {
-  if (value === 'month_previous' || value === 'season_active') return value;
+  if (
+    value === 'month_previous' ||
+    value === 'season_active' ||
+    value === 'year_current' ||
+    value === 'year_previous'
+  ) {
+    return value;
+  }
   return 'month_current';
 }
 
@@ -59,6 +66,10 @@ export function resolvePeriodDateRange(
   }
   if (period === 'season_active' && activeSeason) {
     return seasonToDateRange(activeSeason.start_date, activeSeason.end_date);
+  }
+  if (period === 'year_current' || period === 'year_previous') {
+    const year = parseInt(jerusalemYmd().year, 10) - (period === 'year_previous' ? 1 : 0);
+    return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
   }
   return getJerusalemMonthRange();
 }

@@ -654,6 +654,8 @@ export const FinancePeriodKeySchema = z.enum([
   'month_current',
   'month_previous',
   'season_active',
+  'year_current',
+  'year_previous',
 ]);
 
 export type FinancePeriodKey = z.infer<typeof FinancePeriodKeySchema>;
