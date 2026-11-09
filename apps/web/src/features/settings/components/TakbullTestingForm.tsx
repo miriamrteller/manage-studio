@@ -6,19 +6,21 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { isDevSite } from '@/lib/devStudioPicker';
 import queryClient from '@/lib/query-client';
 import { functionInvokeErrorMessage, parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
 import { isEncryptionKeyMissing } from './YpaySettingsForm';
 
 /**
  * Settings -> Payments, testing only (beta switch billing:takbull_testing, off for every studio
- * unless switched on in Platform -> Features). Saves the studio's Takbull API key and secret,
+ * unless switched on in Platform -> Features). Dev website only: never shown on the live site,
+ * even if the switch is on (owner, 9 Nov 2026). Saves the studio's Takbull API key and secret,
  * both encrypted (save_tenant_takbull_credentials), and checks them with Test connection
  * (verify-takbull-credentials, read-only). It doesn't change the studio's payment provider.
  */
 export function TakbullTestingForm() {
   const { hasFeature } = useFeatureGate();
-  if (!hasFeature(FEATURES.billing.takbullTesting)) return null;
+  if (!isDevSite() || !hasFeature(FEATURES.billing.takbullTesting)) return null;
   return <TakbullKeysForm />;
 }
 

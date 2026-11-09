@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Takbull keys in Settings -> Payments (testing only): hidden without the beta switch; Save
+ * Takbull keys in Settings -> Payments (testing only): hidden without the beta switch and on the
+ * live site; Save
  * sends both keys to save_tenant_takbull_credentials; Test connection calls
  * verify-takbull-credentials and reports the result. The provider is never changed.
  */
@@ -12,6 +13,7 @@ import { FEATURES, PROFILE_GATES } from '@shared/index';
 
 const h = vi.hoisted(() => ({
   flag: true,
+  devSite: true,
   savedAt: null as string | null,
   rpc: vi.fn(),
   invoke: vi.fn(),
@@ -21,6 +23,7 @@ vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1', payment_prov
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => h.flag && k === 'billing:takbull_testing', isLoading: false }),
 }));
+vi.mock('@/lib/devStudioPicker', () => ({ isDevSite: () => h.devSite }));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: h.rpc,
@@ -46,6 +49,7 @@ function renderIt() {
 
 beforeEach(async () => {
   h.flag = true;
+  h.devSite = true;
   h.savedAt = null;
   h.rpc.mockReset().mockResolvedValue({ error: null });
   h.invoke.mockReset().mockResolvedValue({ data: { ok: true, valid: true }, error: null });
@@ -61,6 +65,12 @@ describe('Takbull keys (testing only)', () => {
 
   it('shows nothing without the switch', () => {
     h.flag = false;
+    const { container } = renderIt();
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('never shows on the live site, even with the switch on', () => {
+    h.devSite = false;
     const { container } = renderIt();
     expect(container).toBeEmptyDOMElement();
   });

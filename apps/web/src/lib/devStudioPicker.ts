@@ -78,3 +78,11 @@ export function chooseDevStudio(choice: string | null): void {
   else s?.removeItem(STORAGE_KEY);
   window.location.assign('/');
 }
+
+/**
+ * The dev website or a local dev build: never the live site. Testing-only switches (such as the
+ * Takbull test keys) exist only here.
+ */
+export function isDevSite(): boolean {
+  return isDevStudioPickerOn() || import.meta.env.DEV === true;
+}

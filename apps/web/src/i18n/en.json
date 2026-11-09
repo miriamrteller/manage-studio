@@ -4040,40 +4040,63 @@
   },
   "platform_features": {
     "title": "Studio features",
-    "intro": "Choose a studio to set which features it has. Switching a feature away from its default is saved as your choice; \"Back to default\" removes it. Money is never affected: monthly fees and payments carry on whatever is switched off.",
+    "intro": "Choose a studio, then tick the features it has. The business ticks are the same as the studio's own \"Your business\" answers. Switching a feature off only hides it: monthly fees, payments and receipts carry on, and nothing is deleted.",
     "studio": "Studio",
     "choose_studio": "Choose a studio",
     "pick_hint": "Choose a studio above to see its features.",
-    "override_count_one": "{{count}} feature set by you",
-    "override_count_other": "{{count}} features set by you",
-    "default_on": "On by default",
-    "default_off": "Off by default",
-    "granted": "switched on by you",
-    "removed": "switched off by you",
-    "reset": "Back to default",
     "save_failed": "That change wasn't saved. Please try again.",
     "load_failed": "The features couldn't be loaded. Please try again.",
     "plans": {
       "essential": "Essential",
       "professional": "Professional"
     },
-    "sets": {
-      "core": "Core",
-      "monthly": "Monthly fees",
-      "projects": "Projects",
-      "booking": "Booking",
-      "classes": "Classes",
-      "families": "Families",
-      "extras": "Extras"
+    "sections": {
+      "features": "Features",
+      "beta": "Beta",
+      "testing": "Testing (dev website only)"
     },
-    "set_hints": {
-      "core": "Every studio has these.",
-      "monthly": "On when the studio charges monthly fees.",
-      "projects": "On when the studio charges per project (quote, deposit, balance).",
-      "booking": "On when clients book time slots.",
-      "classes": "On when the studio teaches classes.",
-      "families": "On when parents pay for children.",
-      "extras": "Not tied to the business profile; only with the Professional plan for now."
+    "section_hints": {
+      "features": "Everything else (clients, payments, receipts, signed forms, the client portal) is part of every studio.",
+      "beta": "Still being tried out. Off unless you tick it.",
+      "testing": "Only on the dev website. Never an option on the live site."
+    },
+    "whole": {
+      "classes": {
+        "label": "Classes and timetable",
+        "hint": "Classes, levels, seasons, the timetable and the public class pages."
+      },
+      "families": {
+        "label": "Children and families",
+        "hint": "Parents sign up, pay for and manage their children in one family account."
+      },
+      "monthly": {
+        "label": "Monthly plans",
+        "hint": "Monthly fees, and follow-up when a payment fails."
+      },
+      "projects": {
+        "label": "Projects",
+        "hint": "Quotes with a deposit and balance, and files or galleries released after payment."
+      },
+      "booking": {
+        "label": "Online booking",
+        "hint": "Clients book time slots. Booking settings, and no-show and late cancellation fees."
+      },
+      "google_calendar": {
+        "label": "Google Calendar",
+        "hint": "Busy times from the studio's Google Calendar, and bookings added to it."
+      },
+      "photo_shop": {
+        "label": "Photo shop",
+        "hint": "Clients buy photo downloads from the studio's SmugMug gallery."
+      },
+      "takbull_testing": {
+        "label": "Takbull test keys",
+        "hint": "The Takbull keys form and Test connection on Settings → Payments. Doesn't change how the studio is paid."
+      }
+    },
+    "lock": {
+      "needs_parent": "Part of the feature above: tick that first.",
+      "last_payment_way": "A studio needs monthly plans or projects. Tick the other one first to switch this off."
     }
   },
   "skins": {

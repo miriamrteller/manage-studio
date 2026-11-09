@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import type { FeatureState, TenantOption } from '../types/feature-admin';
 
 export async function fetchTenants(): Promise<TenantOption[]> {
-  const { data, error } = await supabase.from('tenants').select('id, name, subdomain, plan').order('name');
+  const { data, error } = await supabase.from('tenants').select('id, name, subdomain, plan, payment_flow, teaches_classes, family_accounts, client_booking').order('name');
   if (error) throw new Error(`Failed to fetch studios: ${error.message}`);
   return (data ?? []) as TenantOption[];
 }
@@ -35,4 +35,10 @@ export async function setFeatureOverride(
  */
 export function overrideFor(state: Pick<FeatureState, 'default_on'>, next: boolean): boolean | null {
   return next === state.default_on ? null : next;
+}
+
+/** A "Your business" answer for one studio, set by the owner. Same audited setter the studio uses. */
+export async function setStudioProfile(tenantId: string, patch: Record<string, string | boolean>): Promise<void> {
+  const { error } = await supabase.rpc('set_business_profile', { p_tenant_id: tenantId, ...patch });
+  if (error) throw new Error(`Failed to change feature: ${error.message}`);
 }
