@@ -1,12 +1,17 @@
 // Cloudflare Pages Function: POST /api/contact
 // The beta/contact form on the home page (#contact-form) posts FormData here
 // with fields name, email, message. We email it to hello@opalswift.com via
-// Resend and, at the same time, file it as a lead in OpalSwift HQ's Leads (the
+// Resend and file it as a lead in OpalSwift HQ's Leads (the
 // "hq" studio, channel website) through crm-lead-ingest. We answer {ok:true}
 // or {ok:false,error}; the page only checks res.ok. The email decides the
 // answer: if it went out, the visitor sees success even when filing the lead
 // failed (that is logged). Until the lead settings are set, or before the hq
 // studio exists, only the email is sent.
+//
+// Spam: hidden honeypot fields and a time trap here (pretend success, send
+// nothing); then crm-lead-ingest runs the shared spam check on the name and
+// message. When it answers { outcome: "spam" } no email goes out and the
+// visitor is asked to check what they typed (422).
 //
 // Settings (Cloudflare → Workers & Pages → opalswift-il → Settings → Variables and Secrets):
 //   RESEND_API_KEY      secret, required
@@ -23,6 +28,10 @@ const LEAD_TIMEOUT_MS = 5000;
 const FROM = "OpalSwift <no-reply@opalswift.com>";
 // Hidden fields a person never fills in; if a bot does, pretend it worked.
 const HONEYPOTS = ["website", "company", "url"];
+// Hidden field the page fills with the time the form was shown (ms since
+// 1970). Sent sooner than this after that: a script, not a person.
+const SHOWN_AT_FIELD = "shown_at";
+const MIN_FILL_MS = 3000;
 const EMAIL_RE = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]{2,}$/;
 
 function json(status, body) {
@@ -44,6 +53,14 @@ const escapeHtml = (s) =>
  * File the enquiry in HQ's Leads. Never throws and never logs the submission
  * or the secret: only whether it worked, or the status it got.
  */
+/** True when the page says the form was sent within seconds of opening. Missing: not judged. */
+export function filledTooFast(shownAt, now = Date.now()) {
+  const t = Number(shownAt);
+  if (!shownAt || !Number.isFinite(t)) return false;
+  const elapsed = now - t;
+  return elapsed >= 0 && elapsed < MIN_FILL_MS;
+}
+
 export async function fileHqLead(env, { name, email, message }) {
   const url = oneLine(env.HQ_LEAD_INGEST_URL || "");
   const secret = env.CRM_INGEST_SECRET || "";
@@ -58,7 +75,10 @@ export async function fileHqLead(env, { name, email, message }) {
       }),
       signal: AbortSignal.timeout(LEAD_TIMEOUT_MS),
     });
-    if (res.ok) return "filed";
+    if (res.ok) {
+      const body = await res.json().catch(() => null);
+      return body && body.outcome === "spam" ? "spam" : "filed";
+    }
     // 404 = the hq studio doesn't exist yet; 401/503 = the secret doesn't match or isn't set.
     console.error(`contact: HQ lead not filed, crm-lead-ingest answered ${res.status}`);
     return "failed";
@@ -105,6 +125,7 @@ export async function handleContact({ request, env }) {
   };
 
   if (HONEYPOTS.some((k) => field(k).trim() !== "")) return json(200, { ok: true });
+  if (filledTooFast(field(SHOWN_AT_FIELD))) return json(200, { ok: true });
 
   const name = oneLine(field("name"));
   const email = oneLine(field("email"));
@@ -127,8 +148,9 @@ export async function handleContact({ request, env }) {
     `<p><b>Name:</b> ${escapeHtml(name)}<br><b>Email:</b> ${escapeHtml(email)}</p>` +
     `<p style="white-space:pre-wrap">${escapeHtml(message)}</p>`;
 
-  // The lead is filed alongside the email; it never changes the answer.
-  const lead = fileHqLead(env, { name, email, message });
+  // File the lead first: its spam check decides whether the email goes out.
+  const lead = await fileHqLead(env, { name, email, message });
+  if (lead === "spam") return fail(422, "looks_like_spam");
 
   let res;
   try {
@@ -146,10 +168,8 @@ export async function handleContact({ request, env }) {
     });
   } catch {
     console.error("contact: could not reach Resend");
-    await lead;
     return fail(502, "Could not send");
   }
-  await lead;
   if (!res.ok) {
     // Status only: never the submission or the key.
     console.error(`contact: Resend answered ${res.status}`);

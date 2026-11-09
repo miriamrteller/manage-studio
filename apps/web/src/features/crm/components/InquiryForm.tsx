@@ -24,8 +24,9 @@ import { LeadQuestionFields } from './LeadQuestionFields';
  * and, without the app chrome, on /embed/inquire (iframe on the studio's own
  * site). Posts to the public crm-lead-capture edge function; no login.
  *
- * Spam: hidden `website` honeypot, Turnstile when VITE_TURNSTILE_SITE_KEY is
- * set (checked server-side), and the server's rate limit. Marketing opt-ins
+ * Spam: hidden `website` honeypot, a time trap (elapsedMs), Turnstile when
+ * VITE_TURNSTILE_SITE_KEY is set (checked server-side), the server's spam
+ * check on the name and message, and the server's rate limit. Marketing opt-ins
  * are never pre-ticked and are sent separately from the source/campaign tags.
  */
 export function InquiryForm({
@@ -64,7 +65,9 @@ export function InquiryForm({
   }, [invite.prefill]);
   // The class example only for studios that teach classes; a general one for everyone else.
   const teachesClasses = (tenant?.profile?.teachesClasses ?? true) && tenant?.vertical !== 'photographer';
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam'>('idle');
+  // Time trap: when the form first showed (the server ignores enquiries sent within seconds).
+  const [shownAt] = useState(() => Date.now());
   const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
   // A form made for one class or package starts with it chosen.
   const [answers, setAnswers] = useState<Record<string, unknown>>(() =>
@@ -101,18 +104,20 @@ export function InquiryForm({
           formSlug: namedForm?.slug ?? null,
           invite: invite.token,
           website: honeypot || null,
+          elapsedMs: Date.now() - shownAt,
           marketingConsent: marketingPayload(marketing, lang, tenant?.name),
         },
       });
       if (error || (data && typeof data === 'object' && 'error' in data)) {
         captcha.reset();
-        const fields = await invalidFieldsFrom(error, data);
+        const body = await errorBodyFrom(error, data);
+        const fields = invalidFieldsFrom(body);
         if (fields.length > 0) {
           setInvalid(fields);
           setStatus('answers');
           return;
         }
-        setStatus('error');
+        setStatus(refusedAsSpam(body) ? 'spam' : 'error');
         return;
       }
       setStatus('sent');
@@ -231,6 +236,11 @@ export function InquiryForm({
             {t('pages.crm.inquire.error')}
           </div>
         )}
+        {status === 'spam' && (
+          <div className="alert-error" role="alert">
+            {t('pages.crm.inquire.spam_error')}
+          </div>
+        )}
         {status === 'answers' && invalid.length > 0 && (
           <div className="alert-error" role="alert">
             {t('pages.crm.inquire.answers_error')}
@@ -268,23 +278,30 @@ function pickAnswers(answers: Record<string, unknown>, keys: string[]): Record<s
   return Object.fromEntries(Object.entries(answers).filter(([k]) => keys.includes(k)));
 }
 
-/** Question keys the server refused (400 invalid_answers), if that is why it failed. */
-async function invalidFieldsFrom(error: unknown, data: unknown): Promise<string[]> {
-  const read = (body: unknown): string[] =>
-    body && typeof body === 'object' && (body as { error?: unknown }).error === 'invalid_answers'
-      ? ((body as { fields?: unknown }).fields as string[] | undefined)?.filter((f) => typeof f === 'string') ?? []
-      : [];
-  const fromData = read(data);
-  if (fromData.length > 0) return fromData;
+/** The server's JSON answer when it refused the enquiry (read once: the body is a stream). */
+async function errorBodyFrom(error: unknown, data: unknown): Promise<unknown> {
+  if (data && typeof data === 'object' && 'error' in data) return data;
   const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
   if (context && typeof context.json === 'function') {
     try {
-      return read(await context.json());
+      return await context.json();
     } catch {
-      return [];
+      return null;
     }
   }
-  return [];
+  return null;
+}
+
+/** Question keys the server refused (400 invalid_answers), if that is why it failed. */
+function invalidFieldsFrom(body: unknown): string[] {
+  return body && typeof body === 'object' && (body as { error?: unknown }).error === 'invalid_answers'
+    ? ((body as { fields?: unknown }).fields as string[] | undefined)?.filter((f) => typeof f === 'string') ?? []
+    : [];
+}
+
+/** The server's spam check refused it (422 looks_like_spam). */
+function refusedAsSpam(body: unknown): boolean {
+  return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'looks_like_spam';
 }
 
 function marketingPayload(state: ConsentState, lang: 'he' | 'en', studio?: string) {

@@ -6,6 +6,7 @@ import {
   notifyTenantOfLead,
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
+import { assessLeadSpam } from "../_shared/crm-contract/lead-spam.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
@@ -20,6 +21,10 @@ import { withMonitoring } from "../_shared/monitoring.ts";
  * Creates or refreshes a row in `leads` via the shared lead-ingest-core
  * (dedupe rules + studio notification live there); never touches
  * people/accounts.
+ *
+ * Spam: every enquiry goes through the shared spam check (lead-spam.ts)
+ * first. Spam gets 200 { outcome: "spam" } and no row, so callers don't
+ * retry; the contact form then skips its email too.
  *
  * Auth: `Authorization: Bearer <CRM_INGEST_SECRET>` — machine-to-machine,
  * same shape as the CRON_SECRET functions but FAIL-CLOSED: with no secret
@@ -69,6 +74,19 @@ Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
     }
 
     const { fields, opts } = leadFromPayload(payload, new Date().toISOString());
+    // A lead email without a display name is named after its address
+    // ("david1985"): that name says nothing about spam, so it isn't checked.
+    const isEmail = !("contact" in payload);
+    const spamCheck = assessLeadSpam({
+      name: isEmail && !payload.message.fromName?.trim() ? null : fields.name,
+      email: fields.email,
+      message: fields.lastCommunicationNote,
+      checkMessageShape: !isEmail,
+    });
+    if (spamCheck.spam) {
+      console.warn(`crm-lead-ingest: refused as spam (${spamCheck.reasons.join(", ")})`);
+      return json({ outcome: "spam" });
+    }
     const result = await writeInboundLead(service, tenant as LeadTenant, fields, opts);
 
     if (result.outcome !== "duplicate") {
