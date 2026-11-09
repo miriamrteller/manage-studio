@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { profileFromTenant } from '@shared/index';
 import { useFeatureStates, useTenants } from '../hooks/useFeatureAdmin';
 import { FeatureTogglePanel } from './FeatureTogglePanel';
 
@@ -9,7 +10,7 @@ export function TenantFeatureManager() {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const { data: tenants = [], isLoading: tenantsLoading } = useTenants();
   const states = useFeatureStates(tenantId);
-  const overrides = (states.data ?? []).filter((f) => f.override_enabled !== null).length;
+  const tenant = tenants.find((x) => x.id === tenantId);
 
   return (
     <div className="space-y-6">
@@ -36,11 +37,6 @@ export function TenantFeatureManager() {
             </option>
           ))}
         </select>
-        {tenantId && states.data && (
-          <span className="text-xs text-muted-foreground" role="status">
-            {t('platform_features.override_count', { count: overrides })}
-          </span>
-        )}
       </div>
 
       {!tenantId && (
@@ -54,7 +50,9 @@ export function TenantFeatureManager() {
           {t('platform_features.load_failed')}
         </p>
       )}
-      {tenantId && states.data && <FeatureTogglePanel features={states.data} tenantId={tenantId} />}
+      {tenantId && tenant && states.data && (
+        <FeatureTogglePanel profile={profileFromTenant(tenant)} features={states.data} tenantId={tenantId} />
+      )}
     </div>
   );
 }

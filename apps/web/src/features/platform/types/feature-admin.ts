@@ -23,4 +23,8 @@ export interface TenantOption {
   name: string;
   subdomain: string;
   plan: 'essential' | 'professional' | null;
+  payment_flow?: string | null;
+  teaches_classes?: boolean | null;
+  family_accounts?: boolean | null;
+  client_booking?: boolean | null;
 }
