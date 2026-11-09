@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
  * Hosted: `pnpm seed:auth-parent` + `pnpm seed:dev` (and `--finance` for pay tests).
  */
 export const SEED_USERS = {
-  parentEmail: 'miriamrstern@gmail.com',
+  parentEmail: 'parent@ballet.test',
   adminEmail: 'admin@opalswift.com',
   password: process.env.E2E_PARENT_PASSWORD ?? process.env.E2E_ADMIN_PASSWORD ?? 'devPassword123',
 } as const;

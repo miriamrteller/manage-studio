@@ -280,7 +280,7 @@ pnpm run regtest   # user runs before merge; agent runs lint + unit tests minimu
 
 ## Manual smoke (post P3)
 
-1. Log in as seed parent `miriamrstern@gmail.com` → portal shows **Myself** with DOB + enrol CTA.
+1. Log in as seed parent `parent@ballet.test` → portal shows **Myself** with DOB + enrol CTA.
 2. `/enrol` on adult class (min_age ≥ 18) → **Myself** selectable; completes flow.
 3. Simulate missing guardian person (dev DB: null `account_members.person_id` and `user_profiles.person_id`) → portal shows setup card; enrolment shows **Your details** panel.
 4. After setup, Myself appears; child list unchanged.

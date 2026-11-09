@@ -87,8 +87,8 @@ describe("mock payment checkout → confirmation email path", () => {
 
   it("falls back to admin link recipient when guardian email is missing", () => {
     const recipientFromGuardian = null;
-    const adminLinkRecipient = "miriamrstern@gmail.com";
+    const adminLinkRecipient = "parent@ballet.test";
     const resolved = recipientFromGuardian ?? adminLinkRecipient;
-    expect(resolved).toBe("miriamrstern@gmail.com");
+    expect(resolved).toBe("parent@ballet.test");
   });
 });

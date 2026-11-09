@@ -7,7 +7,7 @@
 #
 # Dev accounts created (password for ALL: devPassword123):
 #   ALL subdomains                 → admin@opalswift.com        (super_admin — platform owner)
-#   creativeballet.localhost:5173  → miriamrstern@gmail.com         (account_holder / parent)
+#   creativeballet.localhost:5173  → parent@ballet.test         (account_holder / parent)
 #   studioaviv.localhost:5173      → admin@studioaviv.example.com   (tenant_admin)
 #   therapist.localhost:5173       → owner@therapist.test           (tenant_admin)
 #   artclass.localhost:5173        → owner@artclass.test            (tenant_admin)

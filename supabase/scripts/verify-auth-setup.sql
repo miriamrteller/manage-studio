@@ -2,7 +2,7 @@
 -- Run after migrations + seed.sql (+ seed-auth-parent.mjs on hosted)
 -- Usage: psql $DATABASE_URL -f supabase/scripts/verify-auth-setup.sql
 
-\set parent_email 'miriamrstern@gmail.com'
+\set parent_email 'parent@ballet.test'
 \set parent_user_id '00000000-0000-0000-0000-000000000510'
 
 DO $$
@@ -14,17 +14,17 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO v_auth_count
   FROM auth.users
-  WHERE email = 'miriamrstern@gmail.com';
+  WHERE email = 'parent@ballet.test';
 
   IF v_auth_count = 0 THEN
-    RAISE EXCEPTION 'FAIL: no auth.users row for %. Run seed-auth-parent.mjs (hosted) or db:reset-local (local).', 'miriamrstern@gmail.com';
+    RAISE EXCEPTION 'FAIL: no auth.users row for %. Run seed-auth-parent.mjs (hosted) or db:reset-local (local).', 'parent@ballet.test';
   END IF;
-  RAISE NOTICE 'PASS: auth.users exists for %', 'miriamrstern@gmail.com';
+  RAISE NOTICE 'PASS: auth.users exists for %', 'parent@ballet.test';
 
   SELECT COUNT(*) INTO v_profile_count
   FROM user_profiles
   WHERE id = '00000000-0000-0000-0000-000000000510'::uuid
-    AND email = 'miriamrstern@gmail.com';
+    AND email = 'parent@ballet.test';
 
   IF v_profile_count = 0 THEN
     RAISE EXCEPTION 'FAIL: user_profiles missing for parent user. Re-run seed.sql.';

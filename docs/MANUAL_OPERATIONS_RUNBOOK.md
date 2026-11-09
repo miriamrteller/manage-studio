@@ -46,7 +46,7 @@ pnpm dev
 # Magic link emails → http://127.0.0.1:54324 (Inbucket)
 ```
 
-Test parent login: `miriamrstern@gmail.com` / magic link or password `devpassword123`.
+Test parent login: `parent@ballet.test` / magic link or password `devpassword123`.
 
 ### Redirect URL changes
 

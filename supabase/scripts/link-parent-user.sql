@@ -12,7 +12,7 @@ SELECT
   :'auth_user_id'::uuid,
   :'tenant_id'::uuid,
   ARRAY['parent', 'guardian']::text[],
-  'miriamrstern@gmail.com',
+  'parent@ballet.test',
   'he',
   'IL'
 WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = :'auth_user_id'::uuid)

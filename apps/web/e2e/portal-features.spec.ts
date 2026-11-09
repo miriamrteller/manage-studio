@@ -3,7 +3,7 @@ import { loginAsParent, seededE2eEnabled } from './helpers/auth';
 import { i18n } from './helpers/matchers';
 
 /**
- * Parent portal — requires seeded parent auth (miriamrstern@gmail.com).
+ * Parent portal — requires seeded parent auth (parent@ballet.test).
  */
 test.describe('Parent portal features', () => {
   test.skip(!seededE2eEnabled(), 'Set PLAYWRIGHT_SEEDED_E2E=1 (or run locally with seed)');

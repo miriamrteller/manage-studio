@@ -145,7 +145,7 @@ export const WALKTHROUGH_SCENARIOS: WalkthroughScenario[] = [
     id: 'a-card',
     label: 'Esther → Mini (301)',
     flow: 'A — parent card pay',
-    howTo: 'Login parent miriamrstern@gmail.com, then pay the engagement.',
+    howTo: 'Login parent parent@ballet.test, then pay the engagement.',
   },
   {
     id: 'a-adult',

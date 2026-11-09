@@ -16,7 +16,7 @@ import { loadEnv } from './load-env.mjs';
 loadEnv();
 
 const PARENT_AUTH_USER_ID = '00000000-0000-0000-0000-000000000510';
-const PARENT_EMAIL = 'miriamrstern@gmail.com';
+const PARENT_EMAIL = 'parent@ballet.test';
 const TENANT_SUBDOMAIN = 'creativeballet';
 
 function exitOk(message) {

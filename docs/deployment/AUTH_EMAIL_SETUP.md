@@ -69,7 +69,7 @@ From repo root (requires service role key from Dashboard â†’ Project Settings â†
 ```bash
 SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=eyJ... \
-TEST_EMAIL=miriamrstern@gmail.com \
+TEST_EMAIL=parent@ballet.test \
 APP_CALLBACK_URL=http://localhost:5173/auth/callback \
 node scripts/check-auth-email-setup.mjs
 ```
@@ -189,7 +189,7 @@ If the Send Email Hook is **not** enabled, Supabase uses the dashboard template.
 Filter by:
 
 - Endpoint: `magiclink` or `/otp`
-- Email: `miriamrstern@gmail.com`
+- Email: `parent@ballet.test`
 
 Capture the full error message before changing SMTP settings.
 
@@ -205,10 +205,10 @@ Capture the full error message before changing SMTP settings.
    ```bash
    pnpm dev
    ```
-3. Open login at `http://localhost:5173/login`, enter `miriamrstern@gmail.com`, choose magic link.
+3. Open login at `http://localhost:5173/login`, enter `parent@ballet.test`, choose magic link.
 4. View captured emails at **http://127.0.0.1:54324** (Inbucket).
 
-Local seed creates `auth.users` for `miriamrstern@gmail.com` with password `devpassword123` (password login also works locally).
+Local seed creates `auth.users` for `parent@ballet.test` with password `devpassword123` (password login also works locally).
 
 ### Hosted dev project
 
@@ -294,10 +294,10 @@ Run in SQL Editor after seeding:
 
 ```sql
 -- auth user exists
-SELECT id, email, email_confirmed_at FROM auth.users WHERE email = 'miriamrstern@gmail.com';
+SELECT id, email, email_confirmed_at FROM auth.users WHERE email = 'parent@ballet.test';
 
 -- profile linked
-SELECT id, email, role FROM user_profiles WHERE email = 'miriamrstern@gmail.com';
+SELECT id, email, role FROM user_profiles WHERE email = 'parent@ballet.test';
 
 -- guardian linked to families
 SELECT * FROM family_members WHERE user_profile_id = '00000000-0000-0000-0000-000000000510';
