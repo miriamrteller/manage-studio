@@ -68,14 +68,32 @@ describe('Takbull keys (testing only)', () => {
   it('saves both keys, trimmed, and nothing else', async () => {
     renderIt();
     expect(await screen.findByText('No Takbull keys saved yet.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Test connection' })).toBeDisabled();
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: ' key-1 ' } });
     fireEvent.change(screen.getByLabelText('API secret'), { target: { value: ' secret-1 ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save Takbull keys' }));
     await waitFor(() =>
       expect(h.rpc).toHaveBeenCalledWith('save_tenant_takbull_credentials', { p_api_key: 'key-1', p_api_secret: 'secret-1' }),
     );
-    expect(await screen.findByText('Takbull keys saved.')).toBeInTheDocument();
+    expect((await screen.findAllByText('Takbull keys saved.')).length).toBeGreaterThan(0);
+  });
+
+  it('Test connection works right after saving, even if the saved date cannot be read', async () => {
+    renderIt();
+    fireEvent.change(await screen.findByLabelText('API key'), { target: { value: 'k' } });
+    fireEvent.change(screen.getByLabelText('API secret'), { target: { value: 's' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Takbull keys' }));
+    await screen.findAllByText('Takbull keys saved.');
+    const test = screen.getByRole('button', { name: 'Test connection' });
+    expect(test).not.toBeDisabled();
+    fireEvent.click(test);
+    expect(await screen.findByText('Takbull accepted the keys.')).toBeInTheDocument();
+  });
+
+  it('Test connection with no keys saved says so', async () => {
+    h.invoke.mockResolvedValue({ data: { ok: false, valid: false, code: 'not_connected' }, error: null });
+    renderIt();
+    fireEvent.click(await screen.findByRole('button', { name: 'Test connection' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No Takbull keys saved yet.');
   });
 
   it('Test connection reports what Takbull said', async () => {

@@ -28,6 +28,7 @@ function TakbullKeysForm() {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
 
   const friendly = (raw: string) => (isEncryptionKeyMissing(raw) ? t('settings.takbull.encryption_missing') : raw);
 
@@ -56,6 +57,7 @@ function TakbullKeysForm() {
     onSuccess: async () => {
       setApiKey('');
       setApiSecret('');
+      setJustSaved(true);
       setMessage({ kind: 'ok', text: t('settings.takbull.saved') });
       await queryClient.invalidateQueries({ queryKey: ['takbull-credentials-updated-at'] });
     },
@@ -67,6 +69,7 @@ function TakbullKeysForm() {
       const { data, error } = await supabase.functions.invoke('verify-takbull-credentials');
       const body = await parseFunctionInvokeBody(data, error);
       if (body?.valid === true) return;
+      if (body?.code === 'not_connected') throw new Error(t('settings.takbull.not_saved'));
       throw new Error(functionInvokeErrorMessage(error, body, t('settings.takbull.test_failed')));
     },
     onSuccess: () => setMessage({ kind: 'ok', text: t('settings.takbull.test_ok') }),
@@ -74,7 +77,8 @@ function TakbullKeysForm() {
   });
 
   const missing = !apiKey.trim() || !apiSecret.trim();
-  const saved = Boolean(savedAt.data);
+  // Test connection never waits on the "saved" line: the server says if no keys are saved.
+  const saved = Boolean(savedAt.data) || justSaved;
 
   return (
     <section className="space-y-4 max-w-lg" aria-labelledby="takbull-testing-title">
@@ -83,9 +87,11 @@ function TakbullKeysForm() {
       </h2>
       <p className="text-sm text-muted-foreground">{t('settings.takbull.hint')}</p>
       <p className="text-sm" role="status">
-        {saved
-          ? t('settings.takbull.saved_on', { date: new Date(savedAt.data!).toLocaleString() })
-          : t('settings.takbull.not_saved')}
+        {savedAt.data
+          ? t('settings.takbull.saved_on', { date: new Date(savedAt.data).toLocaleString() })
+          : saved
+            ? t('settings.takbull.saved')
+            : t('settings.takbull.not_saved')}
       </p>
 
       <label className="block text-sm font-medium">
@@ -134,7 +140,7 @@ function TakbullKeysForm() {
         <Button
           type="button"
           variant="outline"
-          disabled={!saved || testMutation.isPending}
+          disabled={testMutation.isPending}
           isLoading={testMutation.isPending}
           onClick={() => testMutation.mutate()}
         >
