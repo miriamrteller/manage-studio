@@ -4,11 +4,13 @@ import App from './App.tsx'
 import './fonts'
 import './index.css'
 import { initMonitoring } from './lib/monitoring'
+import { installStaleBuildReload } from './lib/staleBuildReload'
 import { enforceInactivityOnLoad } from './lib/inactivity/enforceOnLoad'
 import { isDevPickerActive, readDevStudioChoice } from './lib/devStudioPicker'
 import { DevSiteBar, DevStudioPickerPage } from './components/DevStudioPicker'
 
 initMonitoring()
+installStaleBuildReload()
 
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('Root element not found')
