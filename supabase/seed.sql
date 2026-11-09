@@ -538,7 +538,7 @@ BEGIN
       '00000000-0000-0000-0000-000000000000'::uuid,
       'authenticated',
       'authenticated',
-      'miriamrstern@gmail.com',
+      'parent@ballet.test',
       v_encrypted_pw,
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
@@ -563,7 +563,7 @@ BEGIN
     ) VALUES (
       '00000000-0000-0000-0000-000000000510'::uuid,
       '00000000-0000-0000-0000-000000000510'::uuid,
-      '{"sub":"00000000-0000-0000-0000-000000000510","email":"miriamrstern@gmail.com"}'::jsonb,
+      '{"sub":"00000000-0000-0000-0000-000000000510","email":"parent@ballet.test"}'::jsonb,
       'email',
       '00000000-0000-0000-0000-000000000510',
       now(),
@@ -660,7 +660,7 @@ INSERT INTO user_profiles (
   country = EXCLUDED.country;
 
 -- ============================================================================
--- PARENT / GUARDIAN USER — miriamrstern@gmail.com
+-- PARENT / GUARDIAN USER — parent@ballet.test
 --
 -- Local: auth user is created above (UUID 00000000-0000-0000-0000-000000000510).
 -- Hosted: run `node scripts/seed-auth-parent.mjs`, then re-run this seed file.
@@ -676,7 +676,7 @@ INSERT INTO user_profiles (
   '00000000-0000-0000-0000-000000000510'::uuid,
   '00000000-0000-0000-0000-000000000001'::uuid,
   ARRAY['account_holder'],
-  'miriamrstern@gmail.com',
+  'parent@ballet.test',
   'he',
   'IL'
 ) ON CONFLICT (id) DO UPDATE SET
@@ -700,7 +700,7 @@ VALUES (
   '00000000-0000-0000-0000-000000000510'::uuid,
   NULL,
   'Miriam R Stern',
-  'miriamrstern@gmail.com',
+  'parent@ballet.test',
   '1988-03-15'::date,
   NULL,
   NULL,

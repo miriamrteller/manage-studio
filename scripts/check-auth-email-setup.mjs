@@ -5,8 +5,11 @@
  * Usage (from repo root):
  *   SUPABASE_URL=https://xxx.supabase.co \
  *   SUPABASE_SERVICE_ROLE_KEY=eyJ... \
- *   TEST_EMAIL=miriamrstern@gmail.com \
+ *   TEST_EMAIL=<an inbox you can read> \
  *   node scripts/check-auth-email-setup.mjs
+ *
+ * TEST_EMAIL defaults to the seed parent (parent@ballet.test), a made-up
+ * address that cannot receive mail: set it to a real inbox to test delivery.
  *
  * Optional:
  *   APP_CALLBACK_URL=http://localhost:5173/auth/callback
@@ -21,7 +24,7 @@ loadEnv();
 
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const testEmail = process.env.TEST_EMAIL ?? 'miriamrstern@gmail.com';
+const testEmail = process.env.TEST_EMAIL ?? 'parent@ballet.test';
 const appCallbackUrl =
   process.env.APP_CALLBACK_URL ?? 'http://localhost:5173/auth/callback';
 const skipSend = process.env.SKIP_SEND === '1';

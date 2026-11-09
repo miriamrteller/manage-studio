@@ -81,7 +81,7 @@ describe("resolveEnrolmentNotificationRecipient", () => {
         },
         "00000000-0000-0000-0000-000000000504": {
           data: {
-            email: "miriamrstern@gmail.com",
+            email: "parent@ballet.test",
             name: "Miriam R Stern",
             user_profile_id: "00000000-0000-0000-0000-000000000510",
           },
@@ -101,7 +101,7 @@ describe("resolveEnrolmentNotificationRecipient", () => {
     );
 
     expect(recipient).toEqual({
-      email: "miriamrstern@gmail.com",
+      email: "parent@ballet.test",
       name: "Miriam R Stern",
       personId: "00000000-0000-0000-0000-000000000504",
     });
@@ -134,7 +134,7 @@ describe("resolveEnrolmentNotificationRecipient", () => {
       },
       userProfiles: {
         "00000000-0000-0000-0000-000000000510": {
-          data: { email: "miriamrstern@gmail.com" },
+          data: { email: "parent@ballet.test" },
           error: null,
         },
       },
@@ -146,7 +146,7 @@ describe("resolveEnrolmentNotificationRecipient", () => {
       "00000000-0000-0000-0000-000000000501",
     );
 
-    expect(recipient?.email).toBe("miriamrstern@gmail.com");
+    expect(recipient?.email).toBe("parent@ballet.test");
   });
 });
 
@@ -155,7 +155,7 @@ describe("resolveAdminLinkRecipientEmail", () => {
     const service = createMockService({
       auditLog: {
         data: {
-          after_state: { recipient_email: "miriamrstern@gmail.com" },
+          after_state: { recipient_email: "parent@ballet.test" },
         },
         error: null,
       },
@@ -167,6 +167,6 @@ describe("resolveAdminLinkRecipientEmail", () => {
       "00000000-0000-0000-0000-000000000301",
     );
 
-    expect(email).toBe("miriamrstern@gmail.com");
+    expect(email).toBe("parent@ballet.test");
   });
 });

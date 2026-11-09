@@ -56,7 +56,7 @@ Dev seed checklist (linked Supabase — not local Docker)
 7. [YOU] pnpm seed:dev -- --finance          (after Stage 1 schema — or paste seed-finance.sql)
 
 Finance test logins (see supabase/seed-finance.sql header):
-  Parent: miriamrstern@gmail.com / devPassword123
+  Parent: parent@ballet.test / devPassword123
   Admin:  admin@opalswift.com / devPassword123
 `);
 }

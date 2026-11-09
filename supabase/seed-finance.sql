@@ -10,7 +10,7 @@
 --
 -- Test matrix (creativeballet tenant):
 -- | Fixture | Flow | How to use |
--- | pending Esther → Grade 2 Wed (301) | A card pay | Login parent miriamrstern@gmail.com → pay engagement |
+-- | pending Esther → Grade 2 Wed (301) | A card pay | Login parent parent@ballet.test → pay engagement |
 -- | pending Sara → Pilates (309) | A adult self-pay | Guest or admin; waiver already signed |
 -- | pending Esther → Monthly Primary (310) | B recurring initial | Pay + save card + schedule |
 -- | active Ruti → Grade 3 Wed (302) + payment 1101 | E refund, parent portal | Admin refund; parent sees receipt |
@@ -238,7 +238,7 @@ SELECT
   1,
   now() - interval '1 hour',
   'Miriam R Stern',
-  'miriamrstern@gmail.com',
+  'parent@ballet.test',
   'guardian',
   'typed_name_checkbox',
   true,
@@ -279,7 +279,7 @@ SELECT
   1,
   now() - interval '1 hour',
   'Miriam R Stern',
-  'miriamrstern@gmail.com',
+  'parent@ballet.test',
   'guardian',
   'typed_name_checkbox',
   true,

@@ -30,7 +30,7 @@ SELECT
 FROM user_profiles up
 LEFT JOIN account_members am ON am.user_profile_id = up.id
 LEFT JOIN people gp ON gp.id = am.person_id
-WHERE up.email = 'miriamrstern@gmail.com';
+WHERE up.email = 'parent@ballet.test';
 
 DO $$
 DECLARE
