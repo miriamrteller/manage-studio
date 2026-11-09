@@ -77,8 +77,9 @@ Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
     // A lead email without a display name is named after its address
     // ("david1985"): that name says nothing about spam, so it isn't checked.
     const isEmail = !("contact" in payload);
+    const unnamedEmail = "message" in payload && !payload.message.fromName?.trim();
     const spamCheck = assessLeadSpam({
-      name: isEmail && !payload.message.fromName?.trim() ? null : fields.name,
+      name: unnamedEmail ? null : fields.name,
       email: fields.email,
       message: fields.lastCommunicationNote,
       checkMessageShape: !isEmail,
