@@ -540,12 +540,19 @@
           <label for="cf-msg" data-he="מה הכי מעצבן אתכם בניהול העסק היום?" data-en="What's your biggest hassle running your business today?">מה הכי מעצבן אתכם בניהול העסק היום?</label>
           <textarea id="cf-msg" name="message" required></textarea>
         </div>
+        <!-- Spam traps: people never see or fill these. -->
+        <div style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+          <label for="cf-website">Website</label>
+          <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+        <input type="hidden" name="shown_at" id="cf-shown-at" />
         <div style="text-align:center;margin-top:8px">
           <button type="submit" class="btn btn-primary" style="font-size:17px;padding:15px 36px" data-he="שליחה" data-en="Send">שליחה</button>
         </div>
       </form>
     </div>
     <script>
+      document.getElementById('cf-shown-at').value = String(Date.now());
       document.getElementById('contact-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const form = e.target;
@@ -561,6 +568,10 @@
           if (res.ok) {
             form.style.display = 'none';
             document.getElementById('form-success').style.display = 'block';
+          } else if (res.status === 422) {
+            alert(document.documentElement.lang === 'he'
+              ? 'נראה שמשהו הוקלד בטעות. כדאי לבדוק את השם וההודעה ולשלוח שוב.'
+              : 'This looks like it was typed by mistake. Please check your name and message, then send again.');
           } else {
             alert(document.documentElement.lang === 'he' ? 'משהו השתבש. נסו שוב.' : 'Something went wrong. Please try again.');
           }

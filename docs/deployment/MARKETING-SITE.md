@@ -39,10 +39,12 @@ forwards that to the owner's Gmail) through **Resend**, from
 subject `OpalSwift beta: <name>`. It answers `{ok:true}`, or
 `{ok:false,error}` with a 4xx/5xx status (the page only checks the status).
 
-At the same time it files the enquiry as a lead in **OpalSwift HQ's Leads**
+First it files the enquiry as a lead in **OpalSwift HQ's Leads**
 (the `hq` studio, channel *website*; name, email, and the message as the
 note) by calling the Supabase Edge Function `crm-lead-ingest`
-server-to-server with `CRM_INGEST_SECRET`. The email decides the answer: if
+server-to-server with `CRM_INGEST_SECRET`. If that function's spam check
+says `spam`, no email is sent and the visitor gets 422 with a message to
+check their name and message. Otherwise the email decides the answer: if
 it went out, the visitor sees success even if filing the lead failed, and the
 failure is logged (status only). Without the two lead settings below, or
 before the `hq` studio exists (the function answers 404), only the email is
@@ -51,11 +53,18 @@ second lead; a returning visitor's enquiry is added to their open lead.
 
 Checks: POST only (405 otherwise), FormData or urlencoded only, same-site
 `Origin`, body ≤ 16 KB, all three fields required, name ≤ 100, email ≤ 254
-(and email-shaped), message ≤ 4000 characters. If a hidden `website`,
-`company` or `url` field is filled in (bots do this), it answers success and
-sends nothing. The current form has no such field; adding one is optional.
-There is no per-visitor rate limit (that would need storage). If spam shows
-up, add a Cloudflare rate-limiting rule for `/api/contact`.
+(and email-shaped), message ≤ 4000 characters.
+
+Spam traps (answer success, send nothing, file nothing):
+- a hidden `website` field on the form (also `company` and `url`), which bots fill in;
+- `shown_at`, set by the page when the form appears: sent less than 3 seconds later is a script.
+
+Then `crm-lead-ingest` runs the shared spam check
+(`supabase/functions/_shared/crm-contract/lead-spam.ts`, the same one the
+studios' own enquiry forms use): digits in the name, letters glued to a run
+of digits, keyboard mashing, an address imitating opalswift.com, and "get
+listed on Google" pitches. There is no per-visitor rate limit (that would
+need storage); a Cloudflare rate-limiting rule for `/api/contact` would add one.
 
 Logs never contain the API key or the submission, only status codes.
 

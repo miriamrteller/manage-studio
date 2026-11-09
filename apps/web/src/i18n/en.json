@@ -823,6 +823,7 @@
         "title": "Get in touch",
         "answer_required": "Please answer this question.",
         "answer_invalid": "Please check this answer.",
+        "spam_error": "This looks like it was typed by mistake. Please check your name and message, then send again.",
         "answers_error": "Please check the highlighted questions.",
         "embed_title": "Get in touch with {{studio}}",
         "subtitle": "Leave your details and we'll get back to you.",

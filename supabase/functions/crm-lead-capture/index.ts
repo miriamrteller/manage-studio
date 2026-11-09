@@ -13,6 +13,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { cleanInviteToken, inviteTokenHash } from "../_shared/lead-form-invite.ts";
 import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
+import { assessLeadSpam, filledTooFast } from "../_shared/crm-contract/lead-spam.ts";
 import {
   FORM_TIME_ZONE,
   formQuestions,
@@ -39,6 +40,12 @@ import {
  * Abuse posture (no auth by design — it's an inquiry form):
  *   - CORS allowlist: tenant portals under APP_ROOT_DOMAIN + localhost dev.
  *   - Honeypot field `website`: bots that fill it get a 200 and no row.
+ *   - Time trap `elapsedMs`: sent faster than a person can type gets a 200
+ *     and no row.
+ *   - Spam check (lead-spam.ts): a name or message no person writes (digits
+ *     glued to letters, keyboard mashing, an address imitating OpalSwift, SEO
+ *     sales pitches) is refused with 422 looks_like_spam, so a real person
+ *     who trips it sees a message and can fix it.
  *   - Turnstile: when TURNSTILE_SECRET_KEY is set, a valid captchaToken is
  *     required (403 captcha_failed otherwise). Same widget as the login forms.
  *   - Rate limit: the shared fail-closed limiter (5/hour) keyed on the
@@ -66,6 +73,8 @@ const payloadSchema = z.object({
   invite: z.string().max(128).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
+  /** Time trap: milliseconds the form was open before sending (absent = not checked). */
+  elapsedMs: z.number().nullable().optional(),
   /**
    * Marketing opt-in per channel, with the exact wording shown next to each
    * box (Communications Law §30A proof of consent). Absent = no opt-in.
@@ -160,9 +169,15 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     return json({ error: "Invalid payload" }, 400);
   }
 
-  // Honeypot: pretend success, write nothing.
-  if (nonEmpty(payload.website)) {
+  // Honeypot and time trap: pretend success, write nothing.
+  if (nonEmpty(payload.website) || filledTooFast(payload.elapsedMs)) {
     return json({ outcome: "created" });
+  }
+
+  const spamCheck = assessLeadSpam({ name: payload.name, email: payload.email, message: payload.message });
+  if (spamCheck.spam) {
+    console.warn(`crm-lead-capture: refused as spam (${spamCheck.reasons.join(", ")})`);
+    return json({ error: "looks_like_spam" }, 422);
   }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
