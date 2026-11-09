@@ -4,6 +4,7 @@ import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-d
 import { Button } from '@/components/ui/button';
 import { reportError } from '@/lib/monitoring';
 import { useReportProblem } from '@/components/ReportProblem';
+import { reloadForStaleBuild } from '@/lib/staleBuildReload';
 
 /**
  * Route-level error boundary UI (react-router errorElement). Mounted on a
@@ -17,6 +18,8 @@ export function RouteErrorFallback() {
   const { canReport, openReportProblem } = useReportProblem();
 
   useEffect(() => {
+    // A page opened before a release asks for files that are gone: reload once for the new build.
+    if (reloadForStaleBuild(error)) return;
     console.error('Route error boundary caught:', error);
     // 404s and other router responses are expected; only real crashes are reported.
     if (!isRouteErrorResponse(error)) reportError(error, { boundary: 'route' });
