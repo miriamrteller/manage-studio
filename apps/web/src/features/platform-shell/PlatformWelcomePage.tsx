@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,19 @@ export function useLoadingTooLong(active: boolean, ms: number): boolean {
 }
 
 /**
+ * A studio admin with exactly one studio goes straight to it, signed in.
+ * The platform owner stays here; parents and teachers keep the studio link;
+ * an account with several studios picks one from the list.
+ */
+export function studioToOpenStraightAway(
+  user: { role: string[] } | null,
+  studios: StudioLink[] | undefined,
+): StudioLink | null {
+  if (!user || user.role.includes('super_admin') || !user.role.includes('tenant_admin')) return null;
+  return studios && studios.length === 1 ? studios[0] : null;
+}
+
+/**
  * app.opalswift.com: a sign-in gate, not a studio. Signed out → what OpalSwift is
  * and "Sign in". Signed in → links to the user's studios (all of them, plus
  * "Set up a new studio", for the platform owner), or a note when the account has none.
@@ -50,6 +63,17 @@ export default function PlatformWelcomePage() {
   };
 
   const loading = sessionLoading || Boolean(session && (profileLoading || (user && studiosLoading)));
+  const autoOpen = session && !loading ? studioToOpenStraightAway(user, studios) : null;
+  // Once started, keep saying "Opening your studio…": the handoff drops this
+  // host's session just before it leaves, which would flash the signed-out page.
+  const autoOpened = useRef(false);
+  const [opening, setOpening] = useState(false);
+  useEffect(() => {
+    if (!autoOpen || autoOpened.current) return;
+    autoOpened.current = true;
+    setOpening(true);
+    void openStudioSignedIn(autoOpen.subdomain);
+  }, [autoOpen]);
   const tooSlow = useLoadingTooLong(loading, SLOW_LOADING_MS);
 
   // Sign in again from scratch: drop the saved session here (even if the sign-out call hangs),
@@ -61,7 +85,9 @@ export default function PlatformWelcomePage() {
   };
 
   let body: ReactNode;
-  if ((loading && tooSlow) || (!loading && session && profileTimedOut)) {
+  if (opening || autoOpen) {
+    body = <p role="status">{t('auth.handoff_opening')}</p>;
+  } else if ((loading && tooSlow) || (!loading && session && profileTimedOut)) {
     body = (
       <div role="alert" className="space-y-4">
         <h1 className="text-2xl font-bold">{t('platform_welcome.slow_title')}</h1>
@@ -209,7 +235,7 @@ export default function PlatformWelcomePage() {
     );
   }
 
-  const signedIn = Boolean(session) && !(sessionLoading || profileLoading);
+  const signedIn = Boolean(session) && !(sessionLoading || profileLoading) && !opening;
   return (
     <OpalSwiftShell
       wide={signedIn}
