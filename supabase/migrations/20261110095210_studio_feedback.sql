@@ -78,7 +78,7 @@ CREATE POLICY "Admins upload own feedback screenshots"
     bucket_id = 'feedback-screenshots'
     AND (storage.foldername(name))[1] = public.get_my_tenant_id()::text
     AND EXISTS (SELECT 1 FROM public.user_profiles up
-                WHERE up.id = auth.uid() AND up.role && ARRAY['tenant_admin', 'super_admin']::text[])
+                WHERE up.id = (SELECT auth.uid()) AND up.role && ARRAY['tenant_admin', 'super_admin']::text[])
   );
 
 CREATE POLICY "Platform owner reads feedback screenshots"
