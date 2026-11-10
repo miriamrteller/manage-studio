@@ -129,7 +129,7 @@ export function PaymentsLog() {
           <PaymentsLogTable rows={rows} onRowClick={setSelectedRow} />
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm text-gray-600">
-              {t('common.page')} {page}
+              {t('common.page_n', { page })}
             </span>
             <div className="flex gap-2">
               <Button

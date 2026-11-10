@@ -14,6 +14,8 @@
     "remove": "הסר",
     "close": "סגור",
     "next": "הבא",
+    "main_menu": "תפריט ראשי",
+    "settings_sections": "חלקי ההגדרות",
     "back": "חזור",
     "home": "דף הבית",
     "back_to_login": "חזור להתחברות",
@@ -195,7 +197,7 @@
     "phone_invalid": "מספר טלפון לא תקף",
     "failed_to_load_classes": "הטעינה של שיעורים נכשלה. נסה שוב.",
     "loading_tenant": "טוען את פרטי הסטודיו...",
-    "tenant_subdomain_unresolved": "לא ניתן לזהות את הסטודיו. הגדר VITE_DEV_TENANT_SUBDOMAIN או השתמש בכתובת עם תת-דומיין של הסטודיו.",
+    "tenant_subdomain_unresolved": "לא הצלחנו לזהות את הסטודיו. פתחו את הקישור שקיבלתם מהסטודיו, או את הכתובת של הסטודיו.",
     "signup_failed": "ההרשמה נכשלה. נסה שוב.",
     "invalid_callback": "קריאה חזרה לאימות לא תקינה. נסה להיכנס שוב.",
     "session_exchange_failed": "הקמת הסשן נכשלה. נסה להיכנס שוב.",
@@ -206,7 +208,7 @@
     "user_not_found": "חשבון משתמש לא נמצא. אנא פנה לתמיכה.",
     "session_setup_failed": "הקמת הסשן נכשלה",
     "contact_support": "אם הבעיה היא מתמשכת, אנא פנה לתמיכה.",
-    "dashboard_load_failed": "הטעינת לוח הבקרה נכשלה. נסה לרענן את הדף.",
+    "dashboard_load_failed": "טעינת לוח הבקרה נכשלה. נסו לרענן את הדף.",
     "no_family_account": "לא מצאנו את חשבון המשפחה שלך. נא להתחבר עם אותה כתובת דוא\"ל שבה נרשמתם, או ליצור קשר עם הסטודיו.",
     "image_too_large": "התמונה חייבת להיות עד 2MB.",
     "image_invalid_type": "בחרו תמונת JPEG, PNG או WebP.",
@@ -467,7 +469,7 @@
     "admin": {
       "setup": {
         "title": "הגדרות מערכת",
-        "description": "ניהול רמות, סימנים, חשבונות תשלום וקבוצות"
+        "description": "ניהול רמות, תקופות, חשבונות תשלום ושיעורים"
       },
       "requirements": {
         "title": "ערכות דרישות",
@@ -603,7 +605,7 @@
       "members_section": "הורים וחברים",
       "no_students": "אין תלמידים מקושרים למשפחה זו.",
       "no_members": "לא נמצאו רשומות אפוטרופוס.",
-      "data_retention_note": "לא ניתן למחוק רשומות משפחה. לבקשת מחיקת נתונים, אנא פנה לתמיכה (GDPR — מחיקה באמצעות RPC).",
+      "data_retention_note": "לא ניתן למחוק רשומות משפחה. כדי להסיר את פרטי המשפחה, פנו לתמיכה.",
       "search_placeholder": "חיפוש לפי שם משפחה, איש קשר או אימייל"
     },
     "crm": {
@@ -1314,20 +1316,20 @@
       "date_label": "תאריך"
     },
     "levels_terms": {
-      "title": "רמות וסימנים",
+      "title": "רמות ותקופות",
       "description": "ניהול רמות קבוצה ופרקי זמן",
       "levels_title": "רמות שיעור",
       "levels_description": "הגדר רמות קבוצה (מתחיל, בינוני, מתקדם)",
       "terms_title": "תקופות לימוד",
       "terms_description": "צור ונהל תקופות לימוד (עונות, סמסטרים)",
       "levels_subtitle": "רמות",
-      "terms_subtitle": "סימנים",
+      "terms_subtitle": "תקופות",
       "add_level": "הוסף רמה",
-      "add_term": "הוסף סימן",
+      "add_term": "הוסף תקופה",
       "level_name_label": "שם הרמה",
       "level_sort_order_label": "סדר",
       "level_description_label": "תיאור",
-      "term_name_label": "שם הסימן",
+      "term_name_label": "שם התקופה",
       "term_start_date_label": "תאריך התחלה",
       "term_end_date_label": "תאריך סיום",
       "term_status_label": "סטטוס",
@@ -1336,8 +1338,8 @@
       "term_status_completed": "הסתיים",
       "term_status_archived": "בארכיון",
       "mark_active_button": "הפוך לפעיל",
-      "mark_active_confirm": "זה יחליף את הסימן הפעיל הקודם ל-'הסתיים'",
-      "only_one_active": "יכול להיות רק סימן פעיל אחד",
+      "mark_active_confirm": "התקופה שהייתה פעילה עד עכשיו תסומן כ'הסתיימה'.",
+      "only_one_active": "רק תקופה אחת יכולה להיות פעילה בכל זמן.",
       "edit_button": "ערוך",
       "delete_button": "מחק",
       "delete_confirm": "אתה בטוח?",
@@ -1490,6 +1492,7 @@
       "evidence_title": "טפסים חתומים",
       "export_csv": "ייצוא CSV",
       "no_templates": "אין תבניות הסכמה עדיין. צור אחת כדי להתחיל.",
+      "load_failed": "לא הצלחנו לטעון את הטפסים. רעננו את הדף כדי לנסות שוב.",
       "no_evidence": "אין טפסים חתומים עדיין.",
       "no_evidence_filtered": "לא נמצאו טפסים התואמים את הסינון.",
       "v1_limit_note": "כל השיעורים הפעילים חולקים תבנית טופס זו. הקצאת תבנית לכל שיעור בנפרד זמינה בגרסה הבאה.",
