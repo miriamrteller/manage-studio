@@ -19,7 +19,7 @@ COMMENT ON COLUMN tenants.takbull_merchant_id IS
   'The Takbull child merchant id (MID) OpalSwift opened for the studio (CreateAccount). Not secret.';
 COMMENT ON COLUMN tenants.takbull_account_opened_at IS
   'When OpalSwift opened the studio''s Takbull account. One account per studio.';
-GRANT SELECT (takbull_account_opened_at) ON TABLE tenants TO authenticated;
+GRANT SELECT (takbull_merchant_id, takbull_account_opened_at) ON TABLE tenants TO authenticated;
 
 ALTER TABLE platform_billing_settings
   ADD COLUMN IF NOT EXISTS takbull_child_package_id TEXT;
