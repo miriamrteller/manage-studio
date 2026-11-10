@@ -37,6 +37,7 @@ const InvoicingSettingsPage = lazy(() => import("./pages/InvoicingSettingsPage")
 const TenantSettingsPage = lazy(() => import("./pages/TenantSettingsPage"));
 const PlatformOnboardPage = lazy(() => import("./pages/PlatformOnboardPage"));
 const PlatformFeaturesPage = lazy(() => import("./pages/PlatformFeaturesPage"));
+const PlatformFeedbackPage = lazy(() => import("./pages/PlatformFeedbackPage"));
 const SkinsPage = lazy(() => import("./features/skins/SkinsPage"));
 const FinanceWalkthroughPage = lazy(() => import("./pages/FinanceWalkthroughPage"));
 const LevelsPage = lazy(() => import("./pages/LevelsPage"));
@@ -256,6 +257,7 @@ const router = createBrowserRouter([
           { path: "admin/dev/finance-walkthrough", element: <AdminRoute><FinanceWalkthroughPage /></AdminRoute> },
           { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
           { path: "platform/features", element: <SuperAdminRoute><PlatformFeaturesPage /></SuperAdminRoute> },
+          { path: "platform/feedback", element: <SuperAdminRoute><PlatformFeedbackPage /></SuperAdminRoute> },
           { path: "platform/skins", element: <SuperAdminRoute><SkinsPage /></SuperAdminRoute> },
 
           // LEGACY ROUTES (Phase 1B) — kept for backward compatibility

@@ -2,7 +2,7 @@
 /**
  * Menu without a studio (app.opalswift.com): a signed-in super_admin sees only
  * platform items (Studios, Set up a new studio, Platform features), never studio
- * pages such as Classes. On a studio host nothing changes.
+ * pages such as Classes. On a studio host the platform items never show.
  * Run: pnpm -C apps/web test nav-no-studio.test.tsx
  */
 import { describe, it, expect, afterEach } from 'vitest';
@@ -32,7 +32,7 @@ describe('menu without a studio', () => {
   it('a super_admin sees only the platform items', () => {
     const sections = nav({ roles: ['super_admin'], hasStudio: false });
     expect(sections.map((s) => s.sectionKey)).toEqual(['platform']);
-    expect(paths(sections)).toEqual(['/', '/platform/onboard', '/platform/features', '/platform/skins']);
+    expect(paths(sections)).toEqual(['/', '/platform/onboard', '/platform/features', '/platform/feedback', '/platform/skins']);
   });
 
   it('even with studio roles, no studio pages show without a studio', () => {
@@ -41,11 +41,14 @@ describe('menu without a studio', () => {
     expect(paths(sections)).not.toContain('/admin/students');
   });
 
-  it('on a studio host nothing changes; "Studios" (the platform home) is not shown', () => {
+  it('on a studio host the platform items are never shown, even to the platform owner', () => {
     const sections = nav({ roles: ['super_admin', 'tenant_admin'], hasStudio: true });
     expect(paths(sections)).not.toContain('/classes'); // a studio admin's menu has no public Browse pages
     expect(paths(sections)).toContain('/admin/students');
-    expect(paths(sections)).toContain('/platform/onboard');
+    expect(sections.map((s) => s.sectionKey)).not.toContain('platform');
+    expect(paths(sections)).not.toContain('/platform/onboard');
+    expect(paths(sections)).not.toContain('/platform/features');
+    expect(paths(sections)).not.toContain('/platform/skins');
     expect(paths(sections)).not.toContain('/');
   });
 

@@ -25,4 +25,5 @@ For active plans see [../README.md](../README.md). For live status see [../../IM
 | [phase-d-display-wiring.md](phase-d-display-wiring.md) | Shipped (label display wiring) |
 | [tenant-settings-hub.md](tenant-settings-hub.md) | Shipped (`/admin/setup/settings`) |
 | [v1-migration-squash-20260705.md](v1-migration-squash-20260705.md) | Shipped (third squash, folded into `20260608*`) |
+| [v1-migration-squash-20260716.md](v1-migration-squash-20260716.md) | Shipped (fourth squash + payment merge, PR #17) |
 | [v1-pg-cron-scheduled-jobs.md](v1-pg-cron-scheduled-jobs.md) | Shipped (`20260608002800_scheduled_jobs.sql`) |

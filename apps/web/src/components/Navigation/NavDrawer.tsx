@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LifeBuoy, Pin, PinOff, X } from 'lucide-react';
+import { MessageSquare, Pin, PinOff, X } from 'lucide-react';
 import type { FeatureKey } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -230,7 +230,7 @@ export function NavDrawer() {
               }}
               className="w-full justify-start gap-2 text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
             >
-              <LifeBuoy size={16} aria-hidden />
+              <MessageSquare size={16} aria-hidden />
               {t('report_problem.menu_item')}
             </Button>
           )}
