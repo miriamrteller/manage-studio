@@ -327,6 +327,6 @@ Things to notice: the orange tenant's links turn into a burnt orange that passes
 
 ## 9. Sources
 
-- Code: `supabase/migrations/20260608000200_core_tenants.sql:98-99`, `supabase/seed-*.sql`, `apps/web/src/hooks/useTenant.ts`, `apps/web/src/hooks/useThemeInjection.ts`, `apps/web/src/lib/utils.ts` (`deriveColorSystem`, `darkenColor`, `getAccessibleTextColor`, `getBackgroundForPrimaryColor`), `apps/web/src/hooks/useFontLoader.ts`, `apps/web/src/fonts.ts`, `apps/web/src/index.css`, `apps/web/tailwind.config.js`, `apps/web/src/components/Navigation/AppHeader.tsx:29`, `apps/web/src/layouts/AppLayout.tsx:45`, `apps/web/src/components/ui/{card,table,badge,button}.tsx`, `DESIGN_SYSTEM.md`, `apps/web/DESIGN_SYSTEM.md`.
+- Code: `supabase/migrations/20260608000200_core_tenants.sql:98-99`, `supabase/seed-*.sql`, `apps/web/src/hooks/useTenant.ts`, `apps/web/src/hooks/useThemeInjection.ts`, `apps/web/src/lib/utils.ts` (`deriveColorSystem`, `darkenColor`, `getAccessibleTextColor`, `getBackgroundForPrimaryColor`), `apps/web/src/hooks/useFontLoader.ts`, `apps/web/src/fonts.ts`, `apps/web/src/index.css`, `apps/web/tailwind.config.js`, `apps/web/src/components/Navigation/AppHeader.tsx:29`, `apps/web/src/layouts/AppLayout.tsx:45`, `apps/web/src/components/ui/{card,table,badge,button}.tsx`, `DESIGN_SYSTEM.md`.
 - Demo build: `VITE_DEMO_MODE=true pnpm --filter web build`, served from `apps/web/dist-demo`, captured with Playwright (Chromium).
 - References: https://www.lightbluesoftware.com/ and https://opalswift.com/ were **not reachable** (section 1).

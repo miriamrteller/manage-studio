@@ -1,5 +1,7 @@
 # Component Architecture Guidelines
 
+> **Partly out of date.** The folder rules below still apply, but some examples are old. For where things are now, see [docs/CODE-MAP.md](../../../docs/CODE-MAP.md).
+
 This document outlines the refactored component architecture for reliable, scalable, and correct React code.
 
 ## Core Principles
