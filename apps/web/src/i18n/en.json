@@ -4585,5 +4585,24 @@
     "keeps_working": "Your site keeps working as usual.",
     "update_card": "Update your card",
     "dismiss": "Close"
+  },
+  "class_cards": {
+    "person": {
+      "title": "Class cards",
+      "sell": "Sell a card",
+      "none": "No class cards yet.",
+      "left": "{{left}} of {{total}} classes left",
+      "valid_until": "valid until {{date}}",
+      "expired_on": "expired on {{date}}",
+      "asked_for_time": "asked for more time",
+      "which_card": "Card",
+      "amount_hint": "The card's price. Change it for a discount. Enter 0 for a free card.",
+      "payment_note": "Class card: {{name}}",
+      "sell_submit": "Record payment and give the card",
+      "retry_give": "Give the card (payment already recorded)",
+      "paid_not_given": "The payment was recorded, but the card was not given. Try again: the payment will not be recorded twice.",
+      "no_cards_on_sale": "No cards on sale. Add one in Settings → Class cards.",
+      "error": "Could not sell the card. Please try again."
+    }
   }
 }

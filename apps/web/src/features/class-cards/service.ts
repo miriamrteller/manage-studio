@@ -124,3 +124,74 @@ export async function saveClassCardType(tenantId: string, currency: string, inpu
   }
   return typeId;
 }
+
+export interface PersonClassCard {
+  id: string;
+  name: string;
+  class_count: number;
+  classes_left: number;
+  status: string;
+  starts_on: string | null;
+  valid_until: string | null;
+  shared: boolean;
+  extension_requested_at: string | null;
+  extended_at: string | null;
+  payment_id: string | null;
+  created_at: string;
+}
+
+/** A person's cards (theirs, and shared ones in their family account), newest first. */
+export async function fetchPersonClassCards(personId: string): Promise<PersonClassCard[]> {
+  const { data, error } = await supabase.rpc('get_person_class_cards', { p_person_id: personId });
+  if (error) throw error;
+  return (data ?? []) as PersonClassCard[];
+}
+
+export type StudioPaymentMethod = 'cash' | 'bank_transfer' | 'bit';
+
+/**
+ * Sell a card paid at the studio: record the payment the usual way (receipt where the studio's
+ * invoicing service gives one), then give the card, linked to that payment. A free card (price 0)
+ * records no payment.
+ */
+export async function sellClassCardAtStudio(input: {
+  cardTypeId: string;
+  cardName: string;
+  personId: string;
+  amountMinor: number;
+  method: StudioPaymentMethod;
+  sendConfirmation: boolean;
+  note: string;
+  /** Set on a retry after the payment was recorded but the card was not given. */
+  paymentId?: string | null;
+}): Promise<{ cardId: string; paymentId: string | null }> {
+  let paymentId: string | null = input.paymentId ?? null;
+  if (!paymentId && input.amountMinor > 0) {
+    const { data, error } = await supabase.functions.invoke('record-payment', {
+      body: {
+        person_id: input.personId,
+        amount_minor: input.amountMinor,
+        method: input.method,
+        note: input.note,
+        ...(input.sendConfirmation ? {} : { send_confirmation: false }),
+      },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(String(data.error));
+    paymentId = (data?.paymentId as string | undefined) ?? null;
+  }
+  const { data: card, error } = await supabase.rpc('issue_class_card', {
+    p_card_type_id: input.cardTypeId,
+    p_person_id: input.personId,
+    p_payment_id: paymentId,
+  });
+  if (error) throw new CardNotGivenError(paymentId, error.message);
+  return { cardId: (card as { id: string }).id, paymentId };
+}
+
+/** The payment was recorded but the card was not given: retry with the same payment. */
+export class CardNotGivenError extends Error {
+  constructor(public readonly paymentId: string | null, message: string) {
+    super(message);
+  }
+}
