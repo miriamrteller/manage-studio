@@ -39,7 +39,11 @@ export function useJobPhotoShop(engagementId: string, enabled = true) {
     mutationFn: (params: { orderId: string; url: string }) => PhotoShopService.deliver(params.orderId, params.url),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) }),
   });
-  return { shop, orders, save, deliver };
+  const markSent = useMutation({
+    mutationFn: (orderId: string) => PhotoShopService.markSent(orderId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) }),
+  });
+  return { shop, orders, save, deliver, markSent };
 }
 
 /** The shoot's uploaded previews, plus upload and remove. */

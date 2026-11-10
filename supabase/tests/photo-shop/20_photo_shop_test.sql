@@ -217,6 +217,29 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM NOT LIKE '%https%' THEN RAISE; END IF;
   END;
+
+  -- "Mark as sent" (photos sent another way): only the admin, only a paid order, no link.
+  PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
+  BEGIN
+    PERFORM mark_job_photo_order_sent(o.id);
+    RAISE EXCEPTION 'FAIL client marked sent';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  PERFORM pg_temp.as_user((SELECT admin FROM ids));
+  PERFORM mark_job_photo_order_sent(o.id);
+  PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
+  r := get_client_photo_shop((SELECT shoot_a FROM ids));
+  IF r->'orders'->0->>'status' <> 'delivered' OR r->'orders'->0->>'delivery_url' IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL marked sent: %', r;
+  END IF;
+  PERFORM pg_temp.as_user((SELECT admin FROM ids));
+  BEGIN
+    PERFORM mark_job_photo_order_sent(o.id);
+    RAISE EXCEPTION 'FAIL marked sent twice';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE '%order is delivered%' THEN RAISE; END IF;
+  END;
+  -- A link can still be sent afterwards.
   PERFORM deliver_job_photo_order(o.id, 'https://studio.smugmug.test/Alice-download');
 
   PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
@@ -224,7 +247,7 @@ BEGIN
   IF r->'orders'->0->>'delivery_url' <> 'https://studio.smugmug.test/Alice-download' OR r->'orders'->0->>'status' <> 'delivered' THEN
     RAISE EXCEPTION 'FAIL client does not see the delivery: %', r;
   END IF;
-  RAISE NOTICE 'ok  paid → bought; only the admin delivers, https only; client then sees the link';
+  RAISE NOTICE 'ok  paid → bought; only the admin delivers or marks sent, https only; client then sees the link';
 END $$;
 
 -- 10. Refund after delivery: refunded, photos stay bought. Before delivery: cancelled, photos freed.

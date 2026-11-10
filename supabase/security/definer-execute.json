@@ -86,6 +86,7 @@
       "log_platform_view",
       "log_sensitive_read",
       "login_email_status",
+      "mark_job_photo_order_sent",
       "mark_quote_sent",
       "my_login_has_password",
       "my_studio_subscription",

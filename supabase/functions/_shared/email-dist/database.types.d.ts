@@ -6229,6 +6229,12 @@ export type Database = {
                 };
                 Returns: string;
             };
+            mark_job_photo_order_sent: {
+                Args: {
+                    p_order_id: string;
+                };
+                Returns: Json;
+            };
             mark_quote_sent: {
                 Args: {
                     p_quote_id: string;
