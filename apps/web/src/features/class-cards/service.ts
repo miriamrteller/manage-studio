@@ -195,3 +195,62 @@ export class CardNotGivenError extends Error {
     super(message);
   }
 }
+
+export interface RegisterVisit {
+  visit_id: string;
+  card_id: string;
+  person_id: string;
+  name: string;
+  card_name: string;
+  status: 'booked' | 'attended' | 'no_show' | 'late_cancelled';
+  walk_in: boolean;
+}
+
+export interface RegisterCard {
+  card_id: string;
+  person_id: string;
+  name: string;
+  card_name: string;
+  classes_left: number;
+  valid_until: string | null;
+}
+
+export interface ClassCardRegister {
+  runs: boolean;
+  visits: RegisterVisit[];
+  cards: RegisterCard[];
+}
+
+/** Today, or the next day the class runs (weekly classes), as YYYY-MM-DD in studio time. */
+export function nextSessionDate(dayOfWeek: number | null, now: Date = new Date()): string {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(now);
+  if (dayOfWeek == null) return today;
+  const d = new Date(`${today}T12:00:00Z`);
+  const ahead = (dayOfWeek - d.getUTCDay() + 7) % 7;
+  d.setUTCDate(d.getUTCDate() + ahead);
+  return d.toISOString().slice(0, 10);
+}
+
+export async function fetchClassCardRegister(offeringId: string, date: string): Promise<ClassCardRegister> {
+  const { data, error } = await supabase.rpc('get_class_card_register', {
+    p_offering_id: offeringId,
+    p_session_date: date,
+  });
+  if (error) throw error;
+  return data as ClassCardRegister;
+}
+
+export async function checkInWithCard(cardId: string, offeringId: string, date: string, personId?: string) {
+  const { error } = await supabase.rpc('check_in_with_class_card', {
+    p_card_id: cardId,
+    p_offering_id: offeringId,
+    p_session_date: date,
+    ...(personId ? { p_person_id: personId } : {}),
+  });
+  if (error) throw error;
+}
+
+export async function setVisitStatus(visitId: string, status: 'no_show' | 'returned') {
+  const { error } = await supabase.rpc('set_class_card_visit_status', { p_visit_id: visitId, p_status: status });
+  if (error) throw error;
+}

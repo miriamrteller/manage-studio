@@ -76,3 +76,18 @@ describe('sellClassCardAtStudio', () => {
     expect((calls.invoke[0] as [string, Record<string, unknown>])[1].send_confirmation).toBe(false);
   });
 });
+
+import { nextSessionDate } from '@/features/class-cards/service';
+
+describe('nextSessionDate', () => {
+  // Tuesday 10 Nov 2026, 10:00 in Israel.
+  const tue = new Date('2026-11-10T08:00:00Z');
+  it('is today when the class runs today', () => expect(nextSessionDate(2, tue)).toBe('2026-11-10'));
+  it('is the next class day otherwise', () => {
+    expect(nextSessionDate(4, tue)).toBe('2026-11-12');
+    expect(nextSessionDate(0, tue)).toBe('2026-11-15');
+  });
+  it('uses Israel time, not UTC, near midnight', () =>
+    expect(nextSessionDate(3, new Date('2026-11-10T22:30:00Z'))).toBe('2026-11-11'));
+  it('is today for a class without a weekday', () => expect(nextSessionDate(null, tue)).toBe('2026-11-10'));
+});

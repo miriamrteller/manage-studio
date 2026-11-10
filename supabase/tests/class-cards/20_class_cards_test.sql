@@ -316,3 +316,28 @@ BEGIN
   RAISE NOTICE 'ok  clients read only their own cards and cannot write';
 END $$;
 RESET ROLE;
+
+-- 11. The register: who booked or came, and which cards can take a walk-in.
+DO $$
+DECLARE r JSONB;
+BEGIN
+  PERFORM pg_temp.as_user((SELECT admin FROM ids));
+  r := get_class_card_register((SELECT yoga FROM ids), (SELECT d1 FROM ids));
+  IF NOT (r->>'runs')::bool THEN RAISE EXCEPTION 'FAIL register says the class does not run'; END IF;
+  -- d1: Bob attended (booked, ticked in), Alice walked in.
+  IF jsonb_array_length(r->'visits') <> 2
+     OR NOT (r->'visits') @> '[{"name":"Alice","status":"attended","walk_in":true}]'
+     OR NOT (r->'visits') @> '[{"name":"Bob","status":"attended","walk_in":false}]' THEN
+    RAISE EXCEPTION 'FAIL register visits wrong: %', r->'visits';
+  END IF;
+  -- Cards covering Yoga with classes left: Bob's 10, Alice's 10, the family card (not the used-up single).
+  IF jsonb_array_length(r->'cards') <> 3 OR (r->'cards') @> '[{"card_name":"Single class"}]' THEN
+    RAISE EXCEPTION 'FAIL register cards wrong: %', r->'cards';
+  END IF;
+  r := get_class_card_register((SELECT yoga FROM ids), (SELECT d_none FROM ids));
+  IF (r->>'runs')::bool THEN RAISE EXCEPTION 'FAIL register says Yoga runs on a day it does not'; END IF;
+  RAISE NOTICE 'ok  register lists who came and the cards that can take a walk-in';
+END $$;
+SELECT pg_temp.expect_fail((SELECT bob_u FROM ids),
+  format('SELECT get_class_card_register(%L, %L)', (SELECT yoga FROM ids), (SELECT d1 FROM ids)),
+  'access denied', 'a client cannot read the register');

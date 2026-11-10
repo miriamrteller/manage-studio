@@ -4603,6 +4603,27 @@
       "paid_not_given": "The payment was recorded, but the card was not given. Try again: the payment will not be recorded twice.",
       "no_cards_on_sale": "No cards on sale. Add one in Settings → Class cards.",
       "error": "Could not sell the card. Please try again."
+    },
+    "register": {
+      "title": "Class cards register: {{name}}",
+      "date": "Class date",
+      "no_class_that_day": "This class does not run on that day.",
+      "nobody": "No card holders booked yet.",
+      "came": "came",
+      "walked_in": "walked in",
+      "status_booked": "booked",
+      "status_no_show": "did not come",
+      "status_late_cancelled": "cancelled late (class used)",
+      "mark_here": "Here",
+      "mark_no_show": "Did not come",
+      "give_back": "Give the class back",
+      "walk_in": "Tick in a walk-in",
+      "no_cards": "No other card holders can use their card for this class.",
+      "choose": "Choose a card holder",
+      "card_option": "{{name}} · {{card}} · {{left}} left",
+      "tick_in": "Tick in",
+      "error": "Could not save. Please try again.",
+      "button": "Class cards"
     }
   }
 }

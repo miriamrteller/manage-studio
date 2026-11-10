@@ -65,6 +65,7 @@
       "get_admin_dashboard_overview",
       "get_admin_quote",
       "get_billing_account_payment_method",
+      "get_class_card_register",
       "get_client_job_gallery",
       "get_client_photo_shop",
       "get_engagement_person_id",
