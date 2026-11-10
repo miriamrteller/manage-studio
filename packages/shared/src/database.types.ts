@@ -3068,6 +3068,44 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_billing_settings: {
+        Row: {
+          charging_enabled: boolean
+          id: boolean
+          takbull_api_key_enc: string | null
+          takbull_api_secret_enc: string | null
+          takbull_credentials_updated_at: string | null
+          takbull_credentials_updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          charging_enabled?: boolean
+          id?: boolean
+          takbull_api_key_enc?: string | null
+          takbull_api_secret_enc?: string | null
+          takbull_credentials_updated_at?: string | null
+          takbull_credentials_updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          charging_enabled?: boolean
+          id?: boolean
+          takbull_api_key_enc?: string | null
+          takbull_api_secret_enc?: string | null
+          takbull_credentials_updated_at?: string | null
+          takbull_credentials_updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_billing_settings_takbull_credentials_updated_by_fkey"
+            columns: ["takbull_credentials_updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_owner_emails: {
         Row: {
           added_at: string
@@ -3085,6 +3123,62 @@ export type Database = {
           note?: string | null
         }
         Relationships: []
+      }
+      platform_payments: {
+        Row: {
+          amount_agorot: number
+          attempt: number
+          created_at: string
+          document_url: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          period_month: string
+          status: string
+          takbull_order_ref: string | null
+          takbull_transaction_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_agorot: number
+          attempt?: number
+          created_at?: string
+          document_url?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          period_month: string
+          status?: string
+          takbull_order_ref?: string | null
+          takbull_transaction_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_agorot?: number
+          attempt?: number
+          created_at?: string
+          document_url?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          period_month?: string
+          status?: string
+          takbull_order_ref?: string | null
+          takbull_transaction_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_lines: {
         Row: {
@@ -3704,6 +3798,62 @@ export type Database = {
             foreignKeyName: "studio_feedback_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_subscriptions: {
+        Row: {
+          card_expiry: string | null
+          card_last4: string | null
+          card_saved_at: string | null
+          card_token_enc: string | null
+          created_at: string
+          failed_attempts: number
+          founder: boolean
+          free_until: string | null
+          last_failed_at: string | null
+          monthly_amount_agorot: number | null
+          next_charge_on: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_expiry?: string | null
+          card_last4?: string | null
+          card_saved_at?: string | null
+          card_token_enc?: string | null
+          created_at?: string
+          failed_attempts?: number
+          founder?: boolean
+          free_until?: string | null
+          last_failed_at?: string | null
+          monthly_amount_agorot?: number | null
+          next_charge_on?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_expiry?: string | null
+          card_last4?: string | null
+          card_saved_at?: string | null
+          card_token_enc?: string | null
+          created_at?: string
+          failed_attempts?: number
+          founder?: boolean
+          free_until?: string | null
+          last_failed_at?: string | null
+          monthly_amount_agorot?: number | null
+          next_charge_on?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -5335,6 +5485,13 @@ export type Database = {
           wording: string
         }[]
       }
+      get_platform_takbull_credentials: {
+        Args: never
+        Returns: {
+          api_key: string
+          api_secret: string
+        }[]
+      }
       get_platform_terms_acceptance: {
         Args: { p_tenant_id: string; p_version: string }
         Returns: boolean
@@ -5776,6 +5933,31 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: boolean
       }
+      platform_billing_overview: {
+        Args: never
+        Returns: {
+          card_last4: string
+          failed_attempts: number
+          founder: boolean
+          free_until: string
+          last_paid_month: string
+          monthly_amount_agorot: number
+          name: string
+          next_charge_on: string
+          sub_status: string
+          subdomain: string
+          tenant_id: string
+          trial_ends_at: string
+        }[]
+      }
+      platform_billing_status: {
+        Args: never
+        Returns: {
+          charging_enabled: boolean
+          keys_saved: boolean
+          keys_saved_at: string
+        }[]
+      }
       platform_set_feature_override: {
         Args: {
           p_enabled: boolean
@@ -5957,6 +6139,10 @@ export type Database = {
       save_job_photo_shop: {
         Args: { p_engagement_id: string; p_settings: Json }
         Returns: Json
+      }
+      save_platform_takbull_credentials: {
+        Args: { p_api_key: string; p_api_secret: string }
+        Returns: undefined
       }
       save_quote: { Args: { p_lines: Json; p_quote: Json }; Returns: string }
       save_tenant_google_credentials: {

@@ -7,6 +7,7 @@ import { OpalSwiftShell, OPALSWIFT_GEM_SRC } from '@/components/OpalSwiftShell';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
+import { isDevSite } from '@/lib/devStudioPicker';
 import { dropSavedSession } from '@/lib/inactivity/signOutForInactivity';
 import { withTimeout } from '@/lib/withTimeout';
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
@@ -172,6 +173,20 @@ export default function PlatformWelcomePage() {
                 {t('platform_welcome.platform_features')}
               </span>
               <span className="block text-sm text-gray-700">{t('platform_welcome.platform_features_hint')}</span>
+            </span>
+            <span aria-hidden="true" className="text-gray-700 rtl:rotate-180">›</span>
+          </Link>
+        )}
+        {isSuperAdmin && isDevSite() && (
+          <Link
+            to="/platform/billing"
+            className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 hover:bg-gray-50 focus-visible:outline-2 outline-offset-2"
+          >
+            <span>
+              <span className="block font-semibold" style={{ color: OPALSWIFT_BRAND.ink }}>
+                {t('platform_welcome.platform_billing')}
+              </span>
+              <span className="block text-sm text-gray-700">{t('platform_welcome.platform_billing_hint')}</span>
             </span>
             <span aria-hidden="true" className="text-gray-700 rtl:rotate-180">›</span>
           </Link>

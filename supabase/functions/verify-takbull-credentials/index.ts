@@ -1,8 +1,8 @@
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
-import { takbullApiForTenant } from "../_shared/payments/takbull/index.ts";
-import { TakbullNotConnectedError } from "../_shared/payments/takbull/credentials.ts";
+import { takbullApiForPlatform, takbullApiForTenant } from "../_shared/payments/takbull/index.ts";
+import { PlatformTakbullNotConnectedError, TakbullNotConnectedError } from "../_shared/payments/takbull/credentials.ts";
 import { verifyTakbullConnection } from "../_shared/payments/takbull/verify.ts";
 
 /**
@@ -10,6 +10,7 @@ import { verifyTakbullConnection } from "../_shared/payments/takbull/verify.ts";
  * the studio's own keys. It changes nothing in Takbull and doesn't need Takbull to be the
  * studio's provider yet (keys can be saved and checked before switching).
  * With { action: "status" } it only says whether keys are saved, and when (no Takbull call).
+ * With { scope: "platform" } the platform owner tests OpalSwift's own keys (Platform → Billing).
  */
 Deno.serve(withMonitoring("verify-takbull-credentials", async (req) => {
   const options = handleOptions(req);
@@ -25,13 +26,31 @@ Deno.serve(withMonitoring("verify-takbull-credentials", async (req) => {
     .select("tenant_id, role")
     .eq("id", auth.user.id)
     .single();
+  // Read once; an empty or invalid body means "test the studio's keys".
+  const body = await req.json().catch(() => ({})) as { action?: string; scope?: string };
+
+  // { scope: "platform" }: the platform owner tests OpalSwift's own keys.
+  if (body?.scope === "platform") {
+    if (!Array.isArray(profile?.role) || !profile.role.includes("super_admin")) {
+      return jsonResponse({ error: "platform owner only" }, 403);
+    }
+    try {
+      const result = await verifyTakbullConnection(await takbullApiForPlatform(service));
+      return jsonResponse({ ok: result.valid, provider: "takbull", ...result }, result.valid ? 200 : 502);
+    } catch (err) {
+      if (err instanceof PlatformTakbullNotConnectedError) {
+        return jsonResponse({ ok: false, valid: false, code: "not_connected", message: err.message }, 400);
+      }
+      throw err;
+    }
+  }
+
   if (!profile?.tenant_id) return jsonResponse({ error: "Profile not found" }, 404);
   if (!Array.isArray(profile.role) || !profile.role.includes("tenant_admin")) {
     return jsonResponse({ error: "tenant_admin role required" }, 403);
   }
 
   // { action: "status" }: whether keys are saved and when, without calling Takbull.
-  const body = await req.json().catch(() => ({})) as { action?: string };
   if (body?.action === "status") {
     const { data: tenant } = await service
       .from("tenants")
