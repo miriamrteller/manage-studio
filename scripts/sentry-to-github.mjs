@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Opens one GitHub issue per new Sentry issue (errors and "Report a problem"
- * feedback), so an agent session can be pointed straight at it.
+ * Opens one GitHub issue per new Sentry issue (errors and "Send feedback → Bug"
+ * messages), so an agent session can be pointed straight at it. Ideas and help
+ * requests never reach Sentry, so they never become issues here.
  *
  * Run by .github/workflows/sentry-issues.yml. Exits 0 without doing anything when
  * SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT are not configured.
@@ -89,7 +90,7 @@ export function buildIssue(issue, event, repo) {
   const body = [
     MARKER(issue.id),
     isFeedback
-      ? 'A studio admin sent a **Report a problem** message from the app. The message is private: read it in Sentry (link below). It is deliberately not copied here because this repository is public.'
+      ? 'A studio admin sent a **Send feedback → Bug** message from the app. The message is private: read it in Sentry (link below). It is deliberately not copied here because this repository is public.'
       : 'A new error was reported by Sentry. The error message is not copied here because it can contain personal data: open the Sentry link.',
     '',
     '| | |',
@@ -134,7 +135,7 @@ async function github(path, env, init = {}) {
 
 const LABELS = {
   sentry: { color: '362d59', description: 'Opened automatically from Sentry' },
-  'problem-report': { color: 'd93f0b', description: '"Report a problem" from a studio admin' },
+  'problem-report': { color: 'd93f0b', description: '"Send feedback → Bug" from a studio admin' },
   bug: { color: 'd73a4a', description: "Something isn't working" },
 };
 

@@ -153,11 +153,15 @@ export function lastErrorId(): string | undefined {
   return sentry?.lastEventId();
 }
 
-/** Roles that see "Report a problem". Clients and students do not. */
+/** Roles that see "Send feedback". Clients and students do not. */
 const REPORTER_ROLES = ['tenant_admin', 'super_admin'];
 
-export function canReportProblems(roles: string[] | undefined): boolean {
-  return isMonitoringEnabled() && !!roles?.some((r) => REPORTER_ROLES.includes(r));
+/**
+ * Studio admins of a studio. Works without Sentry: feedback is saved for the platform
+ * owner either way, and only bugs also go to Sentry when it is configured.
+ */
+export function canReportProblems(roles: string[] | undefined, tenantId?: string | null): boolean {
+  return !!tenantId && !!roles?.some((r) => REPORTER_ROLES.includes(r));
 }
 
 /** Largest screenshot an admin can attach to a problem report. */

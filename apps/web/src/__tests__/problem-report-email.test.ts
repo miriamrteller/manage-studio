@@ -23,7 +23,7 @@ describe('problem report email to the owner', () => {
 
   it('has the studio, page, time, message and a link to the Sentry event', () => {
     const mail = buildProblemReportEmail(base);
-    expect(mail.subject).toBe('Problem report: Creative Ballet');
+    expect(mail.subject).toBe('Bug: Creative Ballet');
     for (const part of ['Creative Ballet (creativeballet)', '/admin/setup/booking', '2026-11-04T10:00:00.000Z', 'Save does nothing on the booking page']) {
       expect(mail.html).toContain(part);
       expect(mail.text).toContain(part);
@@ -50,6 +50,16 @@ describe('problem report email to the owner', () => {
     expect(sentryEventUrl(EVENT.toUpperCase())).toBe(`https://opalswift.sentry.io/organizations/opalswift/eventids/${EVENT}/`);
     const mail = buildProblemReportEmail({ ...base, eventId: 'not-an-id' });
     expect(mail.html).not.toContain('Open the report in Sentry');
+  });
+
+  it('names the kind and the industry, and says when a screenshot is attached', () => {
+    const idea = buildProblemReportEmail({ ...base, kind: 'idea', industry: 'Dance studio', hasScreenshot: true });
+    expect(idea.subject).toBe('Idea: Creative Ballet');
+    expect(idea.text).toContain('Idea from Creative Ballet');
+    expect(idea.text).toContain('Industry: Dance studio');
+    expect(idea.text).toContain('Screenshot: Attached');
+    expect(buildProblemReportEmail({ ...base, kind: 'help' }).subject).toBe('Help request: Creative Ballet');
+    expect(buildProblemReportEmail(base).text).not.toContain('Screenshot');
   });
 
   it('cuts a very long message', () => {
