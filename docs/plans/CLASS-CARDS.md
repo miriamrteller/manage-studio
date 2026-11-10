@@ -18,6 +18,7 @@ Names: "Class card" / "כרטיסייה". Never "credit" (that word belongs to [
 
 | Question | Answer |
 |---|---|
+| On or off | The studio admin switches class cards on or off in Settings. **Off by default.** While off, no card appears anywhere, for the studio or its clients. |
 | Sizes and prices | Each studio sets its own. Suggested to start: 5 and 10 classes, editable. |
 | Expiry | Studio sets a "valid for" period. 3 months to start with, can be changed or switched off. |
 | Carry-over | Extend once on request: the client asks, the admin approves with one button, and the card gets 3 more months to start with (the studio can change the length). This matches the coaching sessions agreement (lawyer row 13). |
@@ -30,7 +31,7 @@ Names: "Class card" / "כרטיסייה". Never "credit" (that word belongs to [
 ## How it works
 
 **Studio (admin)**
-- Settings → Class cards: name, number of classes, price, valid for (months), classes covered, personal or shared, late-cancel cutoff. Everything is prefilled and can be edited.
+- Settings → Class cards: an on/off switch at the top (off to start with). Once it's on: name, number of classes, price, valid for (months), classes covered, personal or shared, late-cancel cutoff. Everything is prefilled and can be edited.
 - Client page: their cards, classes left, expiry, history (each class used, given back or extended).
 - Class register: a new screen per session. It lists who booked and lets the teacher tick walk-ins. Ticking a card holder uses one class.
 
@@ -47,7 +48,7 @@ Names: "Class card" / "כרטיסייה". Never "credit" (that word belongs to [
 ## PR split
 
 1. (M) Tables, ledger, RPCs, security tests, `definer-execute.json`.
-2. (M) Settings → Class cards, and selling a card through the existing one-off checkout.
+2. (M) Settings → Class cards with the on/off switch (default off), and selling a card through the existing one-off checkout.
 3. (M) Class register screen (walk-ins), which uses a class.
 4. (M) Portal booking and cancelling with the cutoff, and the client's card balance.
 5. (S) Expiry job, client extension request, admin give-back and one-time extend, docs and lawyer wording.
