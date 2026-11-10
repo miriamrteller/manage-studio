@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users } from 'lucide-react';
+import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users, Ticket } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
@@ -16,6 +16,8 @@ import { LeadFormSettings } from '@/features/settings/components/LeadFormSetting
 import { LeadDigestSetting } from '@/features/settings/components/LeadDigestSetting';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
+import { ClassCardSettings } from '@/features/class-cards/components/ClassCardSettings';
+import { useTenant } from '@/hooks/useTenant';
 
 /** Tax documents on/off and the invoicing service first, then that service's credentials. */
 function InvoicingSection() {
@@ -69,6 +71,13 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     component: StudioFeatureSettings,
   },
   {
+    id: 'class_cards',
+    labelKey: 'settings.tabs.class_cards',
+    label: 'Class cards',
+    icon: Ticket,
+    component: ClassCardSettings,
+  },
+  {
     id: 'locale',
     labelKey: 'settings.tabs.locale',
     label: 'Language & Region',
@@ -114,15 +123,25 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 
 const DEFAULT_TAB = 'branding';
 
+/** Tabs that only make sense for studios that teach classes. */
+const CLASS_ONLY_TABS = new Set(['class_cards']);
+
 export function TenantSettingsPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const tenant = useTenant();
+  const teachesClasses = tenant?.profile?.teachesClasses !== false;
+
+  const sections = useMemo(
+    () => SETTINGS_SECTIONS.filter((s) => teachesClasses || !CLASS_ONLY_TABS.has(s.id)),
+    [teachesClasses],
+  );
 
   const activeSectionId = useMemo(() => {
     const tabParam = searchParams.get('tab');
-    const validSection = SETTINGS_SECTIONS.find((s) => s.id === tabParam);
+    const validSection = sections.find((s) => s.id === tabParam);
     return validSection ? tabParam! : DEFAULT_TAB;
-  }, [searchParams]);
+  }, [searchParams, sections]);
 
   const handleSectionChange = (sectionId: string) => {
     setSearchParams({ tab: sectionId }, { replace: true });
@@ -137,7 +156,7 @@ export function TenantSettingsPage() {
       </div>
 
       <SettingsLayout
-        sections={SETTINGS_SECTIONS}
+        sections={sections}
         activeSectionId={activeSectionId}
         onSectionChange={handleSectionChange}
       />
