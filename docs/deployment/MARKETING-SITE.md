@@ -128,6 +128,23 @@ if the pages and the Markdown differ. When the text changes, also update
 
 Every page's footer links to Terms · Privacy · Accessibility.
 
+## Search and link previews
+
+Each page's `<title>`, search description and link-preview tags are built from
+`apps/marketing/scripts/seo-source.mjs` (English and Hebrew) by
+`npm run build:seo`, which also writes `public/sitemap.xml`. Edit the source
+file, never the block between the `seo:start` / `seo:end` markers. The page
+script switches the title and description with the page language; previews
+(WhatsApp, LinkedIn) are in English, the site's default. `public/robots.txt`
+points search engines to the sitemap, and `public/og-image.png` is the preview
+picture (logo and words only, no people). The legal pages are in the sitemap
+but keep the titles `build-legal.mjs` gives them.
+
+Owner step, once: add `opalswift.com` to Google Search Console
+(https://search.google.com/search-console, Add property, Domain), confirm it
+with the DNS record Google shows (Cloudflare, DNS, Records, Add record), then
+Sitemaps, enter `sitemap.xml`, Submit.
+
 ## How to edit
 
 1. Branch from `main`, edit files in `apps/marketing/public/`.

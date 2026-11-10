@@ -175,6 +175,7 @@
       "quote_client_contact",
       "resolve_engagement_billing_account",
       "resolve_notification_blast_recipients",
+      "save_job_photo_shop_smugmug_check",
       "save_studio_card_token",
       "save_tenant_google_credentials",
       "save_tenant_smugmug_access_token",
