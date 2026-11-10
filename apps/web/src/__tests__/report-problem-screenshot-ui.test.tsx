@@ -128,8 +128,8 @@ describe('screenshot strings', () => {
     const keys = Object.keys(en.report_problem).filter((k) => k.startsWith('screenshot_'));
     expect(keys.length).toBe(8);
     for (const k of keys) {
-      const e = (en.report_problem as Record<string, string>)[k];
-      const h = (he.report_problem as Record<string, string>)[k];
+      const e = (en.report_problem as unknown as Record<string, string>)[k];
+      const h = (he.report_problem as unknown as Record<string, string>)[k];
       expect(typeof h).toBe('string');
       expect(h.match(/\{\{\w+\}\}/g) ?? []).toEqual(e.match(/\{\{\w+\}\}/g) ?? []);
     }
@@ -255,8 +255,8 @@ describe('snapshot and hide-details strings', () => {
     const keys = Object.keys(en.report_problem).filter((k) => k.startsWith('snapshot_') || k.startsWith('redact_'));
     expect(keys.length).toBeGreaterThanOrEqual(21);
     for (const k of keys) {
-      const e = (en.report_problem as Record<string, string>)[k];
-      const h = (he.report_problem as Record<string, string>)[k];
+      const e = (en.report_problem as unknown as Record<string, string>)[k];
+      const h = (he.report_problem as unknown as Record<string, string>)[k];
       expect(typeof h, k).toBe('string');
       expect(h.match(/\{\{\w+\}\}/g) ?? [], k).toEqual(e.match(/\{\{\w+\}\}/g) ?? []);
     }
