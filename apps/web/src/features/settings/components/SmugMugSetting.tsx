@@ -1,14 +1,15 @@
 import { useEffect, useId, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePhotoShopEnabled } from '@/features/jobs/hooks/usePhotoShop';
+import { appRootHostname } from '@/lib/tenantUrl';
 import {
   SMUGMUG_API_DOC_URL,
-  SMUGMUG_APP_URL,
   SMUGMUG_APPLY_URL,
-  SMUGMUG_CALLBACK_URL,
+  SMUGMUG_SITE_URL,
+  smugmugAppUrls,
   SmugMugActionError,
   SmugMugService,
   type SmugMugResultCode,
@@ -17,7 +18,7 @@ import {
 const STATUS_KEY = ['smugmug-status'] as const;
 
 /**
- * Settings → Payment: the studio's own SmugMug connection for the photo shop (beta).
+ * Photo shop → SmugMug: the studio's own SmugMug connection for the photo shop (beta).
  * Never blocks: the shop defaults above work without it.
  */
 export function SmugMugSetting() {
@@ -54,9 +55,28 @@ function CopyUrl({ url }: { url: string }) {
   );
 }
 
+/** A SmugMug page the photographer opens: tap to open it in a new tab. */
+const newTab = (url: string) => ({
+  href: url,
+  target: '_blank',
+  rel: 'noopener noreferrer',
+  className: 'font-medium underline',
+});
+
+function OpenLink({ url }: { url: string }) {
+  const { t } = useTranslation();
+  return (
+    <a {...newTab(url)} dir="ltr" className="break-all font-medium underline">
+      {url}
+      <span className="sr-only"> {t('settings.smugmug.new_tab')}</span>
+    </a>
+  );
+}
+
 function SmugMugForm() {
   const { t, i18n } = useTranslation();
   const id = useId();
+  const urls = smugmugAppUrls(window.location.origin, appRootHostname());
   const queryClient = useQueryClient();
   const status = useQuery({ queryKey: STATUS_KEY, queryFn: () => SmugMugService.getStatus() });
 
@@ -129,9 +149,11 @@ function SmugMugForm() {
       >
         <summary className="cursor-pointer text-sm font-medium">{t('settings.smugmug.help_title')}</summary>
         <ol className="mt-3 list-decimal space-y-2 ps-5 text-sm">
-          <li>{t('settings.smugmug.step_sign_in')}</li>
           <li>
-            {t('settings.smugmug.step_open')} <CopyUrl url={SMUGMUG_APPLY_URL} />
+            <Trans i18nKey="settings.smugmug.step_sign_in" components={{ page: <a {...newTab(SMUGMUG_SITE_URL)}>smugmug.com</a> }} />
+          </li>
+          <li>
+            {t('settings.smugmug.step_open')} <OpenLink url={SMUGMUG_APPLY_URL} />
           </li>
           <li>
             {t('settings.smugmug.step_fill')}
@@ -140,16 +162,16 @@ function SmugMugForm() {
               <li>{t('settings.smugmug.field_type')}</li>
               <li>{t('settings.smugmug.field_description')}</li>
               <li>
-                {t('settings.smugmug.field_app_url')} <CopyUrl url={SMUGMUG_APP_URL} />
+                {t('settings.smugmug.field_app_url')} <CopyUrl url={urls.appUrl} />
               </li>
               <li>
-                {t('settings.smugmug.field_callback_url')} <CopyUrl url={SMUGMUG_CALLBACK_URL} />
+                {t('settings.smugmug.field_callback_url')} <CopyUrl url={urls.callbackUrl} />
               </li>
             </ul>
           </li>
           <li>{t('settings.smugmug.step_submit')}</li>
           <li>
-            {t('settings.smugmug.step_copy', { url: SMUGMUG_API_DOC_URL })} <CopyUrl url={SMUGMUG_API_DOC_URL} />
+            <Trans i18nKey="settings.smugmug.step_copy" components={{ page: <a {...newTab(SMUGMUG_API_DOC_URL)}>{SMUGMUG_API_DOC_URL}</a> }} />
           </li>
           <li>{t('settings.smugmug.step_paste')}</li>
           <li>{t('settings.smugmug.step_connect')}</li>

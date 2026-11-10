@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { SmugMugSetting } from '@/features/settings/components/SmugMugSetting';
 import type { SmugMugStatus } from '@/features/settings/services/smugmugService';
-import { SMUGMUG_CALLBACK_URL } from '@/features/settings/services/smugmugService';
+import { SMUGMUG_CALLBACK_URL, smugmugAppUrls } from '@/features/settings/services/smugmugService';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
@@ -62,9 +62,28 @@ describe('SmugMug settings', () => {
     await waitFor(() => expect(container.querySelector('details')?.open).toBe(true));
     expect(screen.getByText(SMUGMUG_CALLBACK_URL)).toBeTruthy();
     expect(SMUGMUG_CALLBACK_URL).toBe('https://app.opalswift.com/admin/setup/integrations/smugmug/callback');
-    expect(screen.getByText('https://api.smugmug.com/api/developer/apply')).toBeTruthy();
+    // SmugMug's pages are links that open in a new tab; only the URLs typed into SmugMug have Copy.
+    const apply = screen.getByRole('link', { name: /api\.smugmug\.com\/api\/developer\/apply/ });
+    expect(apply.getAttribute('href')).toBe('https://api.smugmug.com/api/developer/apply');
+    expect(apply.getAttribute('target')).toBe('_blank');
+    expect(apply.getAttribute('rel')).toContain('noopener');
+    expect(screen.getByRole('link', { name: /API documentation page/ }).getAttribute('href')).toBe(
+      'https://api.smugmug.com/api/v2/doc',
+    );
+    expect(screen.getByRole('link', { name: 'smugmug.com' }).getAttribute('href')).toBe('https://www.smugmug.com');
+    expect(screen.getAllByRole('button', { name: /^Copy / })).toHaveLength(2);
     expect(screen.getByText('Connect SmugMug to open your shop.')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Connect SmugMug' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('shows the live addresses on the live site and its studio addresses, and its own address on the dev website', () => {
+    const live = { appUrl: 'https://app.opalswift.com', callbackUrl: SMUGMUG_CALLBACK_URL };
+    expect(smugmugAppUrls('https://app.opalswift.com', 'opalswift.com')).toEqual(live);
+    expect(smugmugAppUrls('https://lensstudio.opalswift.com', 'opalswift.com')).toEqual(live);
+    expect(smugmugAppUrls('https://opalswift-app-dev.example.workers.dev', 'localhost')).toEqual({
+      appUrl: 'https://opalswift-app-dev.example.workers.dev',
+      callbackUrl: 'https://opalswift-app-dev.example.workers.dev/admin/setup/integrations/smugmug/callback',
+    });
   });
 
   it('saves both keys, then tests the connection', async () => {
