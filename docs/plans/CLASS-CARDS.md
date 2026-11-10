@@ -26,6 +26,10 @@ Names: "Class card" / "כרטיסייה". Never "credit" (that word belongs to [
 | How clients come | Both: book a place in the portal, or walk in and the teacher ticks them on the register. One class comes off either way. |
 | Late cancel and no-show | Studio sets a cutoff, 12 hours to start with. Cancel earlier and the class goes back on the card. Later, or not coming, uses it. The admin can always give a class back. |
 | Sharing | Studio chooses per card: personal (the default) or shared within one family account. |
+| Where to buy | The studio's public class page (for new clients) and the client portal. |
+| Forms to sign | The studio's usual forms (terms, and a health declaration if the studio uses one) are signed once, at the first card, prefilled from what we know. Later cards reuse the signed copy. |
+| Pay at the studio | Allowed. The admin sells the card on the client's page and records it as paid at the studio, and the card starts straight away. |
+| Full class | The class shows as full and the client picks another. No waiting list for now. |
 | Refunds | No refunds on cards. Shown to the client before they pay. **Waits for the lawyer** (lawyer list row 34): the class enrolment terms (07a §4) already give a 14-day cancellation right and let a client end an ongoing service at any time. |
 
 ## How it works
