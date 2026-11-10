@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { TakbullClient, type TakbullApi } from "./client.ts";
-import { getTakbullCredentials } from "./credentials.ts";
+import { getPlatformTakbullCredentials, getTakbullCredentials } from "./credentials.ts";
 import { MockTakbullApi } from "./mock.ts";
 
 function envFlag(name: string): boolean {
@@ -14,6 +14,13 @@ function envFlag(name: string): boolean {
  */
 export async function takbullApiForTenant(service: SupabaseClient, tenantId: string): Promise<TakbullApi> {
   const credentials = await getTakbullCredentials(service, tenantId);
+  if (envFlag("TAKBULL_MOCK")) return new MockTakbullApi(credentials.apiKey);
+  return new TakbullClient({ credentials });
+}
+
+/** OpalSwift's own Takbull account (Platform → Billing). Throws PlatformTakbullNotConnectedError. */
+export async function takbullApiForPlatform(service: SupabaseClient): Promise<TakbullApi> {
+  const credentials = await getPlatformTakbullCredentials(service);
   if (envFlag("TAKBULL_MOCK")) return new MockTakbullApi(credentials.apiKey);
   return new TakbullClient({ credentials });
 }

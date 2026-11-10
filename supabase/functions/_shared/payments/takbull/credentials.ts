@@ -23,3 +23,22 @@ export async function getTakbullCredentials(
   if (error || !row?.api_key?.trim() || !row?.api_secret?.trim()) throw new TakbullNotConnectedError();
   return { apiKey: row.api_key.trim(), apiSecret: row.api_secret.trim() };
 }
+
+/** Thrown when OpalSwift's own Takbull keys (Platform → Billing) are not saved. */
+export class PlatformTakbullNotConnectedError extends Error {
+  constructor() {
+    super("OpalSwift's own Takbull keys are not saved");
+    this.name = "PlatformTakbullNotConnectedError";
+  }
+}
+
+/**
+ * OpalSwift's own Takbull keys, used to bill studios (and later to open their accounts),
+ * through get_platform_takbull_credentials (service role only). Never logged.
+ */
+export async function getPlatformTakbullCredentials(service: SupabaseClient): Promise<TakbullCredentials> {
+  const { data, error } = await service.rpc("get_platform_takbull_credentials");
+  const row = (data as Array<{ api_key: string | null; api_secret: string | null }> | null)?.[0];
+  if (error || !row?.api_key?.trim() || !row?.api_secret?.trim()) throw new PlatformTakbullNotConnectedError();
+  return { apiKey: row.api_key.trim(), apiSecret: row.api_secret.trim() };
+}
