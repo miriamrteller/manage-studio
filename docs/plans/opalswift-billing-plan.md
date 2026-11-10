@@ -1,5 +1,7 @@
 # OpalSwift billing plan: how studios sign up and pay us
 
+> **Updated 2026-11-10:** OpalSwift bills studios through its own **Takbull** account, not Grow. How the card, monthly charge and receipts work is now in [TAKBULL-INTEGRATION.md](TAKBULL-INTEGRATION.md#opalswifts-own-billing-of-studios-owner-decision-plan-2026-11-10-not-built-yet). The Grow research below (sections 6 and 7) is kept only for history; the prices, costs and market sections still stand.
+
 Status: **plan only, no app code.** Written 2026-11-02, updated the same day with the "After the free beta" roadmap (section 7) and Grow's partner-programme price. Facts marked **(verify)** are not confirmed.
 
 ---
