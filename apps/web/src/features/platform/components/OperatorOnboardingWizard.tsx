@@ -29,7 +29,7 @@ import {
 } from '../lib/studioSetupForm';
 import { useLiveSkins } from '@/features/skins/useSkins';
 import { fieldFromSearch, signupFieldSearch, skinColours, usePageSearch, wizardFieldOptions } from '@/features/skins/wizardFields';
-import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
+import { invoicingOptionsFor, invoicingPairsWithPayment, isHiddenInvoicingProvider } from '@/lib/providerPairing';
 import {
   PaymentProviderChoice,
   providerForMonthlyAnswer,
@@ -97,7 +97,10 @@ function otherInvoicingFor(payment: StudioPaymentProvider): StudioInvoicingProvi
   const matching = matchingInvoicingFor(payment);
   return invoicingOptionsFor(payment).filter(
     (slug): slug is StudioInvoicingProvider =>
-      slug !== 'none' && slug !== matching && (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(slug),
+      slug !== 'none' &&
+      slug !== matching &&
+      !isHiddenInvoicingProvider(slug) &&
+      (STUDIO_INVOICING_OPTIONS as readonly string[]).includes(slug),
   );
 }
 

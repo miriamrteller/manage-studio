@@ -4063,8 +4063,9 @@
     }
   },
   "payment_choice": {
-    "different_provider": "Have a different provider?",
-    "ypay_monthly_note": "OpalSwift can't charge monthly fees through YPay yet. For a monthly class, choose pay at the studio or a different provider.",
+    "takbull_label": "By card online, through Takbull",
+    "coming_soon": "Coming soon",
+    "ypay_monthly_note": "OpalSwift can't charge monthly fees through YPay yet. For a monthly class, choose pay at the studio.",
     "disclaimer": "You can change your payment provider until your first payment. After that, changing it needs OpalSwift support."
   },
   "platform_features": {

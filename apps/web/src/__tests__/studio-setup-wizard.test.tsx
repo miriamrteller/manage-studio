@@ -28,18 +28,15 @@ function renderWizard() {
 
 const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 const PAY_AT_STUDIO = "No card payments yet: I'll record payments myself";
-const GROW = 'By card online, through Grow';
 const YPAY_PAY = 'By card online, through my own YPay account';
-const GROW_DOCS = 'Grow: card payments and invoices together';
 const YPAY = 'YPay: invoices and receipts for YPay card payments and cash';
 const GREEN_INVOICE = 'Green Invoice: invoices and receipts for any payment';
 const NO_DOCS = "None: I'll issue receipts myself";
 
-/** Type step: how clients pay = "Per project" (no monthly fees), so Invoice4U is offered too. */
+/** Type step: how clients pay = "Per project" (no monthly fees). */
 function projectFlow() {
   fireEvent.click(screen.getByRole('radio', { name: 'Per project' }));
 }
-const differentProvider = () => fireEvent.click(screen.getByRole('button', { name: 'Have a different provider?' }));
 
 async function fillStudioStep() {
   fireEvent.change(screen.getByLabelText('Studio name'), { target: { value: 'Creative Ballet' } });
@@ -61,26 +58,26 @@ afterEach(async () => {
 });
 
 describe('studio setup wizard', () => {
-  it('starts on YPay with YPay documents; pay at the studio shown, other providers behind "Have a different provider?"', async () => {
+  it('starts on YPay with YPay documents; Takbull shown greyed out as "Coming soon"; nothing else offered', async () => {
     renderWizard();
     expect(screen.getByLabelText('Main language')).toHaveValue('en');
     await fillStudioStep();
     next();
     const payRadios = screen.getAllByRole('radio').filter((r) => r.getAttribute('name') === 'ss-payment');
-    expect(payRadios.map((r) => r.getAttribute('value'))).toEqual(['ypay', 'offline']);
+    expect(payRadios.map((r) => r.getAttribute('value'))).toEqual(['takbull', 'ypay', 'offline']);
+    expect(screen.getByRole('radio', { name: /through Takbull/ })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: /through Takbull/ })).toHaveAccessibleDescription('Coming soon');
     expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
     expect(screen.getByRole('radio', { name: YPAY })).toBeChecked();
     expect(screen.getByRole('radio', { name: NO_DOCS })).not.toBeChecked();
     expect(screen.getByRole('radio', { name: PAY_AT_STUDIO })).toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: GROW })).toBeNull();
     expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
-    // The other invoicing services sit behind "I already use another invoicing service".
-    expect(screen.queryByRole('radio', { name: GREEN_INVOICE })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
-    expect(screen.getByRole('radio', { name: GREEN_INVOICE })).toBeInTheDocument();
+    // Grow, Invoice4U and Green Invoice are not offered (owner decision 2026-11-10).
+    expect(screen.queryByRole('button', { name: /different provider/i })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /through Grow|through Invoice4U/ })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'I already use another invoicing service' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: GREEN_INVOICE })).toBeNull();
     expect(screen.queryByRole('radio', { name: /mock/i })).not.toBeInTheDocument();
-    differentProvider();
-    expect(screen.getByRole('radio', { name: GROW })).toBeInTheDocument();
   });
 
   it('no "Will you charge monthly fees?" question: it follows how clients pay', async () => {
@@ -92,136 +89,48 @@ describe('studio setup wizard', () => {
     expect(screen.queryByRole('radio', { name: /^No, one-off payments only/ })).toBeNull();
   });
 
-  it('documents follow the payment choice until the owner picks another invoicing service', async () => {
+  it('documents follow the payment choice; pay at the studio may still use YPay documents', async () => {
     renderWizard();
     await fillStudioStep();
     projectFlow();
     next();
-    differentProvider();
-    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through Invoice4U' }));
-    expect(screen.getByRole('radio', { name: 'Invoice4U: card payments and invoices together' })).toBeChecked();
     fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
     expect(screen.getByRole('radio', { name: NO_DOCS })).toBeChecked();
     fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
-    fireEvent.click(screen.getByRole('radio', { name: GREEN_INVOICE }));
-    fireEvent.click(screen.getByRole('radio', { name: GROW }));
-    // Green Invoice works with any payment choice, so it is kept.
-    expect(screen.getByRole('radio', { name: GREEN_INVOICE })).toBeChecked();
-  });
-
-  it('only offers invoicing services that can issue documents for the payment choice', async () => {
-    renderWizard();
-    await fillStudioStep();
-    next();
-    const otherServices = () => {
-      fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
-      return screen
-        .getAllByRole('radio')
-        .filter((r) => (r as HTMLInputElement).name === 'ss-invoicing')
-        .map((r) => r.closest('label')?.textContent?.trim());
-    };
-    // Pay me directly: only services with standalone documents.
-    fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
-    expect(otherServices()).toEqual([YPAY, GREEN_INVOICE]);
-    // Grow: its own documents, or Green Invoice. Never YPay, iCount, Yesh or Tranzila.
-    differentProvider();
-    fireEvent.click(screen.getByRole('radio', { name: GROW }));
-    expect(screen.getByRole('radio', { name: GROW_DOCS })).toBeChecked();
-    expect(otherServices()).toEqual([GREEN_INVOICE]);
+    const others = screen
+      .getAllByRole('radio')
+      .filter((r) => (r as HTMLInputElement).name === 'ss-invoicing')
+      .map((r) => r.closest('label')?.textContent?.trim());
+    expect(others).toEqual([YPAY]);
+    fireEvent.click(screen.getByRole('radio', { name: YPAY_PAY }));
+    expect(screen.getByRole('radio', { name: YPAY })).toBeChecked();
     expect(screen.queryByRole('radio', { name: 'Issued by Yesh Invoice' })).toBeNull();
     expect(screen.queryByRole('radio', { name: 'Issued by Tranzila' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Issued by iCount' })).toBeNull();
   });
 
-  it('monthly fees (dance studio): YPay stays, with a note; Grow behind "Have a different provider?", no Invoice4U', async () => {
+  it('monthly fees (dance studio): YPay stays, with a note', async () => {
     renderWizard();
     await fillStudioStep();
     fireEvent.click(screen.getByRole('radio', { name: /Dance studio/ }));
     next();
     expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
     expect(screen.getByText(/OpalSwift can't charge monthly fees through YPay yet/)).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: PAY_AT_STUDIO })).toBeInTheDocument();
-    differentProvider();
-    expect(screen.getByRole('radio', { name: GROW })).toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'By card online, through Invoice4U' })).toBeNull();
-    fireEvent.click(screen.getByRole('radio', { name: GROW }));
+    fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
     expect(screen.queryByText(/OpalSwift can't charge monthly fees through YPay yet/)).toBeNull();
     expect(
       screen.getByText('You can change your payment provider until your first payment. After that, changing it needs OpalSwift support.'),
     ).toBeInTheDocument();
   });
 
-  it('per project (photographer): YPay by default, Grow and Invoice4U behind "Have a different provider?", no monthly-fees note', async () => {
+  it('per project (photographer): YPay by default with its limits, no monthly-fees note', async () => {
     renderWizard();
     await fillStudioStep();
     fireEvent.click(screen.getByRole('radio', { name: /Photograph/ }));
     next();
     expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
     expect(screen.queryByText(/can't charge monthly fees/)).toBeNull();
-    differentProvider();
-    expect(screen.getByRole('radio', { name: GROW })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'By card online, through Invoice4U' })).toBeInTheDocument();
-  });
-
-  it('switching the payment flow to monthly moves an Invoice4U choice to YPay', async () => {
-    renderWizard();
-    await fillStudioStep();
-    projectFlow();
-    fireEvent.click(screen.getByRole('radio', { name: /Photograph/ })); // keeps Per project
-    next();
-    differentProvider();
-    fireEvent.click(screen.getByRole('radio', { name: 'By card online, through Invoice4U' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
-    next();
-    expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
-    expect(screen.getByRole('radio', { name: YPAY })).toBeChecked();
-  });
-
-  it('does not offer iCount or Tranzila payments until they are finished', async () => {
-    renderWizard();
-    await fillStudioStep();
-    projectFlow();
-    next();
-    differentProvider();
-    expect(screen.queryByRole('radio', { name: 'By card online, through iCount' })).toBeNull();
-    expect(screen.queryByRole('radio', { name: /through Tranzila/ })).toBeNull();
-    expect(screen.queryByRole('radio', { name: 'Issued by iCount' })).toBeNull();
-    expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
-  });
-
-  it('warns that Grow documents do not cover cash receipts', async () => {
-    renderWizard();
-    await fillStudioStep();
-    projectFlow();
-    next();
-    differentProvider();
-    fireEvent.click(screen.getByRole('radio', { name: GROW }));
-    expect(screen.getByText(/OpalSwift issues Grow documents only for Grow card payments/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: YPAY_PAY }));
-    expect(screen.queryByText(/OpalSwift issues Grow documents only/)).toBeNull();
     expect(screen.getByText(/OpalSwift uses YPay documents only with YPay card payments/)).toBeInTheDocument();
-  });
-
-  it('drops an invoicing choice that no longer fits when the payment choice changes', async () => {
-    renderWizard();
-    await fillStudioStep();
-    next();
-    fireEvent.click(screen.getByRole('radio', { name: PAY_AT_STUDIO }));
-    fireEvent.click(screen.getByRole('radio', { name: 'I already use another invoicing service' }));
-    fireEvent.click(screen.getByRole('radio', { name: YPAY }));
-    // YPay documents cannot be issued for Grow card payments: back to Grow's own documents.
-    differentProvider();
-    fireEvent.click(screen.getByRole('radio', { name: GROW }));
-    expect(screen.getByRole('radio', { name: GROW_DOCS })).toBeChecked();
-  });
-
-  it('YPay payments come with YPay documents, ready for the photographer', async () => {
-    renderWizard();
-    await fillStudioStep();
-    projectFlow();
-    next();
-    expect(screen.getByRole('radio', { name: YPAY_PAY })).toBeChecked();
-    expect(screen.getByRole('radio', { name: YPAY })).toBeChecked();
   });
 
   it('colours: swatches first, own hex colours behind "Choose your own colour"; operators leave the logo to the owner', async () => {

@@ -5,7 +5,7 @@
  * picks among the finished providers.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   BundledPaymentsSettings,
@@ -46,13 +46,11 @@ afterEach(() => {
 });
 
 describe('bundledProviderChoices', () => {
-  it('keeps a studio on its provider and offers finished ones only to a studio paying at the studio', () => {
+  it('keeps a studio on its provider and offers no new one (Grow and Invoice4U are hidden)', () => {
     expect(bundledProviderChoices({ payment_provider: 'grow', invoicing_provider: 'grow' })).toEqual(['grow']);
     expect(bundledProviderChoices({ payment_provider: 'icount', invoicing_provider: 'icount' })).toEqual(['icount']);
-    expect(bundledProviderChoices({ payment_provider: 'offline', invoicing_provider: 'none' })).toEqual([
-      'grow',
-      'invoice4u',
-    ]);
+    expect(bundledProviderChoices({ payment_provider: 'offline', invoicing_provider: 'none' })).toEqual([]);
+    expect(bundledProviderChoices({ payment_provider: 'offline', invoicing_provider: 'none' }, false)).toEqual([]);
     expect(bundledProviderChoices({ payment_provider: 'offline', invoicing_provider: 'ypay' })).toEqual([]);
     expect(bundledProviderChoices({ payment_provider: 'ypay', invoicing_provider: 'ypay' })).toEqual([]);
   });
@@ -69,18 +67,12 @@ describe('BundledPaymentsSettings', () => {
     expect(screen.getByRole('note')).toHaveTextContent('settings.offline_payments.switch_contact_support');
   });
 
-  it('a studio paying at the studio chooses Grow or Invoice4U and sees that form', () => {
+  it('a studio paying at the studio is not offered Grow or Invoice4U here', () => {
     Object.assign(tenantState, { payment_provider: 'offline', invoicing_provider: 'none' });
     renderSettings();
-
-    expect(screen.queryByRole('note')).toBeNull();
-    expect(screen.queryByRole('radio', { name: 'iCount' })).toBeNull();
-    expect(screen.getByLabelText('Grow user ID')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Invoice4U' }));
-    expect(screen.getByLabelText('Organisation API key')).toBeTruthy();
-    expect(screen.getByLabelText('Clearing company')).toBeTruthy();
+    expect(screen.queryByRole('radio')).toBeNull();
     expect(screen.queryByLabelText('Grow user ID')).toBeNull();
+    expect(screen.queryByLabelText('Organisation API key')).toBeNull();
   });
 
   it('a YPay studio cannot connect a bundled provider here', () => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProviderLimits } from '@/components/providers/ProviderLimits';
 import { providerLimitKeys } from '@/lib/providerLimits';
+import { HIDDEN_PAYMENT_PROVIDERS } from '@/lib/providerPairing';
 import {
   CHOICE_GROUP,
   CHOICE_LEGEND,
@@ -15,10 +16,10 @@ import {
 export type ChoosablePaymentProvider = 'grow' | 'ypay' | 'invoice4u' | 'offline';
 
 /**
- * Providers behind "Have a different provider?" (owner decision 2026-11-06): YPay and paying
- * at the studio are shown first; these stay available but are not offered up front.
+ * Providers no longer offered (owner decision 2026-11-10): shown only to a studio that already
+ * uses one, so its saved choice stays visible.
  */
-export const OTHER_PAYMENT_PROVIDERS = ['grow', 'invoice4u'] as const;
+export const OTHER_PAYMENT_PROVIDERS = HIDDEN_PAYMENT_PROVIDERS;
 
 export function isOtherPaymentProvider(slug: string): boolean {
   return (OTHER_PAYMENT_PROVIDERS as readonly string[]).includes(slug);
@@ -28,8 +29,8 @@ export function isOtherPaymentProvider(slug: string): boolean {
 export const NO_MONTHLY_FEE_PAYMENT_PROVIDERS = ['ypay', 'invoice4u'] as const;
 
 /**
- * Pure: the provider to keep when the "monthly fees?" answer changes. Invoice4U is not offered
- * to studios with monthly fees, so it falls back to the default, YPay. YPay stays shown
+ * Pure: the provider to keep when the "monthly fees?" answer changes. Invoice4U can't charge
+ * monthly fees, so it falls back to the default, YPay. YPay stays shown
  * (owner decision 2026-11-06: to be tested with monthly fees before deciding).
  */
 export function providerForMonthlyAnswer(
@@ -50,10 +51,11 @@ interface PaymentProviderChoiceProps {
 
 /**
  * How customers pay, used by the setup wizard and by Settings while the studio may still choose
- * (owner decision 2026-11-06, docs/plans/PAYMENT-OPTIONS-DECISION.md):
+ * (owner decisions 2026-11-06 and 2026-11-10, docs/plans/PAYMENT-OPTIONS-DECISION.md):
  *  - By card online through the studio's own YPay account (the default), or "No card payments
- *    yet: I'll record payments myself".
- *  - "Have a different provider?" reveals Grow, and Invoice4U for studios without monthly fees.
+ *    yet: I'll record payments myself". Takbull is listed first, greyed out as "Coming soon",
+ *    until it launches. Nothing else is offered.
+ *  - A studio already on Grow or Invoice4U still sees its saved choice.
  * Whether the studio charges monthly fees is not asked here: it follows the payment flow. With
  * monthly fees, YPay shows a line that OpalSwift can't charge them through YPay yet.
  */
@@ -64,10 +66,9 @@ export function PaymentProviderChoice({
   onProviderChange,
 }: PaymentProviderChoiceProps) {
   const { t } = useTranslation();
-  const [showOthers, setShowOthers] = useState(isOtherPaymentProvider(provider));
-  const othersVisible = showOthers || isOtherPaymentProvider(provider);
-  // Invoice4U can't charge monthly fees, so it is not offered to studios that charge them.
-  const otherProviders = OTHER_PAYMENT_PROVIDERS.filter((slug) => !monthlyFees || slug !== 'invoice4u');
+  // A hidden provider is listed only when it is the studio's saved choice (decided once, so
+  // picking YPay does not make it vanish before saving).
+  const [savedHidden] = useState(isOtherPaymentProvider(provider) ? provider : null);
 
   const radio = (slug: ChoosablePaymentProvider) => {
     const limitsId = `${idPrefix}-payment-${slug}-limits`;
@@ -95,6 +96,28 @@ export function PaymentProviderChoice({
     <fieldset>
       <legend className={CHOICE_LEGEND}>{t('studio_setup.payment_question')}</legend>
       <div className={CHOICE_GROUP}>
+        {/* Takbull is shown but can't be picked until it launches (owner decision 2026-11-10). */}
+        <label className={`${CHOICE_ROW} cursor-not-allowed text-gray-600`}>
+          <input
+            type="radio"
+            className={CHOICE_RADIO}
+            name={`${idPrefix}-payment`}
+            value="takbull"
+            checked={false}
+            disabled
+            aria-describedby={`${idPrefix}-payment-takbull-soon`}
+            readOnly
+          />
+          <span>
+            {t('payment_choice.takbull_label')}{' '}
+            <span
+              id={`${idPrefix}-payment-takbull-soon`}
+              className="ms-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+            >
+              {t('payment_choice.coming_soon')}
+            </span>
+          </span>
+        </label>
         {radio('ypay')}
         {monthlyFees && provider === 'ypay' && (
           <p className="ms-11 pb-2 pe-3 text-xs text-muted-foreground" role="note">
@@ -102,20 +125,9 @@ export function PaymentProviderChoice({
           </p>
         )}
         {radio('offline')}
-        {!othersVisible && (
-          <div className="px-3 py-2">
-            <button
-              type="button"
-              className="ms-8 text-sm font-medium text-primary underline underline-offset-2"
-              onClick={() => setShowOthers(true)}
-            >
-              {t('payment_choice.different_provider')}
-            </button>
-          </div>
-        )}
-        {othersVisible && (
+        {savedHidden && (
           <div id={`${idPrefix}-other-providers`} className="py-1">
-            <div className={CHOICE_NESTED}>{otherProviders.map((slug) => radio(slug))}</div>
+            <div className={CHOICE_NESTED}>{radio(savedHidden)}</div>
           </div>
         )}
       </div>

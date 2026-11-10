@@ -75,7 +75,7 @@ describe('provider limits', () => {
 });
 
 describe('How customers pay', () => {
-  it('each option points at its lines (Grow behind "Have a different provider?")', () => {
+  it('each option points at its lines; Grow is listed only when it is the saved choice', () => {
     const onChange = vi.fn();
     render(<PaymentProviderChoice idPrefix="t" monthlyFees={false} provider="ypay" onProviderChange={onChange} />);
     expect(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' })).toHaveAccessibleDescription(
@@ -85,11 +85,14 @@ describe('How customers pay', () => {
       'provider_limits.payment.offline.no_cards',
     );
     expect(screen.queryByRole('radio', { name: 'studio_setup.payment_grow' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
+    expect(screen.getByRole('radio', { name: /payment_choice.takbull_label/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_offline' }));
+    expect(onChange).toHaveBeenCalledWith('offline');
+    cleanup();
+    render(<PaymentProviderChoice idPrefix="t" monthlyFees={false} provider="grow" onProviderChange={onChange} />);
     expect(screen.getByRole('radio', { name: 'studio_setup.payment_grow' })).toHaveAccessibleDescription(
       'provider_limits.payment.grow.recorded_receipts',
     );
-    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_grow' }));
-    expect(onChange).toHaveBeenCalledWith('grow');
+    expect(screen.queryByRole('radio', { name: 'studio_setup.payment_invoice4u' })).toBeNull();
   });
 });

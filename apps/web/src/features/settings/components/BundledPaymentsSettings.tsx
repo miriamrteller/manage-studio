@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTenant } from '@/hooks/useTenant';
 import {
-  BUNDLED_PAYMENT_PROVIDER_OPTIONS,
   bundledPaymentsHubDescription,
   bundledPaymentsNavTitle,
   bundledProviderDisplayName,
@@ -11,7 +10,7 @@ import {
   getBundledPaymentProviderSlug,
   type BundledPaymentProviderSlug,
 } from '@/lib/tenantProviderRouting';
-import { canChoosePaymentProvider, isUnfinishedPaymentProvider } from '@/lib/providerPairing';
+import { canChoosePaymentProvider } from '@/lib/providerPairing';
 import { useTenantHasPayment } from '../hooks/useTenantHasPayment';
 import { GrowSettingsForm } from './GrowSettingsForm';
 import { IcountSettingsForm } from './IcountSettingsForm';
@@ -33,20 +32,17 @@ function BundledProviderForm({ slug }: { slug: BundledPaymentProviderSlug }) {
 }
 
 /**
- * Pure: the providers this page offers. Before the studio's first payment it may pick any
- * finished one (switching freely); after it, a studio already on one keeps only that one
- * (changing it goes through support), a studio paying at the studio with no tax documents picks
- * among the finished ones, and any other studio cannot pick here. `hasPayment` unknown = yes.
+ * Pure: the providers this page offers. Grow, iCount and Invoice4U are no longer offered as a
+ * new choice (owner decision 2026-11-10, docs/plans/PAYMENT-OPTIONS-DECISION.md): a studio
+ * already on one keeps seeing only that one; any other studio cannot pick here.
  */
 export function bundledProviderChoices(
   tenant: Parameters<typeof canChoosePaymentProvider>[0],
-  hasPayment: boolean | undefined = true,
+  // Kept for callers; the answer no longer depends on it.
+  _hasPayment: boolean | undefined = true,
 ): BundledPaymentProviderSlug[] {
   const activeSlug = getBundledPaymentProviderSlug(tenant);
-  const finished = BUNDLED_PAYMENT_PROVIDER_OPTIONS.filter((slug) => !isUnfinishedPaymentProvider(slug));
-  if (!canChoosePaymentProvider(tenant, hasPayment)) return activeSlug ? [activeSlug] : [];
-  if (activeSlug && hasPayment !== false) return [activeSlug];
-  return activeSlug && !finished.includes(activeSlug) ? [activeSlug] : finished;
+  return activeSlug ? [activeSlug] : [];
 }
 
 /** Bundled IL setup — generic shell with the Grow / Invoice4U choice. */

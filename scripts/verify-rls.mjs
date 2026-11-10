@@ -33,6 +33,8 @@ loadEnv();
 const dbUrl = resolveConnectableDbUrl(process.cwd());
 
 const OUTSIDER_PERSON = '11111111-2222-3333-4444-555555555555';
+// The seeded test parent's person record (supabase/seed.sql).
+const SEED_PARENT_PERSON = '00000000-0000-0000-0000-000000000504';
 const OUTSIDER_ACCOUNT = '11111111-2222-3333-4444-666666666666';
 const FIXTURE = 'rls-harness-outsider';
 
@@ -105,9 +107,14 @@ try {
   const otherTenantId = sql(
     `SELECT id FROM tenants WHERE subdomain <> 'creativeballet' ORDER BY subdomain LIMIT 1`,
   );
+  // An account holder with a family (an account that has people), the seeded test parent
+  // first. Without an order, LIMIT 1 could pick any account holder, e.g. one with no family.
   const parentId = sql(
-    `SELECT id FROM user_profiles WHERE tenant_id = '${tenantId}'
-       AND 'account_holder' = ANY(role) LIMIT 1`,
+    `SELECT p.id FROM user_profiles p WHERE p.tenant_id = '${tenantId}'
+       AND 'account_holder' = ANY(p.role)
+       AND EXISTS (SELECT 1 FROM account_members am JOIN people f ON f.account_id = am.account_id
+                   WHERE am.user_profile_id = p.id)
+     ORDER BY (p.person_id = '${SEED_PARENT_PERSON}') DESC NULLS LAST, p.created_at, p.id LIMIT 1`,
   );
   const otherAdminId = sql(
     `SELECT id FROM user_profiles WHERE tenant_id = '${otherTenantId}'
