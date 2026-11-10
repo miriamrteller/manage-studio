@@ -244,9 +244,9 @@ describe('menu per vertical', () => {
       roles,
     ).flatMap((section) => section.items.map((item) => item.path));
 
-  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Appointments, Notifications), then Finance and Setup', () => {
+  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Shop, Appointments, Notifications), then Finance and Setup', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
       '/admin/setup/levels', '/admin/setup/terms', '/admin/packages',

@@ -169,6 +169,15 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.billing.photoShop,
   },
   {
+    // The studio shop: uniforms and items families buy, collected at the studio (beta).
+    path: '/admin/shop',
+    labelKey: 'nav.shop',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    needs: 'teaches_classes',
+    featureKey: FEATURES.billing.studioShop,
+  },
+  {
     path: '/admin/appointments',
     labelKey: 'nav.appointments',
     requiredRoles: ['tenant_admin'],

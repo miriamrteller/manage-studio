@@ -2011,6 +2011,54 @@
       "verify": "Verify"
     }
   },
+  "studio_shop": {
+    "title": "Shop",
+    "beta": "Beta",
+    "intro": "Uniforms, shoes and other items you sell to your families. Families pay through their child's class and collect at the studio.",
+    "coming": "Families can't order yet: their shop opens in the next step. Add your items now.",
+    "items": {
+      "add": "Add item",
+      "add_title": "New item",
+      "edit_title": "Change item",
+      "none": "No items yet.",
+      "name": "Name",
+      "price": "Price ({{currency}})",
+      "description": "Description (optional)",
+      "picture": "Picture",
+      "picture_add": "Add a picture",
+      "picture_change": "Change picture",
+      "picture_remove": "Remove picture",
+      "picture_hint": "A photo of the item itself. Your browser makes a small copy before upload.",
+      "picture_unreadable": "This picture couldn't be read. Save it as JPEG and try again.",
+      "sizes": "Sizes",
+      "sizes_hint": "One line per size. Leave stock empty if you don't count it; 0 means sold out.",
+      "size": "Size",
+      "stock": "In stock",
+      "stock_any": "Not counted",
+      "size_add": "Add size",
+      "size_remove": "Remove",
+      "size_remove_label": "Remove size {{size}}",
+      "one_size": "One size",
+      "size_stock_one": "{{size}} ({{count}} left)",
+      "size_stock_other": "{{size}} ({{count}} left)",
+      "size_sold_out": "{{size}} (sold out)",
+      "shown": "Show to families",
+      "hidden": "Hidden",
+      "edit": "Change",
+      "edit_label": "Change {{name}}",
+      "delete": "Delete",
+      "delete_label": "Delete {{name}}",
+      "delete_confirm": "Delete {{name}}?"
+    },
+    "errors": {
+      "name_required": "Please give the item a name.",
+      "price_required": "Please give the item a price.",
+      "duplicate_size": "Two sizes have the same name.",
+      "size_label_required": "Every size needs a name.",
+      "bad_stock": "Stock can't be below 0.",
+      "failed": "Something went wrong. Please try again."
+    }
+  },
   "photo_shop_admin": {
     "title": "Photo shop",
     "intro": "Each shoot's photos are sold privately to that shoot's own client, under \"My shoots\". Nobody else can see them.",
@@ -2087,6 +2135,7 @@
     "contracts": "Contracts",
     "quotes": "Quotes",
     "photo_shop": "Photo shop",
+    "shop": "Shop",
     "platform_studios": "Studios",
     "platform_features": "Platform features",
     "platform_skins": "Skins",
@@ -4309,6 +4358,10 @@
       "photo_shop": {
         "label": "Photo shop",
         "hint": "Clients buy photo downloads from the studio's SmugMug gallery."
+      },
+      "studio_shop": {
+        "label": "Shop",
+        "hint": "Families buy the studio's uniforms and items, paid through their child's class."
       },
       "takbull_testing": {
         "label": "Takbull test keys",

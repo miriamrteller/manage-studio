@@ -50,6 +50,7 @@ const BookingServicesPage = lazy(() => import("./pages/BookingServicesPage"));
 const GoogleCalendarCallbackPage = lazy(() => import("./pages/GoogleCalendarCallbackPage"));
 const SmugMugCallbackPage = lazy(() => import("./pages/SmugMugCallbackPage"));
 const PhotoShopPage = lazy(() => import("./pages/PhotoShopPage"));
+const StudioShopPage = lazy(() => import("./pages/StudioShopPage"));
 const WaiversPage = lazy(() => import("./pages/WaiversPage"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const PortalDashboard = lazy(() => import("./pages/PortalDashboard"));
@@ -223,6 +224,7 @@ const router = createBrowserRouter([
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/photo-shop", element: <AdminRoute><PhotoShopPage /></AdminRoute> },
+          { path: "admin/shop", element: <AdminRoute><StudioShopPage /></AdminRoute> },
           { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
           { path: "admin/quotes/:id", element: <AdminRoute><AdminQuoteEditorPage /></AdminRoute> },
           { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },

@@ -192,10 +192,10 @@ describe('admin menu: working pages at the top level', () => {
     }
   });
 
-  it('dance and generic: Leads, Students, Families, Classes, Appointments, Notifications', () => {
+  it('dance and generic: Leads, Students, Families, Classes, Shop, Appointments, Notifications', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
       expect(adminMenu(vertical)[0].items.map((i) => i.path)).toEqual([
-        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes',
+        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop',
         '/admin/appointments', '/admin/notifications',
       ]);
     }
