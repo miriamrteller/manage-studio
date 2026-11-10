@@ -68,7 +68,7 @@ What already exists and Takbull plugs into:
    - `PackageUniqId` is optional: without it the child gets the free package. `SubscriptionPayer` is `Parent` or `Child` (default `Child`).
    - Required: `Email` (the child's Takbull login, unique), `Password`, `MerchantDetails` with `BusinessType`. Name, business number and bank details are required when the package includes UPay clearing.
    - With `SubscriptionPayer: "Parent"` or the free package, the answer carries the child's `MerchantId`, `ApiKey` and `ApiSecret` at once. In the child-pays flow it returns a payment page (`PaymentRedirectUrl`, `ErrorCode` 600113) and the keys arrive later at `IpnUrl`.
-   - OpalSwift's keys are a platform secret in Supabase edge secrets (`supabase/edge-secrets.json`), never in `tenants`. If they ever have a second copy, they go into `docs/deployment/SHARED-SECRETS.md` with a rotation.
+   - OpalSwift's keys are the ones saved in Platform → Billing (`platform_billing_settings`, encrypted), never in `tenants`.
    - The child's keys are stored encrypted with the existing `save`-style RPC path; they are never shown or logged.
    - The owner's ID number and bank details pass straight through to Takbull and are **never stored** by us. This goes on the lawyer list.
    - **Who pays (owner decided):** OpalSwift pays on the parent side, and each studio pays only its own per-transaction fees on its own merchant account. So `SubscriptionPayer: "Parent"`; the package id is configuration (empty = free package), not hardcoded. Takbull's platform price is not confirmed yet.
@@ -140,7 +140,7 @@ Owner decisions that apply: trial 1 month; founders free until the end of 2026; 
 
 ### How it works
 
-- **OpalSwift's keys:** edge secrets `TAKBULL_PLATFORM_API_KEY` / `TAKBULL_PLATFORM_API_SECRET` (in `supabase/edge-secrets.json`). On dev they are the Takbull sandbox keys. On prod they stay unset until the owner launches billing, so nothing can charge on prod by accident.
+- **OpalSwift's keys:** saved encrypted in the database (`platform_billing_settings`, the same way a studio's keys are), entered or replaced by the platform owner in Platform → Billing, decrypted only by the service role. On dev they are the Takbull sandbox keys, copied inside the database from the studio where the owner saved them. On prod nothing is saved until the owner launches billing, and charging has its own switch (off), so nothing can charge on prod by accident. Not an edge secret, so it has only one copy.
 - **Card:** the studio adds a card on a Takbull payment page of OpalSwift's account (`DealType` 6, token). The docs describe no card save without a charge, so the card is saved with the **first charge** (the first month, at trial end), not at sign-up. The token comes back on the redirect and in the IPN (`CardExternalToken`, last 4 digits, expiry). Not confirmed: a ₪0 card check.
 - **Monthly charge:** a daily job charges each due studio's token with `ChargeToken`. Success is `internalCode` 0 **in the ChargeToken answer itself**, double-checked with `GetTransaction`, so it does not wait for a payment notice (the docs don't say ChargeToken sends one). The charge has one key per studio and month, so a rerun can't charge twice.
 - **Failed charge:** retry on days 3 and 7, email each time, and an in-app banner. The studio keeps working (never block the flow). What happens after the last retry is the owner's call (open question 1).
@@ -152,7 +152,7 @@ Owner decisions that apply: trial 1 month; founders free until the end of 2026; 
 
 | Step | What | Test on dev with the sandbox keys |
 |---|---|---|
-| B1 | OpalSwift's keys as edge secrets (dev only), the two tables, Platform → Studios shows each studio's subscription | Keys check (`GetDocumentSettings` with the platform keys) |
+| B1 | OpalSwift's keys (encrypted in the database), the billing tables, Platform → Billing (dev website only): keys, Test connection, each studio's billing details | Keys check (`GetDocumentSettings` with the platform keys) |
 | B2 | "Add a card" page for a studio admin (dev only): Takbull page on OpalSwift's account, first charge of ₪1 on dev, token saved | A ₪1 charge with the test card; the token is saved |
 | B3 | The daily job: `ChargeToken` for due studios, retries, emails, banner | Set a studio's next charge to today and run the job: a ₪1 charge, one receipt, no second charge on a rerun |
 | PR 7 | Open the studio's Takbull account (`CreateAccount`, `SubscriptionPayer: "Parent"`), dev only: Settings → Payments → "Open my Takbull account (testing)" | One child account on the sandbox; its keys saved encrypted; Test connection passes for the new studio. If Takbull refuses, ask Takbull to enable account opening on the sandbox account |
