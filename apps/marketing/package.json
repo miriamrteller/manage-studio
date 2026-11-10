@@ -10,7 +10,9 @@
     "build:legal": "node scripts/build-legal.mjs",
     "check:legal": "node scripts/build-legal.mjs --check",
     "build:icons": "node scripts/build-icons.mjs",
-    "check:icons": "node scripts/build-icons.mjs --check"
+    "check:icons": "node scripts/build-icons.mjs --check",
+    "build:seo": "node scripts/build-seo.mjs",
+    "check:seo": "node scripts/build-seo.mjs --check"
   },
   "devDependencies": {
     "marked": "15.0.12",
