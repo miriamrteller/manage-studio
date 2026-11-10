@@ -6,6 +6,11 @@
  *                 encrypted (bound to this admin, 15 minutes) and returns SmugMug's sign-in URL.
  *   - "complete": the callback page posts { oauth_token, oauth_verifier }; we swap them for
  *                 the access token and store it encrypted.
+ *   - "albums":   { engagement_id? } the photographer's galleries, plus the one whose name
+ *                 matches the shoot (client or service name) to prefill the picker.
+ *   - "check":    { engagement_id, album_key } "Check gallery": reads the gallery's Photo
+ *                 Protection settings and photos (smugmug/api.ts checkGallery) and saves the
+ *                 gallery and the result on the shoot's shop.
  * Disconnect is the disconnect_tenant_smugmug RPC. Connecting does NOT open the shop to
  * clients: galleries stay "provider_locked" (_shared/photo-shop/gallery.ts) until the live check.
  */
@@ -24,6 +29,13 @@ import {
   SmugMugError,
   testSmugMugConnection,
 } from "../_shared/photo-shop/smugmug/oauth.ts";
+import {
+  checkGallery,
+  listAlbums,
+  smugmugReader,
+  SmugMugShapeError,
+  suggestAlbum,
+} from "../_shared/photo-shop/smugmug/api.ts";
 
 const FEATURE = "billing:photo_shop";
 // The platform origin (https://app.opalswift.com in production): the callback is the same
@@ -38,7 +50,7 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
   const auth = await requireAuthUser(req);
   if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
 
-  let body: { action?: string; oauth_token?: string; oauth_verifier?: string };
+  let body: { action?: string; oauth_token?: string; oauth_verifier?: string; engagement_id?: string; album_key?: string };
   try {
     body = await req.json();
   } catch {
@@ -114,6 +126,57 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
       } catch (err) {
         await service.rpc("set_tenant_smugmug_oauth_pending", { p_tenant_id: tenantId, p_pending: null });
         return smugmugFailure(err, "refused");
+      }
+    }
+
+    case "albums":
+    case "check": {
+      if (!studio.token) return jsonResponse({ ok: false, code: "not_connected" }, 400);
+      const reader = smugmugReader(studio.keys, studio.token);
+      const engagementId = typeof body.engagement_id === "string" ? body.engagement_id : "";
+      let shoot: { personName: string | null; serviceName: string | null } | null = null;
+      if (engagementId) {
+        const { data: eng } = await service
+          .from("engagements")
+          .select("id, tenant_id, people(name), offerings(name)")
+          .eq("id", engagementId)
+          .eq("tenant_id", tenantId)
+          .maybeSingle();
+        if (!eng) return jsonResponse({ ok: false, code: "not_found" }, 404);
+        const one = (v: unknown) => (Array.isArray(v) ? v[0] : v) as { name?: string } | null;
+        shoot = { personName: one(eng.people)?.name ?? null, serviceName: one(eng.offerings)?.name ?? null };
+      }
+      try {
+        if (body.action === "albums") {
+          const albums = await listAlbums(reader);
+          const suggested = shoot ? suggestAlbum(albums, [shoot.personName ?? "", shoot.serviceName ?? ""]) : null;
+          return jsonResponse({ ok: true, albums, suggested });
+        }
+        const albumKey = typeof body.album_key === "string" ? body.album_key.trim() : "";
+        if (!engagementId || !/^[A-Za-z0-9]{1,64}$/.test(albumKey)) {
+          return jsonResponse({ ok: false, code: "missing_params" }, 400);
+        }
+        const result = await checkGallery(reader, albumKey);
+        const { error } = await service.rpc("save_job_photo_shop_smugmug_check", {
+          p_tenant_id: tenantId,
+          p_engagement_id: engagementId,
+          p_actor_id: auth.user.id,
+          p_album_key: result.albumKey,
+          p_album_name: result.albumName,
+          p_check: { passed: result.passed, items: result.items },
+          p_photos: result.passed ? result.photos : null,
+        });
+        if (error) throw new Error("Could not save the gallery check");
+        return jsonResponse({
+          ok: true,
+          passed: result.passed,
+          albumName: result.albumName,
+          items: result.items,
+          photoCount: result.photos.length,
+        });
+      } catch (err) {
+        if (err instanceof SmugMugShapeError) return jsonResponse({ ok: false, code: err.code }, 422);
+        return smugmugFailure(err, "token_rejected");
       }
     }
 

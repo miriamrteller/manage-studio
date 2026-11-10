@@ -33,6 +33,14 @@ export interface JobPhotoShop {
   all_photos_price_minor: number | null;
   currency: string;
   closes_at: string;
+  /** Last "Check gallery" for the SmugMug gallery (applies while album_key = gallery_key). */
+  smugmug_check?: {
+    album_key: string;
+    passed: boolean;
+    items: { code: string; ok: boolean; value?: string }[];
+  } | null;
+  /** When the SmugMug gallery last passed its check; null = not passed. */
+  smugmug_checked_at?: string | null;
   /** false = not saved yet; the values are the prefill. */
   saved: boolean;
 }

@@ -7,10 +7,18 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
  * shrunk and watermarked in its own browser before upload; originals never
  * reach OpalSwift. Clients get short-lived signed URLs to those previews.
  *
- * SmugMug is LOCKED until the live check (watermark on, size capped, no
- * original reachable) passes against the real API. Until then only the mock
- * gallery works, so no client ever sees a real photo through OpalSwift.
+ * "smugmug": the photographer's own gallery. The studio picks it on the shoot and
+ * "Check gallery" (smugmug/api.ts checkGallery) must pass: watermark on, largest
+ * size capped, downloads off, the Large size loads, nothing bigger loads without
+ * signing in. The photos read at that check are kept on the shop.
+ *
+ * Clients still get "provider_locked" for SmugMug until SMUGMUG_OPEN_TO_CLIENTS is
+ * switched on after the live check with a photographer's real key. Until then a
+ * checked gallery is shown only to the studio's own admins, in Preview.
  */
+
+/** Hard gate: switched on only by a reviewed change after the live check. */
+export const SMUGMUG_OPEN_TO_CLIENTS = false;
 
 export interface GalleryPhoto {
   key: string;
@@ -22,6 +30,32 @@ export interface GalleryPhoto {
 export interface ShopGallery {
   provider: string;
   gallery_key: string | null;
+  smugmug_check?: unknown;
+  smugmug_photos?: unknown;
+  smugmug_checked_at?: string | null;
+}
+
+/** The checked SmugMug photos, or null when this gallery has not passed its check. */
+export function checkedSmugMugPhotos(shop: ShopGallery): GalleryPhoto[] | null {
+  const check = shop.smugmug_check as { album_key?: unknown; passed?: unknown } | null | undefined;
+  if (!shop.gallery_key || !shop.smugmug_checked_at || !check || check.passed !== true) return null;
+  if (check.album_key !== shop.gallery_key) return null;
+  if (!Array.isArray(shop.smugmug_photos)) return null;
+  const photos: GalleryPhoto[] = [];
+  for (const p of shop.smugmug_photos as Array<Record<string, unknown>>) {
+    const key = typeof p?.key === "string" ? p.key : "";
+    const fileName = typeof p?.fileName === "string" ? p.fileName : "";
+    const url = typeof p?.previewUrl === "string" ? p.previewUrl : "";
+    if (!key || !fileName || !url.startsWith("https://")) continue;
+    photos.push({ key, fileName, previewUrl: url });
+  }
+  return photos.length > 0 ? photos : null;
+}
+
+export interface GalleryOptions {
+  uploads?: UploadedPhotoSource;
+  /** The studio's own admin previewing: may see a checked SmugMug gallery before clients can. */
+  adminPreview?: boolean;
 }
 
 export class GalleryNotReadyError extends Error {
@@ -91,7 +125,8 @@ export function uploadedPhotoSource(service: SupabaseClient): UploadedPhotoSourc
 }
 
 /** Every photo in the shoot's gallery, in gallery order. */
-export async function listGalleryPhotos(shop: ShopGallery, uploads?: UploadedPhotoSource): Promise<GalleryPhoto[]> {
+export async function listGalleryPhotos(shop: ShopGallery, options: GalleryOptions = {}): Promise<GalleryPhoto[]> {
+  const { uploads, adminPreview = false } = options;
   if (!shop.gallery_key) throw new GalleryNotReadyError("no_gallery");
   switch (shop.provider) {
     case "upload": {
@@ -102,9 +137,13 @@ export async function listGalleryPhotos(shop: ShopGallery, uploads?: UploadedPho
     }
     case "mock":
       return mockGalleryPhotos(shop.gallery_key);
-    case "smugmug":
-      // Hard gate: see the file comment. Opened only by the SmugMug PR after the live check.
-      throw new GalleryNotReadyError("provider_locked");
+    case "smugmug": {
+      // Hard gate: see the file comment.
+      if (!SMUGMUG_OPEN_TO_CLIENTS && !adminPreview) throw new GalleryNotReadyError("provider_locked");
+      const photos = checkedSmugMugPhotos(shop);
+      if (!photos) throw new GalleryNotReadyError("provider_locked");
+      return photos;
+    }
     default:
       throw new GalleryNotReadyError("unknown_provider");
   }

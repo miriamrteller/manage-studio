@@ -1909,6 +1909,9 @@ export type Database = {
           included_photos: number
           price_per_photo_minor: number | null
           provider: string
+          smugmug_check: Json | null
+          smugmug_checked_at: string | null
+          smugmug_photos: Json | null
           tenant_id: string
           updated_at: string
         }
@@ -1923,6 +1926,9 @@ export type Database = {
           included_photos?: number
           price_per_photo_minor?: number | null
           provider?: string
+          smugmug_check?: Json | null
+          smugmug_checked_at?: string | null
+          smugmug_photos?: Json | null
           tenant_id: string
           updated_at?: string
         }
@@ -1937,6 +1943,9 @@ export type Database = {
           included_photos?: number
           price_per_photo_minor?: number | null
           provider?: string
+          smugmug_check?: Json | null
+          smugmug_checked_at?: string | null
+          smugmug_photos?: Json | null
           tenant_id?: string
           updated_at?: string
         }
@@ -6220,6 +6229,18 @@ export type Database = {
       save_job_photo_shop: {
         Args: { p_engagement_id: string; p_settings: Json }
         Returns: Json
+      }
+      save_job_photo_shop_smugmug_check: {
+        Args: {
+          p_actor_id: string
+          p_album_key: string
+          p_album_name: string
+          p_check: Json
+          p_engagement_id: string
+          p_photos: Json
+          p_tenant_id: string
+        }
+        Returns: undefined
       }
       save_platform_takbull_credentials: {
         Args: { p_api_key: string; p_api_secret: string }
