@@ -6412,6 +6412,10 @@ export type Database = {
         Args: { p_feature_key: string; p_off: boolean; p_tenant_id: string }
         Returns: undefined
       }
+      set_platform_charging: {
+        Args: { p_enabled: boolean }
+        Returns: undefined
+      }
       set_tenant_smugmug_oauth_pending: {
         Args: { p_pending: string; p_tenant_id: string }
         Returns: undefined

@@ -98,4 +98,25 @@ describe('Platform → Billing', () => {
     expect(screen.getByText('•••• 4242')).toBeInTheDocument();
     expect(screen.getByText('Founder')).toBeInTheDocument();
   });
+
+  it('switches monthly charging on', async () => {
+    renderIt();
+    fireEvent.click(await screen.findByRole('button', { name: 'Turn monthly charging on' }));
+    await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('set_platform_charging', { p_enabled: true }));
+  });
+
+  it('charges one studio now and says what happened', async () => {
+    h.invoke.mockResolvedValue({ data: { ok: true, studios: [{ tenantId: 't1', result: 'succeeded' }] }, error: null });
+    renderIt();
+    fireEvent.click(await screen.findByRole('button', { name: 'Charge now (testing)' }));
+    expect(await screen.findByText('Charged. The next charge moved on a month.')).toBeInTheDocument();
+    expect(h.invoke).toHaveBeenCalledWith('run-platform-billing', { body: { tenant_id: 't1' } });
+  });
+
+  it('asks to switch charging on first', async () => {
+    h.invoke.mockResolvedValue({ data: { ok: false, code: 'charging_off' }, error: null });
+    renderIt();
+    fireEvent.click(await screen.findByRole('button', { name: 'Charge now (testing)' }));
+    expect(await screen.findByText('Turn monthly charging on first.')).toBeInTheDocument();
+  });
 });
