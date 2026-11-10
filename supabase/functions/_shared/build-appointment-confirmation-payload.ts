@@ -66,7 +66,8 @@ function formatAppointmentWhen(
     hour: "2-digit",
     minute: "2-digit",
     timeZone: JERUSALEM_TZ,
-    hour12: locale.startsWith("en"),
+    hour12: false,
+    hourCycle: "h23",
   };
   const startTime = start.toLocaleTimeString(locale, timeOptions);
   const endTime = end.toLocaleTimeString(locale, timeOptions);
