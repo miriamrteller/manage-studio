@@ -315,6 +315,12 @@ export async function askForMoreTime(cardId: string) {
   if (error) throw error;
 }
 
+/** Admin: give a card more time, once (the studio's "extra time on request" length). */
+export async function extendClassCard(cardId: string) {
+  const { error } = await supabase.rpc('extend_class_card', { p_card_id: cardId });
+  if (error) throw error;
+}
+
 /** Is it past the free-cancellation cutoff for a session? */
 export function isLateCancel(startsAt: string, cutoffHours: number, now: Date = new Date()): boolean {
   return now.getTime() > new Date(startsAt).getTime() - cutoffHours * 3600 * 1000;

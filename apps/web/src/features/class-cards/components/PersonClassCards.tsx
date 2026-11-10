@@ -13,6 +13,7 @@ import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMe
 import { invalidateAfterOfflinePayment } from '@/features/students/lib/offlinePaymentCaches';
 import {
   CardNotGivenError,
+  extendClassCard,
   fetchClassCardSettings,
   fetchClassCardTypes,
   fetchPersonClassCards,
@@ -63,7 +64,7 @@ export function PersonClassCards({ personId }: { personId: string }) {
       {cards.data && cards.data.length > 0 && (
         <ul className="space-y-1">
           {cards.data.map((c) => (
-            <CardRow key={c.id} card={c} />
+            <CardRow key={c.id} card={c} personId={personId} extensionMonths={settings.data?.extension_months ?? 3} />
           ))}
         </ul>
       )}
@@ -72,11 +73,20 @@ export function PersonClassCards({ personId }: { personId: string }) {
   );
 }
 
-function CardRow({ card }: { card: PersonClassCard }) {
+function CardRow({ card, personId, extensionMonths }: { card: PersonClassCard; personId: string; extensionMonths: number }) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'he' ? 'he-IL' : 'en-IL';
+  const [failed, setFailed] = useState(false);
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date());
   const expired = card.valid_until != null && card.valid_until < today;
+  const asked = Boolean(card.extension_requested_at) && !card.extended_at;
+  const canExtend = card.status === 'active' && card.valid_until != null && !card.extended_at;
+  const extend = useMutation({
+    mutationFn: () => extendClassCard(card.id),
+    onMutate: () => setFailed(false),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['class-cards', 'person', personId] }),
+    onError: () => setFailed(true),
+  });
   const parts = [
     t('class_cards.person.left', { left: card.classes_left, total: card.class_count }),
     card.valid_until == null
@@ -85,12 +95,27 @@ function CardRow({ card }: { card: PersonClassCard }) {
         ? t('class_cards.person.expired_on', { date: formatDate(card.valid_until, locale) })
         : t('class_cards.person.valid_until', { date: formatDate(card.valid_until, locale) }),
     ...(card.shared ? [t('settings.class_cards.shared')] : []),
-    ...(card.extension_requested_at && !card.extended_at ? [t('class_cards.person.asked_for_time')] : []),
+    ...(asked ? [t('class_cards.person.asked_for_time')] : []),
+    ...(card.extended_at ? [t('class_cards.person.was_extended')] : []),
   ];
   return (
-    <li className="rounded-md border p-2 text-sm">
-      <p className="font-medium">{card.name}</p>
-      <p className="text-xs text-muted-foreground">{parts.join(' · ')}</p>
+    <li className="space-y-1 rounded-md border p-2 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="font-medium">{card.name}</p>
+          <p className="text-xs text-muted-foreground">{parts.join(' · ')}</p>
+        </div>
+        {canExtend && (
+          <Button size="sm" variant={asked ? 'primary' : 'ghost'} isLoading={extend.isPending} onClick={() => extend.mutate()}>
+            {t('class_cards.person.extend', { count: extensionMonths })}
+          </Button>
+        )}
+      </div>
+      {failed && (
+        <p role="alert" aria-live="polite" className="text-xs text-destructive">
+          {t('class_cards.person.extend_error')}
+        </p>
+      )}
     </li>
   );
 }
