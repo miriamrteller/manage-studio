@@ -48,8 +48,10 @@ export function useNavItems({
         (item.featureKey === undefined || hasFeature === undefined || hasFeature(item.featureKey)) &&
         matchesTenantFilter(item, tenant) &&
         matchesProfile(item, profile) &&
+        // Platform pages are for the OpalSwift HQ address only, never a studio's menu,
+        // even when the platform owner also has a studio role there (as on the dev website).
         (hasStudio
-          ? !item.withoutStudioOnly
+          ? !item.withoutStudioOnly && item.sectionKey !== 'platform'
           : isAuthenticated
             ? item.sectionKey === 'platform'
             : !!item.worksWithoutStudio),
