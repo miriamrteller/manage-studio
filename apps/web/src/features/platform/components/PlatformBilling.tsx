@@ -25,6 +25,7 @@ export function PlatformBilling() {
         <p className="mt-1 text-sm text-muted-foreground">{t('platform_billing.intro')}</p>
       </div>
       <PlatformKeys />
+      <ChildPackage />
       <StudiosBilling />
     </div>
   );
@@ -176,6 +177,70 @@ function ChargingSwitch({ enabled }: { enabled: boolean }) {
         {enabled ? t('platform_billing.charging_turn_off') : t('platform_billing.charging_turn_on')}
       </Button>
     </div>
+  );
+}
+
+/** Takbull PR 7: the package studio accounts OpalSwift opens get (empty = Takbull's free package). */
+function ChildPackage() {
+  const { t } = useTranslation();
+  const [value, setValue] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const current = useQuery({
+    queryKey: ['platform-child-package'],
+    queryFn: async (): Promise<string> => {
+      const { data, error } = await supabase.rpc('platform_child_package');
+      if (error) throw error;
+      return (data as string | null) ?? '';
+    },
+  });
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('set_platform_child_package', { p_package_id: (value ?? '').trim() });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      setMessage({ kind: 'ok', text: t('platform_billing.package_saved') });
+      await queryClient.invalidateQueries({ queryKey: ['platform-child-package'] });
+    },
+    onError: () => setMessage({ kind: 'error', text: t('platform_billing.package_failed') }),
+  });
+  const shown = value ?? current.data ?? '';
+  return (
+    <section className="space-y-3 max-w-lg" aria-labelledby="child-package-title">
+      <h2 id="child-package-title" className="text-lg font-semibold">{t('platform_billing.package_title')}</h2>
+      <p className="text-sm text-muted-foreground">{t('platform_billing.package_hint')}</p>
+      <label className="block text-sm font-medium">
+        {t('platform_billing.package_label')}
+        <input
+          type="text"
+          dir="ltr"
+          className="mt-1 w-full border border-border rounded px-3 py-2"
+          value={shown}
+          onChange={(e) => setValue(e.target.value)}
+          autoComplete="off"
+        />
+      </label>
+      {message && (
+        <p
+          className={`text-sm ${message.kind === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+          role={message.kind === 'error' ? 'alert' : 'status'}
+        >
+          {message.text}
+        </p>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        disabled={save.isPending || value === null}
+        isLoading={save.isPending}
+        onClick={() => {
+          setMessage(null);
+          save.mutate();
+        }}
+      >
+        {t('platform_billing.package_save')}
+      </Button>
+    </section>
   );
 }
 
