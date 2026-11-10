@@ -362,18 +362,29 @@ export class TakbullClient implements TakbullApi {
     endpoint: string,
     init: { method: "GET" | "POST"; body?: unknown; query?: Record<string, string> },
   ): Promise<TakbullDocumentSettings> {
-    const r = await this.call<{ Success?: boolean; ErrorCode?: number; ErrorMessage?: string | null; Settings?: TakbullDocumentSettings }>(
-      endpoint,
-      init,
-    );
-    if (r.Success !== true || (r.ErrorCode !== 0 && r.ErrorCode !== undefined)) {
-      throw new TakbullApiError(r.ErrorMessage || `Takbull ${endpoint} failed (${r.ErrorCode})`, {
+    const raw = await this.call<Record<string, unknown>>(endpoint, init);
+    // The docs show Success / ErrorCode / ErrorMessage / Settings; read them whatever the letter case.
+    const field = (name: string): unknown => {
+      const key = Object.keys(raw ?? {}).find((k) => k.toLowerCase() === name.toLowerCase());
+      return key === undefined ? undefined : raw[key];
+    };
+    const success = field("Success");
+    const errorCode = field("ErrorCode");
+    const errorMessage = field("ErrorMessage");
+    const code = typeof errorCode === "number" ? errorCode : undefined;
+    if (success !== true || (code !== undefined && code !== 0)) {
+      // An answer with neither flag: name its fields (never their values) so the shape can be fixed.
+      const fallback = success === undefined && errorCode === undefined
+        ? `Takbull ${endpoint} gave an answer we don't recognise (fields: ${Object.keys(raw ?? {}).slice(0, 12).join(", ") || "none"})`
+        : `Takbull ${endpoint} failed (${code ?? "no code"})`;
+      throw new TakbullApiError((typeof errorMessage === "string" && errorMessage) || fallback, {
         endpoint,
-        code: r.ErrorCode,
+        code,
         // 600104: the keys don't identify a merchant — wrong keys, not a passing fault.
         retryable: false,
       });
     }
-    return r.Settings ?? {};
+    const settings = field("Settings");
+    return settings && typeof settings === "object" ? (settings as TakbullDocumentSettings) : {};
   }
 }

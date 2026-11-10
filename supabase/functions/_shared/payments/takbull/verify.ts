@@ -11,9 +11,10 @@ export interface TakbullConnectionCheck {
 export async function verifyTakbullConnection(api: TakbullApi): Promise<TakbullConnectionCheck> {
   try {
     const settings = await api.getDocumentSettings({ lang: "he" });
+    const docType = settings.DefaultDocumentType ?? settings.defaultDocumentType;
     return {
       valid: true,
-      ...(typeof settings.DefaultDocumentType === "number" ? { defaultDocumentType: settings.DefaultDocumentType } : {}),
+      ...(typeof docType === "number" ? { defaultDocumentType: docType } : {}),
     };
   } catch (err) {
     return { valid: false, message: err instanceof Error ? err.message : "Takbull check failed" };

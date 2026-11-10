@@ -58,6 +58,16 @@ describe('Takbull client', () => {
     await expect(client(fakeFetch({ Success: false, ErrorCode: 600104, ErrorMessage: 'Could not resolve merchant' })).getDocumentSettings())
       .rejects.toThrow('Could not resolve merchant');
 
+    // Account calls in lower camel case read the same way.
+    await expect(client(fakeFetch({ success: true, errorCode: 0, settings: { defaultDocumentType: 320 } })).getDocumentSettings())
+      .resolves.toEqual({ defaultDocumentType: 320 });
+    await expect(client(fakeFetch({ success: false, errorCode: 600104, errorMessage: 'Could not resolve merchant' })).getDocumentSettings())
+      .rejects.toThrow('Could not resolve merchant');
+    // An answer with neither flag names its fields, never their values.
+    const odd = await client(fakeFetch({ status: 'x', secretish: 'value-not-shown' })).getDocumentSettings().catch((e: unknown) => e) as Error;
+    expect(odd.message).toContain('fields: status, secretish');
+    expect(odd.message).not.toContain('value-not-shown');
+
     // ValidateNotification: a non-zero code is an answer, not a fault.
     await expect(client(fakeFetch({ internalCode: 1400101, internalDescription: 'INVALID' })).validateNotification('u'))
       .resolves.toMatchObject({ internalCode: 1400101 });

@@ -34,17 +34,18 @@ function TakbullKeysForm() {
 
   const friendly = (raw: string) => (isEncryptionKeyMissing(raw) ? t('settings.takbull.encryption_missing') : raw);
 
-  const savedAt = useQuery({
-    queryKey: ['takbull-credentials-updated-at', tenant?.id],
+  // Asked of the server (no Takbull call): a studio can't read the keys' row directly on every
+  // database, and the page must never say "no keys" when keys are saved.
+  const status = useQuery({
+    queryKey: ['takbull-credentials-status', tenant?.id],
     enabled: !!tenant?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('takbull_credentials_updated_at')
-        .eq('id', tenant!.id)
-        .single();
-      if (error) throw error;
-      return (data?.takbull_credentials_updated_at as string | null) ?? null;
+      const { data, error } = await supabase.functions.invoke('verify-takbull-credentials', {
+        body: { action: 'status' },
+      });
+      const body = await parseFunctionInvokeBody(data, error);
+      if (typeof body?.saved !== 'boolean') throw new Error('status unknown');
+      return { saved: body.saved as boolean, savedAt: (body.saved_at as string | null) ?? null };
     },
   });
 
@@ -61,17 +62,20 @@ function TakbullKeysForm() {
       setApiSecret('');
       setJustSaved(true);
       setMessage({ kind: 'ok', text: t('settings.takbull.saved') });
-      await queryClient.invalidateQueries({ queryKey: ['takbull-credentials-updated-at'] });
+      await queryClient.invalidateQueries({ queryKey: ['takbull-credentials-status'] });
     },
     onError: (err: Error) => setMessage({ kind: 'error', text: friendly(err.message) }),
   });
 
+  const [testReachedKeys, setTestReachedKeys] = useState(false);
   const testMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('verify-takbull-credentials');
       const body = await parseFunctionInvokeBody(data, error);
-      if (body?.valid === true) return;
       if (body?.code === 'not_connected') throw new Error(t('settings.takbull.not_saved'));
+      // Any other answer means saved keys were found and sent to Takbull.
+      if (body) setTestReachedKeys(true);
+      if (body?.valid === true) return;
       throw new Error(functionInvokeErrorMessage(error, body, t('settings.takbull.test_failed')));
     },
     onSuccess: () => setMessage({ kind: 'ok', text: t('settings.takbull.test_ok') }),
@@ -79,8 +83,10 @@ function TakbullKeysForm() {
   });
 
   const missing = !apiKey.trim() || !apiSecret.trim();
-  // Test connection never waits on the "saved" line: the server says if no keys are saved.
-  const saved = Boolean(savedAt.data) || justSaved;
+  const savedAt = status.data?.savedAt ?? null;
+  // "Not saved" only when the server says so; while unknown, the line says nothing wrong.
+  const saved = Boolean(status.data?.saved) || justSaved || testReachedKeys;
+  const knownNotSaved = status.data?.saved === false && !justSaved && !testReachedKeys;
 
   return (
     <section className="space-y-4 max-w-lg" aria-labelledby="takbull-testing-title">
@@ -89,11 +95,13 @@ function TakbullKeysForm() {
       </h2>
       <p className="text-sm text-muted-foreground">{t('settings.takbull.hint')}</p>
       <p className="text-sm" role="status">
-        {savedAt.data
-          ? t('settings.takbull.saved_on', { date: new Date(savedAt.data).toLocaleString() })
+        {saved && savedAt
+          ? t('settings.takbull.saved_on', { date: new Date(savedAt).toLocaleString() })
           : saved
             ? t('settings.takbull.saved')
-            : t('settings.takbull.not_saved')}
+            : knownNotSaved
+              ? t('settings.takbull.not_saved')
+              : null}
       </p>
 
       <label className="block text-sm font-medium">
