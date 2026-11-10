@@ -15,6 +15,8 @@ const h = vi.hoisted(() => ({
   flag: true,
   devSite: true,
   savedAt: null as string | null,
+  saved: false,
+  statusFails: false,
   rpc: vi.fn(),
   invoke: vi.fn(),
 }));
@@ -28,11 +30,19 @@ vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: h.rpc,
     functions: { invoke: h.invoke },
-    from: () => ({
-      select: () => ({ eq: () => ({ single: async () => ({ data: { takbull_credentials_updated_at: h.savedAt }, error: null }) }) }),
-    }),
   },
 }));
+
+/** Status calls answer from h; every other call (Test connection) gets `answer`. */
+function testAnswer(answer: Record<string, unknown>) {
+  h.invoke.mockImplementation(async (_name: string, opts?: { body?: { action?: string } }) => {
+    if (opts?.body?.action === 'status') {
+      if (h.statusFails) return { data: null, error: new Error('unreachable') };
+      return { data: { ok: true, saved: h.saved, saved_at: h.savedAt }, error: null };
+    }
+    return { data: answer, error: null };
+  });
+}
 
 import i18n from '@/i18n/i18n';
 import { TakbullTestingForm } from '@/features/settings/components/TakbullTestingForm';
@@ -51,8 +61,11 @@ beforeEach(async () => {
   h.flag = true;
   h.devSite = true;
   h.savedAt = null;
+  h.saved = false;
+  h.statusFails = false;
   h.rpc.mockReset().mockResolvedValue({ error: null });
-  h.invoke.mockReset().mockResolvedValue({ data: { ok: true, valid: true }, error: null });
+  h.invoke.mockReset();
+  testAnswer({ ok: true, valid: true });
   await i18n.changeLanguage('en');
 });
 afterEach(() => cleanup());
@@ -100,13 +113,39 @@ describe('Takbull keys (testing only)', () => {
   });
 
   it('Test connection with no keys saved says so', async () => {
-    h.invoke.mockResolvedValue({ data: { ok: false, valid: false, code: 'not_connected' }, error: null });
+    testAnswer({ ok: false, valid: false, code: 'not_connected' });
     renderIt();
     fireEvent.click(await screen.findByRole('button', { name: 'Test connection' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('No Takbull keys saved yet.');
   });
 
+  it('says the keys are saved, with the date, when the server says so', async () => {
+    h.saved = true;
+    h.savedAt = '2026-11-08T10:00:00Z';
+    renderIt();
+    expect(await screen.findByText(/Takbull keys saved .*2026/)).toBeInTheDocument();
+    expect(screen.queryByText('No Takbull keys saved yet.')).not.toBeInTheDocument();
+  });
+
+  it('never says "no keys" when it cannot tell', async () => {
+    h.statusFails = true;
+    renderIt();
+    await screen.findByRole('button', { name: 'Test connection' });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText('No Takbull keys saved yet.')).not.toBeInTheDocument();
+  });
+
+  it('a Test connection that reached Takbull shows the keys as saved, even when Takbull refuses', async () => {
+    h.statusFails = true;
+    testAnswer({ ok: false, valid: false, message: 'Could not resolve merchant' });
+    renderIt();
+    fireEvent.click(await screen.findByRole('button', { name: 'Test connection' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not resolve merchant');
+    expect(screen.getByText('Takbull keys saved.')).toBeInTheDocument();
+  });
+
   it('Test connection reports what Takbull said', async () => {
+    h.saved = true;
     h.savedAt = '2026-11-08T10:00:00Z';
     renderIt();
     const test = await screen.findByRole('button', { name: 'Test connection' });
