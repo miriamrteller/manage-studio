@@ -122,6 +122,7 @@
       "set_business_profile",
       "set_consent_template_lawyer_reviewed",
       "set_feature_optout",
+      "set_platform_charging",
       "smugmug_admin_tenant_id",
       "studio_feature_states",
       "tenant_smugmug_status",

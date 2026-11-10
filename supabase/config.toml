@@ -388,6 +388,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/platform-billing-ipn/index.ts"
 
+# OpalSwift's own billing: the monthly charge on studios' saved cards (daily cron, or the
+# platform owner's "Charge now" on the dev website).
+[functions.run-platform-billing]
+enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron); a signed-in caller must be super_admin.
+verify_jwt = false
+entrypoint = "./functions/run-platform-billing/index.ts"
+
 # Photo shop: Test connection / Connect SmugMug with the studio's own key (admins only).
 [functions.smugmug-connection]
 enabled = true

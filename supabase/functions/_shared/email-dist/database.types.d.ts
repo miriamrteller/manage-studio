@@ -6718,6 +6718,12 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            set_platform_charging: {
+                Args: {
+                    p_enabled: boolean;
+                };
+                Returns: undefined;
+            };
             set_tenant_smugmug_oauth_pending: {
                 Args: {
                     p_pending: string;

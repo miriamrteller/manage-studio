@@ -141,3 +141,27 @@ BEGIN
   END;
   RAISE NOTICE 'ok  a studio admin sees their own plan card; a parent cannot';
 END $$;
+
+-- 7. Step B3: only the platform owner switches the monthly charge on or off.
+DO $$
+DECLARE
+  owner_id UUID := 'b0000000-0000-4000-8000-0000000000f1';
+  admin    UUID := 'b0000000-0000-4000-8000-00000000000e';
+  r RECORD;
+BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', false);
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  BEGIN
+    PERFORM set_platform_charging(true);
+    RAISE EXCEPTION 'FAIL a studio admin switched charging on';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  PERFORM set_config('request.jwt.claim.sub', owner_id::text, false);
+  PERFORM set_platform_charging(true);
+  SELECT * INTO r FROM platform_billing_status();
+  IF NOT r.charging_enabled THEN RAISE EXCEPTION 'FAIL charging not on'; END IF;
+  PERFORM set_platform_charging(false);
+  SELECT * INTO r FROM platform_billing_status();
+  IF r.charging_enabled THEN RAISE EXCEPTION 'FAIL charging not off'; END IF;
+  RAISE NOTICE 'ok  only the platform owner switches monthly charging';
+END $$;
