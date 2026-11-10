@@ -43,6 +43,11 @@ export interface ClientPhotoGallery {
   photos: ClientGalleryPhoto[];
 }
 
+/** The studio's preview of a shoot's shop. sample: the photos are the sample gallery. */
+export interface PhotoShopPreview extends ClientPhotoGallery {
+  sample: boolean;
+}
+
 export interface PlacedPhotoOrder {
   orderId: string;
   status: PhotoOrderStatus;
@@ -81,6 +86,15 @@ export class ClientPhotoShopService {
       throw new ClientPhotoShopError(code ?? 'server_error');
     }
     return data as ClientPhotoGallery;
+  }
+
+  /** Studio admins: what the shoot's client sees. Throws ClientPhotoShopError("no_shop") when the shoot's shop isn't saved. */
+  static async preview(engagementId: string): Promise<PhotoShopPreview> {
+    const { data, error } = await supabase.functions.invoke('client-photo-shop', {
+      body: { action: 'preview', engagementId },
+    });
+    if (error) throw new ClientPhotoShopError((await errorCode(error)) ?? 'server_error');
+    return data as PhotoShopPreview;
   }
 
   static async order(engagementId: string, imageKeys: string[], allPhotos: boolean): Promise<PlacedPhotoOrder> {

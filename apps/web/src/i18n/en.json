@@ -1897,6 +1897,34 @@
       "verify": "Verify"
     }
   },
+  "photo_shop_admin": {
+    "title": "Photo shop",
+    "intro": "Each shoot's photos are sold privately to that shoot's own client, under \"My shoots\". Nobody else can see them.",
+    "tabs": {
+      "overview": "Overview",
+      "prices": "Prices",
+      "smugmug": "SmugMug",
+      "preview": "Preview"
+    },
+    "overview": {
+      "done": "Done",
+      "to_do": "To do",
+      "prices": "Set your price per photo",
+      "smugmug": "Connect your SmugMug account",
+      "gallery_check": "Choosing each shoot's SmugMug gallery opens after a final check of SmugMug galleries",
+      "private": "Each shoot's own prices and orders are on its shoot page.",
+      "shoots_link": "Go to Shoots"
+    },
+    "preview": {
+      "intro": "Choose a shoot to see its photo shop as that client sees it. You can't buy anything here.",
+      "shoot": "Shoot",
+      "choose": "Choose a shoot",
+      "note": "Preview: this is what your client sees. Buying is switched off here.",
+      "sample": "These are sample photos until this shoot's SmugMug gallery is ready.",
+      "no_shop": "This shoot has no photo shop yet. Open the shoot and save its Photo shop card first.",
+      "failed": "The preview couldn't be loaded. Please try again."
+    }
+  },
   "nav": {
     "home": "Home",
     "classes": "Classes",
@@ -1946,6 +1974,7 @@
     "jobs": "Shoots",
     "contracts": "Contracts",
     "quotes": "Quotes",
+    "photo_shop": "Photo shop",
     "platform_studios": "Studios",
     "platform_features": "Platform features",
     "platform_skins": "Skins"

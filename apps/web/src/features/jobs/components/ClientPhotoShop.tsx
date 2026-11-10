@@ -33,7 +33,54 @@ export function ClientPhotoShop({ engagementId, caption }: { engagementId: strin
   return <ShopBody engagementId={engagementId} data={gallery.data} caption={caption} />;
 }
 
-function ShopBody({ engagementId, data, caption }: { engagementId: string; data: ClientPhotoGallery; caption?: ReactNode }) {
+/**
+ * Photo shop → Preview: the studio sees a shoot's shop as its client does, with buying
+ * switched off. Sample photos while the shoot's gallery isn't ready.
+ */
+export function PhotoShopPreview({ engagementId }: { engagementId: string }) {
+  const { t } = useTranslation();
+  const preview = useQuery({
+    queryKey: ['photo-shop-preview', engagementId],
+    queryFn: () => ClientPhotoShopService.preview(engagementId),
+    retry: false,
+  });
+  if (preview.isLoading) return <p className="text-sm text-gray-600">{t('common.loading')}</p>;
+  if (preview.error) {
+    const code = preview.error instanceof ClientPhotoShopError ? preview.error.code : 'server_error';
+    return (
+      <p role="status" className="text-sm text-gray-700">
+        {code === 'no_shop' ? t('photo_shop_admin.preview.no_shop') : t('photo_shop_admin.preview.failed')}
+      </p>
+    );
+  }
+  if (!preview.data) return null;
+  return (
+    <ShopBody
+      engagementId={engagementId}
+      data={preview.data}
+      preview
+      caption={
+        <p className="text-sm text-gray-600">
+          {t('photo_shop_admin.preview.note')}
+          {preview.data.sample ? ` ${t('photo_shop_admin.preview.sample')}` : ''}
+        </p>
+      }
+    />
+  );
+}
+
+function ShopBody({
+  engagementId,
+  data,
+  caption,
+  preview = false,
+}: {
+  engagementId: string;
+  data: ClientPhotoGallery;
+  caption?: ReactNode;
+  /** The studio's preview: everything the client sees, but nothing can be added or bought. */
+  preview?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -132,7 +179,7 @@ function ShopBody({ engagementId, data, caption }: { engagementId: string; data:
                 {isBought ? (
                   <Badge variant="success">{t('pages.client_portal.photo_shop.bought')}</Badge>
                 ) : (
-                  shop.open && (
+                  shop.open && !preview && (
                     <Button
                       size="sm"
                       variant={inCart ? 'primary' : 'outline'}
@@ -152,7 +199,7 @@ function ShopBody({ engagementId, data, caption }: { engagementId: string; data:
         })}
       </ul>
 
-      {shop.open && available.length > 0 && (
+      {shop.open && !preview && available.length > 0 && (
         <div className="space-y-3 rounded-md border bg-gray-50 p-3" aria-live="polite">
           <p className="text-sm">
             {t('pages.client_portal.photo_shop.cart_count', { count: cart.size })}

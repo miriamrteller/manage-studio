@@ -13,7 +13,7 @@ export const SMUGMUG_CALLBACK_URL = 'https://app.opalswift.com/admin/setup/integ
 export const SMUGMUG_APPLY_URL = 'https://api.smugmug.com/api/developer/apply';
 export const SMUGMUG_API_DOC_URL = 'https://api.smugmug.com/api/v2/doc';
 /** Where the callback page sends the photographer back to. */
-export const SMUGMUG_SETTINGS_PATH = '/admin/setup/settings?tab=payment';
+export const SMUGMUG_SETTINGS_PATH = '/admin/photo-shop?tab=smugmug';
 
 export interface SmugMugStatus {
   hasKeys: boolean;
