@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { FEATURES } from '@shared/index';
@@ -10,7 +9,6 @@ import { useStudioPhotoShopDefaults } from '@/features/jobs/hooks/usePhotoShop';
 import { PhotoShopPreview } from '@/features/jobs/components/ClientPhotoShop';
 import { PhotoShopDefaultsSetting } from '@/features/settings/components/PhotoShopDefaultsSetting';
 import { SmugMugSetting } from '@/features/settings/components/SmugMugSetting';
-import { SmugMugService } from '@/features/settings/services/smugmugService';
 
 const TABS = ['overview', 'prices', 'smugmug', 'preview'] as const;
 type Tab = (typeof TABS)[number];
@@ -18,7 +16,7 @@ type Tab = (typeof TABS)[number];
 /**
  * The studio's photo shop (beta, feature billing:photo_shop). Each shoot's photos are sold
  * privately to that shoot's own client; this page holds the studio-wide parts: what's left
- * to set up, default prices, the SmugMug connection and a preview of a shoot's shop.
+ * to set up, default prices, the SmugMug connection (optional) and a preview of a shoot's shop.
  */
 export default function PhotoShopPage() {
   const { t } = useTranslation();
@@ -78,9 +76,7 @@ function Step({ done, label, action }: { done: boolean; label: string; action?: 
 function Overview({ onGo }: { onGo: (tab: Tab) => void }) {
   const { t } = useTranslation();
   const { defaults } = useStudioPhotoShopDefaults();
-  const status = useQuery({ queryKey: ['smugmug-status'], queryFn: () => SmugMugService.getStatus() });
   const pricesSet = defaults.data?.price_per_photo_minor != null;
-  const connected = Boolean(status.data?.connected);
   const goButton = (target: Tab, label: string) => (
     <button type="button" className="font-medium underline" onClick={() => onGo(target)}>{label}</button>
   );
@@ -89,8 +85,6 @@ function Overview({ onGo }: { onGo: (tab: Tab) => void }) {
     <div className="space-y-4">
       <ul className="space-y-2">
         <Step done={pricesSet} label={t('photo_shop_admin.overview.prices')} action={goButton('prices', t('photo_shop_admin.tabs.prices'))} />
-        <Step done={connected} label={t('photo_shop_admin.overview.smugmug')} action={goButton('smugmug', t('photo_shop_admin.tabs.smugmug'))} />
-        <Step done={false} label={t('photo_shop_admin.overview.gallery_check')} />
       </ul>
       <p className="text-sm text-gray-600">
         {t('photo_shop_admin.overview.private')}{' '}

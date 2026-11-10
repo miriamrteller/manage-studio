@@ -1720,7 +1720,7 @@
         "summary_all": "all photos {{price}}",
         "summary_open_until": "open until {{date}}",
         "no_price_hint": "Clients can only take the included photos until you set a price per photo.",
-        "filled_hint": "From the package and your photo shop defaults in Settings → Payment Settings. You can change them for this shoot.",
+        "filled_hint": "From the package and your Photo shop prices. You can change them for this shoot.",
         "included": "Photos included",
         "included_hint": "At no extra cost. 0 means every photo is paid for.",
         "per_photo": "Price per photo ({{currency}})",
@@ -1738,9 +1738,25 @@
         "order_included_other": "{{count}} included",
         "file_names": "File names",
         "delivery_link": "Download gallery link",
-        "delivery_hint": "Make a download gallery on SmugMug with these photos, paste its link and press Send.",
+        "delivery_hint": "Put the finished photos in a download folder (for example Google Drive or WeTransfer), paste its link and press Send. Your client gets an email with the link.",
         "send": "Send",
         "change_link": "Change link",
+        "photos": {
+          "title": "Photos",
+          "hint": "Pick the shoot's photos. Your browser makes small watermarked copies before uploading, so your originals stay on your computer. Your client only sees these copies.",
+          "add": "Add photos",
+          "working": "Preparing and uploading {{done}} of {{total}}…",
+          "added_one": "{{count}} photo added.",
+          "added_other": "{{count}} photos added.",
+          "count_one": "{{count}} photo in the shop.",
+          "count_other": "{{count}} photos in the shop.",
+          "skipped": "These couldn't be read, so they weren't added (save them as JPEG and try again): {{names}}",
+          "upload_failed": "The upload stopped. The photos already added are kept. Please try again.",
+          "remove": "Remove",
+          "remove_label": "Remove {{name}}",
+          "bought": "A client has bought or is paying for this photo, so it stays.",
+          "remove_failed": "The photo couldn't be removed. Please try again."
+        },
         "status": {
           "awaiting_payment": "Waiting for payment",
           "paid": "Paid, to deliver",
@@ -1953,9 +1969,7 @@
       "done": "Done",
       "to_do": "To do",
       "prices": "Set your price per photo",
-      "smugmug": "Connect your SmugMug account",
-      "gallery_check": "Choosing each shoot's SmugMug gallery opens after a final check of SmugMug galleries",
-      "private": "Each shoot's own prices and orders are on its shoot page.",
+      "private": "Add each shoot's photos on its shoot page. Its own prices and orders are there too.",
       "shoots_link": "Go to Shoots"
     },
     "preview": {
@@ -1963,8 +1977,8 @@
       "shoot": "Shoot",
       "choose": "Choose a shoot",
       "note": "Preview: this is what your client sees. Buying is switched off here.",
-      "sample": "These are sample photos until this shoot's SmugMug gallery is ready.",
-      "no_shop": "This shoot has no photo shop yet. Open the shoot and save its Photo shop card first.",
+      "sample": "These are sample photos until you add this shoot's photos.",
+      "no_shop": "This shoot has no photos yet. Open the shoot and add photos in its Photo shop card.",
       "failed": "The preview couldn't be loaded. Please try again."
     }
   },
