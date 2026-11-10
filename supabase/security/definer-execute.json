@@ -37,6 +37,7 @@
     "$comment": "signed-in users only; each checks role/tenant itself.",
     "functions": [
       "acknowledge_studio_legal_pack",
+      "add_job_photo_shop_photos",
       "admin_enrolment_lookup_email",
       "admin_get_document_signed_url_path",
       "admin_get_payment_document",
@@ -52,6 +53,7 @@
       "create_job_payment_requests",
       "custom_domain_enabled",
       "decline_age_review_engagement",
+      "delete_job_photo_shop_photo",
       "deliver_job_photo_order",
       "disconnect_tenant_smugmug",
       "engagement_age_at_season_start",

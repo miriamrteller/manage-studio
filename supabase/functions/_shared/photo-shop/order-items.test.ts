@@ -1,5 +1,14 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { GalleryNotReadyError, listGalleryPhotos, mockGalleryPhotos, MOCK_PHOTO_COUNT } from "./gallery.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import {
+  GalleryNotReadyError,
+  listGalleryPhotos,
+  MOCK_PHOTO_COUNT,
+  mockGalleryPhotos,
+  PHOTO_SHOP_BUCKET,
+  PREVIEW_URL_SECONDS,
+  uploadedPhotoSource,
+} from "./gallery.ts";
 import { photoOrderLabel, resolveOrderItems } from "./order-items.ts";
 
 const gallery = mockGalleryPhotos("g");
@@ -26,6 +35,58 @@ Deno.test("SmugMug stays locked until the live check", async () => {
     }
   }
   assertEquals((await listGalleryPhotos({ provider: "mock", gallery_key: "g" })).length, MOCK_PHOTO_COUNT);
+});
+
+Deno.test("uploads: the studio's own previews, keyed by photo id; none yet means no gallery", async () => {
+  const photos = [{ key: "p1", fileName: "IMG_0423.jpg", previewUrl: "https://signed/p1" }];
+  const seen: string[] = [];
+  const source = (key: string) => {
+    seen.push(key);
+    return Promise.resolve(key === "shoot" ? photos : []);
+  };
+  assertEquals(await listGalleryPhotos({ provider: "upload", gallery_key: "shoot" }, source), photos);
+  assertEquals(seen, ["shoot"]);
+  for (const [shop, src, code] of [
+    [{ provider: "upload", gallery_key: "empty" }, source, "no_gallery"],
+    [{ provider: "upload", gallery_key: null }, source, "no_gallery"],
+    [{ provider: "upload", gallery_key: "shoot" }, undefined, "unknown_provider"],
+  ] as const) {
+    try {
+      await listGalleryPhotos(shop, src);
+      throw new Error(`expected ${code}`);
+    } catch (e) {
+      assert(e instanceof GalleryNotReadyError);
+      assertEquals(e.code, code);
+    }
+  }
+});
+
+Deno.test("uploads source: upload order, signed URLs, files without a URL left out", async () => {
+  const rows = [
+    { id: "a", file_name: "IMG_1.jpg", storage_path: "t/s/a.jpg" },
+    { id: "b", file_name: "IMG_2.jpg", storage_path: "t/s/b.jpg" },
+  ];
+  let asked: { bucket: string; paths: string[]; ttl: number } | null = null;
+  const service = {
+    from: (_t: string) => ({
+      select: (_c: string) => ({
+        eq: (_col: string, _v: string) => ({
+          order: () => ({ order: () => Promise.resolve({ data: rows, error: null }) }),
+        }),
+      }),
+    }),
+    storage: {
+      from: (bucket: string) => ({
+        createSignedUrls: (paths: string[], ttl: number) => {
+          asked = { bucket, paths, ttl };
+          return Promise.resolve({ data: [{ path: "t/s/a.jpg", signedUrl: "https://signed/a" }], error: null });
+        },
+      }),
+    },
+  };
+  const photos = await uploadedPhotoSource(service as unknown as SupabaseClient)("s");
+  assertEquals(photos, [{ key: "a", fileName: "IMG_1.jpg", previewUrl: "https://signed/a" }]);
+  assertEquals(asked, { bucket: PHOTO_SHOP_BUCKET, paths: ["t/s/a.jpg", "t/s/b.jpg"], ttl: PREVIEW_URL_SECONDS });
 });
 
 Deno.test("picked photos: in gallery order, file names from the gallery, no duplicates", () => {
