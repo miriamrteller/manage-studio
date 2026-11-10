@@ -5954,6 +5954,7 @@ export type Database = {
         Returns: undefined
       }
       login_email_status: { Args: { p_email: string }; Returns: string }
+      mark_job_photo_order_sent: { Args: { p_order_id: string }; Returns: Json }
       mark_quote_sent: {
         Args: { p_quote_id: string; p_via: string }
         Returns: Json
