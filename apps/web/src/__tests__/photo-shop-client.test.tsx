@@ -159,6 +159,23 @@ describe('ClientPhotoShop', () => {
     expect(link.getAttribute('rel')).toContain('noreferrer');
   });
 
+  it('an order the studio marked as sent says so, with no link', async () => {
+    state.gallery = {
+      shop: view({
+        bought_image_keys: ['g-1'],
+        orders: [{
+          id: 'o1', status: 'delivered', photo_count: 1, included_count: 1, total_minor: 0, currency: 'ILS',
+          created_at: '2026-11-04T10:00:00Z', paid_at: '2026-11-04T10:00:00Z', delivered_at: '2026-11-05T10:00:00Z',
+          pay_token: null, delivery_url: null,
+        }],
+      }),
+      photos,
+    };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    expect(await screen.findByText('Sent to you by the studio')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Download your photos' })).toBeNull();
+  });
+
   it('has Hebrew text and the sale note', async () => {
     await setLanguage('he');
     renderInApp(<ClientPhotoShop engagementId="e1" />);

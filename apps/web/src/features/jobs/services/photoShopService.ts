@@ -39,6 +39,8 @@ export interface JobPhotoShop {
     passed: boolean;
     items: { code: string; ok: boolean; value?: string }[];
   } | null;
+  /** Photos read at the last passed check (watermarked Large size). */
+  smugmug_photos?: { key: string; fileName: string; previewUrl: string }[] | null;
   /** When the SmugMug gallery last passed its check; null = not passed. */
   smugmug_checked_at?: string | null;
   /** false = not saved yet; the values are the prefill. */
@@ -125,6 +127,12 @@ export class PhotoShopService {
       throw new Error(typeof body?.error === 'string' ? body.error : error.message);
     }
     return { emailed: Boolean((data as { emailed?: boolean } | null)?.emailed) };
+  }
+
+  /** "Mark as sent": the photos went to the client another way; no link, no email. */
+  static async markSent(orderId: string): Promise<void> {
+    const { error } = await supabase.rpc('mark_job_photo_order_sent', { p_order_id: orderId });
+    if (error) throw new Error(error.message.replace(/^mark_job_photo_order_sent: /, ''));
   }
 
   /** The shoot's uploaded previews, in upload order, with signed links. */

@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   orders: [] as PhotoOrder[],
   saveShop: vi.fn(),
   deliver: vi.fn(),
+  markSent: vi.fn(),
   photos: [] as { id: string; file_name: string; storage_path: string; url: string | null }[],
   upload: vi.fn(async (_t: string, _e: string, previews: unknown[]) => previews.length),
   deletePhoto: vi.fn(async (_id: string) => undefined),
@@ -65,6 +66,7 @@ vi.mock('@/features/jobs/services/photoShopService', async (orig) => {
       listOrders: async () => state.orders,
       saveShop: (id: string, patch: unknown) => state.saveShop(id, patch),
       deliver: (id: string, url: string) => state.deliver(id, url),
+      markSent: (id: string) => state.markSent(id),
       listPhotos: async () => state.photos,
       uploadPreviews: (t: string, e: string, previews: unknown[]) => state.upload(t, e, previews),
       deletePhoto: (id: string) => state.deletePhoto(id),
@@ -129,6 +131,7 @@ describe('JobPhotoShopCard', () => {
     state.orders = [];
     state.saveShop.mockReset().mockImplementation(async (_id: string, patch: Partial<JobPhotoShop>) => shop({ ...patch, saved: true }));
     state.deliver.mockReset().mockResolvedValue(undefined);
+    state.markSent.mockReset().mockResolvedValue(undefined);
     state.photos = [];
     state.upload.mockClear();
     state.deletePhoto.mockClear();
@@ -186,6 +189,24 @@ describe('JobPhotoShopCard', () => {
     expect(send.disabled).toBe(false);
     fireEvent.click(send);
     await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/Alice-download'));
+  });
+
+  it('a paid order shows each photo\'s thumbnail and file name, and can be marked as sent', async () => {
+    state.shop = shop({
+      provider: 'smugmug',
+      gallery_key: 'a1',
+      smugmug_photos: [{ key: 'k3', fileName: 'IMG_0003.jpg', previewUrl: 'https://photos.smugmug.test/k3-L.jpg' }],
+    });
+    state.photos = [{ id: 'k1', file_name: 'IMG_0001.jpg', storage_path: 't1/e1/k1.jpg', url: 'https://signed/k1' }];
+    state.orders = [paidOrder];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('Paid, to deliver')).toBeTruthy();
+    expect(((await screen.findByAltText('IMG_0001.jpg')) as HTMLImageElement).src).toBe('https://signed/k1');
+    expect((screen.getByAltText('IMG_0003.jpg') as HTMLImageElement).src).toBe('https://photos.smugmug.test/k3-L.jpg');
+    expect(screen.getByText('IMG_0002.jpg')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as sent' }));
+    await waitFor(() => expect(state.markSent).toHaveBeenCalledWith('o1'));
+    expect(state.deliver).not.toHaveBeenCalled();
   });
 
   it('uploads picked photos as previews, keeps file names, and says which could not be read', async () => {
