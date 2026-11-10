@@ -1857,6 +1857,7 @@ export type Database = {
             job_payment_requests: {
                 Row: {
                     amount_minor: number;
+                    class_card_id: string | null;
                     created_at: string;
                     created_by: string | null;
                     currency: string;
@@ -1879,6 +1880,7 @@ export type Database = {
                 };
                 Insert: {
                     amount_minor: number;
+                    class_card_id?: string | null;
                     created_at?: string;
                     created_by?: string | null;
                     currency?: string;
@@ -1901,6 +1903,7 @@ export type Database = {
                 };
                 Update: {
                     amount_minor?: number;
+                    class_card_id?: string | null;
                     created_at?: string;
                     created_by?: string | null;
                     currency?: string;
@@ -1922,6 +1925,13 @@ export type Database = {
                     updated_at?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "job_payment_requests_class_card_id_fkey";
+                        columns: ["class_card_id"];
+                        isOneToOne: false;
+                        referencedRelation: "class_cards";
+                        referencedColumns: ["id"];
+                    },
                     {
                         foreignKeyName: "job_payment_requests_created_by_fkey";
                         columns: ["created_by"];
@@ -6068,6 +6078,7 @@ export type Database = {
                     extension_requested_at: string;
                     id: string;
                     name: string;
+                    pay_token: string;
                     person_id: string;
                     shared: boolean;
                     starts_on: string;
@@ -7436,6 +7447,13 @@ export type Database = {
             smugmug_admin_tenant_id: {
                 Args: never;
                 Returns: string;
+            };
+            start_class_card_purchase: {
+                Args: {
+                    p_card_type_id: string;
+                    p_person_id?: string;
+                };
+                Returns: Json;
             };
             studio_feature_states: {
                 Args: {

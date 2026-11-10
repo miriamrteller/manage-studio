@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Portal → Your class cards: classes left, book a place, cancel with the cutoff shown first,
- * and ask once for more time.
+ * Portal → Your class cards: buy a card (paid on the pay page), classes left, book a place,
+ * cancel with the cutoff shown first, and ask once for more time.
  * Run: pnpm -C apps/web test class-card-portal.test.tsx
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -16,6 +16,9 @@ const svc = vi.hoisted(() => ({
   booked: [] as unknown[],
   cancelled: [] as string[],
   asked: [] as string[],
+  bought: [] as string[],
+  buyResult: { cardId: 'new', payToken: 'tok-1' as string | null } as { cardId: string; payToken: string | null } | Error,
+  waiting: false,
 }));
 
 vi.mock('@/features/class-cards/service', async (orig) => {
@@ -24,10 +27,24 @@ vi.mock('@/features/class-cards/service', async (orig) => {
   const later = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
   return {
     ...actual,
+    fetchClassCardSettings: async () => ({ tenant_id: 't', enabled: true, cancel_cutoff_hours: 12, extension_months: 3 }),
+    fetchCardsOnSale: async () => [
+      { id: 'type-10', name: '10 classes', class_count: 10, price_minor: 50000, currency: 'ILS', valid_months: 3, shareable: false },
+    ],
+    startCardPurchase: async (id: string) => {
+      svc.bought.push(id);
+      if (svc.buyResult instanceof Error) throw svc.buyResult;
+      return svc.buyResult;
+    },
     fetchMyClassCards: async () => [
+      ...(svc.waiting
+        ? [{ id: 'card-w', person_id: 'p-1', name: '5 classes', class_count: 5, classes_left: 5, status: 'awaiting_payment',
+             starts_on: null, valid_until: null, shared: false, extension_requested_at: null, extended_at: null, pay_token: 'tok-w' }]
+        : []),
       {
         id: 'card-1', person_id: 'p-1', name: '10 classes', class_count: 10, classes_left: 7, status: 'active',
         starts_on: '2026-01-01', valid_until: '2999-01-01', shared: false, extension_requested_at: null, extended_at: null,
+        pay_token: null,
       },
     ],
     fetchMyCardSessions: async () => ({
@@ -52,6 +69,9 @@ beforeEach(async () => {
   svc.booked = [];
   svc.cancelled = [];
   svc.asked = [];
+  svc.bought = [];
+  svc.buyResult = { cardId: 'new', payToken: 'tok-1' };
+  svc.waiting = false;
   setTenant('dance');
   await setLanguage('en');
 });
@@ -80,5 +100,29 @@ describe('Portal class cards', () => {
     renderInApp(<PortalClassCards myPersonId="p-1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Ask for more time' }));
     await waitFor(() => expect(svc.asked).toEqual(['card-1']));
+  });
+
+  it('buys a card: shows the expiry first, then opens the pay page', async () => {
+    renderInApp(<PortalClassCards myPersonId="p-1" />, { extraRoutes: { '/pay/:token': <p>pay page</p> } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Buy a class card' }));
+    expect(screen.getByText(/valid for 3 months from when you pay/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Buy for/ }));
+    expect(await screen.findByText('pay page')).toBeInTheDocument();
+    expect(svc.bought).toEqual(['type-10']);
+  });
+
+  it('without a class enrolment, says to buy at the studio', async () => {
+    svc.buyResult = Object.assign(new Error('class_card: needs_enrolment'), { message: 'class_card: needs_enrolment' });
+    renderInApp(<PortalClassCards myPersonId="p-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Buy a class card' }));
+    fireEvent.click(screen.getByRole('button', { name: /Buy for/ }));
+    expect(await screen.findByText(/buy this card at the studio/)).toBeInTheDocument();
+  });
+
+  it('a card waiting for payment links back to the pay page', async () => {
+    svc.waiting = true;
+    renderInApp(<PortalClassCards myPersonId="p-1" />);
+    expect(await screen.findByText('Waiting for payment.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pay now' })).toHaveAttribute('href', '/pay/tok-w');
   });
 });

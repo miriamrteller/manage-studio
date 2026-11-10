@@ -1,18 +1,24 @@
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { formatDate } from '@shared/format';
+import { Link, useNavigate } from 'react-router-dom';
+import { formatCurrency, formatDate } from '@shared/format';
 import { isSkippedHolidayInIsrael } from '@shared/lib/holidays';
 import { Button } from '@/components/ui/button';
+import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
+import { useClassCardsEnabled } from '../hooks/useClassCardsEnabled';
 import {
   askForMoreTime,
   bookWithCard,
   cancelCardBooking,
   classCardErrorCode,
+  fetchCardsOnSale,
   fetchMyCardSessions,
   fetchMyClassCards,
   isLateCancel,
+  startCardPurchase,
+  type CardOnSale,
   type CardSession,
   type MyClassCard,
 } from '../service';
@@ -20,28 +26,103 @@ import {
 const KEY = ['class-cards', 'mine'];
 
 /**
- * Client portal: "Your class cards". Classes left and expiry, book a place in a class the card
- * covers, cancel (the cutoff is shown first, never blocks), and ask once for more time.
- * Renders nothing when the person has no cards or the studio has class cards switched off.
+ * Client portal: "Your class cards". Buy a card (paid on the usual pay page), classes left and
+ * expiry, book a place in a class the card covers, cancel (the cutoff is shown first, never
+ * blocks), and ask once for more time. Renders nothing while the studio has class cards off,
+ * or when the person has no cards and none are on sale.
  */
 export function PortalClassCards({ myPersonId }: { myPersonId?: string | null }) {
   const { t } = useTranslation();
   const id = useId();
-  const cards = useQuery({ queryKey: KEY, queryFn: fetchMyClassCards });
+  const tenant = useTenant();
+  const enabled = useClassCardsEnabled();
+  const cards = useQuery({ queryKey: KEY, queryFn: fetchMyClassCards, enabled });
+  const onSale = useQuery({
+    queryKey: ['class-cards', 'on-sale', tenant?.id],
+    enabled: enabled && Boolean(tenant?.id),
+    queryFn: () => fetchCardsOnSale(tenant!.id),
+  });
 
-  if (!cards.data || cards.data.length === 0) return null;
+  const mine = cards.data ?? [];
+  const forSale = onSale.data ?? [];
+  if (!enabled || (mine.length === 0 && forSale.length === 0)) return null;
 
   return (
     <section aria-labelledby={`${id}-title`} className="space-y-3">
       <h3 id={`${id}-title`} className="text-lg font-semibold text-gray-900">
         {t('class_cards.portal.title')}
       </h3>
-      <ul className="space-y-3">
-        {cards.data.map((c) => (
-          <CardItem key={c.id} card={c} myPersonId={myPersonId ?? null} />
-        ))}
-      </ul>
+      {mine.length > 0 && (
+        <ul className="space-y-3">
+          {mine.map((c) => (
+            <CardItem key={c.id} card={c} myPersonId={myPersonId ?? null} />
+          ))}
+        </ul>
+      )}
+      {forSale.length > 0 && <BuyCard cards={forSale} />}
     </section>
+  );
+}
+
+function BuyCard({ cards }: { cards: CardOnSale[] }) {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const locale = i18n.language === 'he' ? 'he-IL' : 'en-IL';
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const buy = useMutation({
+    mutationFn: (c: CardOnSale) => startCardPurchase(c.id),
+    onMutate: () => setMessage(null),
+    onSuccess: async ({ payToken }) => {
+      if (payToken) {
+        navigate(`/pay/${payToken}`);
+        return;
+      }
+      setMessage(t('class_cards.portal.buy_ready'));
+      await queryClient.invalidateQueries({ queryKey: KEY });
+    },
+    onError: (err) => {
+      const code = classCardErrorCode(err);
+      setMessage(code === 'needs_enrolment' ? t('class_cards.portal.buy_at_studio') : t('class_cards.portal.error'));
+    },
+  });
+
+  return (
+    <div className="space-y-2 rounded-lg border p-4">
+      <Button size="sm" variant={open ? 'outline' : 'primary'} aria-expanded={open} onClick={() => setOpen(!open)}>
+        {t('class_cards.portal.buy')}
+      </Button>
+      {open && (
+        <ul className="space-y-2">
+          {cards.map((c) => (
+            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+              <div>
+                <p className="text-sm font-medium">{c.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('class_cards.portal.classes', { count: c.class_count })}
+                  {' · '}
+                  {c.valid_months == null
+                    ? t('settings.class_cards.never_expires')
+                    : t('class_cards.portal.valid_months', { count: c.valid_months })}
+                  {c.shareable ? ` · ${t('settings.class_cards.shared')}` : ''}
+                </p>
+              </div>
+              <Button size="sm" variant="primary" disabled={buy.isPending} onClick={() => buy.mutate(c)}>
+                {c.price_minor === 0
+                  ? t('class_cards.portal.get_free')
+                  : t('class_cards.portal.buy_for', { price: formatCurrency(c.price_minor, c.currency, locale) })}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {message && (
+        <p role="status" aria-live="polite" className="text-sm">
+          {message}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -63,6 +144,22 @@ function CardItem({ card, myPersonId }: { card: MyClassCard; myPersonId: string 
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
     onError: () => setFailed(true),
   });
+
+  if (card.status === 'awaiting_payment') {
+    return (
+      <li className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-4">
+        <div>
+          <p className="font-medium">{card.name}</p>
+          <p className="text-sm text-muted-foreground">{t('class_cards.portal.waiting_payment')}</p>
+        </div>
+        {card.pay_token && (
+          <Link to={`/pay/${card.pay_token}`} className="text-sm font-medium underline">
+            {t('class_cards.portal.pay_now')}
+          </Link>
+        )}
+      </li>
+    );
+  }
 
   const canAsk = card.valid_until != null && !card.extension_requested_at && !card.extended_at && card.status === 'active';
 

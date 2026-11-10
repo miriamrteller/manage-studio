@@ -267,6 +267,41 @@ export interface MyClassCard {
   shared: boolean;
   extension_requested_at: string | null;
   extended_at: string | null;
+  /** Set while the card waits for payment: the /pay/:token link. */
+  pay_token: string | null;
+}
+
+export interface CardOnSale {
+  id: string;
+  name: string;
+  class_count: number;
+  price_minor: number;
+  currency: string;
+  valid_months: number | null;
+  shareable: boolean;
+}
+
+/** Cards the studio sells (clients only see the ones on sale). */
+export async function fetchCardsOnSale(tenantId: string): Promise<CardOnSale[]> {
+  const { data, error } = await supabase
+    .from('class_card_types')
+    .select('id, name, class_count, price_minor, currency, valid_months, shareable')
+    .eq('tenant_id', tenantId)
+    .eq('is_active', true)
+    .order('class_count');
+  if (error) throw error;
+  return (data ?? []) as CardOnSale[];
+}
+
+/**
+ * Client: start buying a card. Returns the pay link token, or null when the card was free and
+ * has started. Starting again for the same card reuses the open purchase.
+ */
+export async function startCardPurchase(cardTypeId: string): Promise<{ cardId: string; payToken: string | null }> {
+  const { data, error } = await supabase.rpc('start_class_card_purchase', { p_card_type_id: cardTypeId });
+  if (error) throw error;
+  const r = data as { card_id: string; pay_token: string | null };
+  return { cardId: r.card_id, payToken: r.pay_token };
 }
 
 export interface CardSession {

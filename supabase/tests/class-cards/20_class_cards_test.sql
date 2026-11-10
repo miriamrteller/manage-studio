@@ -359,3 +359,77 @@ END $$;
 SELECT pg_temp.expect_fail((SELECT ari_u FROM ids),
   format('SELECT get_my_class_card_sessions(%L)', (SELECT id FROM t WHERE k = 'bob_card')),
   'access denied', 'someone else cannot list a card''s sessions');
+
+-- 13. Buying online: the card waits for payment on a /pay link, and starts when it is paid.
+DO $$
+DECLARE r JSONB; r2 JSONB; c class_cards; pay UUID; req UUID;
+BEGIN
+  PERFORM pg_temp.as_user((SELECT bob_u FROM ids));
+  r := start_class_card_purchase((SELECT id FROM t WHERE k = 'ten'));
+  IF r->>'status' <> 'awaiting_payment' OR r->>'pay_token' IS NULL THEN RAISE EXCEPTION 'FAIL purchase not started: %', r; END IF;
+  SELECT * INTO c FROM class_cards WHERE id = (r->>'card_id')::uuid;
+  IF c.person_id <> (SELECT bob FROM ids) OR c.price_minor <> 50000 OR c.starts_on IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL waiting card wrong: %', row_to_json(c);
+  END IF;
+  SELECT id INTO req FROM job_payment_requests WHERE class_card_id = c.id;
+  IF (SELECT amount_minor FROM job_payment_requests WHERE id = req) <> 50000
+     OR (SELECT engagement_id FROM job_payment_requests WHERE id = req) <> 'f0000000-0000-4000-8000-00000000000b' THEN
+    RAISE EXCEPTION 'FAIL payment request wrong';
+  END IF;
+  -- Starting again sends the client back to the same purchase.
+  r2 := start_class_card_purchase((SELECT id FROM t WHERE k = 'ten'));
+  IF r2->>'card_id' <> r->>'card_id' OR r2->>'pay_token' <> r->>'pay_token' THEN RAISE EXCEPTION 'FAIL second start made a new purchase'; END IF;
+  -- A waiting card shows its pay link in the portal and cannot be used yet.
+  IF (SELECT pay_token FROM get_my_class_cards() WHERE id = c.id) <> r->>'pay_token' THEN RAISE EXCEPTION 'FAIL portal has no pay link'; END IF;
+  BEGIN
+    PERFORM book_class_with_card(c.id, (SELECT yoga FROM ids), (SELECT d1 + 7 FROM ids));
+    RAISE EXCEPTION 'FAIL booked with an unpaid card';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM NOT LIKE '%not_active%' THEN RAISE; END IF;
+  END;
+
+  -- Paid: the card starts today with the type's expiry and is linked to the payment.
+  INSERT INTO payments (tenant_id, charge_type, provider, status, pretax_amount_minor, total_amount_minor, currency, person_id)
+  SELECT studio, 'initial', 'mock', 'succeeded', 50000, 50000, 'ILS', bob FROM ids RETURNING id INTO pay;
+  UPDATE job_payment_requests SET status = 'paid', payment_id = pay, paid_at = now() WHERE id = req;
+  SELECT * INTO c FROM class_cards WHERE id = c.id;
+  IF c.status <> 'active' OR c.payment_id <> pay OR c.starts_on <> (now() AT TIME ZONE 'Asia/Jerusalem')::date
+     OR c.valid_until <> (c.starts_on + interval '3 months')::date THEN
+    RAISE EXCEPTION 'FAIL paid card did not start: %', row_to_json(c);
+  END IF;
+  IF (SELECT pay_token FROM get_my_class_cards() WHERE id = c.id) IS NOT NULL THEN RAISE EXCEPTION 'FAIL paid card still has a pay link'; END IF;
+  RAISE NOTICE 'ok  buying online: waits for payment, reuses the open purchase, starts when paid';
+
+  -- A cancelled request cancels the waiting card.
+  r := start_class_card_purchase((SELECT id FROM t WHERE k = 'ten'));
+  IF r->>'card_id' = c.id::text THEN RAISE EXCEPTION 'FAIL new purchase reused a paid card'; END IF;
+  UPDATE job_payment_requests SET status = 'cancelled' WHERE class_card_id = (r->>'card_id')::uuid;
+  IF (SELECT status FROM class_cards WHERE id = (r->>'card_id')::uuid) <> 'cancelled' THEN
+    RAISE EXCEPTION 'FAIL cancelled request left the card waiting';
+  END IF;
+  RAISE NOTICE 'ok  a cancelled payment request cancels the waiting card';
+END $$;
+
+-- A family member buys through the family's enrolment; someone with no enrolment pays at the studio.
+DO $$
+DECLARE r JSONB;
+BEGIN
+  PERFORM pg_temp.as_user((SELECT ari_u FROM ids));
+  r := start_class_card_purchase((SELECT id FROM t WHERE k = 'ten'));
+  IF (SELECT engagement_id FROM job_payment_requests WHERE class_card_id = (r->>'card_id')::uuid)
+     <> 'f0000000-0000-4000-8000-00000000000a' THEN
+    RAISE EXCEPTION 'FAIL family purchase not on the family enrolment';
+  END IF;
+  IF (SELECT person_id FROM class_cards WHERE id = (r->>'card_id')::uuid) <> (SELECT ari FROM ids) THEN
+    RAISE EXCEPTION 'FAIL family purchase for the wrong person';
+  END IF;
+  RAISE NOTICE 'ok  a family member buys through the family''s enrolment';
+END $$;
+UPDATE engagements SET status = 'cancelled' WHERE id = 'f0000000-0000-4000-8000-00000000000b';
+SELECT pg_temp.expect_fail((SELECT bob_u FROM ids),
+  format('SELECT start_class_card_purchase(%L)', (SELECT id FROM t WHERE k = 'ten')),
+  'needs_enrolment', 'no enrolment: cannot buy online yet');
+UPDATE engagements SET status = 'active' WHERE id = 'f0000000-0000-4000-8000-00000000000b';
+SELECT pg_temp.expect_fail((SELECT bob_u FROM ids),
+  format('SELECT start_class_card_purchase(%L, %L)', (SELECT id FROM t WHERE k = 'ten'), (SELECT alice FROM ids)),
+  'access denied', 'cannot buy a card for someone outside the family');

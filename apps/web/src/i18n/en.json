@@ -4655,7 +4655,18 @@
       "err_class_full": "Sorry, this class just filled up.",
       "err_no_classes_left": "There are no classes left on this card.",
       "err_already_booked": "You are already booked for this class.",
-      "err_expired": "This card has expired."
+      "err_expired": "This card has expired.",
+      "buy": "Buy a class card",
+      "classes_one": "{{count}} class",
+      "classes_other": "{{count}} classes",
+      "valid_months_one": "valid for {{count}} month from when you pay",
+      "valid_months_other": "valid for {{count}} months from when you pay",
+      "buy_for": "Buy for {{price}}",
+      "get_free": "Get it free",
+      "buy_ready": "Your card is ready. You can book a class now.",
+      "buy_at_studio": "Online buying is for clients already in a class for now. You can buy this card at the studio.",
+      "waiting_payment": "Waiting for payment.",
+      "pay_now": "Pay now"
     }
   }
 }
