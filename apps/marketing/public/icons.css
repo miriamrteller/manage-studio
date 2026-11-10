@@ -1,9 +1,13 @@
-/* Shared line icons (icons.svg). Size follows font-size, colour follows currentColor. */
+/* OpalSwift icons (icons.svg, built by scripts/build-icons.mjs). Size follows font-size.
+   Colours: --icon-fill (default: opal gradient) and --icon-detail (default: white). */
 .icon{width:1em;height:1em;display:inline-block;flex-shrink:0;vertical-align:-.125em;overflow:visible}
 /* rating stars: amber dark enough for 3:1 on white */
 .icon-star{color:#D97706}
+/* icons on a coloured tile: white icon, details in the tile colour */
+.proof-card .ava .icon{--icon-fill:#fff;--icon-detail:var(--accent)}
 /* icons on the dark "how it works" band */
 .flow-step .em{color:rgba(255,255,255,.92)}
+.flow-step .em .icon,.feat-icon .icon{--icon-fill:currentColor;--icon-detail:var(--band-bg,#0B1437)}
 /* "Coming soon" tag for features that are not built yet */
 /* a 3-column card grid with fewer cards: same column width, centred, no empty slot (phones keep 1 column) */
 @media(min-width:769px){.cards3.fit-2{grid-template-columns:repeat(2,1fr);max-width:780px;margin-inline:auto}.cards3.fit-1{grid-template-columns:1fr;max-width:420px;margin-inline:auto}}

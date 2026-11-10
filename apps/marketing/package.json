@@ -8,7 +8,9 @@
     "check": "node ../../scripts/ci/check-marketing-links.mjs public",
     "test": "node --test test/*.test.mjs",
     "build:legal": "node scripts/build-legal.mjs",
-    "check:legal": "node scripts/build-legal.mjs --check"
+    "check:legal": "node scripts/build-legal.mjs --check",
+    "build:icons": "node scripts/build-icons.mjs",
+    "check:icons": "node scripts/build-icons.mjs --check"
   },
   "devDependencies": {
     "marked": "15.0.12",
