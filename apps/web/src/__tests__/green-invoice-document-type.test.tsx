@@ -64,20 +64,17 @@ describe('Green Invoice document type: the rules', () => {
 });
 
 describe('Settings -> Tax documents', () => {
-  it('a studio switching to Green Invoice sees the choice prefilled from business status, and saves it', async () => {
+  it('Green Invoice is not offered to a studio switching (owner decision 2026-11-10)', () => {
     Object.assign(h.tenant, { payment_provider: 'offline', invoicing_provider: 'none' });
     h.row = { green_invoice_document_type: 320, legal_profile: { business_status: 'osek_patur' } };
     wrap(<InvoicingToggleForm />);
 
     fireEvent.click(screen.getByLabelText('settings.invoicing_toggle.enabled_label'));
-    fireEvent.change(screen.getByLabelText('settings.invoicing.provider'), { target: { value: 'green_invoice' } });
-    await waitFor(() => expect(screen.getByLabelText(LABEL)).toHaveValue('400'));
-    expect(screen.getByLabelText(LABEL)).toHaveAccessibleDescription('settings.invoicing_toggle.gi_document_hint');
-
-    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
-    await waitFor(() =>
-      expect(h.update).toHaveBeenCalledWith({ invoicing_provider: 'green_invoice', green_invoice_document_type: 400 }),
+    const options = Array.from((screen.getByLabelText('settings.invoicing.provider') as HTMLSelectElement).options).map(
+      (o) => o.value,
     );
+    expect(options).toEqual(['ypay']);
+    expect(screen.queryByLabelText(LABEL)).toBeNull();
   });
 
   it('shows the saved choice; a business status that suggests otherwise is only a note, never a block', async () => {

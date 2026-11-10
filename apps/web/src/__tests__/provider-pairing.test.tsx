@@ -67,11 +67,14 @@ describe('pairing rules', () => {
 });
 
 describe('Settings → Tax documents', () => {
-  it('lists only services that fit the payment provider, keeping an old saved one visible', () => {
-    expect(invoicingChoicesFor('grow', 'grow')).toEqual(['grow', 'green_invoice']);
-    expect(invoicingChoicesFor('offline', 'none')).toEqual(['ypay', 'green_invoice']);
+  it('lists only services that fit the payment provider and are offered, keeping an old saved one visible', () => {
+    // Grow, Invoice4U and Green Invoice are hidden (owner decision 2026-11-10) unless saved.
+    expect(invoicingChoicesFor('grow', 'grow')).toEqual(['grow']);
+    expect(invoicingChoicesFor('offline', 'none')).toEqual(['ypay']);
+    expect(invoicingChoicesFor('ypay', 'ypay')).toEqual(['ypay']);
+    expect(invoicingChoicesFor('offline', 'green_invoice')).toEqual(['green_invoice', 'ypay']);
     // An existing studio saved with Yesh still sees it, so the form shows what is stored.
-    expect(invoicingChoicesFor('grow', 'yesh')).toEqual(['yesh', 'grow', 'green_invoice']);
+    expect(invoicingChoicesFor('grow', 'yesh')).toEqual(['yesh']);
   });
 
   it('refuses to save documents that cannot be issued, and says why', async () => {
@@ -80,13 +83,12 @@ describe('Settings → Tax documents', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('settings.invoicing_toggle.pairing_problem');
     expect(screen.getByRole('button', { name: 'common.save' })).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText('settings.invoicing.provider'), { target: { value: 'green_invoice' } });
-    expect(screen.queryByRole('alert')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
-    // Green Invoice is saved with its document choice (here the default, nothing loaded).
-    await waitFor(() =>
-      expect(update).toHaveBeenCalledWith({ invoicing_provider: 'green_invoice', green_invoice_document_type: 320 }),
+    // Green Invoice is no longer offered; Yesh is shown only because it is saved.
+    const options = Array.from((screen.getByLabelText('settings.invoicing.provider') as HTMLSelectElement).options).map(
+      (o) => o.value,
     );
+    expect(options).not.toContain('green_invoice');
+    expect(update).not.toHaveBeenCalled();
   });
 });
 
@@ -109,13 +111,12 @@ describe('Settings → How customers pay', () => {
     // No "monthly fees?" question: switching is not held up by one.
     fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_ypay' }));
     expect(screen.getByRole('button', { name: 'common.save' })).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', { name: 'payment_choice.different_provider' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'studio_setup.payment_invoice4u' }));
-    // No monthly-fees wording any more (owner: Takbull for everyone).
-    expect(screen.queryByText('payment_choice.no_monthly_warning')).toBeNull();
+    // Grow and Invoice4U are not offered (owner decision 2026-11-10).
+    expect(screen.queryByRole('radio', { name: 'studio_setup.payment_invoice4u' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'studio_setup.payment_grow' })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
-    await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'invoice4u' })));
+    await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ payment_provider: 'ypay' })));
   });
 });
 
