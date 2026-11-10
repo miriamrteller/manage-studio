@@ -160,6 +160,15 @@ export const navigationConfig: NavItem[] = [
     needs: 'project',
   },
   {
+    // The photo shop: each shoot's photos sold privately to that shoot's client (beta).
+    path: '/admin/photo-shop',
+    labelKey: 'nav.photo_shop',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    needs: 'project',
+    featureKey: FEATURES.billing.photoShop,
+  },
+  {
     path: '/admin/appointments',
     labelKey: 'nav.appointments',
     requiredRoles: ['tenant_admin'],

@@ -6,6 +6,10 @@
  *     → { shop, photos: [{ key, fileName, previewUrl }] }
  *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean }
  *     → { orderId, status, totalMinor, currency, payToken }
+ *   { action: "preview", engagementId }   (studio admins only)
+ *     → { shop, photos, sample } — what the shoot's client sees. While the shoot's gallery
+ *       is not ready (none chosen, or SmugMug still locked) the photos are the sample
+ *       gallery and sample is true. Never orders anything.
  *
  * Authorization: Bearer <supabase session> (the shoot's client, or a studio
  * admin previewing). Access is decided by get_client_photo_shop() running as
@@ -20,7 +24,7 @@ import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { getTenantFeatures } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
-import { GalleryNotReadyError, listGalleryPhotos } from "../_shared/photo-shop/gallery.ts";
+import { GalleryNotReadyError, listGalleryPhotos, mockGalleryPhotos } from "../_shared/photo-shop/gallery.ts";
 import { photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
 import { notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
@@ -52,7 +56,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const action = body?.action;
     const engagementId = typeof body?.engagementId === "string" ? body.engagementId : "";
-    if (!engagementId || (action !== "gallery" && action !== "order")) {
+    if (!engagementId || (action !== "gallery" && action !== "order" && action !== "preview")) {
       return jsonResponse({ error: "bad_request" }, 400);
     }
 
@@ -69,10 +73,32 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       .select("tenant_id, provider, gallery_key")
       .eq("engagement_id", engagementId)
       .maybeSingle();
-    if (!shopRow || !view.has_shop) return jsonResponse({ error: "no_gallery" }, 409);
+    if (!shopRow || !view.has_shop) {
+      return jsonResponse({ error: action === "preview" ? "no_shop" : "no_gallery" }, 409);
+    }
 
     const features = await getTenantFeatures(shopRow.tenant_id as string, service);
     if (!features.has(FEATURE)) return jsonResponse({ error: "feature_not_available" }, 403);
+
+    if (action === "preview") {
+      const { data: profile } = await service
+        .from("user_profiles")
+        .select("tenant_id, role")
+        .eq("id", auth.user.id)
+        .maybeSingle();
+      const roles = (profile?.role as string[] | null) ?? [];
+      if (profile?.tenant_id !== shopRow.tenant_id || !roles.includes("tenant_admin")) {
+        return jsonResponse({ error: "not_found" }, 404);
+      }
+      try {
+        const real = await listGalleryPhotos({ provider: shopRow.provider as string, gallery_key: shopRow.gallery_key as string });
+        return jsonResponse({ shop: view, photos: real, sample: false });
+      } catch (e) {
+        if (!(e instanceof GalleryNotReadyError)) throw e;
+        // Sample photos only: nothing real is shown until the shoot's gallery is ready.
+        return jsonResponse({ shop: view, photos: mockGalleryPhotos(engagementId), sample: true });
+      }
+    }
 
     let photos;
     try {

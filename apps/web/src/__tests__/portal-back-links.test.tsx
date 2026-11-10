@@ -254,9 +254,9 @@ describe('menu per vertical', () => {
     ]);
   });
 
-  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Appointments, Notifications; no family accounts or bundled payments', () => {
+  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Photo shop, Appointments, Notifications; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing', '/admin/packages',
       '/admin/setup/booking', '/admin/setup/waivers',

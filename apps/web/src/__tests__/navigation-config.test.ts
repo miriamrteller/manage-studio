@@ -201,9 +201,9 @@ describe('admin menu: working pages at the top level', () => {
     }
   });
 
-  it('photographer: Leads, Clients, Shoots, Quotes, Appointments, Notifications (no families or classes)', () => {
+  it('photographer: Leads, Clients, Shoots, Quotes, Photo shop, Appointments, Notifications (no families or classes)', () => {
     expect(adminMenu('photographer')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/appointments', '/admin/notifications',
     ]);
   });
 
