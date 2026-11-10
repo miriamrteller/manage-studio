@@ -160,6 +160,14 @@
   @media(max-width:600px){.bilingual{gap:10px;padding:12px 18px;font-size:14px}.bilingual .bi-ic{font-size:18px}}
 
   /* EDITIONS STRIP */
+  .feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .feat{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 18px;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
+  .feat-ic{flex:0 0 40px;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:#eef0ff}
+  .feat b{font-family:'Rubik';font-size:15px;display:block;margin-bottom:2px}
+  .feat small{color:var(--slate);font-size:13.5px;line-height:1.45;display:block}
+  .feat-soon{display:inline-block;margin-top:6px;font-family:'Rubik';font-size:11px;font-weight:700;color:var(--slate);background:rgba(11,20,55,.07);padding:2px 9px;border-radius:999px}
+  @media(min-width:1000px){.feat-grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:600px){.feat-grid{grid-template-columns:1fr}}
   .editions-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;align-items:start}
   .editions-group{}
   .editions-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:5px 12px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;margin-bottom:14px}
@@ -432,7 +440,7 @@
         <p data-he="כל כאבי הראש של סוף החודש, שטיפלתם בהם ידנית, קורים עכשיו לבד." data-en="All those monthly headaches you used to handle manually just happen automatically.">כל כאבי הראש של סוף החודש, שטיפלתם בהם ידנית, קורים עכשיו לבד.</p>
         <div class="chips">
           <span class="chip" data-he="הצעת מחיר → חשבונית" data-en="Quote → invoice">הצעת מחיר → חשבונית</span>
-          <span class="chip" data-he="הוראת קבע" data-en="Recurring billing">הוראת קבע</span>
+          <span class="chip" data-he="הרשמה לחוגים" data-en="Class enrolment">הרשמה לחוגים</span>
         </div>
       </div>
       <div class="card">
@@ -478,8 +486,8 @@
   <div class="wrap">
     <div class="sec-head">
       <div class="kicker" data-he="לפי הדרך שבה אתם גובים" data-en="Fits how you get paid">לפי הדרך שבה אתם גובים</div>
-      <h2 data-he="שתי דרכים לגבות. שתיהן על טייס אוטומטי." data-en="Two ways to get paid. Both on autopilot.">שתי דרכים לגבות. שתיהן על טייס אוטומטי.</h2>
-      <p data-he="עובדים לפי פרויקט או עם הכנסה חודשית קבועה? OpalSwift מתאים לשניהם." data-en="Whether you work job-by-job or on recurring income, OpalSwift handles both.">עובדים לפי פרויקט או עם הכנסה חודשית קבועה? OpalSwift מתאים לשניהם.</p>
+      <h2 data-he="שתי דרכים לגבות. התזכורות עובדות בשתיהן." data-en="Two ways to get paid. Reminders on both.">שתי דרכים לגבות. התזכורות עובדות בשתיהן.</h2>
+      <p data-he="בין אם אתם עובדים לפי פרויקט ובין אם אתם מפעילים חוגים קבועים, OpalSwift מטפל בשניהם." data-en="Whether you work job by job or run regular classes, OpalSwift handles both.">בין אם אתם עובדים לפי פרויקט ובין אם אתם מפעילים חוגים קבועים, OpalSwift מטפל בשניהם.</p>
     </div>
     <div class="flows">
       <div class="flow">
@@ -495,9 +503,9 @@
         <a href="#gig-group" class="flow-cta" data-he="לכל תחומי הפרויקטים ←" data-en="See project-based fields →">לכל תחומי הפרויקטים ←</a>
       </div>
       <div class="flow">
-        <span class="tag"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="הכנסה קבועה" data-en="Recurring income">הכנסה קבועה</span></span>
-        <h3 data-he="הרשמה → הוראת קבע → קבלה" data-en="Sign-up → standing order → receipt">הרשמה → הוראת קבע → קבלה</h3>
-        <p data-he="שולחים קישור אחד: התלמיד נרשם ומגדיר הוראת קבע, ובכל חודש יוצאת קבלה אוטומטית. הכסף פשוט נכנס, חודש אחרי חודש." data-en="Send one link; the student signs up and sets a standing order, and every month a receipt goes out automatically. Money flows every month.">שולחים קישור אחד: התלמיד נרשם ומגדיר הוראת קבע, ובכל חודש יוצאת קבלה אוטומטית. הכסף פשוט נכנס, חודש אחרי חודש.</p>
+        <span class="tag"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="חוגים ולקוחות קבועים" data-en="Classes and regular clients">חוגים ולקוחות קבועים</span></span>
+        <h3 data-he="הרשמה → טפסים → תשלום" data-en="Sign-up → forms → payment">הרשמה → טפסים → תשלום</h3>
+        <p data-he="שולחים קישור אחד: ההורים נרשמים, חותמים על הטפסים ומשלמים אונליין או בסטודיו. התזכורות עוקבות אחרי מי שעוד לא שילם." data-en="Send one link: parents sign up, sign the forms and pay online or at the studio. Reminders follow up on anyone who hasn't paid.">שולחים קישור אחד: ההורים נרשמים, חותמים על הטפסים ומשלמים אונליין או בסטודיו. התזכורות עוקבות אחרי מי שעוד לא שילם.</p>
         <div class="chips">
           <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg><span data-he="אמנות" data-en="Art">אמנות</span></span>
           <span class="chip"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg><span data-he="מוזיקה" data-en="Music">מוזיקה</span></span>
@@ -512,6 +520,76 @@
 </section>
 
 <!-- ============ EDITIONS ============ -->
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker" data-he="מה יש בפנים" data-en="What's inside">מה יש בפנים</div>
+      <h2 data-he="כל מה שעובד כבר היום." data-en="Everything that works today.">כל מה שעובד כבר היום.</h2>
+      <p data-he="מקום אחד לפניות, הצעות מחיר, זימון תורים, חוגים ותשלומים." data-en="One place for enquiries, quotes, bookings, classes and payments.">מקום אחד לפניות, הצעות מחיר, זימון תורים, חוגים ותשלומים.</p>
+    </div>
+    <div class="feat-grid">
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg></span><div>
+          <b data-he="פניות וטופסי פנייה" data-en="Leads and enquiry forms">פניות וטופסי פנייה</b>
+          <small data-he="פניות מהאתר נכנסות לרשימה אחת, עם תזכורות למעקב." data-en="Enquiries from your site land in one list, with follow-up reminders.">פניות מהאתר נכנסות לרשימה אחת, עם תזכורות למעקב.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></span><div>
+          <b data-he="הצעות מחיר שמאשרים אונליין" data-en="Quotes accepted online">הצעות מחיר שמאשרים אונליין</b>
+          <small data-he="הלקוח מאשר את הצעת המחיר בלחיצה אחת." data-en="Clients accept your quote with one tap.">הלקוח מאשר את הצעת המחיר בלחיצה אחת.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-filecheck"/></svg></span><div>
+          <b data-he="חוזים שנחתמים אונליין" data-en="Contracts signed online">חוזים שנחתמים אונליין</b>
+          <small data-he="הלקוח חותם אונליין ומקבל עותק PDF." data-en="Clients sign online and get a PDF copy.">הלקוח חותם אונליין ומקבל עותק PDF.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg></span><div>
+          <b data-he="מקדמות וקישורי תשלום" data-en="Deposits and pay links">מקדמות וקישורי תשלום</b>
+          <small data-he="מקדמה עכשיו ויתרה אחר כך, בתשלום בכרטיס." data-en="Deposit now, balance later, paid by card.">מקדמה עכשיו ויתרה אחר כך, בתשלום בכרטיס.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg></span><div>
+          <b data-he="תזכורות תשלום" data-en="Payment reminders">תזכורות תשלום</b>
+          <small data-he="תזכורות מנומסות נשלחות למי שעוד לא שילם." data-en="Polite reminders go to anyone who hasn't paid.">תזכורות מנומסות נשלחות למי שעוד לא שילם.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><div>
+          <b data-he="זימון תורים אונליין" data-en="Online booking">זימון תורים אונליין</b>
+          <small data-he="הלקוחות בוחרים שעה פנויה, לפי כללי ההתראה והביטול שלכם." data-en="Clients pick a free time, with your notice and cancellation rules.">הלקוחות בוחרים שעה פנויה, לפי כללי ההתראה והביטול שלכם.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-grad"/></svg></span><div>
+          <b data-he="הרשמה אונליין לחוגים" data-en="Online enrolment">הרשמה אונליין לחוגים</b>
+          <small data-he="ההורים נרשמים לחוגים וחותמים על הטפסים אונליין." data-en="Parents sign up for classes and sign the forms online.">ההורים נרשמים לחוגים וחותמים על הטפסים אונליין.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg></span><div>
+          <b data-he="משפחות, עונות ורמות" data-en="Families, seasons and levels">משפחות, עונות ורמות</b>
+          <small data-he="אחים במשפחה אחת, חוגים לפי עונה ורמה." data-en="Siblings in one family, classes by season and level.">אחים במשפחה אחת, חוגים לפי עונה ורמה.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-msg"/></svg></span><div>
+          <b data-he="הודעות למשפחות" data-en="Messages to families">הודעות למשפחות</b>
+          <small data-he="שולחים עדכון לחוג אחד או לכל המשפחות." data-en="Send an update to one class or to every family.">שולחים עדכון לחוג אחד או לכל המשפחות.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-laptop"/></svg></span><div>
+          <b data-he="אזור אישי ללקוחות ולהורים" data-en="Client and parent portal">אזור אישי ללקוחות ולהורים</b>
+          <small data-he="ההזמנות, הטפסים והתשלומים שלהם — במקום אחד." data-en="Bookings, forms and payments in one place for them.">ההזמנות, הטפסים והתשלומים שלהם — במקום אחד.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg></span><div>
+          <b data-he="הוצאות וייצוא לרואה החשבון" data-en="Expenses and accountant export">הוצאות וייצוא לרואה החשבון</b>
+          <small data-he="מעקב הוצאות, רווח, וייצוא לרואה החשבון." data-en="Track expenses, see your profit and export for your accountant.">מעקב הוצאות, רווח, וייצוא לרואה החשבון.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg></span><div>
+          <b data-he="כתובת ומראה משלכם" data-en="Your own address and look">כתובת ומראה משלכם</b>
+          <small data-he="כתובת אינטרנט משלכם, לוגו וצבעים, בעברית ובאנגלית." data-en="Your own web address, logo and colours, in Hebrew and English.">כתובת אינטרנט משלכם, לוגו וצבעים, בעברית ובאנגלית.</small>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></span><div>
+          <b data-he="סנכרון עם יומן Google" data-en="Google Calendar sync">סנכרון עם יומן Google</b>
+          <small data-he="הזמנים התפוסים שלכם חוסמים הזמנות, וההזמנות מופיעות ביומן." data-en="Your busy times block bookings, and bookings appear in your calendar.">הזמנים התפוסים שלכם חוסמים הזמנות, וההזמנות מופיעות ביומן.</small>
+          <span class="feat-soon" data-he="בקרוב" data-en="Coming soon">בקרוב</span>
+        </div></div>
+        <div class="feat"><span class="feat-ic"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg></span><div>
+          <b data-he="חנות תמונות פרטית" data-en="Private photo shop">חנות תמונות פרטית</b>
+          <small data-he="הלקוחות בוחרים וקונים תמונות מגלריה פרטית משלהם." data-en="Clients choose and buy photos from their own private gallery.">הלקוחות בוחרים וקונים תמונות מגלריה פרטית משלהם.</small>
+          <span class="feat-soon" data-he="בקרוב" data-en="Coming soon">בקרוב</span>
+        </div></div>
+    </div>
+  </div>
+</section>
+
 <section class="block" id="editions">
   <div class="wrap">
     <div class="sec-head">
