@@ -105,7 +105,8 @@ describe('Photo shop page', () => {
     expect(screen.getByRole('heading', { name: 'Photo shop' })).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Prices', 'SmugMug', 'Preview']);
     expect(screen.getByText('Set your price per photo').parentElement?.textContent).toContain('Done');
-    expect(screen.getByText('Connect your SmugMug account').parentElement?.textContent).toContain('To do');
+    expect(screen.getByText(/Add each shoot's photos on its shoot page/)).toBeTruthy();
+    expect(screen.queryByText('Connect your SmugMug account')).toBeNull();
   });
 
   it('Preview shows the client view with buying off and sample photos', async () => {
@@ -113,7 +114,7 @@ describe('Photo shop page', () => {
     renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e1' } });
     expect(await screen.findByText(/this is what your client sees/i)).toBeTruthy();
-    expect(screen.getByText(/sample photos until this shoot's SmugMug gallery is ready/)).toBeTruthy();
+    expect(screen.getByText(/sample photos until you add this shoot's photos/)).toBeTruthy();
     expect(state.preview).toHaveBeenCalledWith('e1');
     expect(screen.getByText('IMG_0001.jpg')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Add to cart' })).toBeNull();
@@ -125,7 +126,7 @@ describe('Photo shop page', () => {
     state.preview.mockRejectedValue(new ClientPhotoShopError('no_shop'));
     renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e2' } });
-    expect(await screen.findByText(/This shoot has no photo shop yet/)).toBeTruthy();
+    expect(await screen.findByText(/This shoot has no photos yet/)).toBeTruthy();
   });
 
   it('has Hebrew text', async () => {

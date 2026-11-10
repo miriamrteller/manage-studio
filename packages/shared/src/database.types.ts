@@ -1842,6 +1842,61 @@ export type Database = {
           },
         ]
       }
+      job_photo_shop_photos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          engagement_id: string
+          file_name: string
+          id: string
+          position: number
+          storage_path: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          engagement_id: string
+          file_name: string
+          id?: string
+          position?: number
+          storage_path: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          engagement_id?: string
+          file_name?: string
+          id?: string
+          position?: number
+          storage_path?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_photo_shop_photos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_shop_photos_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_shop_photos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_photo_shops: {
         Row: {
           all_photos_price_minor: number | null
@@ -5157,6 +5212,10 @@ export type Database = {
         Args: { p_drafts?: string[]; p_language: string; p_version: string }
         Returns: string
       }
+      add_job_photo_shop_photos: {
+        Args: { p_engagement_id: string; p_photos: Json }
+        Returns: Json
+      }
       admin_enrolment_lookup_email: { Args: { p_email: string }; Returns: Json }
       admin_get_document_signed_url_path: {
         Args: { p_payment_id: string }
@@ -5335,6 +5394,10 @@ export type Database = {
       decline_public_quote: {
         Args: { p_reason?: string; p_tenant_id: string; p_token: string }
         Returns: Json
+      }
+      delete_job_photo_shop_photo: {
+        Args: { p_photo_id: string }
+        Returns: string
       }
       deliver_job_photo_order: {
         Args: { p_delivery_url: string; p_order_id: string }

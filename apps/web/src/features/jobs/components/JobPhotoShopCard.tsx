@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useJobPhotoShop, usePhotoShopEnabled } from '../hooks/usePhotoShop';
+import { JobPhotoShopPhotos } from './JobPhotoShopPhotos';
 import {
   isDeliveryLink,
   majorToMinor,
@@ -53,8 +54,8 @@ const ORDER_BADGE: Record<PhotoOrderStatus, 'default' | 'secondary' | 'success' 
 };
 
 /**
- * Shoot page: the photo shop. Clients buy downloads from the studio's own
- * gallery; prices are prefilled from the package and the studio defaults and
+ * Shoot page: the photo shop. The studio uploads the shoot's previews and
+ * clients buy downloads; prices are prefilled from the package and the studio defaults and
  * stay editable. Paid orders are delivered by pasting a download link.
  * Shown only to studios with the photo shop switched on.
  */
@@ -131,16 +132,22 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
       </div>
 
       <div className="space-y-1 text-sm">
-        <p>
-          <span className="text-muted-foreground">{t('pages.jobs.photo_shop.gallery')}: </span>
-          {data.gallery_name ?? t('pages.jobs.photo_shop.gallery_none')}
-        </p>
-        {!data.gallery_key && <p className="text-muted-foreground">{t('pages.jobs.photo_shop.gallery_coming')}</p>}
+        {data.provider !== 'upload' && (
+          <>
+            <p>
+              <span className="text-muted-foreground">{t('pages.jobs.photo_shop.gallery')}: </span>
+              {data.gallery_name ?? t('pages.jobs.photo_shop.gallery_none')}
+            </p>
+            {!data.gallery_key && <p className="text-muted-foreground">{t('pages.jobs.photo_shop.gallery_coming')}</p>}
+          </>
+        )}
         <p>{summary.join(' · ')}</p>
         {perPhoto == null && (
           <p className="text-muted-foreground">{t('pages.jobs.photo_shop.no_price_hint')}</p>
         )}
       </div>
+
+      <JobPhotoShopPhotos engagementId={engagementId} tenantId={data.tenant_id} />
 
       <details className="rounded-md border p-3">
         <summary className="cursor-pointer text-sm font-medium">{t('studio_setup.filled_for_you')}</summary>

@@ -24,7 +24,12 @@ import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { getTenantFeatures } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
-import { GalleryNotReadyError, listGalleryPhotos, mockGalleryPhotos } from "../_shared/photo-shop/gallery.ts";
+import {
+  GalleryNotReadyError,
+  listGalleryPhotos,
+  mockGalleryPhotos,
+  uploadedPhotoSource,
+} from "../_shared/photo-shop/gallery.ts";
 import { photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
 import { notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
@@ -77,6 +82,9 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       return jsonResponse({ error: action === "preview" ? "no_shop" : "no_gallery" }, 409);
     }
 
+    const gallery = { provider: shopRow.provider as string, gallery_key: shopRow.gallery_key as string };
+    const uploads = uploadedPhotoSource(service);
+
     const features = await getTenantFeatures(shopRow.tenant_id as string, service);
     if (!features.has(FEATURE)) return jsonResponse({ error: "feature_not_available" }, 403);
 
@@ -91,7 +99,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
         return jsonResponse({ error: "not_found" }, 404);
       }
       try {
-        const real = await listGalleryPhotos({ provider: shopRow.provider as string, gallery_key: shopRow.gallery_key as string });
+        const real = await listGalleryPhotos(gallery, uploads);
         return jsonResponse({ shop: view, photos: real, sample: false });
       } catch (e) {
         if (!(e instanceof GalleryNotReadyError)) throw e;
@@ -102,7 +110,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
 
     let photos;
     try {
-      photos = await listGalleryPhotos({ provider: shopRow.provider as string, gallery_key: shopRow.gallery_key as string });
+      photos = await listGalleryPhotos(gallery, uploads);
     } catch (e) {
       if (e instanceof GalleryNotReadyError) return jsonResponse({ error: e.code }, 409);
       throw e;
