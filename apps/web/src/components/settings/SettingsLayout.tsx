@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 /** Props every settings section receives. Kept minimal on purpose. */
@@ -78,6 +79,7 @@ export function SettingsLayout({
   onSheetOpenChange,
   className = '',
 }: SettingsLayoutProps) {
+  const { t } = useTranslation();
   const baseId = useId();
   const tabId = (id: string) => `${baseId}-tab-${id}`;
   const panelId = `${baseId}-panel`;
@@ -220,7 +222,7 @@ export function SettingsLayout({
         ref={listRef}
         role="tablist"
         aria-orientation="vertical"
-        aria-label="Settings sections"
+        aria-label={t('common.settings_sections')}
         className={cn(
           'hidden md:flex md:w-64 md:flex-shrink-0 md:flex-col md:gap-1',
           'rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2',
@@ -259,13 +261,13 @@ export function SettingsLayout({
             ref={sheetRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Settings sections"
+            aria-label={t('common.settings_sections')}
             className={cn(
               'animate-slide-in-up shadow-elevation-modal pb-safe w-full',
               'rounded-t-lg border-t border-[var(--border-default)] bg-[var(--surface-raised)] p-2',
             )}
           >
-            <div role="tablist" aria-orientation="vertical" aria-label="Settings sections">
+            <div role="tablist" aria-orientation="vertical" aria-label={t('common.settings_sections')}>
               {sections.map(renderTab)}
             </div>
           </div>

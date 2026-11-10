@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export interface MobileTab {
@@ -24,12 +25,13 @@ export function MobileTabs({
   onTabChange,
   className = '',
 }: MobileTabsProps) {
+  const { t } = useTranslation();
   const { language } = useLanguage();
   const isHebrew = language === 'he';
 
   return (
     <nav
-      aria-label="Mobile navigation"
+      aria-label={t('common.main_menu')}
       className={`md:hidden fixed bottom-0 left-0 right-0 w-full bg-[--surface-raised] border-t border-[--border-subtle] z-50 ${className}`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
