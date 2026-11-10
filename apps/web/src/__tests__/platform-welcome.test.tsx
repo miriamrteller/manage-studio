@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
   rows: [] as Array<Record<string, string>>,
   eqCalls: [] as unknown[],
   rpc: vi.fn(),
+  openStudioSignedIn: vi.fn(async () => {}),
 }));
 
 vi.mock('@/hooks/useAuth', () => ({ useAuthSession: () => ({ session: h.session, isLoading: false }) }));
@@ -30,6 +31,11 @@ vi.mock('@/lib/supabase', () => {
   };
   return { supabase: { from: () => builder, rpc: h.rpc, auth: { signOut: vi.fn() } } };
 });
+
+vi.mock('@/features/self-serve/selfServeSignup', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/self-serve/selfServeSignup')>()),
+  openStudioSignedIn: h.openStudioSignedIn,
+}));
 
 import i18n from '@/i18n/i18n';
 import { StudioHostGate } from '@/layouts/StudioHostGate';
@@ -56,7 +62,8 @@ function renderAt(path = '/') {
 }
 
 const session = { user: { id: 'u-1' } };
-const parent = { id: 'u-1', role: ['tenant_admin'], tenant_id: 't-1' };
+const parent = { id: 'u-1', role: ['parent'], tenant_id: 't-1' };
+const studioAdmin = { id: 'u-2', role: ['tenant_admin'], tenant_id: 't-1' };
 const owner = { id: 'u-9', role: ['super_admin'], tenant_id: 't-0' };
 
 beforeEach(() => {
@@ -66,6 +73,7 @@ beforeEach(() => {
   h.user = null;
   h.rows = [];
   h.eqCalls = [];
+  h.openStudioSignedIn.mockClear();
 });
 
 afterEach(async () => {
@@ -118,6 +126,48 @@ describe('app.opalswift.com welcome', () => {
     expect(screen.queryByRole('link', { name: 'Set up a new studio' })).not.toBeInTheDocument();
   });
 
+  it('studio admin with one studio: goes straight to it, signed in', async () => {
+    h.session = session;
+    h.user = studioAdmin;
+    h.rows = [{ id: 't-1', name: 'Creative Ballet Academy', subdomain: 'creativeballet' }];
+    renderAt();
+    expect(await screen.findByText('Opening your studio…')).toBeInTheDocument();
+    expect(h.openStudioSignedIn).toHaveBeenCalledTimes(1);
+    expect(h.openStudioSignedIn).toHaveBeenCalledWith('creativeballet');
+    expect(screen.queryByRole('link', { name: /Creative Ballet Academy/ })).not.toBeInTheDocument();
+  });
+
+  it('studio admin, Hebrew: the opening note in Hebrew', async () => {
+    await i18n.changeLanguage('he');
+    h.session = session;
+    h.user = studioAdmin;
+    h.rows = [{ id: 't-1', name: 'Creative Ballet Academy', subdomain: 'creativeballet' }];
+    renderAt();
+    expect(await screen.findByText('פותחים את הסטודיו…')).toBeInTheDocument();
+  });
+
+  it('teacher with one studio: keeps the link, no automatic opening', async () => {
+    h.session = session;
+    h.user = { id: 'u-3', role: ['teacher'], tenant_id: 't-1' };
+    h.rows = [{ id: 't-1', name: 'Creative Ballet Academy', subdomain: 'creativeballet' }];
+    renderAt();
+    expect(await screen.findByRole('link', { name: /Creative Ballet Academy/ })).toBeInTheDocument();
+    expect(h.openStudioSignedIn).not.toHaveBeenCalled();
+  });
+
+  it('studio admin with several studios: picks one from the list', async () => {
+    h.session = session;
+    h.user = studioAdmin;
+    h.rows = [
+      { id: 't-1', name: 'Creative Ballet Academy', subdomain: 'creativeballet' },
+      { id: 't-2', name: 'Lens Studio', subdomain: 'lens-studio' },
+    ];
+    renderAt();
+    expect(await screen.findByRole('link', { name: /Lens Studio/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Creative Ballet Academy/ })).toBeInTheDocument();
+    expect(h.openStudioSignedIn).not.toHaveBeenCalled();
+  });
+
   it('platform owner with two studios: the Studios list (source, status, created), plus "Set up a new studio"', async () => {
     h.session = session;
     h.user = owner;
@@ -141,6 +191,7 @@ describe('app.opalswift.com welcome', () => {
     // The shared primary Button (brand gradient), no longer a bare link.
     expect(screen.getByRole('button', { name: 'Set up a new studio' })).toBeInTheDocument();
     expect(h.eqCalls).toEqual([]);
+    expect(h.openStudioSignedIn).not.toHaveBeenCalled();
   });
 
   it('platform owner on an empty platform (no studio of her own): "Set up a new studio"', async () => {
