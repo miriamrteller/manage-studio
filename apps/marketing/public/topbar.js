@@ -4,34 +4,34 @@
  * Then includes: <nav id="opal-nav"></nav>  +  <script src="topbar.js"></script>
  *
  * Language contract:
- *   - Reads/writes localStorage key 'os_lang'
+ *   - English by default; Hebrew when the browser's first language is Hebrew
+ *   - A language the visitor picks with the button is kept in localStorage 'os_lang_choice'
+ *     and wins on every page. The detected language is never saved.
  *   - applyLang() is called after nav is injected, so buttons always exist
  *   - window.setLang() is exposed globally for button onclick handlers
  */
 (function () {
   /* ── helpers ────────────────────────────────────────────── */
+  /* English unless the browser's first language is Hebrew ('iw' is the old code). */
+  function browserLang() {
+    var l = ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || '').toLowerCase();
+    return (l.indexOf('he') === 0 || l.indexOf('iw') === 0) ? 'he' : 'en';
+  }
+
   function getSavedLang() {
     var saved = null;
     try {
-      saved = localStorage.getItem('os_lang');
-      /* migrate from old hyphen key that may still be in user's browser */
-      if (!saved) {
-        var old = localStorage.getItem('os-lang');
-        if (old === 'he' || old === 'en') {
-          saved = old;
-          localStorage.setItem('os_lang', old);
-          try { localStorage.removeItem('os-lang'); } catch (e) {}
-        }
-      }
+      saved = localStorage.getItem('os_lang_choice');
+      /* The old keys also held auto-detected values, so they are not a choice: drop them. */
+      localStorage.removeItem('os_lang');
+      localStorage.removeItem('os-lang');
     } catch (e) {}
     if (saved === 'he' || saved === 'en') return saved;
-    var nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
-    return nav.startsWith('en') ? 'en' : 'he';
+    return browserLang();
   }
 
   function applyLang(lang) {
     var isHe = lang === 'he';
-    try { localStorage.setItem('os_lang', lang); } catch (e) {}
     document.documentElement.lang = lang;
     document.documentElement.dir = isHe ? 'rtl' : 'ltr';
     if (document.body) {
@@ -51,6 +51,7 @@
   /* expose globally so onclick="setLang('en',true)" works on every page */
   window.setLang = function (lang, remember) {
     applyLang(lang);
+    if (remember) { try { localStorage.setItem('os_lang_choice', lang); } catch (e) {} }
   };
 
   /* ── nav HTML ───────────────────────────────────────────── */
@@ -69,8 +70,8 @@
     '  </a>' +
     '  <div class="nav-cta">' +
     '    <div class="lang-toggle">' +
-    '      <button id="btn-he" onclick="setLang(\'he\')">עברית</button>' +
-    '      <button id="btn-en" onclick="setLang(\'en\')">EN</button>' +
+    '      <button id="btn-he" onclick="setLang(\'he\', true)">עברית</button>' +
+    '      <button id="btn-en" onclick="setLang(\'en\', true)">EN</button>' +
     '    </div>' +
     '    <a href="https://app.opalswift.com" class="nav-signin" data-he="כניסה" data-en="Sign in">כניסה</a>' +
     '    <a href="index.html?from=' + page + '#contact" class="btn btn-primary" style="padding:10px 20px"' +
