@@ -19,7 +19,10 @@ Status: plan only, nothing built. Owner decisions from 10 Nov 2026 are marked "D
 
 - **Decided:** Sukkot, Pesach and the summer fall between seasons, so a year has more than one season (for example after Sukkot to Pesach, and after Pesach to the summer). Minor holidays (for example Chanukah and Purim) fall inside a season.
 - **Decided:** the season price is split into equal monthly payments over the season's months. Minor holidays inside the season are included, so every month costs the same, and a studio can mark a month as "no charge" for a real closure. Billing stops at the end of the season, so nothing is charged over the breaks.
-- Proposed wording at enrolment (payment step and enrolment terms "Price and payment"), not yet agreed: "The season fee is split into equal monthly payments. Holidays during the season when the studio is closed, such as Chanukah and Purim, are already included, so every month costs the same." Goes on the lawyer list when it is added to the terms.
+- **Decided wording** at enrolment (payment step, and the enrolment terms "Price and payment"):
+  - EN: "To keep things simple, you pay the same amount every month of the season. Short holiday breaks, like Chanukah and Purim, are already built into the price, so there are no surprises."
+  - HE: "כדי שיהיה פשוט, משלמים אותו סכום בכל חודש של העונה. חופשות קצרות, כמו חנוכה ופורים, כבר כלולות במחיר, כך שאין הפתעות."
+  - Goes on the lawyer list when it is added to the terms.
 - **Decided (build after the lawyer answers):** automatic re-enrolment between seasons. A set time before each season ends (before Sukkot, Pesach and the summer), each active student is placed in the same class for the next season. The parent gets an email (EN and HE) with the new dates and price, a one-tap "Don't re-enrol" link and a deadline. After the deadline the place is confirmed and billing continues with the saved card. A studio can switch this off and ask parents to confirm instead.
 
 ### Legal questions (lawyer list row 30)
