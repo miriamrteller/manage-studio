@@ -49,7 +49,7 @@ export function RouteErrorFallback() {
         </Button>
         <Button onClick={() => navigate('/')}>{t('common.home')}</Button>
         {canReport && (
-          <Button variant="ghost" onClick={openReportProblem}>
+          <Button variant="ghost" onClick={() => openReportProblem('bug')}>
             {t('report_problem.from_error')}
           </Button>
         )}

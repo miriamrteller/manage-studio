@@ -334,6 +334,12 @@ export const navigationConfig: NavItem[] = [
     sectionKey: 'platform',
   },
   {
+    path: '/platform/feedback',
+    labelKey: 'nav.platform_feedback',
+    requiredRoles: ['super_admin'],
+    sectionKey: 'platform',
+  },
+  {
     path: '/platform/skins',
     labelKey: 'nav.platform_skins',
     requiredRoles: ['super_admin'],
