@@ -5928,6 +5928,10 @@ export type Database = {
         Returns: Json
       }
       get_my_account_ids: { Args: never; Returns: string[] }
+      get_my_class_card_sessions: {
+        Args: { p_card_id: string; p_days?: number }
+        Returns: Json
+      }
       get_my_class_cards: {
         Args: never
         Returns: {

@@ -341,3 +341,21 @@ END $$;
 SELECT pg_temp.expect_fail((SELECT bob_u FROM ids),
   format('SELECT get_class_card_register(%L, %L)', (SELECT yoga FROM ids), (SELECT d1 FROM ids)),
   'access denied', 'a client cannot read the register');
+
+-- 12. Portal: the coming sessions a card covers, with places left and the holder's booking.
+DO $$
+DECLARE r JSONB; s JSONB;
+BEGIN
+  PERFORM pg_temp.as_user((SELECT bob_u FROM ids));
+  r := get_my_class_card_sessions((SELECT id FROM t WHERE k = 'bob_card'), 14);
+  IF (r->>'cancel_cutoff_hours')::int <> 12 THEN RAISE EXCEPTION 'FAIL cutoff not returned: %', r; END IF;
+  IF jsonb_array_length(r->'sessions') <> 2 THEN RAISE EXCEPTION 'FAIL expected 2 Yoga sessions in 14 days: %', r->'sessions'; END IF;
+  SELECT x INTO s FROM jsonb_array_elements(r->'sessions') x WHERE x->>'session_date' = (SELECT d1 FROM ids)::text;
+  IF s->>'visit_status' <> 'attended' OR (s->>'places_left')::int <> 1 THEN RAISE EXCEPTION 'FAIL d1 session wrong: %', s; END IF;
+  SELECT x INTO s FROM jsonb_array_elements(r->'sessions') x WHERE x->>'session_date' = ((SELECT d1 FROM ids) + 7)::text;
+  IF s->>'visit_status' <> 'booked' OR s->>'name' <> 'Yoga' THEN RAISE EXCEPTION 'FAIL d1+7 session wrong: %', s; END IF;
+  RAISE NOTICE 'ok  portal lists the coming sessions with places left and the booking';
+END $$;
+SELECT pg_temp.expect_fail((SELECT ari_u FROM ids),
+  format('SELECT get_my_class_card_sessions(%L)', (SELECT id FROM t WHERE k = 'bob_card')),
+  'access denied', 'someone else cannot list a card''s sessions');

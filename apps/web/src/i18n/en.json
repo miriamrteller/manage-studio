@@ -4625,6 +4625,33 @@
       "tick_in": "Tick in",
       "error": "Could not save. Please try again.",
       "button": "Class cards"
+    },
+    "portal": {
+      "title": "Your class cards",
+      "book": "Book a class",
+      "hide_classes": "Hide classes",
+      "asked": "You asked for more time. The studio will let you know.",
+      "extended": "The studio gave you more time on this card.",
+      "ask_more_time": "Ask for more time",
+      "error": "Something went wrong. Please try again.",
+      "cutoff_note_one": "Cancel up to {{count}} hour before the class and the class goes back on your card.",
+      "cutoff_note_other": "Cancel up to {{count}} hours before the class and the class goes back on your card.",
+      "no_sessions": "No classes in the next two weeks.",
+      "places_left_one": "{{count}} place left",
+      "places_left_other": "{{count}} places left",
+      "booked": "Booked",
+      "cancel": "Cancel",
+      "confirm_cancel": "Yes, cancel",
+      "keep": "Keep my place",
+      "late_warning": "It is too late to get the class back: cancelling now still uses it.",
+      "cancelled": "Cancelled. The class is back on your card.",
+      "cancelled_late": "Cancelled. Because it was late, the class was used.",
+      "book_place": "Book",
+      "full": "Full",
+      "err_class_full": "Sorry, this class just filled up.",
+      "err_no_classes_left": "There are no classes left on this card.",
+      "err_already_booked": "You are already booked for this class.",
+      "err_expired": "This card has expired."
     }
   }
 }
