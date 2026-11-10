@@ -5701,6 +5701,12 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            get_studio_card_token: {
+                Args: {
+                    p_tenant_id: string;
+                };
+                Returns: string;
+            };
             get_supabase_functions_url: {
                 Args: never;
                 Returns: string;
@@ -6165,6 +6171,23 @@ export type Database = {
                 Args: never;
                 Returns: boolean;
             };
+            my_studio_subscription: {
+                Args: never;
+                Returns: {
+                    card_expiry: string;
+                    card_last4: string;
+                    card_saved_at: string;
+                    failed_attempts: number;
+                    founder: boolean;
+                    free_until: string;
+                    last_payment_agorot: number;
+                    last_payment_at: string;
+                    last_payment_status: string;
+                    next_charge_on: string;
+                    sub_status: string;
+                    trial_ends_at: string;
+                }[];
+            };
             payment_provider_switch_allowed: {
                 Args: {
                     p_new_invoicing: string;
@@ -6497,6 +6520,16 @@ export type Database = {
                     p_quote: Json;
                 };
                 Returns: string;
+            };
+            save_studio_card_token: {
+                Args: {
+                    p_expiry: string;
+                    p_last4: string;
+                    p_next_charge_on: string;
+                    p_tenant_id: string;
+                    p_token: string;
+                };
+                Returns: undefined;
             };
             save_tenant_google_credentials: {
                 Args: {

@@ -375,6 +375,19 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/takbull-ipn/index.ts"
 
+# OpalSwift's own billing (dev only): a studio admin adds a card for their plan.
+[functions.platform-billing-card]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/platform-billing-card/index.ts"
+
+# Takbull notice for OpalSwift's own orders; unsigned, re-checked with Takbull in-function.
+[functions.platform-billing-ipn]
+enabled = true
+# Takbull notice (unsigned): each one is confirmed with Takbull, OpalSwift's keys, in-function.
+verify_jwt = false
+entrypoint = "./functions/platform-billing-ipn/index.ts"
+
 # Photo shop: Test connection / Connect SmugMug with the studio's own key (admins only).
 [functions.smugmug-connection]
 enabled = true
