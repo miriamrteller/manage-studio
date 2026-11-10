@@ -17,8 +17,9 @@
  * order. Photos and file names come from the gallery, never from the request,
  * and prices are worked out in the database.
  *
- * SmugMug galleries answer "provider_locked" until the live watermark check
- * passes (see _shared/photo-shop/gallery.ts).
+ * SmugMug galleries answer "provider_locked" to clients until the live check
+ * passes (see _shared/photo-shop/gallery.ts); a gallery that passed "Check gallery"
+ * already shows its real watermarked photos in the studio's own preview.
  */
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
@@ -75,14 +76,20 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     const service = createServiceClient();
     const { data: shopRow } = await service
       .from("job_photo_shops")
-      .select("tenant_id, provider, gallery_key")
+      .select("tenant_id, provider, gallery_key, smugmug_check, smugmug_photos, smugmug_checked_at")
       .eq("engagement_id", engagementId)
       .maybeSingle();
     if (!shopRow || !view.has_shop) {
       return jsonResponse({ error: action === "preview" ? "no_shop" : "no_gallery" }, 409);
     }
 
-    const gallery = { provider: shopRow.provider as string, gallery_key: shopRow.gallery_key as string };
+    const gallery = {
+      provider: shopRow.provider as string,
+      gallery_key: shopRow.gallery_key as string,
+      smugmug_check: shopRow.smugmug_check,
+      smugmug_photos: shopRow.smugmug_photos,
+      smugmug_checked_at: shopRow.smugmug_checked_at as string | null,
+    };
     const uploads = uploadedPhotoSource(service);
 
     const features = await getTenantFeatures(shopRow.tenant_id as string, service);
@@ -99,7 +106,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
         return jsonResponse({ error: "not_found" }, 404);
       }
       try {
-        const real = await listGalleryPhotos(gallery, uploads);
+        const real = await listGalleryPhotos(gallery, { uploads, adminPreview: true });
         return jsonResponse({ shop: view, photos: real, sample: false });
       } catch (e) {
         if (!(e instanceof GalleryNotReadyError)) throw e;
@@ -110,7 +117,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
 
     let photos;
     try {
-      photos = await listGalleryPhotos(gallery, uploads);
+      photos = await listGalleryPhotos(gallery, { uploads });
     } catch (e) {
       if (e instanceof GalleryNotReadyError) return jsonResponse({ error: e.code }, 409);
       throw e;

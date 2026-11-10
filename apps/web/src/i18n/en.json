@@ -1711,9 +1711,6 @@
       "photo_shop": {
         "title": "Photo shop",
         "beta": "Beta",
-        "gallery": "Gallery",
-        "gallery_none": "Not chosen yet",
-        "gallery_coming": "Choosing your SmugMug proofing gallery comes next. You can set the prices now.",
         "summary_included_one": "{{count}} photo included",
         "summary_included_other": "{{count}} photos included",
         "summary_per_photo": "{{price}} per photo",
@@ -1741,6 +1738,59 @@
         "delivery_hint": "Put the finished photos in a download folder (for example Google Drive or WeTransfer), paste its link and press Send. Your client gets an email with the link.",
         "send": "Send",
         "change_link": "Change link",
+        "source": {
+          "title": "Where are this shoot's photos?",
+          "smugmug": "In a SmugMug gallery",
+          "upload": "Upload them here",
+          "connect_hint": "Already have the photos in SmugMug? Connect it in Photo shop > SmugMug and pick the gallery here instead of uploading.",
+          "loading": "Reading your SmugMug galleries…",
+          "gallery": "SmugMug gallery",
+          "choose": "Choose a gallery",
+          "album_one": "{{name}} ({{count}} photo)",
+          "album_other": "{{name}} ({{count}} photos)",
+          "check": "Check gallery",
+          "check_again": "Check again",
+          "check_hint": "We read the gallery's photo protection settings and its photos. Nothing is changed in SmugMug. Added photos to the gallery later? Press Check again.",
+          "passed": "Gallery checked on {{date}}. You can see its photos in Photo shop > Preview.",
+          "live_check": "Clients will see them once the first live check with SmugMug is done.",
+          "failed": "Change the settings marked ✗ in SmugMug, then press Check again. Until then clients don't see this gallery.",
+          "item": {
+            "watermark": {
+              "ok": "Watermark on",
+              "fix": "Turn on the watermark: in the gallery, Settings > Photo Protection > Watermark Photos."
+            },
+            "largest_size": {
+              "ok": "Largest display size: {{value}}",
+              "fix": "Set the largest display size to Large or XLarge: in the gallery, Settings > Photo Protection."
+            },
+            "downloads": {
+              "ok": "Downloads off",
+              "fix": "Turn off Allow Downloads: in the gallery, Settings > Photo Protection."
+            },
+            "photos": {
+              "ok_one": "{{count}} photo read",
+              "ok_other": "{{count}} photos read",
+              "fix": "We couldn't read the gallery's photos at a watermarked size."
+            },
+            "preview_public": {
+              "ok": "Clients can open the watermarked photos",
+              "fix": "Clients couldn't open the watermarked photos. Check the gallery's privacy settings in SmugMug."
+            },
+            "original_hidden": {
+              "ok": "Full-size photos stay private",
+              "fix": "A full-size photo opened without signing in. Lower the largest display size and turn off downloads."
+            }
+          },
+          "error": {
+            "albums_unavailable": "SmugMug didn't send your list of galleries. Please try again later.",
+            "album_not_found": "That gallery wasn't found in your SmugMug account.",
+            "photos_unavailable": "SmugMug didn't send this gallery's photos. Please try again later.",
+            "token_rejected": "SmugMug refused the connection. Connect SmugMug again in Photo shop > SmugMug.",
+            "unreachable": "SmugMug couldn't be reached. Please try again.",
+            "not_connected": "SmugMug isn't connected. Connect it in Photo shop > SmugMug.",
+            "failed": "Something went wrong. Please try again."
+          }
+        },
         "photos": {
           "title": "Photos",
           "hint": "Pick the shoot's photos. Your browser makes small watermarked copies before uploading, so your originals stay on your computer. Your client only sees these copies.",
