@@ -3746,6 +3746,63 @@ export type Database = {
           },
         ]
       }
+      studio_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          route: string | null
+          screenshot_path: string | null
+          sent_by: string | null
+          sentry_event_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          message: string
+          route?: string | null
+          screenshot_path?: string | null
+          sent_by?: string | null
+          sentry_event_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string
+          route?: string | null
+          screenshot_path?: string | null
+          sent_by?: string | null
+          sentry_event_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_feedback_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "studio_feedback_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       studio_subscriptions: {
         Row: {
           card_expiry: string | null

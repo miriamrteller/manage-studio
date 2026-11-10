@@ -1,15 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import en from '@/i18n/en.json';
+import he from '@/i18n/he.json';
 
-const sendProblemReport = vi.fn();
-vi.mock('@/lib/monitoring', async (orig) => ({
-  ...(await orig<typeof import('@/lib/monitoring')>()),
-  sendProblemReport: (m: string) => sendProblemReport(m),
-}));
-const notifyOwner = vi.fn().mockResolvedValue(undefined);
-vi.mock('@/lib/monitoring/notifyOwner', () => ({
-  notifyOwnerOfProblemReport: (m: string, id: string | null) => notifyOwner(m, id),
+const sendFeedback = vi.fn();
+vi.mock('@/lib/monitoring/sendFeedback', async (orig) => ({
+  ...(await orig<typeof import('@/lib/monitoring/sendFeedback')>()),
+  sendFeedback: (i: unknown) => sendFeedback(i),
 }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
@@ -26,63 +24,75 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
-  sendProblemReport.mockReset();
-  notifyOwner.mockReset();
-  notifyOwner.mockResolvedValue(undefined);
+  sendFeedback.mockReset();
 });
 
-describe('ReportProblemDialog', () => {
+const open = (initialKind: 'bug' | 'idea' | 'help' | null = null) =>
+  render(<ReportProblemDialog isOpen onClose={() => {}} tenantId="t1" initialKind={initialKind} />);
+
+describe('Send feedback', () => {
+  it('shows Bug, Idea and Help at once, and the message box only after one is picked', () => {
+    open();
+    for (const k of ['bug', 'idea', 'help']) {
+      expect(screen.getByRole('radio', { name: `report_problem.kinds.${k}.button` })).toBeTruthy();
+    }
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByRole('button', { name: 'report_problem.submit' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('radio', { name: 'report_problem.kinds.idea.button' }));
+    expect(screen.getByLabelText(/report_problem.kinds.idea.label/)).toBeTruthy();
+  });
+
+  it('starts on Bug when opened from the error screen', () => {
+    open('bug');
+    expect(screen.getByRole('radio', { name: 'report_problem.kinds.bug.button' })).toBeChecked();
+    expect(screen.getByLabelText(/report_problem.kinds.bug.label/)).toBeTruthy();
+  });
+
   it('requires a message before sending', async () => {
-    render(<ReportProblemDialog isOpen onClose={() => {}} />);
+    open('bug');
     fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
-    expect(await screen.findByText('report_problem.required')).toBeTruthy();
-    expect(screen.getByLabelText(/report_problem.label/).getAttribute('aria-invalid')).toBe('true');
-    expect(sendProblemReport).not.toHaveBeenCalled();
+    expect(await screen.findByText('report_problem.kinds.bug.required')).toBeTruthy();
+    expect(sendFeedback).not.toHaveBeenCalled();
   });
 
-  it('sends the message and shows a confirmation', async () => {
-    sendProblemReport.mockResolvedValue('evt1');
-    render(<ReportProblemDialog isOpen onClose={() => {}} />);
-    fireEvent.change(screen.getByLabelText(/report_problem.label/), { target: { value: 'Save did nothing' } });
+  it('sends the kind, message and studio, and thanks the admin for that kind', async () => {
+    sendFeedback.mockResolvedValue(true);
+    open();
+    fireEvent.click(screen.getByRole('radio', { name: 'report_problem.kinds.help.button' }));
+    fireEvent.change(screen.getByLabelText(/report_problem.kinds.help.label/), { target: { value: 'How do I add a room?' } });
     fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
-    await waitFor(() => expect(screen.getByText('report_problem.sent')).toBeTruthy());
-    expect(sendProblemReport).toHaveBeenCalledWith('Save did nothing');
-    expect(notifyOwner).toHaveBeenCalledWith('Save did nothing', 'evt1');
+    await waitFor(() => expect(screen.getByText('report_problem.kinds.help.sent')).toBeTruthy());
+    expect(sendFeedback).toHaveBeenCalledWith({ kind: 'help', message: 'How do I add a room?', screenshot: null, tenantId: 't1' });
   });
 
-  it('a failing owner email never changes the result the admin sees', async () => {
-    sendProblemReport.mockResolvedValue('evt1');
-    notifyOwner.mockRejectedValue(new Error('email down'));
-    render(<ReportProblemDialog isOpen onClose={() => {}} />);
-    fireEvent.change(screen.getByLabelText(/report_problem.label/), { target: { value: 'Save did nothing' } });
-    fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
-    await waitFor(() => expect(screen.getByText('report_problem.sent')).toBeTruthy());
-  });
-
-  it('shows an error when the report could not be sent', async () => {
-    sendProblemReport.mockResolvedValue(null);
-    render(<ReportProblemDialog isOpen onClose={() => {}} />);
-    fireEvent.change(screen.getByLabelText(/report_problem.label/), { target: { value: 'x' } });
+  it('shows an error when it could not be sent', async () => {
+    sendFeedback.mockResolvedValue(false);
+    open('idea');
+    fireEvent.change(screen.getByLabelText(/report_problem.kinds.idea.label/), { target: { value: 'x' } });
     fireEvent.click(screen.getByRole('button', { name: 'report_problem.submit' }));
     expect(await screen.findByText('report_problem.failed')).toBeTruthy();
-    expect(notifyOwner).not.toHaveBeenCalled();
+  });
+});
+
+describe('feedback strings', () => {
+  it('exist for every kind in English and Hebrew', () => {
+    for (const k of ['bug', 'idea', 'help'] as const) {
+      const e = en.report_problem.kinds[k];
+      const h = he.report_problem.kinds[k];
+      expect(Object.keys(h).sort()).toEqual(Object.keys(e).sort());
+      for (const v of Object.values(h)) expect(v).toBeTruthy();
+    }
+    expect(Object.keys(he.platform_feedback).sort()).toEqual(Object.keys(en.platform_feedback).sort());
   });
 });
 
 describe('canReportProblems', () => {
-  it('is off without a DSN, whatever the role', () => {
-    expect(canReportProblems(['tenant_admin'])).toBe(false);
-  });
-
-  it('is limited to studio admins when a DSN is configured', async () => {
-    vi.stubEnv('VITE_SENTRY_DSN', 'https://k@o1.ingest.de.sentry.io/1');
-    vi.resetModules();
-    const m = await import('../lib/monitoring');
-    expect(m.canReportProblems(['tenant_admin'])).toBe(true);
-    expect(m.canReportProblems(['super_admin'])).toBe(true);
-    expect(m.canReportProblems(['parent'])).toBe(false);
-    expect(m.canReportProblems(['student', 'teacher'])).toBe(false);
-    expect(m.canReportProblems(undefined)).toBe(false);
-    vi.unstubAllEnvs();
+  it('is limited to admins of a studio, with or without Sentry', () => {
+    expect(canReportProblems(['tenant_admin'], 't1')).toBe(true);
+    expect(canReportProblems(['super_admin'], 't1')).toBe(true);
+    expect(canReportProblems(['super_admin'], null)).toBe(false);
+    expect(canReportProblems(['parent'], 't1')).toBe(false);
+    expect(canReportProblems(['student', 'teacher'], 't1')).toBe(false);
+    expect(canReportProblems(undefined, 't1')).toBe(false);
   });
 });
