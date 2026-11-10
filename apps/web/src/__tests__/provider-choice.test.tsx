@@ -101,12 +101,12 @@ describe('rules', () => {
     expect(isMonthlyFeesNeedGrowError({ message: 'monthly_fees_need_grow' })).toBe(true);
   });
 
-  it('bundled page: any finished provider before the first payment, only its own after', () => {
+  it('bundled page: a studio keeps only its own provider; no new one is offered', () => {
     const grow = { payment_provider: 'grow', invoicing_provider: 'grow' };
-    expect(bundledProviderChoices(grow, false)).toEqual(['grow', 'invoice4u']);
+    expect(bundledProviderChoices(grow, false)).toEqual(['grow']);
     expect(bundledProviderChoices(grow, true)).toEqual(['grow']);
     expect(bundledProviderChoices(grow, undefined)).toEqual(['grow']);
-    expect(bundledProviderChoices({ payment_provider: 'ypay', invoicing_provider: 'ypay' }, false)).toEqual(['grow', 'invoice4u']);
+    expect(bundledProviderChoices({ payment_provider: 'ypay', invoicing_provider: 'ypay' }, false)).toEqual([]);
     expect(bundledProviderChoices({ payment_provider: 'icount', invoicing_provider: 'icount' }, false)).toEqual(['icount']);
   });
 });

@@ -1,6 +1,16 @@
-# Payment options studios see (owner decision, 6 Nov 2026)
+# Payment options studios see (owner decisions, 6 and 10 Nov 2026)
 
-## Decision
+## Update, 10 Nov 2026 (replaces the "different provider" part below)
+
+The only payment choices are the studio's own YPay account, OpalSwift's Takbull, or pay at the studio.
+
+- **Takbull** is listed first but greyed out, marked "Coming soon", until it launches. When it launches it becomes the default.
+- **Own YPay** is pre-selected until then; **pay at the studio** is shown next to it.
+- **Grow and Invoice4U** are no longer offered anywhere (no "Have a different provider?"). **Green Invoice** is no longer offered for documents either.
+- **Hidden, not deleted:** their code stays until Takbull is live, then goes in one tidy-up. A studio already on one of them keeps it and still sees it in Settings.
+- Hidden lists: `HIDDEN_PAYMENT_PROVIDERS` and `HIDDEN_INVOICING_PROVIDERS` in `apps/web/src/lib/providerPairing.ts`.
+
+## Decision (6 Nov 2026)
 
 Until OpalSwift has its own registered business:
 

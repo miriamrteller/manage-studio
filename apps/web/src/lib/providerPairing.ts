@@ -23,6 +23,18 @@ export const PAIRABLE_INVOICING_PROVIDERS = [
   'none',
 ] as const;
 
+/**
+ * Owner decision 2026-11-10 (docs/plans/PAYMENT-OPTIONS-DECISION.md): the only payment choices
+ * are the studio's own YPay, pay at the studio, and later Takbull. These are hidden from every
+ * choice (the code stays until Takbull is live). A studio already on one still sees it.
+ */
+export const HIDDEN_PAYMENT_PROVIDERS = ['grow', 'invoice4u'] as const;
+export const HIDDEN_INVOICING_PROVIDERS = ['grow', 'invoice4u', 'green_invoice'] as const;
+
+export function isHiddenInvoicingProvider(slug: string | null | undefined): boolean {
+  return (HIDDEN_INVOICING_PROVIDERS as readonly string[]).includes(slug ?? '');
+}
+
 /** Invoicing services that exist in the data model but are not finished: never offered. */
 export const UNFINISHED_INVOICING_PROVIDERS = ['yesh', 'tranzila'] as const;
 

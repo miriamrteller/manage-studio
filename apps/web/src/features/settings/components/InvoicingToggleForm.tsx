@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
 import queryClient from '@/lib/query-client';
-import { invoicingOptionsFor, invoicingPairsWithPayment } from '@/lib/providerPairing';
+import { invoicingOptionsFor, invoicingPairsWithPayment, isHiddenInvoicingProvider } from '@/lib/providerPairing';
 import { providerLimitKeys } from '@/lib/providerLimits';
 import { ProviderLimits } from '@/components/providers/ProviderLimits';
 
@@ -27,7 +27,10 @@ function isOnProvider(value: string | null | undefined): value is InvoicingOnPro
  * even if it no longer fits, so the form shows what is stored (saving it is refused).
  */
 export function invoicingChoicesFor(paymentProvider: string | null, current: string): string[] {
-  const choices = invoicingOptionsFor(paymentProvider ?? '').filter((slug) => slug !== INVOICING_OFF);
+  // Hidden services (owner decision 2026-11-10) are listed only when already saved.
+  const choices = invoicingOptionsFor(paymentProvider ?? '').filter(
+    (slug) => slug !== INVOICING_OFF && !isHiddenInvoicingProvider(slug),
+  );
   return isOnProvider(current) && !choices.includes(current) ? [current, ...choices] : choices;
 }
 

@@ -4049,8 +4049,9 @@
     }
   },
   "payment_choice": {
-    "different_provider": "יש לכם ספק אחר?",
-    "ypay_monthly_note": "OpalSwift עדיין לא גובה תשלום חודשי דרך YPay. לחוג חודשי בחרו תשלום בסטודיו או ספק אחר.",
+    "takbull_label": "בכרטיס אשראי באתר, דרך Takbull",
+    "coming_soon": "בקרוב",
+    "ypay_monthly_note": "OpalSwift עדיין לא גובה תשלום חודשי דרך YPay. לחוג חודשי בחרו תשלום בסטודיו.",
     "disclaimer": "אפשר להחליף את ספק התשלומים עד התשלום הראשון. אחרי זה, החלפה דורשת פנייה לתמיכה של OpalSwift."
   },
   "platform_features": {
