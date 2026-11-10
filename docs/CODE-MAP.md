@@ -30,6 +30,14 @@ The code sometimes uses older or more general names than the screens do.
 | Look and wording per kind of business | `skin`, `vertical` |
 | Signed form | `waiver` |
 
+## app.opalswift.com and hq.opalswift.com
+
+Both run the same app (`apps/web`). The address decides what you see.
+
+- **app.opalswift.com is the control room.** It has no studio of its own. Sign in there as the platform owner to get the Platform pages: Features (switch features on per studio), Onboard (set up a new studio), Feedback (bugs, ideas and help requests from studio admins) and Skins (the look and wording for each kind of business). Anyone else who signs in there just gets links to their own studios. Code: `features/platform-shell/`, `features/platform/`, `layouts/StudioHostGate.tsx`.
+- **hq.opalswift.com is OpalSwift's own studio.** It is an ordinary studio (subdomain `hq`) for selling OpalSwift. The marketing site's contact form files its enquiries in HQ's Leads. While self-serve sign-up is off, "Sign up" on app.opalswift.com goes to HQ's enquiry form (`lib/platformSignup.ts`). The plan is for each customer studio to be one of HQ's clients. The plan: `docs/plans/OPALSWIFT-ON-OPALSWIFT.md`.
+- **Every other address (for example `yourstudio.opalswift.com`) is one studio.** Platform pages never show in a studio's menu (`components/Navigation/useNavItems.ts`).
+
 ## Where is a screen?
 
 Each address in the app has one entry in `apps/web/src/router.tsx`. Follow it to a file in `apps/web/src/pages/`, which then pulls the real work from `apps/web/src/features/<area>/`.
