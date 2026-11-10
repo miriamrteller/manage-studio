@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
 
 const labelsState = vi.hoisted(() => ({ vertical: 'dance-studio' as string }));
 vi.mock('@/hooks/useEntityLabels', () => ({
-  useEntityLabels: () => ({ vertical: labelsState.vertical }),
+  useEntityLabels: () => ({ vertical: labelsState.vertical, profile: { teachesClasses: true } }),
 }));
 
 vi.mock('@/features/admin-dashboard/components/OverviewStatsGrid', () => ({

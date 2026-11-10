@@ -386,10 +386,10 @@
       "back_to_portal_signin": "כניסה לחשבון שלי"
     },
     "client_portal": {
-      "title": "הצילומים שלי",
-      "subtitle": "הצילומים, החוזה, התשלומים והגלריה שלכם — במקום אחד.",
-      "shoots_heading": "הצילומים שלי",
-      "no_shoots": "עדיין אין צילום שמור. הצילום יופיע כאן ברגע שיאושר.",
+      "title": "ההזמנות שלי",
+      "subtitle": "ההזמנות, הטפסים, התשלומים והקבצים שלכם במקום אחד.",
+      "shoots_heading": "ההזמנות שלי",
+      "no_shoots": "עדיין אין לכם הזמנות. הן יופיעו כאן ברגע שיאושרו.",
       "shoot_date": "תאריך",
       "shoot_unscheduled": "התאריך ייקבע בהמשך",
       "shoot_location": "מיקום",
@@ -401,7 +401,7 @@
       "contract_sign_now": "לחתימה עכשיו",
       "contract_opening": "פותח…",
       "contract_open_error": "לא הצלחנו לפתוח את החוזה. השתמשו בקישור שנשלח בדוא\"ל או צרו איתנו קשר.",
-      "contract_cancelled": "הצילום בוטל",
+      "contract_cancelled": "ההזמנה בוטלה",
       "contract_download": "הורדת החוזה החתום",
       "contract_downloading": "מכין…",
       "contract_download_error": "לא הצלחנו להכין את החוזה החתום. נסו שוב או צרו איתנו קשר.",

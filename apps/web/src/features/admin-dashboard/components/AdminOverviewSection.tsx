@@ -25,11 +25,11 @@ export const AdminOverviewSection = ({
 }: AdminOverviewSectionProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { vertical } = useEntityLabels();
+  const { vertical, profile } = useEntityLabels();
 
-  // No active season — distinct UI state, not a generic error. Photographers
-  // have no seasons (the page is hidden for them), so show nothing instead.
-  if (error instanceof NoActiveSeasonError && vertical === 'photographer') return null;
+  // No active season — distinct UI state, not a generic error. Photographers and
+  // studios without classes have no seasons (the page is hidden), so show nothing.
+  if (error instanceof NoActiveSeasonError && (vertical === 'photographer' || !profile.teachesClasses)) return null;
   if (error instanceof NoActiveSeasonError) {
     return (
       <div className={`space-y-4 ${className}`}>

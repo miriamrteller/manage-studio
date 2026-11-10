@@ -104,6 +104,13 @@
       "empty_message": "Add a client to get started, or adjust your filters.",
       "filter_by_enrolment_status": "Booking status",
       "no_billing": "No billing account linked to any shoot"
+    },
+    "client_portal": {
+      "title": "My shoots",
+      "subtitle": "Your shoots, contract, payments and gallery in one place.",
+      "shoots_heading": "My shoots",
+      "no_shoots": "You don't have any shoots booked yet. We'll add your shoot here as soon as it's confirmed.",
+      "contract_cancelled": "Shoot cancelled"
     }
   },
   "enrolment": {

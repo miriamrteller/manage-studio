@@ -2,7 +2,8 @@
 /**
  * Dance safety for the portal + routing composition points:
  *  - PortalDashboard renders ParentPortal (children, Add child, DOB, Enrol new)
- *    for every non-photographer tenant, and ClientPortal only for photographers;
+ *    for tenants with classes switched on, and ClientPortal for photographers and
+ *    every tenant without classes (no children / enrol for them);
  *  - EnrolmentRow is back to main (no job gallery card, even on a services preset);
  *  - DashboardRedirectPage sends dance enrolment intents to /enrol, photographer
  *    clients to their portal;
@@ -193,8 +194,8 @@ beforeEach(async () => {
   sessionStorage.clear();
 });
 
-describe.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])(
-  'PortalDashboard — %s tenant renders the dance ParentPortal unchanged',
+describe.each<FakeTenantKind>(['dance', 'generic', 'none'])(
+  'PortalDashboard — %s tenant (classes on) renders the dance ParentPortal unchanged',
   (kind) => {
     beforeEach(() => setTenant(kind));
 
@@ -289,7 +290,9 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
   it('no shoots yet: friendly empty state, still no child setup', () => {
     portal.client = { self: clientData().self, shoots: [], requests: [] };
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
-    expect(screen.getByText(baseValue('pages.client_portal.no_shoots'))).toBeInTheDocument();
+    expect(
+      screen.getByText("You don't have any shoots booked yet. We'll add your shoot here as soon as it's confirmed."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(baseValue('pages.portal.myself_setup_cta'))).toBeNull();
   });
 
@@ -298,6 +301,18 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
     expect(screen.getByRole('region', { name: 'הצילומים שלי' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'לחתימה עכשיו' })).toBeInTheDocument();
+  });
+});
+
+describe('PortalDashboard — a tenant without classes (beautician) renders ClientPortal', () => {
+  beforeEach(() => setTenant('beautician'));
+
+  it('bookings wording, no children, no Add child and no class enrolment', () => {
+    renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
+    expect(screen.getByRole('region', { name: baseValue('pages.client_portal.shoots_heading') })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: baseValue('pages.portal.children_heading') })).toBeNull();
+    expect(screen.queryByRole('button', { name: baseValue('pages.portal.add_child') })).toBeNull();
+    expect(screen.queryByRole('button', { name: baseValue('pages.portal.enrol_new') })).toBeNull();
   });
 });
 
