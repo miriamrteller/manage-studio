@@ -9,6 +9,7 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
+| 2026-11-10 | [Class cards](CLASS-CARDS.md) | **Plan** — owner answered 10 Nov; build waits for go-ahead |
 | 2026-11-04 | [Takbull payments](TAKBULL-INTEGRATION.md) | **ACTIVE** — being built, hidden until launch |
 | 2026-11-04 | [Account credit](ACCOUNT-CREDIT.md) | **Parked** until Takbull is live |
 | 2026-11-06 | [Payment options studios see](PAYMENT-OPTIONS-DECISION.md) | **Owner decision** — 10 Nov: only own YPay (default), pay at the studio, Takbull (coming soon) |
