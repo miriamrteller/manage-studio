@@ -3243,6 +3243,21 @@
       "takbull": "Takbull",
       "mock": "Test mode"
     },
+    "plan_card": {
+      "title": "Your OpalSwift plan: card (testing)",
+      "hint": "Dev website only. Add the card OpalSwift charges for your plan each month. Adding it takes the first month's payment (₪1 on dev), through OpalSwift's own Takbull account, and you get a receipt.",
+      "card_on_file": "Card on file: •••• {{last4}} {{expiry}}",
+      "no_card": "No card added yet.",
+      "next_charge": "Next charge: {{date}}",
+      "add": "Add a card",
+      "replace": "Use another card",
+      "checking": "Checking the payment with Takbull…",
+      "failed": "The payment didn't go through, so no card was saved. You can try again.",
+      "cancelled": "You left the payment page. No card was saved.",
+      "already_paid": "This month is already paid. Changing the card comes in a later step.",
+      "not_set_up": "OpalSwift's own Takbull account isn't set up on this site.",
+      "start_failed": "Couldn't open the payment page. Try again."
+    },
     "takbull": {
       "title": "Takbull (testing)",
       "hint": "Only for testing Takbull. Saving keys here doesn't change how your clients pay.",

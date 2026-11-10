@@ -90,3 +90,54 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  browser roles cannot read the billing tables';
 END $$;
+
+-- 6. Step B2: the card token is saved encrypted by the service role only; a studio admin sees
+--    their own card and last charge (never the token); other roles can't.
+DO $$
+DECLARE
+  admin UUID := 'b0000000-0000-4000-8000-00000000000e';
+  dina  UUID := 'b0000000-0000-4000-8000-00000000000d';
+  photo UUID := 'a0000000-0000-4000-8000-000000000001';
+  r RECORD;
+  v TEXT;
+BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', false);
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  BEGIN
+    PERFORM save_studio_card_token(photo, 'tok', '4242', '12/30', '2027-02-01');
+    RAISE EXCEPTION 'FAIL an admin saved a card token';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', false);
+  PERFORM save_studio_card_token(photo, ' tok-secret-1 ', '4242', '12/30', '2027-02-01');
+  SELECT * INTO r FROM studio_subscriptions WHERE tenant_id = photo;
+  IF position('tok-secret-1' IN encode(r.card_token_enc, 'escape')) > 0 THEN RAISE EXCEPTION 'FAIL token not encrypted'; END IF;
+  IF r.card_last4 <> '4242' OR r.card_expiry <> '12/30' OR r.next_charge_on <> '2027-02-01' THEN RAISE EXCEPTION 'FAIL card row %', r; END IF;
+  SELECT get_studio_card_token(photo) INTO v;
+  IF v <> 'tok-secret-1' THEN RAISE EXCEPTION 'FAIL token read back'; END IF;
+  -- A new card replaces the old one and clears failed attempts.
+  UPDATE studio_subscriptions SET failed_attempts = 2 WHERE tenant_id = photo;
+  PERFORM save_studio_card_token(photo, 'tok-2', 'x', 'bad', NULL);
+  SELECT * INTO r FROM studio_subscriptions WHERE tenant_id = photo;
+  IF r.card_last4 IS NOT NULL OR r.card_expiry IS NOT NULL OR r.failed_attempts <> 0 OR r.next_charge_on <> '2027-02-01' THEN
+    RAISE EXCEPTION 'FAIL replace card %', r;
+  END IF;
+  RAISE NOTICE 'ok  only the service role saves and reads the card token, encrypted';
+
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', false);
+  BEGIN
+    PERFORM get_studio_card_token(photo);
+    RAISE EXCEPTION 'FAIL an admin read the card token';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  SELECT * INTO r FROM my_studio_subscription();
+  IF r.next_charge_on <> '2027-02-01' OR r.last_payment_status <> 'succeeded' THEN RAISE EXCEPTION 'FAIL admin view %', r; END IF;
+  PERFORM set_config('request.jwt.claim.sub', dina::text, false);
+  BEGIN
+    PERFORM * FROM my_studio_subscription();
+    RAISE EXCEPTION 'FAIL a parent read the plan billing';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  RAISE NOTICE 'ok  a studio admin sees their own plan card; a parent cannot';
+END $$;
