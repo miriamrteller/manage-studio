@@ -140,6 +140,7 @@
       "set_platform_charging",
       "set_platform_child_package",
       "smugmug_admin_tenant_id",
+      "start_class_card_purchase",
       "studio_feature_states",
       "tenant_smugmug_status",
       "tenant_takbull_connected",
@@ -205,6 +206,7 @@
     "functions": [
       "admin_open_billing_schedule",
       "assert_studio_admin",
+      "class_cards_follow_request",
       "get_app_encryption_key",
       "get_cron_secret",
       "get_supabase_functions_url",

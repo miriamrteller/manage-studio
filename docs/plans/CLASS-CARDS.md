@@ -52,6 +52,11 @@ Names: "Class card" / "כרטיסייה". Never "credit" (that word belongs to [
 - Writes go only through row-locked, audited functions: `issue_class_card`, `book_class_with_card`, `check_in_with_class_card`, `cancel_class_card_booking`, `set_class_card_visit_status`, `request_class_card_extension`, `extend_class_card`. Reads: `get_my_class_cards`, `get_person_class_cards`.
 - Online booking respects the class size (active enrolments plus booked card holders). A walk-in the teacher ticks in does not.
 
+**Buying online (built in migration `20261110160400_class_card_purchase.sql`)**
+- The portal lists the cards on sale with the number of classes and the expiry ("valid for 3 months from when you pay"). "Buy" calls `start_class_card_purchase`: the card is held as `awaiting_payment` and a payment request (`job_payment_requests.class_card_id`) opens the usual `/pay/:token` page. Starting again reuses the open purchase, and a free card starts at once.
+- When the request is paid (online, or recorded by the admin), a trigger starts the card today with the type's expiry and links the payment. If it is cancelled or refunded, the card is cancelled.
+- For now the request hangs off the client's (or family's) active class enrolment, because payment requests and every payment callback need an engagement. A client with no enrolment is told to buy at the studio. Buying without an enrolment, and on the public class page, waits on the owner's choice about teaching the payment code about cards.
+
 ## PR split
 
 1. (M) Tables, rules and functions, tests (`supabase/tests/class-cards`), `definer-execute.json`.
