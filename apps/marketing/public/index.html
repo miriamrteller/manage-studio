@@ -693,16 +693,22 @@ function setLang(lang, remember){
     const val = isHe ? el.getAttribute('data-he') : el.getAttribute('data-en');
     if(val!==null) el.innerHTML = val;
   });
-  if(remember){ try{ localStorage.setItem('os_lang', lang); }catch(e){} }
+  if(remember){ try{ localStorage.setItem('os_lang_choice', lang); }catch(e){} }
 }
 
-// Initial language: remembered choice > browser language > Hebrew fallback
+// Initial language: the visitor's own pick (language button) > Hebrew if the browser's
+// first language is Hebrew > English. The detected language is never saved; the old
+// keys also held detected values, so they are dropped. Same rule as topbar.js.
 (function(){
   let saved=null;
-  try{ saved = localStorage.getItem('os_lang'); }catch(e){}
-  const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
-  const initial = saved || (nav.startsWith('en') ? 'en' : 'he');
-  setLang(initial);
+  try{
+    saved = localStorage.getItem('os_lang_choice');
+    localStorage.removeItem('os_lang');
+    localStorage.removeItem('os-lang');
+  }catch(e){}
+  const first = ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || '').toLowerCase();
+  const browser = (first.startsWith('he') || first.startsWith('iw')) ? 'he' : 'en';
+  setLang(saved === 'he' || saved === 'en' ? saved : browser);
 })();
 </script>
 </body>
