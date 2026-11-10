@@ -157,11 +157,11 @@ Owner decisions that apply: trial 1 month; founders free until the end of 2026; 
 | B3 | The daily job: `ChargeToken` for due studios, retries, emails, banner | Set a studio's next charge to today and run the job: a ₪1 charge, one receipt, no second charge on a rerun |
 | PR 7 | Open the studio's Takbull account (`CreateAccount`, `SubscriptionPayer: "Parent"`), dev only: Settings → Payments → "Open my Takbull account (testing)" | One child account on the sandbox; its keys saved encrypted; Test connection passes for the new studio. If Takbull refuses, ask Takbull to enable account opening on the sandbox account |
 
-### Open questions for the owner
+### Owner decisions (2026-11-10)
 
-1. **After the last failed retry:** banner only, or the studio becomes read-only? (Recommended: banner only during beta.)
-2. **The studio's Takbull login (PR 7):** the owner types the Takbull password on our page and we pass it through without storing it (recommended), or we generate one and show it once?
-3. **The Takbull login email:** the studio's business email, prefilled and editable (recommended)?
+1. **After the last failed retry:** banner only; the studio keeps working (during beta).
+2. **The studio's Takbull login (PR 7):** the owner types the Takbull password on our page; we pass it to Takbull and never store it.
+3. **The Takbull login email:** the studio's business email, prefilled and editable.
 
 ## Takbull support's answers (email, 2026-11-08)
 
