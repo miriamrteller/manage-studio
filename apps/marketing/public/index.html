@@ -165,15 +165,17 @@
   .editions-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:5px 12px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;margin-bottom:14px}
   .editions-group-label.gig{background:#e6faf8;color:#0a9e8e}
   .editions-group-label.roster{background:#eef0ff;color:var(--indigo)}
-  .editions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch}
+  .editions{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:10px;align-items:stretch}
   .edition{display:flex;flex-direction:column;align-items:center;background:#fff;border:1px solid rgba(11,20,55,.08);border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s;box-shadow:0 4px 16px -8px rgba(11,20,55,.2)}
   .edition:hover{transform:translateY(-3px);border-color:rgba(91,108,255,.4)}
   .edition .em{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;flex-shrink:0;background:#eef0ff;color:var(--indigo)}
   #gig-group .edition .em{background:#e6faf8;color:#0a9e8e}
   .edition b{font-family:'Rubik';font-size:14px;display:block}
-  .edition small{color:var(--slate);font-size:11.5px}
+  .edition small{color:var(--slate);font-size:11.5px;line-height:1.4;hyphens:none;margin-top:2px}
   .edition .live{display:inline-block;margin-top:7px;font-family:'Rubik';font-size:10px;font-weight:700;color:#0a8f84;background:rgba(33,209,194,.15);padding:2px 8px;border-radius:999px}
   .edition .soon{display:inline-block;margin-top:7px;font-family:'Rubik';font-size:10px;font-weight:700;color:var(--slate);background:rgba(11,20,55,.06);padding:2px 8px;border-radius:999px}
+  /* Side by side only when every card fits its name and tagline on one line each. */
+  @media(max-width:1080px){.editions-wrap{grid-template-columns:1fr}}
   .editions-cta{text-align:center;margin-top:28px}
   .editions-cta a{font-size:14px;font-weight:700;color:var(--indigo);text-decoration:none}
   .editions-cta a:hover{text-decoration:underline}
@@ -519,31 +521,31 @@
     </div>
     <div class="editions-wrap">
       <div class="editions-group" id="gig-group">
-        <div class="editions-group-label gig"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg><span data-he="פרויקטים ועבודות חד-פעמיות" data-en="One-Time Projects">פרויקטים ועבודות חד-פעמיות</span></div>
+        <div class="editions-group-label gig"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg><span data-he="פרויקטים ועבודות חד-פעמיות" data-en="Projects and one-off jobs">פרויקטים ועבודות חד-פעמיות</span></div>
         <div class="editions">
-          <a class="edition" href="photographer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg></span><b data-he="צלמים" data-en="Photographer">צלמים</b><small data-he="הצעת מחיר · מקדמה" data-en="Deposit + quote">הצעת מחיר · מקדמה</small></a>
-          <a class="edition" href="trades.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg></span><b data-he="בעלי מקצוע" data-en="Trades">בעלי מקצוע</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
-          <a class="edition" href="beautician.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-scissors"/></svg></span><b data-he="קוסמטיקה ושייטל" data-en="Beautician">קוסמטיקה ושייטל</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Appointments · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
-          <a class="edition" href="designer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></span><b data-he="מעצבים" data-en="Designer">מעצבים</b><small data-he="הצעת מחיר · חשבונית" data-en="Quote · invoice">הצעת מחיר · חשבונית</small></a>
-          <a class="edition" href="interior.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sofa"/></svg></span><b data-he="מעצבי פנים" data-en="Interior Design">מעצבי פנים</b><small data-he="הצעת מחיר · מקדמה · חשבונית" data-en="Quote · deposit · invoice">הצעת מחיר · מקדמה · חשבונית</small></a>
-          <a class="edition" href="adviser.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg></span><b data-he="יועצים" data-en="Adviser">יועצים</b><small data-he="ייעוץ · הצעת מחיר · חשבונית" data-en="Consulting · quote · invoice">ייעוץ · הצעת מחיר · חשבונית</small></a>
-          <a class="edition" href="workshops.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-grad"/></svg></span><b data-he="סדנאות" data-en="Workshops">סדנאות</b><small data-he="הרשמה · תשלום מראש" data-en="Registration · advance payment">הרשמה · תשלום מראש</small></a>
-          <a class="edition" href="event-planner.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-party"/></svg></span><b data-he="מפיקי אירועים" data-en="Event Planner">מפיקי אירועים</b><small data-he="הצעת מחיר · מקדמות · יתרה" data-en="Quote · deposits · balance">הצעת מחיר · מקדמות · יתרה</small></a>
-          <a class="edition" href="sofer-stam.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-feather"/></svg></span><b data-he='סופר סת"ם' data-en="Sofer STaM">סופר סת"ם</b><small data-he="הזמנות · מקדמות" data-en="Orders · deposits">הזמנות · מקדמות</small></a>
+          <a class="edition" href="photographer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg></span><b data-he="צלמים" data-en="Photographers">צלמים</b><small data-he="הצעות מחיר · מקדמות" data-en="Quotes · deposits">הצעות מחיר · מקדמות</small></a>
+          <a class="edition" href="trades.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg></span><b data-he="בעלי מקצוע" data-en="Tradespeople">בעלי מקצוע</b><small data-he="הצעות מחיר · קישורי תשלום" data-en="Quotes · pay links">הצעות מחיר · קישורי תשלום</small></a>
+          <a class="edition" href="beautician.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-scissors"/></svg></span><b data-he="קוסמטיקה ושייטל" data-en="Beauty">קוסמטיקה ושייטל</b><small data-he="זימון תורים · תזכורות" data-en="Booking · reminders">זימון תורים · תזכורות</small></a>
+          <a class="edition" href="designer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></span><b data-he="מעצבים" data-en="Designers">מעצבים</b><small data-he="הצעות מחיר · קישורי תשלום" data-en="Quotes · pay links">הצעות מחיר · קישורי תשלום</small></a>
+          <a class="edition" href="interior.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sofa"/></svg></span><b data-he="מעצבי פנים" data-en="Interior designers">מעצבי פנים</b><small data-he="הצעות מחיר · מקדמות" data-en="Quotes · deposits">הצעות מחיר · מקדמות</small></a>
+          <a class="edition" href="adviser.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg></span><b data-he="יועצים" data-en="Advisers">יועצים</b><small data-he="הצעות מחיר · תזכורות" data-en="Quotes · reminders">הצעות מחיר · תזכורות</small></a>
+          <a class="edition" href="workshops.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-grad"/></svg></span><b data-he="מנחי סדנאות" data-en="Workshop leaders">מנחי סדנאות</b><small data-he="הרשמה · קישורי תשלום" data-en="Sign-ups · pay links">הרשמה · קישורי תשלום</small></a>
+          <a class="edition" href="event-planner.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-party"/></svg></span><b data-he="מפיקי אירועים" data-en="Event planners">מפיקי אירועים</b><small data-he="מקדמות · יתרה" data-en="Deposits · balance">מקדמות · יתרה</small></a>
+          <a class="edition" href="sofer-stam.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-feather"/></svg></span><b data-he='סופר סת"ם' data-en="Soferei STaM">סופר סת"ם</b><small data-he="הצעות מחיר · מקדמות" data-en="Quotes · deposits">הצעות מחיר · מקדמות</small></a>
         </div>
       </div>
       <div class="editions-group" id="roster-group">
-        <div class="editions-group-label roster"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="חוגים ושיעורים קבועים" data-en="Ongoing Services">חוגים ושיעורים קבועים</span></div>
+        <div class="editions-group-label roster"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><span data-he="חוגים ושיעורים קבועים" data-en="Classes and regular clients">חוגים ושיעורים קבועים</span></div>
         <div class="editions">
-          <a class="edition" href="private-tutor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg></span><b data-he="מורים פרטיים" data-en="Tutor">מורים פרטיים</b><small data-he="משפחות · תזכורות להורים" data-en="Families · parent reminders">משפחות · תזכורות להורים</small></a>
-          <a class="edition" href="classes.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><b data-he="חוגים" data-en="Classes">חוגים</b><small data-he="הוראת קבע · כמה ילדים במשפחה" data-en="Standing order · multi-child">הוראת קבע · כמה ילדים במשפחה</small></a>
-          <a class="edition" href="personal-trainer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-dumbbell"/></svg></span><b data-he="מאמני כושר" data-en="Fitness Trainer">מאמני כושר</b><small data-he="תורים · תשלום מראש · ביטולים" data-en="Booking · pre-pay · cancellations">תורים · תשלום מראש · ביטולים</small></a>
-          <a class="edition" href="driving-instructor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-car"/></svg></span><b data-he="מורי נהיגה" data-en="Driving Instructor">מורי נהיגה</b><small data-he="שיעורים · תשלום ע״י ההורים" data-en="Lessons · parent billing">שיעורים · תשלום ע״י ההורים</small></a>
-          <a class="edition" href="therapist.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><b data-he="מטפלים" data-en="Therapist">מטפלים</b><small data-he="תשלום מראש · תזכורות" data-en="Pre-pay · reminders">תשלום מראש · תזכורות</small></a>
-          <a class="edition" href="music-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg></span><b data-he="מורים למוזיקה" data-en="Music Teacher">מורים למוזיקה</b><small data-he="חיוב חודשי · תזכורות" data-en="Monthly billing · reminders">חיוב חודשי · תזכורות</small></a>
-          <a class="edition" href="dance-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg></span><b data-he="מורי מחול" data-en="Dance Teacher">מורי מחול</b><small data-he="שיעורים · ניהול תלמידים" data-en="Classes · student management">שיעורים · ניהול תלמידים</small></a>
-          <a class="edition" href="art-class.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg></span><b data-he="חוגי אמנות" data-en="Art Class">חוגי אמנות</b><small data-he="הרשמה · חיוב חודשי" data-en="Enrolment · monthly billing">הרשמה · חיוב חודשי</small></a>
-          <a class="edition" href="swim-coach.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-waves"/></svg></span><b data-he="מאמני שחייה" data-en="Swim Coach">מאמני שחייה</b><small data-he="חוגי שחייה · מנויים · ביטולים" data-en="Swim classes · memberships · cancels">חוגי שחייה · מנויים · ביטולים</small></a>
+          <a class="edition" href="private-tutor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg></span><b data-he="מורים פרטיים" data-en="Tutors">מורים פרטיים</b><small data-he="זימון תורים · משפחות" data-en="Booking · families">זימון תורים · משפחות</small></a>
+          <a class="edition" href="classes.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><b data-he="חוגים" data-en="Class studios">חוגים</b><small data-he="הרשמה · טפסים" data-en="Enrolment · forms">הרשמה · טפסים</small></a>
+          <a class="edition" href="personal-trainer.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-dumbbell"/></svg></span><b data-he="מאמני כושר" data-en="Personal trainers">מאמני כושר</b><small data-he="זימון תורים · תזכורות" data-en="Booking · reminders">זימון תורים · תזכורות</small></a>
+          <a class="edition" href="driving-instructor.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-car"/></svg></span><b data-he="מורי נהיגה" data-en="Driving teachers">מורי נהיגה</b><small data-he="זימון תורים · קישורי תשלום" data-en="Booking · pay links">זימון תורים · קישורי תשלום</small></a>
+          <a class="edition" href="therapist.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><b data-he="מטפלים" data-en="Therapists">מטפלים</b><small data-he="זימון תורים · תזכורות" data-en="Booking · reminders">זימון תורים · תזכורות</small></a>
+          <a class="edition" href="music-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-music"/></svg></span><b data-he="מורים למוזיקה" data-en="Music teachers">מורים למוזיקה</b><small data-he="משפחות · תזכורות" data-en="Families · reminders">משפחות · תזכורות</small></a>
+          <a class="edition" href="dance-teacher.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg></span><b data-he="סטודיו למחול" data-en="Dance studios">סטודיו למחול</b><small data-he="הרשמה · משפחות" data-en="Enrolment · families">הרשמה · משפחות</small></a>
+          <a class="edition" href="art-class.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg></span><b data-he="חוגי אמנות" data-en="Art classes">חוגי אמנות</b><small data-he="הרשמה · טפסים" data-en="Enrolment · forms">הרשמה · טפסים</small></a>
+          <a class="edition" href="swim-coach.html"><span class="em"><svg class="icon" aria-hidden="true"><use href="#i-waves"/></svg></span><b data-he="מאמני שחייה" data-en="Swim coaches">מאמני שחייה</b><small data-he="הרשמה · משפחות" data-en="Enrolment · families">הרשמה · משפחות</small></a>
         </div>
       </div>
     </div>
@@ -594,7 +596,7 @@
           <textarea id="cf-msg" name="message" required></textarea>
         </div>
         <!-- Spam traps: people never see or fill these. -->
-        <div style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+        <div style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap" aria-hidden="true">
           <label for="cf-website">Website</label>
           <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off" />
         </div>
