@@ -1,5 +1,7 @@
 # Implementation status
 
+> **History, not today's guide.** Much of this checklist is out of date. For where things are now, see [CODE-MAP.md](CODE-MAP.md); for current plans, see [plans/README.md](plans/README.md).
+
 Living checklist for in-flight SPEC features. Normative design remains in [SPEC.md](../SPEC.md).
 
 **Last updated:** 2026-07-19

@@ -93,6 +93,8 @@ Each address in the app has one entry in `apps/web/src/router.tsx`. Follow it to
 - How dev and live are released: `docs/deployment/DEV-PROD-PIPELINE.md`.
 - Shared secrets and how to change them: `docs/deployment/SHARED-SECRETS.md`.
 - Automated checks that run on every change: `.github/workflows/`.
+- Day-to-day operations (log-in emails, scheduled jobs): `docs/deployment/MANUAL_OPERATIONS_RUNBOOK.md`.
+- Look and feel rules: `DESIGN_SYSTEM.md`.
 
 ## Tests
 
@@ -106,5 +108,5 @@ Each address in the app has one entry in `apps/web/src/router.tsx`. Follow it to
 
 ## Files that are out of date
 
-These still describe the very first plan (a ballet-school app with Stripe and Twilio). Trust this map and the code over them:
-`README.md`, `SPEC.md`, `docs/IMPLEMENTATION_STATUS.md`, `apps/web/src/ARCHITECTURE.md`.
+These describe the first plan (a ballet-school app with Stripe and Twilio). Each now carries a note at the top. Trust this map and the code over them:
+`SPEC.md`, `docs/IMPLEMENTATION_STATUS.md`, `apps/web/src/ARCHITECTURE.md` (partly).

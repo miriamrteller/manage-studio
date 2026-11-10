@@ -9,6 +9,8 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 
 | Date | Feature | Status |
 | --- | --- | --- |
+| 2026-11-04 | [Takbull payments](TAKBULL-INTEGRATION.md) | **ACTIVE** — being built, hidden until launch |
+| 2026-11-04 | [Account credit](ACCOUNT-CREDIT.md) | **Parked** until Takbull is live |
 | 2026-11-06 | [Payment options studios see](PAYMENT-OPTIONS-DECISION.md) | **Owner decision** — 10 Nov: only own YPay (default), pay at the studio, Takbull (coming soon) |
 | 2026-11-02 | [Leads: where they come from](LEADS.md) | **ACTIVE** — plan; lead form / channels / digest work references it |
 | 2026-11-02 | [Onboarding audit](ONBOARDING-AUDIT.md) | **ACTIVE** — legal steps to re-run; screenshots in [onboarding-audit/](onboarding-audit/) |
@@ -21,7 +23,6 @@ Agent-optimized implementation plans. Create before coding (see `.instructions.m
 | 2026-07 | [Native scheduling + Google Calendar](scheduling/00-overview.md) | **S0–S5 ✅** — [GCal](scheduling/google-calendar-integration.md) · [deploy/test](scheduling/deployment-and-testing.md); live payments/WhatsApp last |
 | 2026-07-20 | [Invoice4U IL bundled](finance/invoice4u/00-overview.md) | **ACTIVE** — overnight mock U1→U4-mock on `feat/invoice4u-provider` |
 | 2026-06-29 | [iCount IL (mock-first)](finance/icount/00-overview.md) | **Mock phase ✅** — fallback; live deferred |
-| 2026-07-16 | [V1 migration fourth squash + payment merge](v1-migration-squash-20260716.md) | **Shipped** on `main` (PR #17) — fresh DB reset → push → seed → types still recommended |
 | 2026-06-29 | [Parent portal polish](parent-portal-polish.md) | ✅ Shipped — Step 8 (WhatsApp OTP verify) still deferred |
 | 2026-06-28 | [Grow live sandbox E2E](grow-live-e2e-verification.md) | Manual QA — optional |
 | 2026-06-07 | [Code rename epic (ex-D5)](code-rename-epic.md) | Deferred |
@@ -49,4 +50,4 @@ Kept here because a script, a Cursor rule, code or open payments work still poin
 | — | [Finance / Grow G0–G7](finance/00-overview.md) | Code shipped; live E2E manual — read by `pnpm finance:prompt` |
 | — | [Admin finance F1–F6](admin-dashboard-finance/00-overview.md) | Complete — read by `pnpm finance-admin:prompt` |
 
-Everything else that has shipped (age override, guest enrolment, unenrol, VAT pricing, admin overview, notification log/blast, Phase D, settings hub, offering `location`, V1 squash + pg_cron) is in [archive/](archive/README.md).
+Everything else that has shipped (age override, guest enrolment, unenrol, VAT pricing, admin overview, notification log/blast, Phase D, settings hub, offering `location`, V1 squashes + pg_cron) is in [archive/](archive/README.md).

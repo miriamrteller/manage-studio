@@ -332,4 +332,4 @@ Or use [`supabase/scripts/verify-auth-setup.sql`](../../supabase/scripts/verify-
 ## Related docs
 
 - [Third-Party Services Setup](./THIRD_PARTY_SERVICES.md) — Resend, Twilio, Stripe
-- [Manual Operations Runbook](../MANUAL_OPERATIONS_RUNBOOK.md) — day-2 operations
+- [Manual Operations Runbook](MANUAL_OPERATIONS_RUNBOOK.md) — day-2 operations

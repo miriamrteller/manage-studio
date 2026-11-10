@@ -1,5 +1,7 @@
 # Ballet School Management System
 
+> **History, not today's guide.** This is the first plan (from when OpalSwift was a ballet-school app). Much of it has changed, including the payment and messaging providers. For where things are now, see [docs/CODE-MAP.md](docs/CODE-MAP.md).
+
 ## Complete Implementation Blueprint — v2.0
 
 > **Architectural priority order:** Reliability → Scalability → Correctness → Readability → AI integration
@@ -846,13 +848,13 @@ Landing pages and public class listings need data before a user logs in. The acc
 
 ### 4.2 Database migrations
 
-⏱️ **TIMING:** Third-party credentials (Twilio, Resend, Stripe) are configured **after** schema deploy via admin UI or manual runbook. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) and [docs/MANUAL_OPERATIONS_RUNBOOK.md](docs/MANUAL_OPERATIONS_RUNBOOK.md).
+⏱️ **TIMING:** Third-party credentials (Twilio, Resend, Stripe) are configured **after** schema deploy via admin UI or manual runbook. See [Third-Party Services Setup](docs/deployment/THIRD_PARTY_SERVICES.md) and [docs/deployment/MANUAL_OPERATIONS_RUNBOOK.md](docs/deployment/MANUAL_OPERATIONS_RUNBOOK.md).
 
 **Authoritative SQL:** `supabase/migrations/*.sql` — apply in filename order. **Schema changes are additive-only since 2026-08-19** (production DB live): new timestamped migration files, never edits to the `20260608*` base chain, and no dev reset unless the owner explicitly asks (§2.5.3). After a change: `pnpm db:push`; `pnpm db:types:all`; `pnpm email:bundle`; re-run seeds only if they changed.
 
 #### 4.2.0 Implemented schema index (V1 slice)
 
-- **2026-07-16 — fourth squash:** folded scheduling/features/Google (`03000`–`04200`) into the base chain; merged Rapyd/Yesh/Tranzila onto `tenants`/`payments` (no `tenant_configs` / parallel `bookings`). Archived under `supabase/migrations_backup/incremental_20260716/`. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.) Authoritative chain: `20260608000200`–`20260608002800` (28 files). Plan: [v1-migration-squash-20260716.md](docs/plans/v1-migration-squash-20260716.md).
+- **2026-07-16 — fourth squash:** folded scheduling/features/Google (`03000`–`04200`) into the base chain; merged Rapyd/Yesh/Tranzila onto `tenants`/`payments` (no `tenant_configs` / parallel `bookings`). Archived under `supabase/migrations_backup/incremental_20260716/`. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.) Authoritative chain: `20260608000200`–`20260608002800` (28 files). Plan: [v1-migration-squash-20260716.md](docs/plans/archive/v1-migration-squash-20260716.md).
 - **2026-07-05 — third squash:** folded `20260625*`–`20260705*` incrementals into the base `20260608*` chain; archived originals under `supabase/migrations_backup/incremental_20260705/`. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.)
 
 > **2026-06-08 — consolidated chain.** The original 34-file history (`20260526*`–`20260610*`) was rewritten into the `20260608*` chain below, baking every `ALTER` into its base `CREATE TABLE`. The superseded files are retained read-only under `supabase/migrations_backup/legacy_20260608/`. Filename order = apply order. (The `supabase/migrations_backup/` archives were removed on 2026-11-05; they remain in git history.)
