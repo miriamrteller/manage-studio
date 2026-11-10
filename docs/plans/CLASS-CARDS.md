@@ -44,18 +44,21 @@ Names: "Class card" / "כרטיסייה". Never "credit" (that word belongs to [
 - "Your cards: 7 of 10 left, valid until 10 Feb", with "Ask for more time" (once per card).
 - Book a place in a covered class. Cancel up to the cutoff for the class back.
 
-**Storage (sketch)**
-- `class_card_types` (the studio's cards) and `class_cards` (a bought card: owner person or family account, classes bought, expiry, source payment).
-- `class_card_entries`: an insert-only ledger (`used`, `returned`, `extended`, `expired`). Classes left = classes bought minus the sum. One row-locked RPC, so it never goes below zero.
-- Bookings reuse `attendance` rows with a booked or attended state. Capacity is checked against `offerings.max_capacity`.
+**Storage (built in PR 1, migration `20261110160100_class_cards.sql`)**
+- `tenant_class_card_settings`: the on/off switch (no row = off), cutoff hours (12), extension months (3).
+- `class_card_types` (the studio's cards) and `class_card_type_offerings` (the classes each covers).
+- `class_cards`: a card someone holds. Name, classes and price are copied from the type. `account_id` is set when the card is shared. `valid_until` NULL means it never expires.
+- `class_card_visits`: each class taken. Classes left = classes bought minus visits that are booked, attended, late-cancelled or no-show. A cancel in time (`cancelled`) or a class the admin gives back (`returned`) frees it. Expiry is a date check, so no nightly job is needed.
+- Writes go only through row-locked, audited functions: `issue_class_card`, `book_class_with_card`, `check_in_with_class_card`, `cancel_class_card_booking`, `set_class_card_visit_status`, `request_class_card_extension`, `extend_class_card`. Reads: `get_my_class_cards`, `get_person_class_cards`.
+- Online booking respects the class size (active enrolments plus booked card holders). A walk-in the teacher ticks in does not.
 
 ## PR split
 
-1. (M) Tables, ledger, RPCs, security tests, `definer-execute.json`.
+1. (M) Tables, rules and functions, tests (`supabase/tests/class-cards`), `definer-execute.json`.
 2. (M) Settings → Class cards with the on/off switch (default off), and selling a card through the existing one-off checkout.
 3. (M) Class register screen (walk-ins), which uses a class.
 4. (M) Portal booking and cancelling with the cutoff, and the client's card balance.
-5. (S) Expiry job, client extension request, admin give-back and one-time extend, docs and lawyer wording.
+5. (S) Screens for the client's extension request and the admin's give-back and one-time extend (the rules are in PR 1), docs and lawyer wording.
 
 ## Legal
 
