@@ -65,6 +65,10 @@ export async function createCheckoutCharge(
 
   const { session } = resolved;
   const { service, tenant } = session;
+  // Shown to the parent as their own lines before paying.
+  const discountFields = session.discount.discountMinor > 0
+    ? { listAmountMinor: session.listMinor, discounts: session.discount.lines }
+    : {};
 
   // Pay at the studio: nothing to charge online. The place stays reserved
   // (pending_payment) until an admin records the payment.
@@ -84,6 +88,7 @@ export async function createCheckoutCharge(
       alreadyPaid: false,
       billingMode: session.offering.billing_mode,
       billingInterval: session.offering.billing_interval,
+      ...discountFields,
       offlineInstructions: tenant.offline_payment_instructions,
       onlinePaymentNotSetUp,
     },
@@ -135,6 +140,7 @@ export async function createCheckoutCharge(
       alreadyPaid: false,
       billingMode: session.offering.billing_mode,
       billingInterval: session.offering.billing_interval,
+      ...discountFields,
     },
   };
 }

@@ -339,6 +339,11 @@ export const EngagementSchema = z.object({
     payment_dunning_attempt_count: z.number().int().nonnegative().default(0).optional(),
     payment_dunning_next_at: TimestampSchema.nullable().optional(),
     waiver_evidence_id: UUIDSchema.nullable().optional(),
+    /** Automatic class discount off the class price, set by the database at enrolment (per month for monthly classes). */
+    discount_minor: z.number().int().nonnegative().optional(),
+    discount_lines: z
+        .array(z.object({ kind: z.enum(['sibling', 'extra_class', 'early_bird']), amount_minor: z.number().int().positive() }))
+        .optional(),
     created_at: TimestampSchema,
     updated_at: TimestampSchema.optional(),
 });

@@ -2,6 +2,7 @@ import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
+import { engagementDiscountFromRow, priceAfterDiscount } from "../_shared/payments/class-discount.ts";
 import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
 import { recordManualRenewal } from "../_shared/payments/record-manual-renewal.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
@@ -93,7 +94,7 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, billing_account_id, status")
+    .select("id, tenant_id, person_id, offering_id, billing_account_id, status, discount_minor, discount_lines")
     .eq("id", body.engagement_id)
     .single();
 
@@ -153,7 +154,13 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
     return jsonResponse({ error: "Offering or tenant not found" }, 404);
   }
 
-  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
+  // The class price less the enrolment's automatic class discount.
+  const pricing = resolveOfferingPrice({
+    price_minor: priceAfterDiscount(
+      offering.price_minor as number,
+      engagementDiscountFromRow(engagement).discountMinor,
+    ),
+  });
 
   const totalMinor = body.amount_minor ?? pricing.totalMinor;
 

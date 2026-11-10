@@ -6,6 +6,7 @@ import { StepBackButton } from './StepBackButton';
 import { EnrolmentTermsConsent } from './EnrolmentTermsConsent';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { monthlyHintKey } from '../lib/monthlyHint';
+import { ClassDiscountLines } from './ClassDiscountLines';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -76,6 +77,12 @@ export function StepCheckout({
       <p className="text-sm text-muted-foreground">{t('enrolment.checkout_desc')}</p>
       {checkoutCharge?.amountMinor != null && checkoutCharge.currency && (
         <div className="rounded-lg bg-muted/40 px-3 py-2 space-y-1">
+          <ClassDiscountLines
+            listAmountMinor={checkoutCharge.listAmountMinor}
+            discounts={checkoutCharge.discounts}
+            currency={checkoutCharge.currency}
+            monthly={isMonthly}
+          />
           <p className="text-sm font-medium">
             {t('enrolment.checkout_total')}:{' '}
             {formatOfferingPrice(

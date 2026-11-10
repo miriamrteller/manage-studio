@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
+import { engagementDiscountFromRow, priceAfterDiscount, type EngagementDiscount } from "./payments/class-discount.ts";
 import { buildChargeMetadata } from "./payments/providers/mock.ts";
 import type { ChargeMetadata } from "./payments/types.ts";
 import { createServiceClient, requireAuthUser } from "./edge-runtime/supabase.ts";
@@ -44,6 +45,9 @@ export interface ResolvedCheckoutSession {
   totalMinor: number;
   vatRate: number;
   currency: string;
+  /** The class price before the automatic class discount. */
+  listMinor: number;
+  discount: EngagementDiscount;
   metadata: ChargeMetadata;
   idempotencyKey: string;
 }
@@ -118,7 +122,7 @@ export async function resolveCheckoutSession(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, billing_account_id")
+    .select("id, tenant_id, person_id, offering_id, status, billing_account_id, discount_minor, discount_lines")
     .eq("id", body.engagement_id)
     .single();
 
@@ -194,7 +198,10 @@ export async function resolveCheckoutSession(
     return { ok: false, status: 404, error: "Offering not found" };
   }
 
-  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
+  const discount = engagementDiscountFromRow(engagement);
+  const pricing = resolveOfferingPrice({
+    price_minor: priceAfterDiscount(offering.price_minor as number, discount.discountMinor),
+  });
 
   const currency = (offering.currency ?? tenant.currency ?? "ILS").toUpperCase();
   const metadata = buildChargeMetadata({
@@ -244,6 +251,8 @@ export async function resolveCheckoutSession(
       totalMinor: pricing.totalMinor,
       vatRate: pricing.vatRate,
       currency,
+      listMinor: offering.price_minor as number,
+      discount,
       metadata,
       idempotencyKey: `engagement-${body.engagement_id}-${pricing.totalMinor}-${currency}`,
     },

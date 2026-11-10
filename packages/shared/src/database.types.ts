@@ -543,6 +543,74 @@ export type Database = {
           },
         ]
       }
+      class_discount_settings: {
+        Row: {
+          combine_mode: string
+          created_at: string
+          early_bird_days_before: number
+          early_bird_enabled: boolean
+          early_bird_unit: string
+          early_bird_value: number
+          extra_class_enabled: boolean
+          extra_class_unit: string
+          extra_class_value: number
+          max_total_percent: number
+          sibling_enabled: boolean
+          sibling_more_value: number
+          sibling_unit: string
+          sibling_value: number
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          combine_mode?: string
+          created_at?: string
+          early_bird_days_before?: number
+          early_bird_enabled?: boolean
+          early_bird_unit?: string
+          early_bird_value?: number
+          extra_class_enabled?: boolean
+          extra_class_unit?: string
+          extra_class_value?: number
+          max_total_percent?: number
+          sibling_enabled?: boolean
+          sibling_more_value?: number
+          sibling_unit?: string
+          sibling_value?: number
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          combine_mode?: string
+          created_at?: string
+          early_bird_days_before?: number
+          early_bird_enabled?: boolean
+          early_bird_unit?: string
+          early_bird_value?: number
+          extra_class_enabled?: boolean
+          extra_class_unit?: string
+          extra_class_value?: number
+          max_total_percent?: number
+          sibling_enabled?: boolean
+          sibling_more_value?: number
+          sibling_unit?: string
+          sibling_value?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_discount_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_records: {
         Row: {
           created_at: string
@@ -882,6 +950,8 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           created_at: string
+          discount_lines: Json
+          discount_minor: number
           google_event_id: string | null
           id: string
           offering_id: string
@@ -915,6 +985,8 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          discount_lines?: Json
+          discount_minor?: number
           google_event_id?: string | null
           id?: string
           offering_id: string
@@ -948,6 +1020,8 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          discount_lines?: Json
+          discount_minor?: number
           google_event_id?: string | null
           id?: string
           offering_id?: string
