@@ -127,6 +127,9 @@ jobs:
           DB_URL: ${{ secrets.SUPABASE_DEV_DB_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          # GitHub runs steps with bash -e: switch it off, so a failed psql still reaches the
+          # report below (the error codes) instead of ending the step with no detail.
+          set +e
           set -uo pipefail
           name=$(basename "$TASK_PATH")
           end=$([ "$DRY_RUN" = true ] && echo ROLLBACK || echo COMMIT)
