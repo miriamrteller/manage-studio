@@ -5964,6 +5964,13 @@ export type Database = {
                     price_minor: number;
                 }[];
             };
+            get_class_card_register: {
+                Args: {
+                    p_offering_id: string;
+                    p_session_date: string;
+                };
+                Returns: Json;
+            };
             get_client_job_gallery: {
                 Args: {
                     p_engagement_id: string;
