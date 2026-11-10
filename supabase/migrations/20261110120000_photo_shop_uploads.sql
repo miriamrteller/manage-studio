@@ -75,6 +75,7 @@ CREATE INDEX idx_job_photo_shop_photos_created_by ON job_photo_shop_photos(creat
 ALTER TABLE job_photo_shop_photos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY job_photo_shop_photos_super_admin ON job_photo_shop_photos FOR ALL USING (is_super_admin());
 CREATE POLICY job_photo_shop_photos_admin_select ON job_photo_shop_photos FOR SELECT
+  TO authenticated
   USING (tenant_id = get_my_tenant_id() AND EXISTS (
     SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND 'tenant_admin' = ANY(role)));
 GRANT SELECT ON TABLE job_photo_shop_photos TO authenticated;
@@ -102,6 +103,7 @@ DROP POLICY IF EXISTS "Admins delete photo shop photos" ON storage.objects;
 
 CREATE POLICY "Admins upload photo shop photos"
   ON storage.objects FOR INSERT
+  TO authenticated
   WITH CHECK (
     bucket_id = 'photo-shop-photos'
     AND (storage.foldername(name))[1] = public.get_my_tenant_id()::text
@@ -118,6 +120,7 @@ CREATE POLICY "Admins upload photo shop photos"
 
 CREATE POLICY "Admins read photo shop photos"
   ON storage.objects FOR SELECT
+  TO authenticated
   USING (
     bucket_id = 'photo-shop-photos'
     AND (storage.foldername(name))[1] = public.get_my_tenant_id()::text
@@ -129,6 +132,7 @@ CREATE POLICY "Admins read photo shop photos"
 
 CREATE POLICY "Admins delete photo shop photos"
   ON storage.objects FOR DELETE
+  TO authenticated
   USING (
     bucket_id = 'photo-shop-photos'
     AND (storage.foldername(name))[1] = public.get_my_tenant_id()::text
