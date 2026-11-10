@@ -254,3 +254,81 @@ export async function setVisitStatus(visitId: string, status: 'no_show' | 'retur
   const { error } = await supabase.rpc('set_class_card_visit_status', { p_visit_id: visitId, p_status: status });
   if (error) throw error;
 }
+
+export interface MyClassCard {
+  id: string;
+  person_id: string;
+  name: string;
+  class_count: number;
+  classes_left: number;
+  status: string;
+  starts_on: string | null;
+  valid_until: string | null;
+  shared: boolean;
+  extension_requested_at: string | null;
+  extended_at: string | null;
+}
+
+export interface CardSession {
+  offering_id: string;
+  name: string;
+  location: string | null;
+  session_date: string;
+  starts_at: string;
+  is_session: boolean;
+  places_left: number;
+  visit_id: string | null;
+  visit_status: 'booked' | 'attended' | 'late_cancelled' | 'no_show' | null;
+  visit_person_id: string | null;
+}
+
+export async function fetchMyClassCards(): Promise<MyClassCard[]> {
+  const { data, error } = await supabase.rpc('get_my_class_cards');
+  if (error) throw error;
+  return (data ?? []) as MyClassCard[];
+}
+
+export async function fetchMyCardSessions(cardId: string): Promise<{ cancel_cutoff_hours: number; sessions: CardSession[] }> {
+  const { data, error } = await supabase.rpc('get_my_class_card_sessions', { p_card_id: cardId, p_days: 14 });
+  if (error) throw error;
+  return data as { cancel_cutoff_hours: number; sessions: CardSession[] };
+}
+
+export async function bookWithCard(cardId: string, offeringId: string, date: string, personId?: string) {
+  const { error } = await supabase.rpc('book_class_with_card', {
+    p_card_id: cardId,
+    p_offering_id: offeringId,
+    p_session_date: date,
+    ...(personId ? { p_person_id: personId } : {}),
+  });
+  if (error) throw error;
+}
+
+export async function cancelCardBooking(visitId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('cancel_class_card_booking', { p_visit_id: visitId });
+  if (error) throw error;
+  return (data as { status: string }).status;
+}
+
+export async function askForMoreTime(cardId: string) {
+  const { error } = await supabase.rpc('request_class_card_extension', { p_card_id: cardId });
+  if (error) throw error;
+}
+
+/** Admin: give a card more time, once (the studio's "extra time on request" length). */
+export async function extendClassCard(cardId: string) {
+  const { error } = await supabase.rpc('extend_class_card', { p_card_id: cardId });
+  if (error) throw error;
+}
+
+/** Is it past the free-cancellation cutoff for a session? */
+export function isLateCancel(startsAt: string, cutoffHours: number, now: Date = new Date()): boolean {
+  return now.getTime() > new Date(startsAt).getTime() - cutoffHours * 3600 * 1000;
+}
+
+/** Error code from the database ("class_card: class_full" → "class_full"), or null. */
+export function classCardErrorCode(err: unknown): string | null {
+  const message = err instanceof Error ? err.message : typeof err === 'object' && err && 'message' in err ? String((err as { message: unknown }).message) : '';
+  const m = /class_card: ([a-z_]+)/.exec(message);
+  return m ? m[1] : null;
+}

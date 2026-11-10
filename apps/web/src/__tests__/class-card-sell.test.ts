@@ -91,3 +91,19 @@ describe('nextSessionDate', () => {
     expect(nextSessionDate(3, new Date('2026-11-10T22:30:00Z'))).toBe('2026-11-11'));
   it('is today for a class without a weekday', () => expect(nextSessionDate(null, tue)).toBe('2026-11-10'));
 });
+
+import { classCardErrorCode, isLateCancel } from '@/features/class-cards/service';
+
+describe('portal helpers', () => {
+  it('a cancel is late inside the cutoff', () => {
+    const now = new Date('2026-11-10T08:00:00Z');
+    expect(isLateCancel('2026-11-10T21:00:00Z', 12, now)).toBe(false);
+    expect(isLateCancel('2026-11-10T19:00:00Z', 12, now)).toBe(true);
+    expect(isLateCancel('2026-11-10T08:30:00Z', 0, now)).toBe(false);
+  });
+  it('reads the short code from a database error', () => {
+    expect(classCardErrorCode({ message: 'class_card: class_full' })).toBe('class_full');
+    expect(classCardErrorCode(new Error('class_card: no_classes_left'))).toBe('no_classes_left');
+    expect(classCardErrorCode({ message: 'network' })).toBeNull();
+  });
+});

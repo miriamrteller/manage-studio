@@ -73,6 +73,7 @@
       "get_google_calendar_connection",
       "get_grow_webhook_key_status",
       "get_job_photo_shop",
+      "get_my_class_card_sessions",
       "get_my_class_cards",
       "get_my_last_signer_details",
       "get_my_profile",
