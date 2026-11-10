@@ -3131,6 +3131,7 @@ export type Database = {
                     id: boolean;
                     takbull_api_key_enc: string | null;
                     takbull_api_secret_enc: string | null;
+                    takbull_child_package_id: string | null;
                     takbull_credentials_updated_at: string | null;
                     takbull_credentials_updated_by: string | null;
                     updated_at: string;
@@ -3140,6 +3141,7 @@ export type Database = {
                     id?: boolean;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
+                    takbull_child_package_id?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_credentials_updated_by?: string | null;
                     updated_at?: string;
@@ -3149,6 +3151,7 @@ export type Database = {
                     id?: boolean;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
+                    takbull_child_package_id?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_credentials_updated_by?: string | null;
                     updated_at?: string;
@@ -4505,10 +4508,12 @@ export type Database = {
                     smugmug_oauth_pending_enc: string | null;
                     sub_status: string;
                     subdomain: string;
+                    takbull_account_opened_at: string | null;
                     takbull_api_key_enc: string | null;
                     takbull_api_secret_enc: string | null;
                     takbull_credentials_updated_at: string | null;
                     takbull_document_type: number;
+                    takbull_merchant_id: string | null;
                     teaches_classes: boolean;
                     terms_url: string | null;
                     tranzila_terminal_name: string | null;
@@ -4598,10 +4603,12 @@ export type Database = {
                     smugmug_oauth_pending_enc?: string | null;
                     sub_status?: string;
                     subdomain: string;
+                    takbull_account_opened_at?: string | null;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_document_type?: number;
+                    takbull_merchant_id?: string | null;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -4691,10 +4698,12 @@ export type Database = {
                     smugmug_oauth_pending_enc?: string | null;
                     sub_status?: string;
                     subdomain?: string;
+                    takbull_account_opened_at?: string | null;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_document_type?: number;
+                    takbull_merchant_id?: string | null;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -6357,6 +6366,10 @@ export type Database = {
                     keys_saved_at: string;
                 }[];
             };
+            platform_child_package: {
+                Args: never;
+                Returns: string;
+            };
             platform_set_feature_override: {
                 Args: {
                     p_enabled: boolean;
@@ -6602,6 +6615,16 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            save_opened_takbull_account: {
+                Args: {
+                    p_actor_id: string;
+                    p_api_key: string;
+                    p_api_secret: string;
+                    p_merchant_id: string;
+                    p_tenant_id: string;
+                };
+                Returns: undefined;
+            };
             save_platform_takbull_credentials: {
                 Args: {
                     p_api_key: string;
@@ -6816,6 +6839,12 @@ export type Database = {
             set_platform_charging: {
                 Args: {
                     p_enabled: boolean;
+                };
+                Returns: undefined;
+            };
+            set_platform_child_package: {
+                Args: {
+                    p_package_id: string;
                 };
                 Returns: undefined;
             };
