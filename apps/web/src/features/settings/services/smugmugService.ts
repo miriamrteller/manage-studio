@@ -9,9 +9,29 @@ import { parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
 
 /** The fixed SmugMug callback, the same for every studio (photographers type it into SmugMug). */
 export const SMUGMUG_APP_URL = 'https://app.opalswift.com';
-export const SMUGMUG_CALLBACK_URL = 'https://app.opalswift.com/admin/setup/integrations/smugmug/callback';
+export const SMUGMUG_CALLBACK_PATH = '/admin/setup/integrations/smugmug/callback';
+export const SMUGMUG_CALLBACK_URL = `${SMUGMUG_APP_URL}${SMUGMUG_CALLBACK_PATH}`;
+export const SMUGMUG_SITE_URL = 'https://www.smugmug.com';
 export const SMUGMUG_APPLY_URL = 'https://api.smugmug.com/api/developer/apply';
 export const SMUGMUG_API_DOC_URL = 'https://api.smugmug.com/api/v2/doc';
+/**
+ * The Application URL and Callback URL to type into SmugMug for the site this page runs on.
+ * The live site and every studio address under it use the fixed app.opalswift.com ones;
+ * the dev website (or a local build) shows its own address, which the dev server's
+ * APP_URL should match.
+ */
+export function smugmugAppUrls(origin: string, rootHostname: string): { appUrl: string; callbackUrl: string } {
+  let host = '';
+  try {
+    host = new URL(origin).hostname;
+  } catch {
+    // Not a URL: fall back to the live addresses.
+  }
+  const live = !host || host === rootHostname || host.endsWith(`.${rootHostname}`);
+  const base = live ? SMUGMUG_APP_URL : origin.replace(/\/+$/, '');
+  return { appUrl: base, callbackUrl: `${base}${SMUGMUG_CALLBACK_PATH}` };
+}
+
 /** Where the callback page sends the photographer back to. */
 export const SMUGMUG_SETTINGS_PATH = '/admin/photo-shop?tab=smugmug';
 
