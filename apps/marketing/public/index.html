@@ -701,6 +701,10 @@
           if (res.ok) {
             form.style.display = 'none';
             document.getElementById('form-success').style.display = 'block';
+          } else if (res.status === 422 && (await res.json().catch(() => ({}))).error === 'own_email') {
+            alert(document.documentElement.lang === 'he'
+              ? 'כתובת המייל הזו שייכת לצוות OpalSwift, ולכן היא לא נשמרת כפנייה. אפשר לשלוח עם כתובת מייל אחרת.'
+              : 'This email address belongs to the OpalSwift team, so it isn\'t saved as an enquiry. Please send it from a different email address.');
           } else if (res.status === 422) {
             alert(document.documentElement.lang === 'he'
               ? 'נראה שמשהו הוקלד בטעות. כדאי לבדוק את השם וההודעה ולשלוח שוב.'

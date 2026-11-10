@@ -14,6 +14,7 @@ import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { cleanInviteToken, inviteTokenHash } from "../_shared/lead-form-invite.ts";
 import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
 import { assessLeadSpam, filledTooFast } from "../_shared/crm-contract/lead-spam.ts";
+import { enquiryUsesStudioEmail } from "../_shared/crm-contract/studio-own-email.ts";
 import {
   FORM_TIME_ZONE,
   formQuestions,
@@ -46,6 +47,10 @@ import {
  *     glued to letters, keyboard mashing, an address imitating OpalSwift, SEO
  *     sales pitches) is refused with 422 looks_like_spam, so a real person
  *     who trips it sees a message and can fix it.
+ *   - Studio's own email (studio-own-email.ts): an enquiry sent with the
+ *     studio's business email, a staff login or a staff record's email is
+ *     someone at the studio trying the form, not a lead. Refused with 422
+ *     own_studio_email and a polite message; no row.
  *   - Turnstile: when TURNSTILE_SECRET_KEY is set, a valid captchaToken is
  *     required (403 captcha_failed otherwise). Same widget as the login forms.
  *   - Rate limit: the shared fail-closed limiter (5/hour) keyed on the
@@ -207,6 +212,11 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       business_preset: string | null;
       lead_form: unknown;
     };
+
+    if (await enquiryUsesStudioEmail(service, leadTenant.id, payload.email)) {
+      console.warn("crm-lead-capture: refused, sent with the studio's own email");
+      return json({ error: "own_studio_email" }, 422);
+    }
 
     // Named form: narrows the questions and may pre-select a class or
     // package. An enquiry is never dropped because of its form: if the form

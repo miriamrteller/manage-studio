@@ -261,3 +261,14 @@ test("crm-lead-ingest says spam → 422, no email", async () => {
   assert.equal((await res.json()).error, "looks_like_spam");
   assert.deepEqual(calls.map((c) => c.url), [INGEST]);
 });
+
+test("crm-lead-ingest says own_email (the team's own address) → 422 own_email, no email", async () => {
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init, body: JSON.parse(init.body) });
+    return new Response(JSON.stringify(url === INGEST ? { outcome: "own_email" } : { id: "x" }), { status: 200 });
+  };
+  const res = await call(post(form(good)), LEAD_ENV);
+  assert.equal(res.status, 422);
+  assert.equal((await res.json()).error, "own_email");
+  assert.deepEqual(calls.map((c) => c.url), [INGEST]);
+});
