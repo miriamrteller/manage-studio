@@ -442,11 +442,13 @@ export type OfferingSession = z.infer<typeof OfferingSessionSchema>;
 export const StaffSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  user_profile_id: UUIDSchema,
+  /** The teacher's login, once they have signed in with this email (set by link_my_teacher_login). */
+  user_profile_id: UUIDSchema.nullable().optional(),
   name: z.string().min(1, 'Teacher name required'),
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
-  contract_type: z.enum(['employee', 'contractor']).default('contractor'),
+  /** The database CHECK allows 'hourly', 'salary' or 'freelance'; not used by the app yet. */
+  contract_type: z.string().nullable().optional(),
   hourly_rate_minor: z.number().nonnegative().nullable().optional(),
   created_at: TimestampSchema,
 });

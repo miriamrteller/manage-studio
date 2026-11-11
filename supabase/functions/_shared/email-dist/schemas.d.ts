@@ -410,14 +410,11 @@ export type OfferingSession = z.infer<typeof OfferingSessionSchema>;
 export declare const StaffSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    user_profile_id: z.ZodString;
+    user_profile_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     name: z.ZodString;
     email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    contract_type: z.ZodDefault<z.ZodEnum<{
-        employee: "employee";
-        contractor: "contractor";
-    }>>;
+    contract_type: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     hourly_rate_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     created_at: z.ZodString;
 }, z.core.$strip>;
