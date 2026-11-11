@@ -1,5 +1,7 @@
 # OpalSwift billing plan: how studios sign up and pay us
 
+> **Prices decided 2026-11-11 (owner):** two plans, no add-ons. **Project ₪129 a month** (job-based work: photographers, designers, tradespeople) and **Studio ₪199 a month** (class-based studios). Trial: 1 month. Founders free until the end of 2026 (owner decision, see [TAKBULL-INTEGRATION.md](TAKBULL-INTEGRATION.md)). The founder half-price offer is **not** confirmed. These are **introductory prices**. OpalSwift is an exempt dealer (עוסק פטור) for now, so no VAT is charged and the studio pays the listed price. Once OpalSwift becomes a licensed dealer (עוסק מורשה), the prices become **Project ₪149 and Studio ₪229 a month, VAT included** (owner, 2026-11-11) [[ACCOUNTANT: confirm]]. Where this file still suggests ₪79, ₪99, ₪149, ₪169 or a third ₪299 plan, those were earlier suggestions and are replaced by these prices.
+
 > **Updated 2026-11-10:** OpalSwift bills studios through its own **Takbull** account, not Grow. How the card, monthly charge and receipts work is now in [TAKBULL-INTEGRATION.md](TAKBULL-INTEGRATION.md#opalswifts-own-billing-of-studios-owner-decision-plan-2026-11-10-not-built-yet). The Grow research below (sections 6 and 7) is kept only for history; the prices, costs and market sections still stand.
 
 Status: **plan only, no app code.** Written 2026-11-02, updated the same day with the "After the free beta" roadmap (section 7) and Grow's partner-programme price. Facts marked **(verify)** are not confirmed.
@@ -28,7 +30,7 @@ Exchange rate assumed: **$1 = ₪3.7** (my assumption, check). All ₪ are befor
 - **Per studio, variable cost:** about **₪30 a month** (mostly SMS/WhatsApp), ₪10 low, ₪60 high.
 - **Break-even studios** (expected fixed cost incl. Grow partner fee): **32 at ₪79, 14 at ₪149, 6 at ₪299.** Without the Grow partner fee: 20 / 9 / 4.
 - **Minimum price that is healthy:** about **₪99 a month** for the cheapest plan. ₪79 only works as a founding-member or promo price.
-- **Suggested plans:** **Solo ₪99, Studio ₪169, Pro ₪299** per month, **2 months free on yearly**. Beta studios: **founder price locked for 12 months**.
+- **Decided introductory plans (2026-11-11):** **Project ₪129, Studio ₪199** per month (₪149 / ₪229 VAT included once a licensed dealer), no add-ons. (Earlier suggestion was Solo ₪99, Studio ₪169, Pro ₪299 with a 12-month founder price lock; replaced.)
 - **Market:** small-studio tools cost roughly **$16–$250 a month** (₪60–₪925). Israeli Arbox lists higher ($39–$299). All third-party figures, see section 8.
 
 ---
@@ -41,7 +43,7 @@ Exchange rate assumed: **$1 = ₪3.7** (my assumption, check). All ₪ are befor
 |---|---|---|
 | 1 | **Start now with a 30-day trial and no card?** Studios sign up alone, get 30 days of the top plan, then drop to read-only unless you mark them paid by hand. | **Yes.** Needs no registration, no Grow, little code. |
 | 2 | **Which business type to register** (עוסק פטור / מורשה / company)? It decides whether you add VAT and what receipts look like. | Ask your accountant. Nothing in the app depends on it yet. |
-| 3 | **Prices.** Plan names and limits are in section 3. Market range and my recommendation are in section 8. | You pick. Updated suggestion: **₪99 / ₪169 / ₪299** per month (section 8 replaces the earlier ₪79 / ₪149 / ₪299, which does not cover costs below about 14–32 studios). |
+| 3 | **Prices.** Plan names and limits are in section 3. Market range and my recommendation are in section 8. | **Decided 2026-11-11:** Project ₪129, Studio ₪199 per month. |
 | 4 | **Card at signup?** The plan says "30 days free, card required". Some studios will drop off at that screen. | Ask for the card only in phase 2. Keep a "no card, trial only" switch so you can turn it off. |
 | 5 | **Who is "us" on the receipt?** Grow can issue Hebrew receipts, but only for a registered business. | Do not charge anyone before registration. The terms already say "free during beta". |
 | 6 | **Email Grow now** (questions in section 6.2). The two answers decide phase 2 and phase 3. | **Yes, this week.** It costs nothing. |
@@ -125,7 +127,7 @@ Limits are proposals. Choose them by what actually costs you money: SMS/WhatsApp
 
 **Prices are your decision.** Market evidence found:
 - **Arbox** (Israeli gym and studio software): third-party listings show about **$39–$299 per month** across four plans, with a free tier for very small use. Sources: [Capterra](https://www.capterra.com/p/184438/Arbox/pricing/) (Basic $49, Standard $129, Professional $299), [Zoftwarehub](https://zoftwarehub.com/products/arbox/pricing) (about $39 / $99 / $239). These are USD, third-party, possibly stale. **(verify on arbox.com)**
-- In shekels, that is roughly **₪150–₪1,100 per month** at today's rates **(my conversion, check the rate)**. Your product is simpler, so a lower start is reasonable. My suggestion: Starter ₪79, Studio ₪149, Pro ₪299 per month, with about 2 months free on yearly. Test with 5–10 real studios before fixing prices.
+- In shekels, that is roughly **₪150–₪1,100 per month** at today's rates **(my conversion, check the rate)**. Your product is simpler, so a lower start is reasonable. Decided 2026-11-11: Project ₪129 and Studio ₪199 per month (see the note at the top).
 - Also check: Green Invoice, Fitness/Boostapp-type tools, and what your first studios pay today.
 - Decide whether prices include VAT (depends on your registration type).
 
@@ -362,6 +364,9 @@ I could not get current ₪ prices for the three Israeli billing tools. Ask thre
 - OpalSwift bundles classes, payments, receipts, waivers and CRM in one place for Hebrew-speaking studios. That supports pricing near the local studio tools, not at the cheapest photographer tool.
 
 ### 8.3 Recommended plans (₪ per month, before VAT)
+
+> **Replaced 2026-11-11:** the owner chose two plans, **Project ₪129** (was Solo) and **Studio ₪199**, with no third Pro plan and no add-ons. The table below is kept for the feature split, which still needs her confirmation.
+
 Three plans on top of the existing `essential` / `professional` tiers. The third tier needs a new database value (a small migration) and new flag assignments; it is not in the code today.
 
 | | **Solo** ₪99 | **Studio** ₪169 | **Pro** ₪299 |
@@ -453,6 +458,8 @@ Break-even studios = fixed cost ÷ (price − ₪30 variable cost). Price before
 | ₪99 | 23 | 15 | 9 |
 | ₪149 | 14 | 9 | 6 |
 | ₪169 | 12 | 7 | 5 |
+| **₪129 (Project)** | 16 | 10 | 7 |
+| **₪199 (Studio)** | 10 | 6 | 4 |
 | ₪299 | 6 | 4 | 3 |
 
 (These replace the partner-fee-only table in section 7, which ignored all other costs.)
