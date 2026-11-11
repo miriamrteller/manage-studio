@@ -234,7 +234,7 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 
--- ── 8. Expired quotes cannot be accepted (status persists) ───────────────────
+-- ── 8. A past "valid until" date is information only: still open and acceptable ──
 SET ROLE authenticated;
 INSERT INTO ctx VALUES ('q2', save_quote(
   jsonb_build_object('engagement_id', (SELECT v FROM ctx WHERE k = 'eng1'), 'valid_until', (current_date - 1)::text),
@@ -246,11 +246,11 @@ DO $$
 DECLARE j JSONB;
 BEGIN
   ASSERT get_public_quote((SELECT public_token FROM quotes WHERE id = (SELECT v::uuid FROM ctx WHERE k = 'q2')),
-                          '00000000-0000-0000-0000-0000000000a1')->>'status' = 'expired', 'shown as expired';
+                          '00000000-0000-0000-0000-0000000000a1')->>'status' = 'sent', 'past date still shown as open';
   j := accept_quote((SELECT public_token FROM quotes WHERE id = (SELECT v::uuid FROM ctx WHERE k = 'q2')),
                     '00000000-0000-0000-0000-0000000000a1', '{}');
-  ASSERT j->>'code' = 'expired', format('expired: %s', j);
-  ASSERT (SELECT status FROM quotes WHERE id = (SELECT v::uuid FROM ctx WHERE k = 'q2')) = 'expired', 'persisted';
+  ASSERT (j->>'ok')::boolean, format('past date still accepted: %s', j);
+  ASSERT (SELECT status FROM quotes WHERE id = (SELECT v::uuid FROM ctx WHERE k = 'q2')) = 'accepted', 'persisted as accepted';
 END $$;
 RESET ROLE;
 
