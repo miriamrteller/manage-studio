@@ -75,6 +75,9 @@ export interface PhotoOrder {
   created_at: string;
   paid_at: string | null;
   delivered_at: string | null;
+  /** Sent in by the client to pay in cash; the studio records the cash on the order. */
+  pay_by_cash?: boolean;
+  job_payment_request_id?: string | null;
   items: PhotoOrderItem[];
 }
 
@@ -107,7 +110,7 @@ export class PhotoShopService {
     const { data, error } = await supabase
       .from('job_photo_orders')
       .select(
-        'id, status, photo_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, items:job_photo_order_items(image_key, file_name, included, price_minor)',
+        'id, status, photo_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(image_key, file_name, included, price_minor)',
       )
       .eq('engagement_id', engagementId)
       .neq('status', 'cancelled')

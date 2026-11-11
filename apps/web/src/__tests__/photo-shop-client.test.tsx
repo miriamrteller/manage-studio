@@ -3,7 +3,8 @@
  * Photo shop in "My shoots" (beta): hidden without a gallery; included photos
  * first, then the price per photo; nothing about included photos when there
  * are none; bought photos can't be added again; paying opens /pay/:token;
- * "all photos" offered when it's no dearer than the cart. EN + HE.
+ * "all photos" offered when it's no dearer than the cart; "In cash to the studio" sends
+ * the order in without the pay page, and those photos stay with that order. EN + HE.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
@@ -19,6 +20,7 @@ const state = vi.hoisted(() => ({
   flag: true,
   gallery: null as ClientPhotoGallery | null,
   order: vi.fn(),
+  payBy: [] as string[],
 }));
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:photo_shop', isLoading: false }),
@@ -29,7 +31,10 @@ vi.mock('@/features/jobs/services/clientPhotoShopService', async (orig) => {
     ...real,
     ClientPhotoShopService: {
       gallery: async () => state.gallery,
-      order: (id: string, keys: string[], all: boolean) => state.order(id, keys, all),
+      order: (id: string, keys: string[], all: boolean, payBy = 'card') => {
+        state.payBy.push(payBy);
+        return state.order(id, keys, all);
+      },
     },
   };
 });
@@ -71,6 +76,7 @@ describe('ClientPhotoShop', () => {
     await setLanguage('en');
     state.flag = true;
     state.gallery = { shop: view(), photos };
+    state.payBy = [];
     state.order.mockReset().mockResolvedValue({ orderId: 'o1', status: 'awaiting_payment', totalMinor: 3000, currency: 'ILS', payToken: 'tok123' });
   });
 
@@ -174,6 +180,43 @@ describe('ClientPhotoShop', () => {
     renderInApp(<ClientPhotoShop engagementId="e1" />);
     expect(await screen.findByText('Sent to you by the studio')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Download your photos' })).toBeNull();
+  });
+
+  it('pay in cash: sends the order in, no pay page, and says what happens next', async () => {
+    state.order.mockResolvedValue({
+      orderId: 'o3', status: 'awaiting_payment', totalMinor: 3000, currency: 'ILS', payToken: 'tok9', payByCash: true,
+    });
+    renderInApp(<ClientPhotoShop engagementId="e1" />, { path: '/portal', extraRoutes: { '/pay/:token': <p>pay page</p> } });
+    await screen.findByText(/per photo/);
+    for (let i = 0; i < 3; i++) fireEvent.click(addButtons()[0]);
+    expect((screen.getByLabelText('By card now') as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText('In cash to the studio'));
+    fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪30(\.00)? in cash\)/ }));
+    await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', ['g-1', 'g-2', 'g-3'], false));
+    expect(state.payBy).toEqual(['cash']);
+    expect(await screen.findByText(/Order sent. Pay the studio in cash/)).toBeTruthy();
+    expect(screen.queryByText('pay page')).toBeNull();
+  });
+
+  it('photos sent in to pay in cash stay with that order; the order offers card instead', async () => {
+    state.gallery = {
+      shop: view({
+        awaiting_image_keys: ['g-1'],
+        cash_image_keys: ['g-1'],
+        orders: [{
+          id: 'o3', status: 'awaiting_payment', photo_count: 1, included_count: 0, total_minor: 3000, currency: 'ILS',
+          created_at: '2026-11-11T10:00:00Z', paid_at: null, delivered_at: null, pay_token: 'tok9', delivery_url: null,
+          pay_by_cash: true,
+        }],
+      }),
+      photos,
+    };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    const tile = (await screen.findByAltText('Preview of IMG_0001.jpg')).closest('li')!;
+    expect(within(tile).getByText('Ordered, paying in cash')).toBeTruthy();
+    expect(within(tile).queryByRole('button')).toBeNull();
+    expect(screen.getByText(/Sent in, paying in cash/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Pay by card instead' }).getAttribute('href')).toBe('/pay/tok9');
   });
 
   it('has Hebrew text and the sale note', async () => {

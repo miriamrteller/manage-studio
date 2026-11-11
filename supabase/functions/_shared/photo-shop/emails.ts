@@ -92,6 +92,28 @@ export async function notifyStudioPhotoOrderPaid(service: SupabaseClient, orderI
   return send(service, l, { to, personId: null, key, templateName: "photo_order_paid", ...email });
 }
 
+/** Tell the studio about an order sent in to be paid in cash (not paid yet). Sent once. */
+export async function notifyStudioPhotoOrderCash(service: SupabaseClient, orderId: string): Promise<boolean> {
+  const l = await load(service, orderId);
+  if (!l || l.order.status !== "awaiting_payment") return false;
+  const key = `photo_order:${orderId}:cash`;
+  if (await announcementAlreadySent(service, l.order.tenant_id, key)) return false;
+
+  const { data: client } = await service.from("people").select("name").eq("id", l.personId).maybeSingle();
+  const language = lang(l.tenant);
+  const email = buildStudioOrderEmail({
+    language,
+    clientName: (client?.name as string | undefined) ?? "—",
+    totalFormatted: formatCurrency(l.order.total_minor, l.order.currency, language === "he" ? "he-IL" : "en-GB"),
+    photos: l.items.map((i) => ({ fileName: i.file_name, key: i.image_key })),
+    shootUrl: `${tenantBaseUrl(l.tenant as { subdomain: string; custom_domain?: string | null })}/admin/jobs/${l.order.engagement_id}`,
+    payInCash: true,
+  });
+  const to = String(l.tenant.contact_email ?? "").trim();
+  if (!to) return false;
+  return send(service, l, { to, personId: null, key, templateName: "photo_order_cash", ...email });
+}
+
 /** Tell the client their download link is ready. Each new link is sent once. */
 export async function notifyClientPhotoOrderDelivered(service: SupabaseClient, orderId: string): Promise<boolean> {
   const l = await load(service, orderId);
