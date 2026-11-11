@@ -1,6 +1,6 @@
 # OpalSwift billing plan: how studios sign up and pay us
 
-> **Prices decided 2026-11-11 (owner):** two plans, no add-ons. **Project ₪129 a month** (job-based work: photographers, designers, tradespeople) and **Studio ₪199 a month** (class-based studios). Trial: 1 month. Founders free until the end of 2026 (owner decision, see [TAKBULL-INTEGRATION.md](TAKBULL-INTEGRATION.md)). The founder half-price offer is **not** confirmed. These are **introductory prices**. OpalSwift is an exempt dealer (עוסק פטור) for now, so no VAT is charged and the studio pays the listed price. Once OpalSwift becomes a licensed dealer (עוסק מורשה), VAT will be added on top of these prices (owner, 2026-11-11) [[ACCOUNTANT: confirm]]. Where this file still suggests ₪79, ₪99, ₪149, ₪169 or a third ₪299 plan, those were earlier suggestions and are replaced by these prices.
+> **Prices decided 2026-11-11 (owner):** two plans, no add-ons. **Project ₪129 a month** (job-based work: photographers, designers, tradespeople) and **Studio ₪199 a month** (class-based studios). Trial: 1 month. Founders free until the end of 2026 (owner decision, see [TAKBULL-INTEGRATION.md](TAKBULL-INTEGRATION.md)). The founder half-price offer is **not** confirmed. These are **introductory prices**. OpalSwift is an exempt dealer (עוסק פטור) for now, so no VAT is charged and the studio pays the listed price. Once OpalSwift becomes a licensed dealer (עוסק מורשה), the prices become **Project ₪149 and Studio ₪229 a month, VAT included** (owner, 2026-11-11) [[ACCOUNTANT: confirm]]. Where this file still suggests ₪79, ₪99, ₪149, ₪169 or a third ₪299 plan, those were earlier suggestions and are replaced by these prices.
 
 > **Updated 2026-11-10:** OpalSwift bills studios through its own **Takbull** account, not Grow. How the card, monthly charge and receipts work is now in [TAKBULL-INTEGRATION.md](TAKBULL-INTEGRATION.md#opalswifts-own-billing-of-studios-owner-decision-plan-2026-11-10-not-built-yet). The Grow research below (sections 6 and 7) is kept only for history; the prices, costs and market sections still stand.
 
@@ -30,7 +30,7 @@ Exchange rate assumed: **$1 = ₪3.7** (my assumption, check). All ₪ are befor
 - **Per studio, variable cost:** about **₪30 a month** (mostly SMS/WhatsApp), ₪10 low, ₪60 high.
 - **Break-even studios** (expected fixed cost incl. Grow partner fee): **32 at ₪79, 14 at ₪149, 6 at ₪299.** Without the Grow partner fee: 20 / 9 / 4.
 - **Minimum price that is healthy:** about **₪99 a month** for the cheapest plan. ₪79 only works as a founding-member or promo price.
-- **Decided introductory plans (2026-11-11):** **Project ₪129, Studio ₪199** per month (VAT added on top once a licensed dealer), no add-ons. (Earlier suggestion was Solo ₪99, Studio ₪169, Pro ₪299 with a 12-month founder price lock; replaced.)
+- **Decided introductory plans (2026-11-11):** **Project ₪129, Studio ₪199** per month (₪149 / ₪229 VAT included once a licensed dealer), no add-ons. (Earlier suggestion was Solo ₪99, Studio ₪169, Pro ₪299 with a 12-month founder price lock; replaced.)
 - **Market:** small-studio tools cost roughly **$16–$250 a month** (₪60–₪925). Israeli Arbox lists higher ($39–$299). All third-party figures, see section 8.
 
 ---
