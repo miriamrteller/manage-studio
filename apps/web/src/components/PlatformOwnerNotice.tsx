@@ -1,33 +1,48 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
-import { enterSupportAccess, leaveSupportAccess, useSupportAccess } from '@/lib/supportAccess';
+import { enterStudioAsSupport, isSupportLogin } from '@/lib/supportAccess';
 
 /**
  * Shown on a studio's own address to the OpalSwift platform owner
  * (super_admin) before any studio page. Never a bounce to /login, which
- * looked like being signed out. Owner decision (11 Nov 2026): on admin
- * pages it is a confirm step: tick "Yes, I want to enter this studio's admin"
- * (with the warning that it is all recorded) and continue. Also offers to
- * sign out so the studio's own admin can sign in on this device.
+ * looked like being signed out. Owner decisions (11 Nov 2026): it is a
+ * confirm step (tick "Yes, I want to enter this studio's admin", with the
+ * warning that it is all recorded), and entering lets the owner do
+ * everything the studio's admin can, as the studio's OpalSwift support
+ * login. Also offers to sign out so the studio's own admin can sign in on
+ * this device.
  */
 export function PlatformOwnerNotice() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
   const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const canEnter = !!tenant?.id;
 
-  const enter = () => {
-    if (!tenant?.id || !confirmed) return;
-    enterSupportAccess(tenant.id);
-    // From the stand-alone page (after sign-in), go on to the studio's admin.
-    if (!pathname.startsWith('/admin')) navigate('/admin/setup', { replace: true });
+  const enter = async () => {
+    if (!tenant?.id || !confirmed || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await enterStudioAsSupport(tenant.id);
+      // A fresh start as the support login: every cached query was the owner's.
+      window.location.assign('/admin/setup');
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message === 'two_step_required'
+          ? t('auth.support_access_two_step')
+          : t('auth.support_access_failed'),
+      );
+      setBusy(false);
+    }
   };
 
   const signOut = async () => {
@@ -54,9 +69,14 @@ export function PlatformOwnerNotice() {
               />
               <span>{t('auth.support_access_confirm', { studio: tenant?.name ?? '' })}</span>
             </label>
-            <Button type="button" className="w-full" disabled={!confirmed} onClick={enter}>
-              {t('auth.support_access_enter')}
+            <Button type="button" className="w-full" disabled={!confirmed || busy} onClick={() => void enter()}>
+              {busy ? t('common.loading') : t('auth.support_access_enter')}
             </Button>
+            {error && (
+              <p className="text-sm text-red-700" role="alert">
+                {error}
+              </p>
+            )}
           </div>
         )}
         <button type="button" onClick={() => void signOut()} className="block w-full text-sm font-medium text-indigo-700 underline">
@@ -71,16 +91,17 @@ export function PlatformOwnerNotice() {
 }
 
 /**
- * Banner across the studio's admin while the platform owner is in it as
- * support: says so, that everything is recorded, and offers a way out.
+ * Banner across the studio's admin while the platform owner is in it as the
+ * studio's OpalSwift support login: says so, that everything is recorded, and
+ * Leave signs that login out and goes back to app.opalswift.com.
  */
 export function SupportAccessBanner() {
   const { t } = useTranslation();
   const tenant = useTenant();
-  const active = useSupportAccess(tenant?.id);
-  if (!active || !tenant?.id) return null;
-  const leave = () => {
-    leaveSupportAccess(tenant.id);
+  const { user } = useCurrentUser();
+  if (!isSupportLogin(user)) return null;
+  const leave = async () => {
+    await supabase.auth.signOut();
     window.location.assign(tenantOrigin('app'));
   };
   return (
@@ -89,8 +110,8 @@ export function SupportAccessBanner() {
       data-testid="support-access-banner"
       className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950"
     >
-      <span>{t('auth.support_access_banner', { studio: tenant.name ?? '' })}</span>
-      <button type="button" onClick={leave} className="font-medium underline">
+      <span>{t('auth.support_access_banner', { studio: tenant?.name ?? '' })}</span>
+      <button type="button" onClick={() => void leave()} className="font-medium underline">
         {t('auth.support_access_leave')}
       </button>
     </div>

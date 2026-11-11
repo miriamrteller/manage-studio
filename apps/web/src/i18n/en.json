@@ -112,6 +112,8 @@
     "support_access_enter": "Enter the studio's admin",
     "support_access_banner": "You're in {{studio}}'s admin as OpalSwift support. Everything you open or change is recorded.",
     "support_access_leave": "Leave",
+    "support_access_two_step": "Sign in again with your two-step code on app.opalswift.com, then try again.",
+    "support_access_failed": "That didn't work. Please try again.",
     "set_password_prompt": {
       "title": "Set a password",
       "description": "Choose a password so you can sign in faster next time, with your email and password instead of waiting for a link.",

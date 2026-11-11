@@ -10,7 +10,7 @@ import { hasTeacherRole } from '@/lib/teacherRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
 import { PlatformOwnerNotice, SupportAccessBanner, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
-import { useSupportAccess } from '@/lib/supportAccess';
+import { isSupportLogin } from '@/lib/supportAccess';
 import { SetPasswordPrompt } from '@/features/auth/components/SetPasswordPrompt';
 
 /**
@@ -62,8 +62,6 @@ function returnToFromLocation(location: ReturnType<typeof useLocation>): string 
  */
 export function AdminRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useTenantScopedUser();
-  const { tenant } = useTenantQuery();
-  const supportAccess = useSupportAccess(tenant?.id);
   const location = useLocation();
 
   if (isLoading) {
@@ -71,9 +69,14 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   }
 
   if (isPlatformOwnerOnly(user)) {
-    // The platform owner enters a studio's admin only after the confirm step
-    // (support access). Every page and change is in the studio's access log.
-    if (!supportAccess) return <PlatformOwnerNotice />;
+    // The platform owner enters a studio's admin only through the confirm step,
+    // which signs in as the studio's OpalSwift support login (logged).
+    return <PlatformOwnerNotice />;
+  }
+
+  if (user && isSupportLogin(user)) {
+    // OpalSwift support: the studio's own two-step and terms steps are for the
+    // studio's people, and this login never gets a password.
     return (
       <>
         <SupportAccessBanner />

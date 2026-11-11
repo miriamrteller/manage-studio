@@ -416,6 +416,13 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/smugmug-connection/index.ts"
 
+# OpalSwift support: the platform owner (super_admin only, checked in-function)
+# opens a studio's support login after the confirm step. Logged for the studio.
+[functions.platform-support-session]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/platform-support-session/index.ts"
+
 # Studio shop: the studio marks a paid order ready to collect (emails the family) or collected.
 [functions.studio-shop-order]
 enabled = true
