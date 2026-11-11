@@ -482,6 +482,12 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-job-payment-link/index.ts"
 
+[functions.cancel-job]
+enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
+verify_jwt = false
+entrypoint = "./functions/cancel-job/index.ts"
+
 [functions.record-job-payment]
 enabled = true
 # Sign-in checked in-function (requireAuthUser / auth.getUser).

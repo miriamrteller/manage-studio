@@ -26,4 +26,6 @@ export { default as GalleryReadyEmail } from './photographer/GalleryReadyEmail.j
 export type { GalleryReadyEmailProps } from './photographer/GalleryReadyEmail.js';
 export { default as ReviewRequestEmail } from './photographer/ReviewRequestEmail.js';
 export type { ReviewRequestEmailProps } from './photographer/ReviewRequestEmail.js';
+export { default as ShootCancelledEmail } from './photographer/ShootCancelledEmail.js';
+export type { ShootCancelledEmailProps } from './photographer/ShootCancelledEmail.js';
 //# sourceMappingURL=index.d.ts.map

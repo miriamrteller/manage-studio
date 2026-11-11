@@ -30,6 +30,7 @@ vi.mock('@/features/jobs/hooks/useJobs', () => ({
   useJobs: () => ({ jobs: state.job ? [state.job] : [], isLoading: false, error: null }),
 }));
 vi.mock('@/features/jobs/hooks/useJobPaymentRequests', () => ({
+  useJobPaymentRequests: () => ({ requests: [] }),
   useJobGallery: () => ({
     gallery: { released: state.released, has_gallery: true, all_paid: state.released, released_by_admin: false, outstanding_minor: 0, gallery_url: null, engagement_id: 'e1' },
     isLoading: false,

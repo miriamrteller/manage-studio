@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { BaseService } from '@/services/base.service';
 import { supabase } from '@/lib/supabase';
+import { functionInvokeErrorMessage, parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
 import type { Tenant } from '@shared/schemas';
 
 /**
@@ -10,6 +11,13 @@ import type { Tenant } from '@shared/schemas';
  * Writes that touch several tables go through SECURITY DEFINER RPCs
  * (create_job, convert_lead_to_job); single-row edits use RLS directly.
  */
+
+export interface JobCancelResult {
+  ok: boolean;
+  cancelledRequests: number;
+  paidMinor: number;
+  emailed: boolean;
+}
 
 export const JOB_STATUSES = ['enquiry', 'booked', 'shot', 'editing', 'delivered', 'cancelled'] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
@@ -229,6 +237,22 @@ export class JobService extends BaseService {
       }
       await this.logAudit(tenant, 'UPDATE', 'job_details', engagementId);
     }, 'JobService.updateDetails');
+  }
+
+  /**
+   * Cancel a booked shoot (edge: cancel-job). Frees the time slot, cancels open
+   * pay links, removes the calendar event and, if asked, emails the client.
+   * Paid money stays as it is; the studio refunds from the payment if it wants to.
+   */
+  static async cancel(engagementId: string, notifyClient: boolean): Promise<JobCancelResult> {
+    const { data, error } = await supabase.functions.invoke('cancel-job', {
+      body: { engagement_id: engagementId, notify_client: notifyClient },
+    });
+    const parsed = await parseFunctionInvokeBody(data, error);
+    if (error || (parsed && typeof parsed.error === 'string')) {
+      throw new Error(functionInvokeErrorMessage(error, parsed, 'Could not cancel the shoot'));
+    }
+    return (parsed ?? data) as JobCancelResult;
   }
 
   static async updateSchedule(

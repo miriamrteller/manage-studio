@@ -98,6 +98,18 @@ export function dueShootEmailVariables(
   }
 }
 
+/** Shoot cancelled email: who, and the date/time that no longer goes ahead. */
+export function shootCancelledVariables(
+  input: { recipientName: string | null; startsAt: string | null },
+  language: EmailLanguage,
+): Record<string, string> {
+  return {
+    recipientName: input.recipientName?.trim() || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
+    shootDate: formatInstantDate(input.startsAt, language),
+    shootTime: formatInstantTime(input.startsAt, language),
+  };
+}
+
 /** Only http(s) links may go into an email button. */
 export function isSafeLink(url: string | null | undefined): boolean {
   if (!url) return false;

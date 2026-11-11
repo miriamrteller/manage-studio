@@ -50,9 +50,6 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
     event.preventDefault();
     setMessage(null);
     setError(null);
-    if (status === 'cancelled' && job.job_status !== 'cancelled' && !window.confirm(t('pages.jobs.status_cancelled') + '?')) {
-      return;
-    }
     try {
       const nextStarts = fromDateTimeLocal(startsAt);
       let nextEnds = fromDateTimeLocal(endsAt);
@@ -85,7 +82,8 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
             value={status}
             onChange={(e) => setStatus(e.target.value as JobStatus)}
           >
-            {JOB_STATUSES.map((value) => (
+            {/* Cancelling goes through "Cancel shoot" (frees the time, stops pay links, tells the client). */}
+            {JOB_STATUSES.filter((value) => value !== 'cancelled' || job.job_status === 'cancelled').map((value) => (
               <option key={value} value={value}>
                 {t(jobStatusKey(value))}
               </option>

@@ -288,6 +288,16 @@
     "cta": "לפתיחת הגלריה",
     "closing": "מקווים שתאהבו."
   },
+  "shoot_cancelled": {
+    "subject": "הצילום שלך ב{schoolName} בוטל",
+    "preview": "הצילום שלך ב{schoolName} בוטל",
+    "greeting": "שלום {recipientName},",
+    "body": "הצילום שקבענו בוטל. קישורי התשלום ששלחנו עבורו כבר לא פעילים.",
+    "details_heading": "הצילום שבוטל",
+    "shoot_date_label": "תאריך",
+    "shoot_time_label": "שעה",
+    "closing": "יש שאלות, או שתרצו לקבוע מועד אחר? פשוט השיבו למייל הזה."
+  },
   "review_request": {
     "subject": "איך היה הצילום עם {schoolName}?",
     "preview": "איך היה הצילום עם {schoolName}?",
