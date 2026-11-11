@@ -3528,7 +3528,8 @@
       "leads": "Leads",
       "legal": "Legal",
       "security": "Sign-in & security",
-      "class_cards": "Class cards"
+      "class_cards": "Class cards",
+      "discounts": "Discounts"
     },
     "branding": {
       "colors": "Colors",
@@ -4033,6 +4034,38 @@
       "save_card": "Save card",
       "cancel": "Cancel",
       "error": "Could not save. Please try again."
+    },
+    "class_discounts": {
+      "title": "Class discounts",
+      "intro": "Switch on the discounts you offer. They are worked out automatically when a child is enrolled, and the parent sees each one before paying. For monthly classes, the discount applies every month.",
+      "classes_only": "Discounts are for classes. Switch on classes under Settings → Features to use them.",
+      "sibling_title": "Siblings",
+      "sibling_switch": "Give a sibling discount",
+      "sibling_hint": "For the 2nd child in a family who enrols this season, with a separate amount for the 3rd child and more. Children are linked through their family account.",
+      "sibling_second": "2nd child",
+      "sibling_more": "3rd child and more",
+      "extra_class_title": "Extra class",
+      "extra_class_switch": "Give a discount on each extra class",
+      "extra_class_hint": "When the same child joins a 2nd class, or more, in the same season.",
+      "early_bird_title": "Early bird",
+      "early_bird_switch": "Give an early bird discount",
+      "early_bird_hint": "For enrolments made at least a set number of days before the season starts.",
+      "early_bird_days": "Days before the season starts",
+      "unit_label": "Discount in",
+      "unit_percent": "Percent (%)",
+      "unit_amount": "Amount ({{currency}})",
+      "value": "Discount",
+      "combine_title": "When more than one discount applies",
+      "combine_add_up": "Add them up, up to the maximum below",
+      "combine_biggest": "Give only the biggest one",
+      "max_total": "Maximum total discount (%)",
+      "existing_unchanged": "Changes apply to new enrolments. Enrolments already made keep their price.",
+      "saved": "Saved",
+      "fix_fields": "Please check the highlighted fields.",
+      "invalid_percent": "Enter a whole number from 1 to 90.",
+      "invalid_amount": "Enter an amount above zero.",
+      "invalid_days": "Enter a whole number from 0 to 365.",
+      "error": "Couldn't save the discounts. Please try again."
     }
   },
   "accessibility": {
@@ -4668,5 +4701,12 @@
       "waiting_payment": "Waiting for payment.",
       "pay_now": "Pay now"
     }
+  },
+  "class_discounts": {
+    "class_price": "Class price",
+    "line_sibling": "Sibling discount",
+    "line_extra_class": "Extra class discount",
+    "line_early_bird": "Early bird discount",
+    "every_month": "The discount applies every month."
   }
 }

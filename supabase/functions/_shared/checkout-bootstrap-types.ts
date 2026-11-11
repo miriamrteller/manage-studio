@@ -31,6 +31,10 @@ export interface CheckoutChargePayload {
   alreadyPaid: boolean;
   pageUrl: string | null;
   pendingWebhook: boolean;
+  /** Class price before the automatic class discount; set only when there is a discount. */
+  listAmountMinor?: number | null;
+  /** The automatic class discounts behind amountMinor. */
+  discounts?: ClassDiscountLine[];
   /** From offering — drives "/ month" on checkout UI. */
   billingMode?: string | null;
   billingInterval?: string | null;
@@ -66,6 +70,10 @@ export interface EnrolmentCompletionContext {
   template: Record<string, unknown> | null;
   isMinorStudent: boolean;
   amountMinor: number;
+  /** Class price before the automatic class discount; set only when there is a discount. */
+  listAmountMinor?: number | null;
+  /** The automatic class discounts behind amountMinor (sibling, extra class, early bird). */
+  discounts?: ClassDiscountLine[];
   currency: string;
   billingMode?: string | null;
   billingInterval?: string | null;
@@ -83,4 +91,9 @@ export interface PrepareEnrolmentCheckoutResponse {
   context: EnrolmentCompletionContext;
   charge: CheckoutChargePayload | null;
   blockReason?: BootstrapBlockReason;
+}
+
+export interface ClassDiscountLine {
+  kind: "sibling" | "extra_class" | "early_bird";
+  amountMinor: number;
 }

@@ -389,6 +389,15 @@ export declare const EngagementSchema: z.ZodObject<{
     payment_dunning_attempt_count: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     payment_dunning_next_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     waiver_evidence_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    discount_minor: z.ZodOptional<z.ZodNumber>;
+    discount_lines: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        kind: z.ZodEnum<{
+            sibling: "sibling";
+            extra_class: "extra_class";
+            early_bird: "early_bird";
+        }>;
+        amount_minor: z.ZodNumber;
+    }, z.core.$strip>>>;
     created_at: z.ZodString;
     updated_at: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;

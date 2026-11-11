@@ -16,6 +16,7 @@ import queryClient from '@/lib/query-client';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate, Engagement } from '@shared/schemas';
 import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
+import { ClassDiscountLines } from './ClassDiscountLines';
 
 interface AuthenticatedCompletionViewProps {
   engagementId: string | undefined;
@@ -213,6 +214,12 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
 
       <div className="rounded-lg border border-gray-200 p-4 space-y-2">
         <p className="font-medium">{context.className}</p>
+        <ClassDiscountLines
+          listAmountMinor={context.listAmountMinor}
+          discounts={context.discounts}
+          currency={context.currency}
+          monthly={context.billingMode === 'recurring' && context.billingInterval === 'monthly'}
+        />
         <p className="text-sm text-gray-600">
           {t('pages.admin_enrol.amount_due')}:{' '}
           {formatOfferingPrice(t, context.amountMinor, context.currency, i18n.language, {

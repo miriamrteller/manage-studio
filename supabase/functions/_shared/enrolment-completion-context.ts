@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
+import { engagementDiscountFromRow, priceAfterDiscount } from "./payments/class-discount.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
 import { pickActiveConsentTemplate } from "./studio-legal.ts";
 import type { EnrolmentCompletionContext } from "./checkout-bootstrap-types.ts";
@@ -50,7 +51,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at")
+    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at, discount_minor, discount_lines")
     .eq("id", engagementId)
     .eq("tenant_id", tenantId)
     .single();
@@ -106,7 +107,10 @@ export async function loadEnrolmentCompletionContext(
     return { ok: false, error: "Tenant not found", status: 404 };
   }
 
-  const pricing = resolveOfferingPrice({ price_minor: offering.price_minor as number });
+  const discount = engagementDiscountFromRow(engagement);
+  const pricing = resolveOfferingPrice({
+    price_minor: priceAfterDiscount(offering.price_minor as number, discount.discountMinor),
+  });
 
   let template: WaiverTemplateRow | null = null;
   if (offering.waiver_required) {
@@ -200,6 +204,9 @@ export async function loadEnrolmentCompletionContext(
       template: template as Record<string, unknown> | null,
       isMinorStudent,
       amountMinor: pricing.totalMinor,
+      ...(discount.discountMinor > 0
+        ? { listAmountMinor: offering.price_minor as number, discounts: discount.lines }
+        : {}),
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
       billingMode: (offering.billing_mode as string | null) ?? null,
       billingInterval: (offering.billing_interval as string | null) ?? null,
@@ -225,6 +232,8 @@ export function flattenCompletionContext(context: EnrolmentCompletionContext): R
     template: context.template,
     isMinorStudent: context.isMinorStudent,
     amountMinor: context.amountMinor,
+    listAmountMinor: context.listAmountMinor ?? null,
+    discounts: context.discounts ?? [],
     currency: context.currency,
     billingMode: context.billingMode ?? null,
     billingInterval: context.billingInterval ?? null,

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users, Ticket } from 'lucide-react';
+import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users, Ticket, Percent } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
@@ -16,6 +16,7 @@ import { LeadFormSettings } from '@/features/settings/components/LeadFormSetting
 import { LeadDigestSetting } from '@/features/settings/components/LeadDigestSetting';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
+import { ClassDiscountSettings } from '@/features/settings/components/ClassDiscountSettings';
 import { ClassCardSettings } from '@/features/class-cards/components/ClassCardSettings';
 import { useTenant } from '@/hooks/useTenant';
 
@@ -92,6 +93,13 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     component: PaymentSettingsForm,
   },
   {
+    id: 'discounts',
+    labelKey: 'settings.tabs.discounts',
+    label: 'Discounts',
+    icon: Percent,
+    component: ClassDiscountSettings,
+  },
+  {
     id: 'invoicing',
     labelKey: 'settings.tabs.invoicing',
     label: 'Invoicing',
@@ -124,7 +132,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 const DEFAULT_TAB = 'branding';
 
 /** Tabs that only make sense for studios that teach classes. */
-const CLASS_ONLY_TABS = new Set(['class_cards']);
+const CLASS_ONLY_TABS = new Set(['class_cards', 'discounts']);
 
 export function TenantSettingsPage() {
   const { t } = useTranslation();
