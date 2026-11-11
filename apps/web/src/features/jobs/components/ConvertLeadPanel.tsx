@@ -28,7 +28,7 @@ export function eventDateToLocal(eventDate: string | null | undefined): string {
 /**
  * Inline "convert lead → job" form: pick the package, optional date/location,
  * then one RPC (convert_lead_to_job) creates client + engagement + job_details
- * and marks the lead converted. Navigates to the new job on success.
+ * and marks the lead converted. Opens a quote for the new shoot on success.
  */
 export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultLocation, eventDate, onClose }: ConvertLeadPanelProps) {
   const { t } = useTranslation();
@@ -65,7 +65,9 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
         booked_starts_at: fromDateTimeLocal(startsAt),
         location: location || null,
       });
-      navigate(`/admin/jobs/${engagementId}`);
+      // Straight into a quote for the new shoot: the studio checks the price, and
+      // sending / accepting it emails the client the details and the pay link.
+      navigate(`/admin/quotes/new?engagement=${engagementId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }

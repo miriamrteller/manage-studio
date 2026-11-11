@@ -691,7 +691,7 @@
         "empty_title": "No leads yet",
         "empty_message": "Share your capture links, or add a lead manually when someone calls or messages.",
         "convert": "Convert to shoot",
-        "convert_hint": "Creates the client and a shoot from this lead. Pick a package and an optional date.",
+        "convert_hint": "Creates the client and a shoot from this lead, then opens a quote so you can check the price and send the details and pay link. Pick a package and an optional date.",
         "open_job": "Open shoot",
         "empty_message_get": "Share your enquiry link or QR code, and new enquiries will appear here.",
         "empty_action": "Get leads",

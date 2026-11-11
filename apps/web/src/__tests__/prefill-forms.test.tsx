@@ -6,9 +6,9 @@
  * Run: pnpm -C apps/web test prefill-forms.test.tsx
  */
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't-1', name: 'Creative Ballet', currency: 'ILS' }) }));
@@ -27,7 +27,7 @@ vi.mock('@/features/jobs/hooks/useJobs', () => ({
       { id: 'p1', name: 'Family session', duration_mins: 60, price_minor: 50000, currency: 'ILS', location: 'Studio, 1 Herzl St', is_public: true },
     ],
   }),
-  useConvertLead: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useConvertLead: () => ({ mutateAsync: vi.fn().mockResolvedValue('eng-9'), isPending: false }),
 }));
 
 import i18n from '@/i18n/i18n';
@@ -83,5 +83,23 @@ describe('lead → shoot', () => {
   it('the enquiry’s own location wins over the package’s', () => {
     wrap(<ConvertLeadPanel leadId="l-2" leadName="Noa" defaultOfferingId="p1" defaultLocation="Park" onClose={() => {}} />);
     expect(screen.getByLabelText(i18n.t('pages.jobs.location'))).toHaveValue('Park');
+  });
+
+  it('opens a quote for the new shoot (package preselected), so the details and pay link go out from there', async () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter initialEntries={['/admin/leads']}>
+          <Routes>
+            <Route
+              path="/admin/leads"
+              element={<ConvertLeadPanel leadId="l-3" leadName="Noa" onClose={() => {}} />}
+            />
+            <Route path="/admin/quotes/new" element={<p>quote editor</p>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('pages.crm.leads.convert') }));
+    await waitFor(() => expect(screen.getByText('quote editor')).toBeInTheDocument());
   });
 });
