@@ -2917,6 +2917,13 @@ export type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "offerings_staff_id_fkey";
+                        columns: ["staff_id"];
+                        isOneToOne: false;
+                        referencedRelation: "staff_names";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "offerings_tenant_id_fkey";
                         columns: ["tenant_id"];
                         isOneToOne: false;
