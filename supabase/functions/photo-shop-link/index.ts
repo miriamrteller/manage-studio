@@ -129,7 +129,7 @@ async function openLink(service: Service, token: string): Promise<Response> {
   const { data: profiles } = await service
     .from("user_profiles")
     .select("id, tenant_id, role")
-    .ilike("email", client.email.replace(/[\\%_]/g, (c) => `\\${c}`));
+    .ilike("email", client.email.replace(/[\\%_]/g, (c: string) => `\\${c}`));
   const rows = (profiles ?? []) as Array<{ id: string; tenant_id: string | null; role: string[] | null }>;
   if (rows.some((p) => p.tenant_id !== client.tenantId || (p.role ?? []).some((r) => STAFF_ROLES.includes(r)))) {
     return jsonResponse({ ok: false, code: "sign_in" }, 400);
