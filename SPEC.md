@@ -206,7 +206,7 @@ Detailed SPEC.md documentation exists. Developer read it. Forms were still built
 | Concern | Owner |
 | --- | --- |
 | Slot picker UI, holds, pricing, payment, invoice | **Manage Studio** (native) |
-| “Is this time already busy on the provider’s calendar?” | **Google Calendar** (`freebusy.query`) when integration enabled (fail-closed) |
+| “Is this time already busy on the provider’s calendar?” | **Google Calendar** (`freebusy.query`) when integration enabled (on error the studio's own free times stay; booking is never blocked) |
 | “Show this appointment on the **studio** calendar” | **Google Calendar** (`events.insert` on confirm; `delete` on cancel) |
 | “Add to **my** (client) calendar” | Manage Studio calendar URL + `.ics` on payment success |
 | Group class term enrolment | **`/enrol`** wizard — unchanged |
@@ -3044,7 +3044,7 @@ Admin CRUD for the `staff` table at **`/admin/setup/teachers`**: name, contact, 
 
 **Slot booking:** `offering_type = 'appointment'` services, admin hours/settings/services, client `/book[/:offeringId]`, hold → `prepare-booking-checkout` → existing pay spine → optional guest waiver (`get-waiver-engagement`). Appointment confirmation emails to client + tenant admins. Client post-pay “Add to Google Calendar” / `.ics` (no OAuth).
 
-**Google Calendar integration:** Per-tenant OAuth (`tenant_admin`); HMAC-signed `state`; `freebusy.query` subtracts busy time (fail-closed); on confirm (`active` / `pending_waiver`), `events.insert` + `google_event_id`; cancel deletes; admin can sync manually. Tokens encrypted via pgcrypto RPCs.
+**Google Calendar integration:** Per-tenant OAuth (`tenant_admin`); HMAC-signed `state`; `freebusy.query` subtracts busy time (on error the studio's own free times stay); on confirm (`active` / `pending_waiver`), `events.insert` + `google_event_id`; cancel deletes; admin can sync manually. Tokens encrypted via pgcrypto RPCs.
 
 **Not in scope:** Cal.com; Google Appointment Schedule embed as checkout; AI scheduling assistant; per-staff OAuth (V2.11+).
 

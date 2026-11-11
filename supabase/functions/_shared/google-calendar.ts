@@ -151,7 +151,7 @@ export interface BusyInterval {
 }
 
 /**
- * Free/busy for [timeMin, timeMax]. Throws on API error so callers can fail closed.
+ * Free/busy for [timeMin, timeMax]. Throws on API error so callers can tell Google was not checked.
  */
 export async function freeBusy(
   conn: GoogleConnection,

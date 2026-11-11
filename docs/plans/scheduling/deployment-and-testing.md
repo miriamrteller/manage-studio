@@ -187,7 +187,7 @@ Or batch: `pnpm deploy:scheduling-functions` + `pnpm deploy:payment-functions`.
 
 ### 6.6 Google Calendar
 - Connect from Booking Settings → signed state → callback → connected email.
-- Free/busy fail-closed; sync on confirm for `active`/`pending_waiver`; admin manual sync;
+- Free/busy error keeps the studio's own free times; sync on confirm for `active`/`pending_waiver`; admin manual sync;
   cancel deletes event.
 - Disconnect clears credentials.
 
