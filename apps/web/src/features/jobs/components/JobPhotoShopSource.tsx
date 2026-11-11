@@ -12,7 +12,13 @@ import { formatDueDate } from '../lib/jobPaymentFormat';
 import type { JobPhotoShop } from '../services/photoShopService';
 import { JobPhotoShopPhotos } from './JobPhotoShopPhotos';
 
+/** Remembers the "already watermarked" tick for the studio's next shoots (prefill). */
+const IN_PHOTOS_KEY = 'os_photo_shop_watermark_in_photos';
+
 type Source = 'smugmug' | 'upload';
+
+/** Same list as TIP_CODES in supabase/functions/_shared/photo-shop/smugmug/api.ts. */
+const TIP_CODES: GalleryCheckItem['code'][] = ['watermark', 'largest_size', 'downloads', 'original_hidden'];
 
 const CHECK_ORDER: GalleryCheckItem['code'][] = [
   'watermark',
@@ -88,8 +94,14 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
     if (!albumKey && albums.data?.suggested) setAlbumKey(albums.data.suggested);
   }, [albums.data?.suggested, albumKey]);
 
+  const savedInPhotos = shop.smugmug_check?.items?.some((i) => i.code === 'watermark' && i.value === 'in_photos');
+  const [inPhotos, setInPhotos] = useState<boolean>(
+    () => savedInPhotos ?? (typeof localStorage !== 'undefined' && localStorage.getItem(IN_PHOTOS_KEY) === '1'),
+  );
+  const tickId = useId();
+
   const check = useMutation({
-    mutationFn: (key: string) => SmugMugService.checkGallery(engagementId, key),
+    mutationFn: (key: string) => SmugMugService.checkGallery(engagementId, key, inPhotos),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['photo-shop', engagementId] }),
   });
 
@@ -123,6 +135,15 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
               {albumKey === current && saved ? t('pages.jobs.photo_shop.source.check_again') : t('pages.jobs.photo_shop.source.check')}
             </Button>
           </div>
+          <div className="flex items-start gap-2">
+            <input id={tickId} type="checkbox" className="mt-0.5" checked={inPhotos}
+              onChange={(e) => {
+                check.reset();
+                setInPhotos(e.target.checked);
+                try { localStorage.setItem(IN_PHOTOS_KEY, e.target.checked ? '1' : '0'); } catch { /* private mode */ }
+              }} />
+            <label htmlFor={tickId}>{t('pages.jobs.photo_shop.source.in_photos')}</label>
+          </div>
           <p className="text-xs text-muted-foreground">{t('pages.jobs.photo_shop.source.check_hint')}</p>
         </div>
       )}
@@ -137,11 +158,13 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
             {CHECK_ORDER.map((code) => {
               const item = items.find((i) => i.code === code);
               if (!item) return null;
+              // Protection settings are tips only: they never stop the gallery opening.
+              const tip = !item.ok && TIP_CODES.includes(code);
               return (
                 <li key={code} className="flex gap-2">
-                  <span aria-hidden="true">{item.ok ? '✓' : '✗'}</span>
-                  <span className={item.ok ? '' : 'text-error'}>
-                    {t(`pages.jobs.photo_shop.source.item.${code}.${item.ok ? 'ok' : 'fix'}`, {
+                  <span aria-hidden="true">{item.ok ? '✓' : tip ? '⚠' : '✗'}</span>
+                  <span className={item.ok || tip ? '' : 'text-error'}>
+                    {t(`pages.jobs.photo_shop.source.item.${code}.${item.ok ? (item.value === 'in_photos' ? 'in_photos' : 'ok') : 'fix'}`, {
                       value: item.value ?? '',
                       count: Number(item.value) || 0,
                     })}

@@ -8,7 +8,7 @@
  *                 the access token and store it encrypted.
  *   - "albums":   { engagement_id? } the photographer's galleries, plus the one whose name
  *                 matches the shoot (client or service name) to prefill the picker.
- *   - "check":    { engagement_id, album_key } "Check gallery": reads the gallery's Photo
+ *   - "check":    { engagement_id, album_key, watermark_in_photos? } "Check gallery": reads the gallery's Photo
  *                 Protection settings and photos (smugmug/api.ts checkGallery) and saves the
  *                 gallery and the result on the shoot's shop.
  *   - "studio_url": { oauth_token } (no sign-in needed). SmugMug returns to the one fixed
@@ -53,7 +53,14 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
   if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  let body: { action?: string; oauth_token?: string; oauth_verifier?: string; engagement_id?: string; album_key?: string };
+  let body: {
+    action?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
+    engagement_id?: string;
+    album_key?: string;
+    watermark_in_photos?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -176,7 +183,7 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
         if (!engagementId || !/^[A-Za-z0-9]{1,64}$/.test(albumKey)) {
           return jsonResponse({ ok: false, code: "missing_params" }, 400);
         }
-        const result = await checkGallery(reader, albumKey);
+        const result = await checkGallery(reader, albumKey, undefined, body.watermark_in_photos === true);
         const { error } = await service.rpc("save_job_photo_shop_smugmug_check", {
           p_tenant_id: tenantId,
           p_engagement_id: engagementId,
