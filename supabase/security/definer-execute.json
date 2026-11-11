@@ -26,6 +26,7 @@
       "guest_enrolment_create_family",
       "guest_enrolment_request_age_review",
       "is_active_custom_domain",
+      "is_my_studio_admin",
       "is_super_admin",
       "legal_document_is_public",
       "record_consents",

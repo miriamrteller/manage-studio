@@ -6592,6 +6592,10 @@ export type Database = {
                 };
                 Returns: boolean;
             };
+            is_my_studio_admin: {
+                Args: never;
+                Returns: boolean;
+            };
             is_platform_owner_email: {
                 Args: {
                     p_email: string;
