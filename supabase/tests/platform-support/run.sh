@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OpalSwift support logins (20261111163000_platform_support_logins.sql). Needs
+# OpalSwift support logins (20261111171500_platform_support_logins.sql). Needs
 # Supabase's roles, auth schema and every migration applied — the local stack
 # (CI local-stack job) — so sql-tests skips it (see NEEDS_SUPABASE).
 #

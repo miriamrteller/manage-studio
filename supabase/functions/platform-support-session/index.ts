@@ -13,7 +13,7 @@
  *   uses two-step sign-in, the request must come from a session that passed it.
  * - The support login belongs to that studio only and has exactly the studio
  *   admin role. Only this function (service role) can make or change it
- *   (20261111163000_platform_support_logins.sql).
+ *   (20261111171500_platform_support_logins.sql).
  * - Every entry is recorded in the studio's OpalSwift access log under the
  *   platform owner's own id; what the support login opens or changes is
  *   recorded there too.
