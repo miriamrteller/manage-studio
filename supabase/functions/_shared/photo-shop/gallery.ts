@@ -12,13 +12,13 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
  * size capped, downloads off, the Large size loads, nothing bigger loads without
  * signing in. The photos read at that check are kept on the shop.
  *
- * Clients still get "provider_locked" for SmugMug until SMUGMUG_OPEN_TO_CLIENTS is
- * switched on after the live check with a photographer's real key. Until then a
- * checked gallery is shown only to the studio's own admins, in Preview.
+ * Clients see a SmugMug gallery only once its check has passed (checkedSmugMugPhotos);
+ * until then it answers "provider_locked". SMUGMUG_OPEN_TO_CLIENTS was switched on
+ * on 11 Nov 2026, after the first live connection with a photographer's real key.
  */
 
-/** Hard gate: switched on only by a reviewed change after the live check. */
-export const SMUGMUG_OPEN_TO_CLIENTS = false;
+/** Gate for SmugMug galleries as a whole. Each gallery still needs a passed check. */
+export const SMUGMUG_OPEN_TO_CLIENTS = true;
 
 export interface GalleryPhoto {
   key: string;
@@ -138,7 +138,7 @@ export async function listGalleryPhotos(shop: ShopGallery, options: GalleryOptio
     case "mock":
       return mockGalleryPhotos(shop.gallery_key);
     case "smugmug": {
-      // Hard gate: see the file comment.
+      // Gate: see the file comment.
       if (!SMUGMUG_OPEN_TO_CLIENTS && !adminPreview) throw new GalleryNotReadyError("provider_locked");
       const photos = checkedSmugMugPhotos(shop);
       if (!photos) throw new GalleryNotReadyError("provider_locked");

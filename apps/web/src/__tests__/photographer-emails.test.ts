@@ -206,3 +206,34 @@ describe('booking_confirmed next steps (sign the contract, then pay the deposit)
     expect(selectPhotographerEmailVariant('quote_sent', { signUrl: 'x' })).toBeNull();
   });
 });
+
+describe('booking_confirmed sign-in button (every booked client has a login)', () => {
+  const base = { ok: true, total_minor: 100000, deposit_minor: 30000, balance_minor: 70000, currency: 'ILS' };
+  const URL = 'https://s.example.test/signin#t=abc';
+  const render = (language: 'en' | 'he', withLink: boolean) =>
+    renderPhotographerEmail({
+      key: 'booking_confirmed', language, schoolName: 'S', primaryColor: '#000', accentColor: '#fff',
+      variables: bookingConfirmedVariables(base, {
+        recipientName: 'Dana', quoteUrl: 'https://s.example.test/quote/q', language,
+        signIn: withLink
+          ? {
+            url: URL,
+            body: language === 'he' ? 'גוף' : 'Body text',
+            cta: language === 'he' ? 'לדף שלי' : 'Go to my page',
+            before: language === 'he' ? 'מחכים לראות אותך.' : 'We are looking forward to it.',
+          }
+          : null,
+      }),
+    }).html;
+
+  it('puts the button above the closing line', () => {
+    const html = render('en', true);
+    expect(html).toContain(`href="${URL}"`);
+    expect(html.indexOf('Go to my page')).toBeLessThan(html.indexOf('We are looking forward to it.'));
+    expect(render('he', true)).toContain('לדף שלי');
+  });
+
+  it('no link, no button', () => {
+    expect(render('en', false)).not.toContain('Go to my page');
+  });
+});

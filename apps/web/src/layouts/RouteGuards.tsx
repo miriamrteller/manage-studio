@@ -9,7 +9,8 @@ import { hasParentRole } from '@/lib/parentRoles';
 import { hasTeacherRole } from '@/lib/teacherRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
-import { PlatformOwnerNotice, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
+import { PlatformOwnerNotice, SupportAccessBanner, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
+import { useSupportAccess } from '@/lib/supportAccess';
 import { SetPasswordPrompt } from '@/features/auth/components/SetPasswordPrompt';
 
 /**
@@ -61,6 +62,8 @@ function returnToFromLocation(location: ReturnType<typeof useLocation>): string 
  */
 export function AdminRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useTenantScopedUser();
+  const { tenant } = useTenantQuery();
+  const supportAccess = useSupportAccess(tenant?.id);
   const location = useLocation();
 
   if (isLoading) {
@@ -68,8 +71,15 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   }
 
   if (isPlatformOwnerOnly(user)) {
-    // Studio pages are for the studio's own people, not the platform owner.
-    return <PlatformOwnerNotice />;
+    // The platform owner enters a studio's admin only after the confirm step
+    // (support access). Every page and change is in the studio's access log.
+    if (!supportAccess) return <PlatformOwnerNotice />;
+    return (
+      <>
+        <SupportAccessBanner />
+        {children}
+      </>
+    );
   }
 
   if (!user || !user.role.includes('tenant_admin')) {

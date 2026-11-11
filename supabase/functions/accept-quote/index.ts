@@ -21,6 +21,8 @@ import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
+import { clientSignInUrlFor } from "../_shared/client-login.ts";
+import { EMAIL_TEMPLATE_NAMES, getEmailStrings } from "../_shared/email-dist/i18n/email.js";
 import {
   AUTOMATIC_EMAIL_TENANT_COLUMNS,
   type AutomaticEmailTenant,
@@ -158,6 +160,14 @@ async function sendBookingConfirmation(
   if (!recipient?.client_email) return;
 
   const baseUrl = tenantBaseUrl(t);
+  // Every booked client gets a login; the email signs them straight in (3 days).
+  // Any failure: the email goes without the button.
+  const signInUrl = await clientSignInUrlFor(service, {
+    tenantId: t.id,
+    email: recipient.client_email,
+    engagementId: result.engagement_id ?? null,
+    tenantBase: baseUrl,
+  }).catch(() => null);
   const outcome = await sendAutomaticEmail(service, {
     tenant: t,
     key: "booking_confirmed",
@@ -168,8 +178,16 @@ async function sendBookingConfirmation(
       quoteUrl: `${baseUrl}/quote/${payload.token}`,
       signUrl: nextSteps.contractSignPath ? `${baseUrl}${nextSteps.contractSignPath}` : null,
       payUrl: nextSteps.depositPayPath ? `${baseUrl}${nextSteps.depositPayPath}` : null,
+      signIn: signInUrl ? signInWording(t.language_default === "he" ? "he" : "en", signInUrl) : null,
       language: t.language_default === "he" ? "he" : "en",
     }),
   });
   console.log(`[accept-quote] booking_confirmed ${outcome} for quote ${result.quote_id}`);
+}
+
+/** The "Go to my page" button's wording; it goes above the email's closing line. */
+function signInWording(language: "en" | "he", url: string) {
+  const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.BOOKING_CONFIRMED);
+  const text = (key: string) => (typeof strings[key] === "string" ? strings[key] as string : "");
+  return { url, body: text("sign_in_body"), cta: text("sign_in_cta"), before: text("closing") };
 }

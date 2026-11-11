@@ -7,10 +7,13 @@
  * Responsibilities:
  *   1. Pre-expiry reminder: email the client N minutes before a hold expires
  *      (tenant_scheduling_settings.expiry_reminder_mins). Sent at most once.
- *   2. Expire holds past expires_at: release the slot and, if a pending_payment
- *      appointment engagement is linked and still unpaid, cancel it. Group-class
- *      dunning is untouched (only booked_starts_at engagements are cancelled).
- *   3. Optional "slot released" email when the tenant has reminders enabled.
+ *   2. Expire holds past expires_at and release them. A hold the client already
+ *      turned into a booking (engagement linked) is never cancelled for being
+ *      unpaid (owner rule: nothing blocks payment): the booking keeps its time
+ *      and the client is emailed a link to pay when ready. The studio can still
+ *      cancel it herself.
+ *   3. Holds with no booking: optional "slot released" email when the tenant
+ *      has reminders enabled.
  *
  * Security: invoked via pg_cron net.http_post with x-cron-secret header.
  * Refuses every request when CRON_SECRET is not set.
@@ -22,6 +25,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
+import { buildEnrolmentPayUrl } from "../_shared/enrolment-pay-url.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 const BATCH_LIMIT = 200;
@@ -67,6 +71,19 @@ function reminderHtml(lang: string, schoolName: string, startsAt: string, bookUr
   return `<div dir="${dir}"><h2>${schoolName}</h2>${body}<p><a href="${bookUrl}">${cta}</a></p></div>`;
 }
 
+function payLaterHtml(lang: string, schoolName: string, startsAt: string, payUrl: string): string {
+  const he = lang !== "en";
+  const dir = he ? "rtl" : "ltr";
+  const when = new Date(startsAt).toLocaleString(he ? "he-IL" : "en-GB", {
+    timeZone: "Asia/Jerusalem",
+  });
+  const body = he
+    ? `<p>ההזמנה שלך (${when}) שמורה. אפשר לשלם מתי שנוח לך בקישור הזה.</p>`
+    : `<p>Your booking (${when}) is saved. You can pay whenever suits you with this link.</p>`;
+  const cta = he ? "לתשלום" : "Pay now";
+  return `<div dir="${dir}"><h2>${schoolName}</h2>${body}<p><a href="${payUrl}">${cta}</a></p></div>`;
+}
+
 function releasedHtml(lang: string, schoolName: string, bookUrl: string): string {
   const he = lang !== "en";
   const dir = he ? "rtl" : "ltr";
@@ -89,7 +106,7 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
 
   let remindersSent = 0;
   let expired = 0;
-  let engagementsCancelled = 0;
+  let bookingsKept = 0;
 
   // Collect tenant helpers lazily.
   const settingsCache = new Map<string, TenantSettings>();
@@ -130,6 +147,8 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
     console.error("[expire-scheduling-holds] upcoming fetch error", upErr);
   } else {
     for (const hold of (upcoming ?? []) as HoldRow[]) {
+      // Already a booking: it is kept when the hold ends, so no "expiring" warning.
+      if (hold.engagement_id) continue;
       const settings = await getSettings(hold.tenant_id);
       if (!settings?.expiry_reminder_mins || !hold.client_email) continue;
       const msLeft = new Date(hold.expires_at).getTime() - Date.now();
@@ -179,30 +198,21 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
   }
 
   for (const hold of (dueHolds ?? []) as HoldRow[]) {
-    // Cancel linked, still-unpaid appointment engagement (never touch group classes)
+    // A booking the client made but has not paid yet stays booked: never
+    // cancelled for being unpaid. The client gets a link to pay when ready.
+    let keptBooking = false;
     if (hold.engagement_id) {
       const { data: eng } = await service
         .from("engagements")
         .select("id, status, payment_received_at, booked_starts_at")
         .eq("id", hold.engagement_id)
         .maybeSingle();
-      if (
+      keptBooking = Boolean(
         eng &&
         eng.status === "pending_payment" &&
         !eng.payment_received_at &&
-        eng.booked_starts_at
-      ) {
-        await service
-          .from("engagements")
-          .update({
-            status: "cancelled",
-            cancelled_at: new Date().toISOString(),
-            cancellation_reason: "booking_hold_expired",
-          })
-          .eq("id", eng.id)
-          .eq("status", "pending_payment");
-        engagementsCancelled++;
-      }
+        eng.booked_starts_at,
+      );
     }
 
     await service
@@ -211,6 +221,34 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
       .eq("id", hold.id)
       .is("released_at", null);
     expired++;
+
+    if (keptBooking) {
+      bookingsKept++;
+      const tenant = hold.client_email ? await getTenant(hold.tenant_id) : null;
+      const sender = tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;
+      if (tenant && sender && hold.client_email) {
+        try {
+          const { paymentUrl } = await buildEnrolmentPayUrl(service, {
+            appBaseUrl: tenantBaseUrl(tenant),
+            engagementId: hold.engagement_id as string,
+            tenantId: hold.tenant_id,
+            recipientEmail: hold.client_email,
+          });
+          await sendHtmlEmail({
+            to: hold.client_email,
+            from: sender.from,
+            replyTo: sender.replyTo,
+            subject: (tenant.language_default !== "en")
+              ? "ההזמנה שלך שמורה"
+              : "Your booking is saved",
+            html: payLaterHtml(tenant.language_default ?? "he", tenant.name ?? "", hold.starts_at, paymentUrl),
+          });
+        } catch (e) {
+          console.error("[expire-scheduling-holds] pay-later send failed", hold.id, String(e));
+        }
+      }
+      continue;
+    }
 
     // Optional slot-released email (tenant opted into reminders)
     const settings = await getSettings(hold.tenant_id);
@@ -235,5 +273,5 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
     }
   }
 
-  return jsonResponse({ ok: true, remindersSent, expired, engagementsCancelled });
+  return jsonResponse({ ok: true, remindersSent, expired, bookingsKept });
 }));

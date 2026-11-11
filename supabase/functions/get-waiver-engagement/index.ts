@@ -19,8 +19,6 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import {
   pickActiveConsentTemplate,
   readerLanguage,
-  STUDIO_LEGAL_NOT_READY,
-  studioLegalReady,
 } from "../_shared/studio-legal.ts";
 import {
   extractWaiverToken,
@@ -102,10 +100,7 @@ Deno.serve(withMonitoring("get-waiver-engagement", async (req) => {
       return jsonResponse({ error: "Token email mismatch" }, 401);
     }
 
-    // A new studio signs nothing until its admin has acknowledged the draft legal pack.
-    if (!(await studioLegalReady(service, payload.tid))) {
-      return jsonResponse({ error: STUDIO_LEGAL_NOT_READY }, 409);
-    }
+    // The form opens even before the studio confirms its draft legal pack (owner rule: no blocks).
 
     // The active form for this participant (child or adult health declaration by age).
     // In the reader's app language when the studio has that version.

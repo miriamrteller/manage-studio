@@ -131,7 +131,9 @@
         "waiver_cta": "Sign Your Form Now",
         "link_expires": "This link expires in 1 hour. If it has expired, visit the link and enter your email address to receive a new one.",
         "no_show_policy": "Deadline: {deadlineDate}. If the form is not signed by this date, your enrollment will be automatically cancelled and a full refund issued.",
-        "confirmation_note": "Please contact us if you have any questions."
+        "confirmation_note": "Please contact us if you have any questions.",
+        "sign_in_body": "Your bookings and payments are on your own page. This button signs you in, no password needed. It works for 3 days. After that, sign in with your email on our website.",
+        "sign_in_cta": "Go to my page"
     },
     "appointment_confirmation": {
         "subject": "Your appointment at {schoolName}",
@@ -156,7 +158,9 @@
         "waiver_warning_body": "Your appointment is reserved but is NOT confirmed until the form is signed.",
         "waiver_cta": "Sign Your Form Now",
         "no_show_policy": "Deadline: {deadlineDate}. If the form is not signed by this date, your booking will be cancelled and a full refund issued.",
-        "confirmation_note": "Please contact us if you have any questions."
+        "confirmation_note": "Please contact us if you have any questions.",
+        "sign_in_body": "Your bookings and payments are on your own page. This button signs you in, no password needed. It works for 3 days. After that, sign in with your email on our website.",
+        "sign_in_cta": "Go to my page"
     },
     "appointment_tenant_notification": {
         "subject": "New appointment booking — {serviceName}",
@@ -260,7 +264,9 @@
         "step_sign": "Sign the contract.",
         "step_sign_cta": "Sign the contract",
         "step_pay": "Pay the deposit of {depositFormatted}.",
-        "step_pay_cta": "Pay the deposit"
+        "step_pay_cta": "Pay the deposit",
+        "sign_in_body": "Your booking and payments are on your own page. This button signs you in, no password needed. It works for 3 days. After that, sign in with your email on our website.",
+        "sign_in_cta": "Go to my page"
     },
     "shoot_reminder": {
         "subject": "Reminder: your shoot with {schoolName}",

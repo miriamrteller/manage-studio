@@ -829,6 +829,61 @@ export type Database = {
           },
         ]
       }
+      client_sign_in_links: {
+        Row: {
+          created_at: string
+          engagement_id: string | null
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          tenant_id: string
+          token_hash: string
+          user_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_id?: string | null
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id: string
+          token_hash: string
+          user_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string | null
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id?: string
+          token_hash?: string
+          user_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_sign_in_links_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sign_in_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sign_in_links_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_records: {
         Row: {
           created_at: string
@@ -3411,6 +3466,61 @@ export type Database = {
             columns: ["user_profile_id"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_shop_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          engagement_id: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          tenant_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          engagement_id: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          engagement_id?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_shop_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_shop_links_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_shop_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]

@@ -104,8 +104,14 @@
     "handoff_failed": "We couldn't sign you in on this address. Please sign in here.",
     "handoff_sign_in": "Sign in",
     "platform_owner_title": "You're signed in as the OpalSwift platform owner",
-    "platform_owner_body": "Studio admin pages are for the studio's own admins.",
+    "platform_owner_body": "Studio admin pages are for the studio's own admins. You can still go in to help them.",
     "platform_owner_back": "Back to app.opalswift.com",
+    "platform_owner_sign_out": "Sign out, so the studio's admin can sign in here",
+    "support_access_warning": "Everything is recorded. The studio sees each page you open and each change you make, under Settings → Sign-in & security → OpalSwift access.",
+    "support_access_confirm": "Yes, I want to enter {{studio}}'s admin",
+    "support_access_enter": "Enter the studio's admin",
+    "support_access_banner": "You're in {{studio}}'s admin as OpalSwift support. Everything you open or change is recorded.",
+    "support_access_leave": "Leave",
     "set_password_prompt": {
       "title": "Set a password",
       "description": "Choose a password so you can sign in faster next time, with your email and password instead of waiting for a link.",
@@ -460,6 +466,9 @@
           "no_photos": "Choose at least one photo.",
           "server_error": "Something went wrong. Please try again."
         },
+        "link_opening": "Opening your photos…",
+        "link_expired": "This link has expired or doesn't work any more. Sign in with your email to see your photos, or ask the studio for a new link.",
+        "link_sign_in": "Sign in",
         "pay_how": "How will you pay?",
         "pay_card": "By card now",
         "pay_cash": "In cash to the studio",
@@ -1782,26 +1791,26 @@
           "check": "Check gallery",
           "check_again": "Check again",
           "check_hint": "We read the gallery's photo protection settings and its photos. Nothing is changed in SmugMug. Added photos to the gallery later? Press Check again.",
-          "passed": "Gallery checked on {{date}}. You can see its photos in Photo shop > Preview.",
-          "live_check": "Clients will see them once the first live check with SmugMug is done.",
-          "failed": "Change the settings marked ✗ in SmugMug, then press Check again. Until then clients don't see this gallery.",
+          "passed": "Gallery checked on {{date}}. Clients can now see its photos (Photo shop > Preview). Lines marked ⚠ are only tips.",
+          "failed": "We couldn't open this gallery's photos for clients yet (see ✗ above). Fix that in SmugMug, then press Check again. Lines marked ⚠ are only tips.",
           "item": {
             "watermark": {
               "ok": "Watermark on",
-              "fix": "Turn on the watermark: in the gallery, Settings > Photo Protection > Watermark Photos."
+              "fix": "Tip: no SmugMug watermark. If your photos aren't watermarked already, turn it on in the gallery: Settings > Photo Protection > Watermark Photos.",
+              "in_photos": "Watermark: already in your photos"
             },
             "largest_size": {
               "ok": "Largest display size: {{value}}",
-              "fix": "Set the largest display size to Large or XLarge: in the gallery, Settings > Photo Protection."
+              "fix": "Tip: largest display size is {{value}}. Large or XLarge makes copying harder (gallery Settings > Photo Protection)."
             },
             "downloads": {
               "ok": "Downloads off",
-              "fix": "Turn off Allow Downloads: in the gallery, Settings > Photo Protection."
+              "fix": "Tip: downloads are on. You can turn off Allow Downloads in the gallery: Settings > Photo Protection."
             },
             "photos": {
               "ok_one": "{{count}} photo read",
               "ok_other": "{{count}} photos read",
-              "fix": "We couldn't read the gallery's photos at a watermarked size."
+              "fix": "We couldn't read the gallery's photos at a preview size."
             },
             "preview_public": {
               "ok": "Clients can open the watermarked photos",
@@ -1809,7 +1818,8 @@
             },
             "original_hidden": {
               "ok": "Full-size photos stay private",
-              "fix": "A full-size photo opened without signing in. Lower the largest display size and turn off downloads."
+              "fix": "Tip: a full-size photo opens without signing in. Lowering the largest display size keeps full-size photos private.",
+              "in_photos": "Bigger sizes carry your watermark too"
             }
           },
           "error": {
@@ -1820,7 +1830,8 @@
             "unreachable": "SmugMug couldn't be reached. Please try again.",
             "not_connected": "SmugMug isn't connected. Connect it in Photo shop > SmugMug.",
             "failed": "Something went wrong. Please try again."
-          }
+          },
+          "in_photos": "My photos already have my watermark in them"
         },
         "photos": {
           "title": "Photos",
@@ -1845,6 +1856,17 @@
           "cancelled": "Cancelled",
           "refunded": "Refunded"
         },
+        "send_link": "Send shop link",
+        "send_link_hint": "The client opens their photos straight away, without signing in. The link works for 3 days.",
+        "link_ready": "Link for {{email}}, works until {{date}}:",
+        "link_copy": "Copy link",
+        "link_copied": "Copied",
+        "link_email": "Email",
+        "link_whatsapp": "WhatsApp",
+        "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
+        "link_subject": "Your photos are ready",
+        "link_error": "We couldn't make the link. Please try again.",
+        "link_no_email": "Add the client's email first, so the link can sign them in.",
         "paying_cash": "The client will pay in cash.",
         "record_cash": "Record cash payment"
       }
@@ -2010,6 +2032,12 @@
       "continue": "Continue",
       "no_session": "This link has expired or was already used. Ask for a new one from the sign-in page.",
       "back_to_login": "Back to sign in"
+    },
+    "sign_in_link": {
+      "title": "Signing you in",
+      "opening": "Opening your page…",
+      "expired": "This link has expired. Sign in with your email instead, no password needed.",
+      "sign_in": "Sign in"
     }
   },
   "signup": {
@@ -4051,7 +4079,6 @@
       "disconnected": "Disconnected. Your API Key and Secret are still saved.",
       "connected_since": "Connected to SmugMug since {{date}}.",
       "not_connected": "Connect SmugMug to open your shop.",
-      "shop_locked": "Clients can't buy photos from SmugMug galleries yet. This opens after a final check of SmugMug galleries.",
       "result": {
         "keys": "Your API Key and Secret work. Press Connect SmugMug to finish.",
         "account": "Connected and working.",
@@ -4178,16 +4205,16 @@
       "confirm": "Confirm",
       "confirming": "Saving…",
       "confirmed_on": "Confirmed on {{date}}. Your legal pages and {{doc}} are live.",
-      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and {{doc}} are not live.",
+      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages are not published. Clients can still book, sign and pay.",
       "error": "That didn't save. Please try again.",
       "error_form_missing": "Your {{doc}} is missing. Please try again; if it keeps happening, contact OpalSwift.",
       "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
       "sign_in_needed": "Please sign in to download the legal pack.",
       "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
-      "admin_banner": "Confirm them in Settings → Legal to publish your legal pages and {{doc}}.",
+      "admin_banner": "Confirm them in Settings → Legal to publish your legal pages.",
       "admin_banner_link": "Open Settings → Legal",
-      "blocked_parents": "Parents can't sign up until you confirm your legal documents.",
-      "blocked_clients": "Clients can't sign up until you confirm your legal documents.",
+      "blocked_parents": "Your legal documents are still drafts. Parents can still sign up, sign and pay.",
+      "blocked_clients": "Your legal documents are still drafts. Clients can still book, sign and pay.",
       "doc": {
         "health": "health declaration",
         "contract": "contract",
@@ -4375,6 +4402,7 @@
       "access_kind_view": "Viewed",
       "access_kind_change": "Changed",
       "access_area": {
+        "support-entry": "Entered the admin (support)",
         "tenants": "Studio settings",
         "tenant_feature_overrides": "Studio features",
         "user_profiles": "User accounts",

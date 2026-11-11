@@ -51,6 +51,8 @@ export function bookingConfirmedVariables(
     signUrl?: string | null;
     /** Absolute deposit pay link (step 2), while the deposit is unpaid. */
     payUrl?: string | null;
+    /** 3-day sign-in link to the client's page (client-login.ts), with its wording. */
+    signIn?: { url: string | null; body: string; cta: string; before: string } | null;
   },
 ): Record<string, string> {
   const currency = result.currency ?? "ILS";
@@ -67,6 +69,14 @@ export function bookingConfirmedVariables(
     // Only safe http(s) links; an absent step drops out of the email (render.ts).
     ...(isSafeLink(input.signUrl) ? { signUrl: input.signUrl as string } : {}),
     ...(isSafeLink(input.payUrl) ? { payUrl: input.payUrl as string } : {}),
+    ...(input.signIn && isSafeLink(input.signIn.url)
+      ? {
+        signInUrl: input.signIn.url as string,
+        signInBody: input.signIn.body,
+        signInCta: input.signIn.cta,
+        signInBefore: input.signIn.before,
+      }
+      : {}),
   };
 }
 

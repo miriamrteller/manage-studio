@@ -9,6 +9,27 @@ import {
   type PhotographerEmailLanguage,
 } from "../photographer-email-shells/generated.ts";
 import { applyEmailBrand } from "../email-brand.ts";
+import { insertBeforeParagraph, isHttpLink, signInBlockHtml } from "../sign-in-email-block.ts";
+
+/** Emails that carry the "Go to my page" sign-in button when signInUrl is set. */
+const SIGN_IN_EMAILS: readonly PhotographerEmailKey[] = ["booking_confirmed"];
+
+/**
+ * Puts the sign-in button above the email's closing line (the shells are pre-rendered).
+ * The caller passes the wording (signInBody, signInCta, signInBefore = the closing line)
+ * with the link, so this file stays free of the i18n bundle.
+ */
+function withSignInBlock(
+  key: PhotographerEmailKey,
+  html: string,
+  variables: Record<string, string>,
+  color: string,
+): string {
+  const { signInUrl, signInBody, signInCta, signInBefore } = variables;
+  if (!SIGN_IN_EMAILS.includes(key) || !isHttpLink(signInUrl)) return html;
+  if (!signInBody || !signInCta || !signInBefore) return html;
+  return insertBeforeParagraph(html, signInBefore, signInBlockHtml({ body: signInBody, cta: signInCta, url: signInUrl, color }));
+}
 
 export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
   "quote_sent",
@@ -66,7 +87,11 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     accentColor: input.accentColor,
     variables: input.variables,
   });
-  const html = applyEmailBrand(shellHtml, input.primaryColor, input.accentColor);
+  const html = applyEmailBrand(
+    withSignInBlock(input.key, shellHtml, input.variables, input.primaryColor),
+    input.primaryColor,
+    input.accentColor,
+  );
   // Subjects interpolate {schoolName} and any template variable (e.g. {clientName}).
   let subject = PHOTOGRAPHER_EMAIL_SUBJECTS[input.key][language].split("{schoolName}").join(input.schoolName);
   for (const [name, value] of Object.entries(input.variables)) {
