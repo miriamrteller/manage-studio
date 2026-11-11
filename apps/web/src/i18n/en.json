@@ -3955,7 +3955,9 @@
         "expired": "This SmugMug sign-in took too long or was started from another account. Please press Connect SmugMug again.",
         "refused": "SmugMug didn't allow the connection. Please press Connect SmugMug again.",
         "missing": "SmugMug didn't send back what we need. Please press Connect SmugMug again.",
-        "back": "Back to Settings"
+        "back": "Back to Settings",
+        "returning": "Taking you back to your studio…",
+        "return_failed": "This SmugMug link has expired. Go back to Photo shop > SmugMug and press Connect SmugMug again."
       }
     },
     "takbull_open": {
