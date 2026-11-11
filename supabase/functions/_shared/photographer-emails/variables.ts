@@ -30,7 +30,7 @@ export interface AcceptQuoteResult {
 
 /** Row of list_due_shoot_emails(). */
 export interface DueShootEmail {
-  email_key: "shoot_reminder" | "shoot_thank_you" | "gallery_ready";
+  email_key: "shoot_reminder" | "shoot_thank_you" | "gallery_ready" | "review_request";
   tenant_id: string;
   engagement_id: string;
   recipient_email: string;
@@ -70,7 +70,12 @@ export function bookingConfirmedVariables(
   };
 }
 
-export function dueShootEmailVariables(row: DueShootEmail, language: EmailLanguage): Record<string, string> {
+export function dueShootEmailVariables(
+  row: DueShootEmail,
+  language: EmailLanguage,
+  /** The studio's review link (tenants.review_url); used by review_request only. */
+  reviewUrl?: string | null,
+): Record<string, string> {
   const recipientName = row.recipient_name?.trim() || (language === "he" ? "לקוח/ה יקר/ה" : "there");
   switch (row.email_key) {
     case "shoot_reminder":
@@ -84,6 +89,8 @@ export function dueShootEmailVariables(row: DueShootEmail, language: EmailLangua
       return { recipientName };
     case "gallery_ready":
       return { recipientName, galleryUrl: row.gallery_url ?? "" };
+    case "review_request":
+      return { recipientName, reviewUrl: reviewUrl ?? "" };
     default: {
       const exhaustive: never = row.email_key;
       throw new Error(`Unknown shoot email ${String(exhaustive)}`);

@@ -288,6 +288,14 @@
         "cta": "לפתיחת הגלריה",
         "closing": "מקווים שתאהבו."
     },
+    "review_request": {
+        "subject": "איך היה הצילום עם {schoolName}?",
+        "preview": "איך היה הצילום עם {schoolName}?",
+        "greeting": "היי {recipientName},",
+        "body": "מקווים שאתם נהנים מהתמונות! אם יש לכם דקה, נשמח מאוד לכמה מילים על החוויה. זה עוזר לאחרים למצוא אותנו.",
+        "cta": "לכתיבת חוות דעת",
+        "closing": "תודה רבה, {schoolName}"
+    },
     "contract_signed_client": {
         "subject": "החוזה החתום שלך עם {schoolName}",
         "preview": "החוזה החתום שלך עם {schoolName}",
