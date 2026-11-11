@@ -30,6 +30,8 @@ const CONCURRENCY = 6;
  * (smugmughelp.com/hc/en-us/articles/18212632250644). Clients are shown the Large size.
  */
 export const SAFE_LARGEST_SIZES = ["Large", "XLarge"] as const;
+/** Check lines that are tips only: they never stop a gallery opening (owner, 11 Nov 2026). */
+export const TIP_CODES: readonly string[] = ["watermark", "largest_size", "downloads", "original_hidden"];
 /** Sizes that must not be reachable without signing in. */
 const UNSAFE_SIZE_KEYS = ["ImageSizeOriginal", "ImageSizeX5Large", "ImageSizeX4Large", "ImageSizeX3Large", "ImageSizeX2Large"];
 
@@ -186,12 +188,22 @@ export interface GalleryCheck {
   photos: SmugMugPhoto[];
 }
 
-/** The album's own Photo Protection settings. */
-export function checkAlbumSettings(album: Json): GalleryCheckItem[] {
+/**
+ * The album's own Photo Protection settings (tips only, see TIP_CODES).
+ * watermarkInPhotos: the photographer's watermark is already in the photo files (owner
+ * decision, 11 Nov 2026), so SmugMug's own watermark and size cap aren't needed.
+ */
+export function checkAlbumSettings(album: Json, watermarkInPhotos = false): GalleryCheckItem[] {
   const largest = str(album.LargestSize);
   return [
-    { code: "watermark", ok: album.Watermark === true, value: typeof album.Watermark === "boolean" ? String(album.Watermark) : undefined },
-    { code: "largest_size", ok: !!largest && (SAFE_LARGEST_SIZES as readonly string[]).includes(largest), value: largest ?? undefined },
+    watermarkInPhotos
+      ? { code: "watermark", ok: true, value: "in_photos" }
+      : { code: "watermark", ok: album.Watermark === true, value: typeof album.Watermark === "boolean" ? String(album.Watermark) : undefined },
+    {
+      code: "largest_size",
+      ok: watermarkInPhotos || (!!largest && (SAFE_LARGEST_SIZES as readonly string[]).includes(largest)),
+      value: largest ?? undefined,
+    },
     { code: "downloads", ok: album.AllowDownloads === false, value: typeof album.AllowDownloads === "boolean" ? String(album.AllowDownloads) : undefined },
   ];
 }
@@ -258,40 +270,39 @@ export const publicProbe: PublicProbe = async (url) => {
 };
 
 /**
- * "Check gallery": the album's Photo Protection settings, then its photos. Passes only when
- * the watermark is on, the largest size is capped, downloads are off, every photo has a
- * Large size that loads without signing in, and no bigger size of the first photo does.
+ * "Check gallery": reads the gallery's photos and its Photo Protection settings. Passes when
+ * every photo has a Large size and it loads without signing in (clients must see the
+ * previews). Watermark, size cap, downloads and bigger sizes opening are tips only.
  */
 export async function checkGallery(
   reader: SmugMugReader,
   albumKey: string,
   probe: PublicProbe = publicProbe,
+  watermarkInPhotos = false,
 ): Promise<GalleryCheck> {
   const album = await getAlbum(reader, albumKey);
-  const items = checkAlbumSettings(album);
+  const items = checkAlbumSettings(album, watermarkInPhotos);
   const albumName = (str(album.Name) ?? str(album.Title) ?? albumKey).slice(0, 200);
-  const settingsOk = items.every((i) => i.ok);
 
-  let photos: SmugMugPhoto[] = [];
-  let images: ImageWithSizes[] = [];
-  if (settingsOk) {
-    images = await readImages(reader, album);
-    photos = images
-      .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: sizeUrl(im.sizes, "ImageSizeLarge") }))
-      .filter((p): p is SmugMugPhoto => !!p.previewUrl);
-  }
+  // Owner (11 Nov 2026): nothing blocks. The protection settings are tips only
+  // (TIP_CODES); a gallery opens once its photos can be read and the Large preview loads.
+  const images = await readImages(reader, album);
+  const photos = images
+    .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: sizeUrl(im.sizes, "ImageSizeLarge") }))
+    .filter((p): p is SmugMugPhoto => !!p.previewUrl);
   const allHaveLarge = images.length > 0 && photos.length === images.length;
-  items.push({ code: "photos", ok: settingsOk && allHaveLarge, value: settingsOk ? String(images.length) : undefined });
+  items.push({ code: "photos", ok: allHaveLarge, value: String(images.length) });
 
   let previewPublic = false;
   let originalHidden = false;
-  if (settingsOk && allHaveLarge) {
+  if (allHaveLarge) {
     const first = images[0];
     const bigger = UNSAFE_SIZE_KEYS.map((k) => sizeUrl(first.sizes, k)).filter((u): u is string => !!u);
-    // The Large size must load for clients; nothing bigger may.
+    // The Large size must load for clients. Bigger sizes loading is only a tip.
     previewPublic = await probe(photos[0].previewUrl);
     originalHidden = true;
-    for (const url of bigger) {
+    // Watermark in the photo files: bigger sizes carry it too, so they may open.
+    for (const url of watermarkInPhotos ? [] : bigger) {
       if (await probe(url)) {
         originalHidden = false;
         break;
@@ -299,9 +310,9 @@ export async function checkGallery(
     }
   }
   items.push({ code: "preview_public", ok: previewPublic });
-  items.push({ code: "original_hidden", ok: originalHidden });
+  items.push({ code: "original_hidden", ok: originalHidden, value: watermarkInPhotos && originalHidden ? "in_photos" : undefined });
 
-  const passed = items.every((i) => i.ok);
+  const passed = items.every((i) => i.ok || TIP_CODES.includes(i.code));
   return { passed, albumKey, albumName, items, photos: passed ? photos : [] };
 }
 

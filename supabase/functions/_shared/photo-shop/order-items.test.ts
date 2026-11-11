@@ -22,7 +22,7 @@ Deno.test("mock gallery: camera-like names, abstract previews", () => {
   assert(decodeURIComponent(gallery[0].previewUrl).includes("SAMPLE"));
 });
 
-Deno.test("SmugMug stays locked until the live check", async () => {
+Deno.test("SmugMug: a gallery without a passed check stays locked", async () => {
   for (const [shop, code] of [
     [{ provider: "smugmug", gallery_key: "abc" }, "provider_locked"],
     [{ provider: "mock", gallery_key: null }, "no_gallery"],
@@ -39,7 +39,7 @@ Deno.test("SmugMug stays locked until the live check", async () => {
   assertEquals((await listGalleryPhotos({ provider: "mock", gallery_key: "g" })).length, MOCK_PHOTO_COUNT);
 });
 
-Deno.test("SmugMug: a checked gallery shows only in the studio's preview, never to clients yet", async () => {
+Deno.test("SmugMug: only a gallery with a passed check shows, to the studio and to clients", async () => {
   const photos = [{ key: "K1", fileName: "IMG_1.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" }];
   const checked = {
     provider: "smugmug",
@@ -48,8 +48,9 @@ Deno.test("SmugMug: a checked gallery shows only in the studio's preview, never 
     smugmug_photos: photos,
     smugmug_checked_at: "2026-11-10T12:00:00Z",
   };
-  assertEquals(SMUGMUG_OPEN_TO_CLIENTS, false);
+  assertEquals(SMUGMUG_OPEN_TO_CLIENTS, true);
   assertEquals(await listGalleryPhotos(checked, { adminPreview: true }), photos);
+  assertEquals(await listGalleryPhotos(checked, { adminPreview: false }), photos);
   const locked = async (shop: typeof checked, adminPreview: boolean) => {
     try {
       await listGalleryPhotos(shop, { adminPreview });
@@ -59,12 +60,13 @@ Deno.test("SmugMug: a checked gallery shows only in the studio's preview, never 
       assertEquals(e.code, "provider_locked");
     }
   };
-  await locked(checked, false);
-  // A check for another gallery, a failed check, or no check: locked even for the studio.
-  await locked({ ...checked, gallery_key: "other" }, true);
-  await locked({ ...checked, smugmug_check: { album_key: "abc", passed: false, items: [] } }, true);
-  await locked({ ...checked, smugmug_checked_at: null } as unknown as typeof checked, true);
-  await locked({ ...checked, smugmug_photos: [{ key: "K", fileName: "a", previewUrl: "http://x" }] }, true);
+  // A check for another gallery, a failed check, or no check: locked for clients and the studio.
+  for (const adminPreview of [false, true]) {
+    await locked({ ...checked, gallery_key: "other" }, adminPreview);
+    await locked({ ...checked, smugmug_check: { album_key: "abc", passed: false, items: [] } }, adminPreview);
+    await locked({ ...checked, smugmug_checked_at: null } as unknown as typeof checked, adminPreview);
+    await locked({ ...checked, smugmug_photos: [{ key: "K", fileName: "a", previewUrl: "http://x" }] }, adminPreview);
+  }
   assertEquals(checkedSmugMugPhotos(checked), photos);
 });
 

@@ -151,9 +151,9 @@ describe('SetupGuideCard', () => {
     expect(screen.queryByText(/waiver/i)).toBeNull();
   });
 
-  it('the legal row says who is waiting on it and has no Skip', async () => {
+  it('the legal row says the documents are drafts (nobody waits on it) and has no Skip', async () => {
     renderHarness();
-    expect(await screen.findByText("Parents can't sign up until you confirm your legal documents.")).toBeInTheDocument();
+    expect(await screen.findByText("Your legal documents are still drafts. Parents can still sign up, sign and pay.")).toBeInTheDocument();
     const legalRow = screen.getByRole('link', { name: /legal details and health declaration/ }).closest('li')!;
     expect(legalRow.querySelector('button')).toBeNull();
   });

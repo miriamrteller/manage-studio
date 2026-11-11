@@ -283,10 +283,10 @@ describe('JobPhotoShopCard', () => {
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     expect(await screen.findByText('Watermark on')).toBeTruthy();
     expect(screen.getByText('40 photos read')).toBeTruthy();
-    expect(screen.getByText(/Clients will see them once the first live check/)).toBeTruthy();
+    expect(screen.queryByText(/first live check/)).toBeNull();
   });
 
-  it('a failed check says what to change in SmugMug; uploading stays one click away', async () => {
+  it('protection settings show as ⚠ tips, never as blockers; uploading stays one click away', async () => {
     state.smugmugConnected = true;
     state.checkGallery.mockResolvedValue({
       passed: false,
@@ -307,7 +307,8 @@ describe('JobPhotoShopCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/Settings > Photo Protection > Watermark Photos/)).toBeTruthy();
-    expect(screen.getByText(/Until then clients don't see this gallery/)).toBeTruthy();
+    expect(screen.getByText(/Lines marked ⚠ are only tips/)).toBeTruthy();
+    expect(screen.getAllByText('⚠')).toHaveLength(3);
     fireEvent.click(screen.getByRole('radio', { name: 'Upload them here' }));
     expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
   });

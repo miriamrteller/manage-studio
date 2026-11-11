@@ -61,7 +61,11 @@ const EnrolPayPage = lazy(() => import("./pages/EnrolPayPage"));
 const EnrolReturnPage = lazy(() => import("./pages/EnrolReturnPage"));
 const EnrolCompletePage = lazy(() => import("./pages/EnrolCompletePage"));
 const PayRequestPage = lazy(() => import("./pages/PayRequestPage"));
+<<<<<<< HEAD
 const SignInLinkPage = lazy(() => import("./pages/SignInLinkPage"));
+=======
+const ShopLinkPage = lazy(() => import("./pages/ShopLinkPage"));
+>>>>>>> origin/main
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const FinanceHubPage = lazy(() => import("./pages/FinanceHubPage"));
 const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
@@ -205,8 +209,12 @@ const router = createBrowserRouter([
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
           // Public pay link for a job (shoot) deposit/balance request — token is the capability.
           { path: 'pay/:token', element: <PayRequestPage /> },
+<<<<<<< HEAD
           // Booking email "Go to my page": signs the client in (token in the fragment, 3 days).
           { path: 'signin', element: <SignInLinkPage /> },
+=======
+          { path: 'shop/:token', element: <ShopLinkPage /> },
+>>>>>>> origin/main
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },

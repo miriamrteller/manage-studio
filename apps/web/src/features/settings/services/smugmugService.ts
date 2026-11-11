@@ -83,7 +83,7 @@ export interface GalleryCheckResult {
   photoCount: number;
 }
 
-async function call(body: Record<string, string>): Promise<Record<string, unknown>> {
+async function call(body: Record<string, string | boolean>): Promise<Record<string, unknown>> {
   const { data, error } = await supabase.functions.invoke('smugmug-connection', { body });
   const parsed = await parseFunctionInvokeBody(data, error);
   if (error || !parsed || parsed.ok === false) {
@@ -159,8 +159,13 @@ export const SmugMugService = {
   },
 
   /** "Check gallery": saves the gallery on the shoot and returns what the check found. */
-  async checkGallery(engagementId: string, albumKey: string): Promise<GalleryCheckResult> {
-    const body = await call({ action: 'check', engagement_id: engagementId, album_key: albumKey });
+  async checkGallery(engagementId: string, albumKey: string, watermarkInPhotos = false): Promise<GalleryCheckResult> {
+    const body = await call({
+      action: 'check',
+      engagement_id: engagementId,
+      album_key: albumKey,
+      ...(watermarkInPhotos ? { watermark_in_photos: true } : {}),
+    });
     return {
       passed: body.passed === true,
       albumName: typeof body.albumName === 'string' ? body.albumName : '',

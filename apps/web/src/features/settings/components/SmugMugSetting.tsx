@@ -246,7 +246,6 @@ function SmugMugForm() {
             : t('settings.smugmug.not_connected')}
         </p>
       )}
-      {connected && <p className="text-xs text-muted-foreground">{t('settings.smugmug.shop_locked')}</p>}
     </section>
   );
 }

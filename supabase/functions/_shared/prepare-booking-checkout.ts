@@ -185,9 +185,10 @@ async function mintToken(
   email: string,
   holdExpiresAt: string,
 ): Promise<string> {
-  // Token lives at least long enough to complete payment; capped by hold expiry.
+  // The pay link outlives the slot hold: an unpaid booking is kept (never
+  // cancelled for being unpaid), so the client can come back and pay for a week.
   const holdExp = Math.floor(new Date(holdExpiresAt).getTime() / 1000);
-  const minExp = Math.floor(Date.now() / 1000) + 3600;
+  const minExp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
   return signWaiverToken(service, {
     eid: engagementId,
     tid: tenantId,
