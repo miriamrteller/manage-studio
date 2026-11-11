@@ -19,10 +19,12 @@ export interface AutomaticEmailTenant extends TenantSenderInput {
   language_default: string | null;
   primary_color: string | null;
   accent_color: string | null;
+  /** Link the review request email opens; NULL = no review request. */
+  review_url?: string | null;
 }
 
 export const AUTOMATIC_EMAIL_TENANT_COLUMNS =
-  "id, name, language_default, primary_color, accent_color, subdomain, custom_domain, contact_email, from_email, from_email_verified_at";
+  "id, name, language_default, primary_color, accent_color, review_url, subdomain, custom_domain, contact_email, from_email, from_email_verified_at";
 
 export type AutomaticEmailOutcome = "sent" | "skipped" | "failed";
 

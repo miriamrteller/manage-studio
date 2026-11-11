@@ -34,3 +34,5 @@ export { default as ShootThankYouEmail } from './photographer/ShootThankYouEmail
 export type { ShootThankYouEmailProps } from './photographer/ShootThankYouEmail.js';
 export { default as GalleryReadyEmail } from './photographer/GalleryReadyEmail.js';
 export type { GalleryReadyEmailProps } from './photographer/GalleryReadyEmail.js';
+export { default as ReviewRequestEmail } from './photographer/ReviewRequestEmail.js';
+export type { ReviewRequestEmailProps } from './photographer/ReviewRequestEmail.js';

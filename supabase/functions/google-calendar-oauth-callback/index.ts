@@ -2,11 +2,17 @@
  * google-calendar-oauth-callback
  * Exchanges the OAuth code (POSTed by the frontend callback page with the admin's
  * Bearer token), stores encrypted tokens, and returns the connected email.
+ *
+ * { action: "studio_url", state } (no sign-in needed): Google always returns to the one
+ * registered address on app.<root>, where the studio admin is not signed in. This
+ * returns the address of the studio the signed state was made for, so the page can
+ * carry on there. The URL is built from the tenant row, never from the request.
  */
 import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { exchangeCode, fetchGoogleEmail } from "../_shared/google-calendar.ts";
-import { verifyGoogleOAuthState } from "../_shared/google-oauth-state.ts";
+import { googleOAuthStateTenant, verifyGoogleOAuthState } from "../_shared/google-oauth-state.ts";
+import { tenantBaseUrlFor } from "../_shared/tenant-url.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
@@ -21,15 +27,27 @@ Deno.serve(withMonitoring("google-calendar-oauth-callback", async (req) => {
   if (opt) return opt;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  const auth = await requireAuthUser(req);
-  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
-
-  let body: { code?: string; state?: string };
+  let body: { action?: string; code?: string; state?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid body" }, 400);
   }
+
+  if (body.action === "studio_url") {
+    const tid = body.state ? await googleOAuthStateTenant(body.state) : null;
+    if (!tid) return jsonResponse({ error: "Invalid or expired state" }, 400);
+    try {
+      const studioUrl = await tenantBaseUrlFor(createServiceClient(), tid);
+      return jsonResponse({ studio_url: studioUrl });
+    } catch (e) {
+      console.error("[google-calendar-oauth-callback] studio_url", e);
+      return jsonResponse({ error: "Studio not found" }, 404);
+    }
+  }
+
+  const auth = await requireAuthUser(req);
+  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
   if (!body.code || !body.state) return jsonResponse({ error: "code and state are required" }, 400);
 
   if (!APP_URL) {

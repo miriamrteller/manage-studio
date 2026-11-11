@@ -4825,6 +4825,7 @@ export type Database = {
                     primary_color: string;
                     privacy_policy_url: string | null;
                     require_admin_mfa: boolean;
+                    review_url: string | null;
                     signup_source: string;
                     skin: string;
                     smugmug_access_secret_enc: string | null;
@@ -4920,6 +4921,7 @@ export type Database = {
                     primary_color?: string;
                     privacy_policy_url?: string | null;
                     require_admin_mfa?: boolean;
+                    review_url?: string | null;
                     signup_source?: string;
                     skin?: string;
                     smugmug_access_secret_enc?: string | null;
@@ -5015,6 +5017,7 @@ export type Database = {
                     primary_color?: string;
                     privacy_policy_url?: string | null;
                     require_admin_mfa?: boolean;
+                    review_url?: string | null;
                     signup_source?: string;
                     skin?: string;
                     smugmug_access_secret_enc?: string | null;

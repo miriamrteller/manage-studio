@@ -83,6 +83,11 @@ describe('dueShootEmailVariables', () => {
     expect(vars.galleryUrl).toBe('https://gallery.example.test/x');
   });
 
+  it('review request carries the studio review link', () => {
+    const vars = dueShootEmailVariables(due({ email_key: 'review_request' }), 'en', 'https://g.page/r/example/review');
+    expect(vars).toEqual({ recipientName: 'Dana', reviewUrl: 'https://g.page/r/example/review' });
+  });
+
   it('only accepts http(s) gallery links', () => {
     expect(isSafeLink('https://g.example.test')).toBe(true);
     expect(isSafeLink('javascript:alert(1)')).toBe(false);

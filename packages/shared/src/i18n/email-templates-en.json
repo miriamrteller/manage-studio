@@ -288,6 +288,14 @@
     "cta": "Open your gallery",
     "closing": "We hope you love them."
   },
+  "review_request": {
+    "subject": "How was your shoot with {schoolName}?",
+    "preview": "How was your shoot with {schoolName}?",
+    "greeting": "Hi {recipientName},",
+    "body": "We hope you're enjoying your photos! If you have a minute, a few words about your experience would mean a lot to us and help others find us.",
+    "cta": "Leave a review",
+    "closing": "Thank you, {schoolName}"
+  },
   "contract_signed_client": {
     "subject": "Your signed contract with {schoolName}",
     "preview": "Your signed contract with {schoolName}",

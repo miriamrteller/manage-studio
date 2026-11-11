@@ -31,6 +31,7 @@ export declare const EMAIL_TEMPLATE_NAMES: {
     readonly SHOOT_REMINDER: "shoot_reminder";
     readonly SHOOT_THANK_YOU: "shoot_thank_you";
     readonly GALLERY_READY: "gallery_ready";
+    readonly REVIEW_REQUEST: "review_request";
     readonly CONTRACT_SIGNED_CLIENT: "contract_signed_client";
     readonly CONTRACT_SIGNED_STUDIO: "contract_signed_studio";
 };
