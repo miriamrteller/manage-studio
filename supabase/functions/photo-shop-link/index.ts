@@ -19,11 +19,10 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
 import { requireFeature } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { tenantBaseUrlFor } from "../_shared/tenant-url.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { ensureClientLogin, sessionForEmail } from "../_shared/client-login.ts";
 
 const FEATURE = "billing:photo_shop";
 export const LINK_DAYS = 3;
-const STAFF_ROLES = ["tenant_admin", "super_admin", "staff"];
 
 type Service = ReturnType<typeof createServiceClient>;
 
@@ -125,45 +124,17 @@ async function openLink(service: Service, token: string): Promise<Response> {
     return jsonResponse({ ok: false, code: "sign_in" }, 400);
   }
 
-  // The client's own login at this studio. Never a staff login, never another studio's.
-  const { data: profiles } = await service
-    .from("user_profiles")
-    .select("id, tenant_id, role")
-    .ilike("email", client.email.replace(/[\\%_]/g, (c: string) => `\\${c}`));
-  const rows = (profiles ?? []) as Array<{ id: string; tenant_id: string | null; role: string[] | null }>;
-  if (rows.some((p) => p.tenant_id !== client.tenantId || (p.role ?? []).some((r) => STAFF_ROLES.includes(r)))) {
-    return jsonResponse({ ok: false, code: "sign_in" }, 400);
-  }
-  if (rows.length === 0) {
-    // First visit: make the login the way signing in by email at the studio would.
-    const { error } = await service.auth.admin.createUser({
-      email: client.email,
-      email_confirm: true,
-      user_metadata: { subdomain: client.subdomain },
-    });
-    if (error) return jsonResponse({ ok: false, code: "sign_in" }, 400);
-  }
-
-  const { data: generated, error: linkError } = await service.auth.admin.generateLink({
-    type: "magiclink",
-    email: client.email,
-  });
-  const hashed = generated?.properties?.hashed_token;
-  if (linkError || !hashed) return jsonResponse({ ok: false, code: "sign_in" }, 400);
-
-  const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!url || !anonKey) return jsonResponse({ ok: false, code: "sign_in" }, 500);
-  const anon = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: verified, error: verifyError } = await anon.auth.verifyOtp({ token_hash: hashed, type: "email" });
-  const session = verified?.session;
-  if (verifyError || !session) return jsonResponse({ ok: false, code: "sign_in" }, 400);
+  // The client's own login at this studio (made on first visit, linked to their record so
+  // the portal finds the shoot). Never a staff login, never another studio's.
+  const login = await ensureClientLogin(service, { tenantId: client.tenantId, email: client.email });
+  if (!login.ok) return jsonResponse({ ok: false, code: "sign_in" }, 400);
+  const session = await sessionForEmail(service, client.email);
+  if (!session) return jsonResponse({ ok: false, code: "sign_in" }, 400);
 
   await service.from("photo_shop_links").update({ last_used_at: new Date().toISOString() }).eq("id", link.id);
   return jsonResponse({
     ok: true,
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
+    ...session,
     engagementId,
   });
 }
