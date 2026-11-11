@@ -151,6 +151,10 @@ function WaiverStepInner({
     phone: guestPrefill?.phone ?? '',
   });
   const [signerErrors, setSignerErrors] = useState<SignerDetailsErrors>({});
+  // Photographer job contracts: one tick instead of the long scrolling text
+  // (owner decision). The full contract stays one click away.
+  const singleTick = isJobContract === true;
+  const [showFullText, setShowFullText] = useState(false);
 
   // No name from an earlier signed form: the signer is the signed-in person
   // (or the adult student themself). Applied once that lookup has answered.
@@ -184,6 +188,11 @@ function WaiverStepInner({
   // IntersectionObserver: fires once when the bottom sentinel scrolls into view.
   // This triggers the server-side "viewed" event and issues a signed view_token.
   useEffect(() => {
+    if (singleTick) {
+      // No scroll gate: the contract is shown (with its full text one click away) as soon as the page opens.
+      void callWaiverViewed();
+      return;
+    }
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
@@ -200,7 +209,7 @@ function WaiverStepInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function callWaiverViewed() {
+  async function callWaiverViewed(): Promise<boolean> {
     setViewError(null);
     const authOverride = waiverToken ? { Authorization: `WaiverToken ${waiverToken}` } : undefined;
     const { data, error } = await supabase.functions.invoke('waiver-viewed', {
@@ -208,12 +217,17 @@ function WaiverStepInner({
       headers: authOverride,
     });
     if (error || !data?.view_token) {
-      setViewError(t('enrolment.waiver_view_error', { defaultValue: 'Could not confirm reading. Please try scrolling again.' }));
-      return;
+      setViewError(
+        singleTick
+          ? t('enrolment.job_contract_view_error')
+          : t('enrolment.waiver_view_error', { defaultValue: 'Could not confirm reading. Please try scrolling again.' }),
+      );
+      return false;
     }
     viewTokenRef.current = { view_token: data.view_token, viewed_at_ts: data.viewed_at_ts };
     setViewTokenReady(true);
     setTokenExpired(false);
+    return true;
   }
 
   async function readInvokeErrorMessage(error: unknown, fallback: string): Promise<string> {
@@ -244,11 +258,24 @@ function WaiverStepInner({
   }
 
   async function handleSubmit() {
-    if (!viewTokenRef.current || !affirmed || typedName.trim().length < 2) return;
+    if (!affirmed || typedName.trim().length < 2) return;
+    // One-tick contracts have no scroll to redo: refresh a view token that is about to
+    // run out (the server allows 15 minutes) instead of asking the client to scroll.
+    if (singleTick) {
+      const v = viewTokenRef.current;
+      if ((!v || Date.now() / 1000 - v.viewed_at_ts > 840) && !(await callWaiverViewed())) return;
+    }
+    if (!viewTokenRef.current) return;
 
     // Check the signer details here first (the server and database repeat the same rules).
-    const confirmedWording = t('enrolment.signer.confirm');
-    const signerInput = buildSignerInput(signerDraft, typedName.trim(), confirmedWording, Boolean(isMinorStudent));
+    // One-tick contracts: that single tick also confirms the details, and its wording is what is recorded.
+    const confirmedWording = singleTick ? t('enrolment.job_contract_agree') : t('enrolment.signer.confirm');
+    const signerInput = buildSignerInput(
+      singleTick ? { ...signerDraft, confirmed: affirmed } : signerDraft,
+      typedName.trim(),
+      confirmedWording,
+      Boolean(isMinorStudent),
+    );
     const checked = validateSignerDetails(signerInput, { requireChild: Boolean(isMinorStudent) });
     if (!checked.ok) {
       setSignerErrors(checked.errors);
@@ -304,11 +331,11 @@ function WaiverStepInner({
   }
 
   const canSubmit =
-    viewTokenReady &&
+    (viewTokenReady || singleTick) &&
     affirmed &&
     typedName.trim().length >= 2 &&
     (!isMinorStudent || guardianConfirmed) &&
-    signerDraft.confirmed &&
+    (singleTick || signerDraft.confirmed) &&
     !isSubmitting;
 
   // Plan 4: hard block when a minor's own account attempts self-signing
@@ -360,8 +387,10 @@ function WaiverStepInner({
         </dl>
       )}
 
-      {/* Scrollable waiver document region */}
+      {/* Scrollable waiver document region (one-tick contracts: only when the client opens it) */}
+      {(!singleTick || showFullText) && (
       <div
+        id="waiver-document"
         role="region"
         aria-label={t('enrolment.waiver_document_region', { defaultValue: 'Form document' })}
         className="relative h-72 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed whitespace-pre-wrap focus:outline-none"
@@ -374,8 +403,9 @@ function WaiverStepInner({
         {/* Sentinel: signing form only unlocks once this is fully visible */}
         <div ref={sentinelRef} className="h-1" aria-hidden="true" />
       </div>
+      )}
 
-      {!viewTokenReady && !tokenExpired && (
+      {!singleTick && !viewTokenReady && !tokenExpired && (
         <p className="text-sm font-medium text-foreground" aria-live="polite">
           <span aria-hidden="true">↓ </span>
           {t('enrolment.waiver_scroll_prompt', { defaultValue: 'Scroll to the bottom to enable signing' })}
@@ -388,7 +418,7 @@ function WaiverStepInner({
         </p>
       )}
 
-      {tokenExpired && (
+      {!singleTick && tokenExpired && (
         <p className="text-sm text-warning" role="alert">
           {t('enrolment.waiver_token_expired', {
             defaultValue: 'Please scroll to the bottom again to re-confirm you have read the form.',
@@ -397,8 +427,9 @@ function WaiverStepInner({
       )}
 
       {/* Affirmation form — only shown once the sentinel has fired */}
-      {(viewTokenReady || tokenExpired) && (
+      {(singleTick || viewTokenReady || tokenExpired) && (
         <div className="space-y-3 pt-2">
+          {!singleTick && (
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -411,8 +442,9 @@ function WaiverStepInner({
               {t('enrolment.waiver_checkbox_label', { defaultValue: 'I have read and accept this form' })}
             </span>
           </label>
+          )}
 
-          {isJobContract && (
+          {isJobContract && !singleTick && (
             <div className="rounded-md border p-3">
               <ConsentCheckboxes
                 legend={t('legal.consents.portfolio_legend')}
@@ -462,7 +494,44 @@ function WaiverStepInner({
             onChange={setSignerDraft}
             errors={signerErrors}
             showChild={Boolean(isMinorStudent)}
+            hideConfirm={singleTick}
           />
+
+          {singleTick && (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    id="signer-confirmed"
+                    type="checkbox"
+                    checked={affirmed}
+                    onChange={(e) => setAffirmed(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm font-medium">{t('enrolment.job_contract_agree')}</span>
+                </label>
+                <button
+                  type="button"
+                  className="ms-6 text-sm font-medium text-primary underline underline-offset-2"
+                  aria-expanded={showFullText}
+                  aria-controls="waiver-document"
+                  onClick={() => setShowFullText((v) => !v)}
+                >
+                  {showFullText ? t('enrolment.job_contract_hide') : t('enrolment.job_contract_read')}
+                </button>
+              </div>
+              <div className="rounded-md border p-3">
+                <ConsentCheckboxes
+                  legend={t('legal.consents.portfolio_legend')}
+                  hint={t('legal.consents.portfolio_hint')}
+                  kinds={['portfolio']}
+                  value={portfolio}
+                  onChange={setPortfolio}
+                  lang={legalLang}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

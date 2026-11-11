@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 /**
  * Client booking flow, one page to the next with no waiting for the studio:
- *   /quote/:token  accept → "Continue to sign the contract"
- *   /enrol/complete (job contract) sign → "Pay deposit" (auto-continues) or the portal
+ *   /quote/:token  accept → "Continue to pay the deposit" (signing is optional alongside)
+ *   /enrol/complete (job contract) "Pay the deposit now" any time; sign → straight to payment, or the portal
  * plus the admin booking progress strip. Dance waivers keep today's behaviour.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import EnrolCompletePage from '@/pages/EnrolCompletePage';
 import { PublicQuoteView } from '@/features/quotes/components/public/PublicQuoteView';
 import { buildBookingProgress } from '@/features/jobs/lib/bookingProgress';
@@ -89,10 +89,14 @@ function renderSignPage() {
   });
 }
 
+const AGREE =
+  'I have read and agree to the contract, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.';
+
 async function signContract(name = 'Pat Client') {
-  fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this contract' }));
+  const agree = await screen.findByRole('checkbox', { name: AGREE });
   fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: name } });
-  fillSignerDetails();
+  fillSignerDetails({ noConfirmTick: true });
+  fireEvent.click(agree);
   fireEvent.click(screen.getByRole('button', { name: 'Sign contract' }));
 }
 
@@ -126,7 +130,7 @@ describe('safe next-step paths', () => {
 describe('/quote/:token success state', () => {
   beforeEach(() => setTenant('photographer'));
 
-  it('accept → one primary button continues straight to signing; links were also emailed', async () => {
+  it('accept → the primary button goes to payment; signing is offered alongside, not before; links were also emailed', async () => {
     let status: 'sent' | 'accepted' = 'sent';
     rpc.mockImplementation(async () => ({ data: publicQuote(status), error: null }));
     invoke.mockImplementation(async (name: string) => {
@@ -139,11 +143,12 @@ describe('/quote/:token success state', () => {
     });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Accept and book' }));
-    expect(await screen.findByText('Two quick steps to finish your booking: sign the contract, then pay the deposit.')).toBeInTheDocument();
+    expect(await screen.findByText('To finish your booking, pay the deposit. You can sign the contract now or later.')).toBeInTheDocument();
     expect(screen.getByText('We have also emailed you these links, so you can come back to them later.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Continue to pay the deposit' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue to pay the deposit' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue to sign the contract' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continue to sign the contract' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign the contract' }));
     expect(await screen.findByText('SIGN PAGE')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/enrol/complete');
   });
@@ -165,7 +170,8 @@ describe('/quote/:token success state', () => {
     invoke.mockResolvedValue({ data: { ok: true, already_accepted: true, contractSignPath: SIGN_PATH, depositPayPath: PAY_PATH }, error: null });
     renderInApp(<PublicQuoteView token={QUOTE_TOKEN} />, { path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}` });
     fireEvent.click(await screen.findByRole('button', { name: 'Continue your booking' }));
-    expect(await screen.findByRole('button', { name: 'Continue to sign the contract' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Continue to pay the deposit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign the contract' })).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith('accept-quote', expect.objectContaining({ body: expect.objectContaining({ token: QUOTE_TOKEN }) }));
   });
 
@@ -185,7 +191,7 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
 
   const ready = { isJob: true, personId: PERSON_ID, offeringId: OFFERING_ID, template: TEMPLATE };
 
-  it('deposit unpaid → success message, "Pay deposit", announced auto-redirect after ~3s', async () => {
+  it('deposit unpaid → straight to the payment page after signing, no screen in between', async () => {
     const fetchMock = mockFunctions({
       'get-waiver-engagement': { body: ready },
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 30000, currency: 'ILS' } },
@@ -193,13 +199,8 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
     renderSignPage();
     await signContract();
 
-    expect(await screen.findByText('Contract signed — thank you!')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Pay deposit' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Next: pay the deposit' })).toBeInTheDocument();
-    const status = screen.getByText('Taking you to the deposit payment in 3 seconds…');
-    expect(status).toHaveAttribute('role', 'status');
-    expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(screen.queryByRole('button', { name: 'Go to my dashboard' })).not.toBeInTheDocument();
+    expect(await screen.findByText('PAY PAGE')).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent(PAY_PATH);
 
     // The pay link comes from the server, authorised by the same signing token.
     const nextCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/job-next-step'));
@@ -207,26 +208,18 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
     const init = nextCall![1] as unknown as { headers: Record<string, string>; body: string };
     expect(new Headers(init.headers).get('Authorization')).toBe('WaiverToken token-1');
     expect(JSON.parse(String(init.body))).toEqual({ engagementId: ENG });
+  });
 
-    expect(await screen.findByText('PAY PAGE', undefined, { timeout: 4500 })).toBeInTheDocument();
-    expect(screen.getByTestId('location')).toHaveTextContent(PAY_PATH);
-  }, 15000);
-
-  it('"Stay on this page" cancels the auto-redirect; the button still works', async () => {
+  it('the contract never blocks payment: "Pay the deposit now" goes to payment without signing', async () => {
     mockFunctions({
       'get-waiver-engagement': { body: ready },
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 30000, currency: 'ILS' } },
     });
     renderSignPage();
-    await signContract();
-    fireEvent.click(await screen.findByRole('button', { name: 'Stay on this page' }));
-    expect(screen.queryByText(/Taking you to the deposit payment/)).not.toBeInTheDocument();
-    // Past the 3s mark: still here.
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 3500)); });
-    expect(screen.queryByText('PAY PAGE')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Pay deposit' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Pay the deposit now (you can sign the contract later)' }));
     expect(await screen.findByText('PAY PAGE')).toBeInTheDocument();
-  }, 15000);
+    expect(invoke).not.toHaveBeenCalledWith('accept-waiver', expect.anything());
+  });
 
   it('deposit already paid / no deposit → client portal link instead', async () => {
     mockFunctions({
@@ -240,14 +233,13 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
     expect(screen.queryByRole('button', { name: 'Pay deposit' })).not.toBeInTheDocument();
   });
 
-  it('re-opening the link after signing still offers the deposit', async () => {
+  it('re-opening the link after signing goes straight to the deposit', async () => {
     mockFunctions({
       'get-waiver-engagement': { body: { alreadySigned: true, isJob: true } },
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 30000, currency: 'ILS' } },
     });
     renderSignPage();
-    expect(await screen.findByText('Contract already signed')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Pay deposit' })).toBeInTheDocument();
+    expect(await screen.findByText('PAY PAGE')).toBeInTheDocument();
   });
 
   it('next step unavailable (e.g. token rejected) → the way back to the portal, with a note', async () => {
@@ -265,12 +257,16 @@ describe('/enrol/complete — job contract continues to the deposit', () => {
   it('Hebrew', async () => {
     await setLanguage('he');
     mockFunctions({
-      'get-waiver-engagement': { body: { alreadySigned: true, isJob: true } },
+      'get-waiver-engagement': { body: ready },
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 30000, currency: 'ILS' } },
     });
     renderSignPage();
-    expect(await screen.findByRole('button', { name: 'לתשלום המקדמה' })).toBeInTheDocument();
-    expect(screen.getByText('מעבירים אותך לתשלום המקדמה בעוד 3 שניות…')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'לתשלום המקדמה עכשיו (אפשר לחתום על החוזה אחר כך)' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'קראתי את החוזה ואני מסכים/ה לו, הפרטים שלמעלה נכונים, ואני מבין/ה שהקלדת שמי וסימון תיבה זו הם החתימה האלקטרונית שלי.',
+      }),
+    ).toBeInTheDocument();
   });
 });
 

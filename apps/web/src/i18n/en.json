@@ -373,11 +373,11 @@
     },
     "booking_flow": {
       "after_sign": {
+        "redirecting_now": "Taking you to the payment…",
+        "pay_first": "Pay the deposit now (you can sign the contract later)",
         "pay_heading": "Next: pay the deposit",
         "pay_body": "The deposit of {{amount}} secures your date.",
         "pay_button": "Pay deposit",
-        "redirecting": "Taking you to the deposit payment in {{count}} seconds…",
-        "stay": "Stay on this page",
         "portal_body": "You are all set. You can see your booking at any time in your client portal.",
         "portal_button": "Go to your client portal",
         "error": "We could not load the next step. The payment link is also in your booking email."
@@ -1941,8 +1941,9 @@
     },
     "public_quote": {
       "next_steps": {
+        "intro_pay_and_sign": "To finish your booking, pay the deposit. You can sign the contract now or later.",
+        "sign_contract": "Sign the contract",
         "heading": "Next steps",
-        "intro_sign_then_pay": "Two quick steps to finish your booking: sign the contract, then pay the deposit.",
         "intro_sign": "One last step to finish your booking: sign the contract.",
         "intro_pay": "One last step to finish your booking: pay the deposit.",
         "continue_to_sign": "Continue to sign the contract",
@@ -3296,6 +3297,10 @@
     "waiver_submit": "Sign and Continue",
     "waiver_token_expired": "Please scroll to the bottom again to re-confirm you have read the form.",
     "waiver_view_error": "Could not confirm reading. Please try scrolling again.",
+    "job_contract_agree": "I have read and agree to the contract, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
+    "job_contract_read": "Read the full contract",
+    "job_contract_hide": "Hide the contract",
+    "job_contract_view_error": "Could not load the contract. Please refresh the page and try again.",
     "waiver_already_signed": "Form signed",
     "waiver_continue_to_payment": "Continue to Payment",
     "waiver_loading": "Loading form…",
