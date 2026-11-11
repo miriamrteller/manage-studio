@@ -78,11 +78,7 @@ describe("prepare-enrolment-checkout parsing (integration contract)", () => {
 });
 
 describe("prepare-enrolment-checkout block reasons", () => {
-  it("blocks pay when waiver unsigned", () => {
-    expect(resolveBootstrapBlockReason("pending_payment", true)).toBe("waiver_required");
-  });
-
-  it("allows pay when waiver satisfied", () => {
-    expect(resolveBootstrapBlockReason("pending_payment", false)).toBeUndefined();
+  it("never blocks pay for an unsigned form (owner rule)", () => {
+    expect(resolveBootstrapBlockReason("pending_payment")).toBeUndefined();
   });
 });
