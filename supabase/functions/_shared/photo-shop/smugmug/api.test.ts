@@ -121,12 +121,12 @@ Deno.test("check gallery: passes with watermark, capped size, no downloads, Larg
   assert(!reader.asked.includes("/api/v2/image/V1!sizedetails"), "videos are skipped");
 });
 
-Deno.test("check gallery: an original that loads without signing in fails the check", async () => {
+Deno.test("check gallery: an original that loads is a tip only, the gallery still opens", async () => {
   const reader = fakeReader(galleryRoutes(safeAlbum, { ImageSizeOriginal: { Url: "https://photos.smugmug.com/K1-O.jpg" } }));
   const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
-  assert(!result.passed);
+  assert(result.passed);
   assertEquals(result.items.find((i) => i.code === "original_hidden")?.ok, false);
-  assertEquals(result.photos, []);
+  assertEquals(result.photos.length, 3);
 });
 
 Deno.test("check gallery: a preview clients cannot load fails the check", async () => {
@@ -136,19 +136,31 @@ Deno.test("check gallery: a preview clients cannot load fails the check", async 
   assertEquals(result.items.find((i) => i.code === "preview_public")?.ok, false);
 });
 
-Deno.test("check gallery: unsafe settings stop before any photo is read", async () => {
-  const reader = fakeReader(galleryRoutes({ ...safeAlbum, Watermark: false }));
+Deno.test("check gallery: protection settings are tips only, never block (owner, 11 Nov 2026)", async () => {
+  const reader = fakeReader(galleryRoutes({ ...safeAlbum, Watermark: false, LargestSize: "X5Large", AllowDownloads: true }));
   const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
-  assert(!result.passed);
-  assertEquals(reader.asked, ["/api/v2/album/abc123"]);
+  assert(result.passed);
+  assertEquals(result.photos.length, 3);
   assertEquals(result.items.map((i) => [i.code, i.ok]), [
     ["watermark", false],
-    ["largest_size", true],
-    ["downloads", true],
-    ["photos", false],
-    ["preview_public", false],
-    ["original_hidden", false],
+    ["largest_size", false],
+    ["downloads", false],
+    ["photos", true],
+    ["preview_public", true],
+    ["original_hidden", true],
   ]);
+});
+
+Deno.test("check gallery: watermark already in the photos", async () => {
+  const reader = fakeReader(galleryRoutes({ ...safeAlbum, Watermark: false, LargestSize: "5K" },
+    { ImageSizeOriginal: { Url: "https://photos.smugmug.com/K1-O.jpg" } }));
+  const probed: string[] = [];
+  const result = await checkGallery(reader, "abc123", (url) => { probed.push(url); return Promise.resolve(true); }, true);
+  assert(result.passed);
+  assertEquals(result.items.find((i) => i.code === "watermark"), { code: "watermark", ok: true, value: "in_photos" });
+  assertEquals(result.items.find((i) => i.code === "largest_size")?.ok, true);
+  assertEquals(result.items.find((i) => i.code === "original_hidden"), { code: "original_hidden", ok: true, value: "in_photos" });
+  assertEquals(probed, ["https://photos.smugmug.com/K1-L.jpg"], "bigger sizes are not probed");
 });
 
 Deno.test("check gallery: a photo without a Large size fails the check", async () => {
