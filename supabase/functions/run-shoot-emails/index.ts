@@ -5,6 +5,8 @@
  *   shoot_reminder  — 1–2 days before a booked shoot
  *   shoot_thank_you — 1–3 days after the shoot
  *   gallery_ready   — within 7 days of job_details.gallery_released_at (Thread A)
+ *   review_request  — 5–12 days after the gallery is shared, when the studio
+ *                     has a review link (tenants.review_url)
  * Windows tolerate missed runs; claim_automatic_email() makes each send happen
  * once and skips tenants that switched an email off.
  *
@@ -49,7 +51,11 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   const counts: Record<AutomaticEmailOutcome | "invalid", number> = { sent: 0, skipped: 0, failed: 0, invalid: 0 };
   for (const row of rows) {
     const tenant = tenantById.get(row.tenant_id);
-    if (!tenant || (row.email_key === "gallery_ready" && !isSafeLink(row.gallery_url))) {
+    if (
+      !tenant ||
+      (row.email_key === "gallery_ready" && !isSafeLink(row.gallery_url)) ||
+      (row.email_key === "review_request" && !isSafeLink(tenant.review_url))
+    ) {
       counts.invalid += 1;
       continue;
     }
@@ -59,7 +65,7 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
         key: row.email_key,
         engagementId: row.engagement_id,
         to: row.recipient_email,
-        variables: dueShootEmailVariables(row, tenant.language_default === "he" ? "he" : "en"),
+        variables: dueShootEmailVariables(row, tenant.language_default === "he" ? "he" : "en", tenant.review_url),
       });
       counts[outcome] += 1;
     } catch (sendError) {

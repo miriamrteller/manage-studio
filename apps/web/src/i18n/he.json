@@ -1927,7 +1927,12 @@
         "shoot_thank_you": "תודה",
         "shoot_thank_you_hint": "יום אחרי הצילום.",
         "gallery_ready": "הגלריה מוכנה",
-        "gallery_ready_hint": "כשמשחררים את הגלריה."
+        "gallery_ready_hint": "כשמשחררים את הגלריה.",
+        "review_request": "בקשה לחוות דעת",
+        "review_request_hint": "חמישה ימים אחרי שמשחררים את הגלריה. מבקש מהלקוח לכתוב חוות דעת.",
+        "review_url_label": "קישור לחוות דעת",
+        "review_url_hint": "המקום שבו לקוחות כותבים חוות דעת, למשל הקישור לביקורות שלכם בגוגל. בלי קישור, המייל הזה לא נשלח.",
+        "review_url_invalid": "יש להזין קישור מלא שמתחיל ב-https://"
       },
       "errors": {
         "invalid": "יש לבדוק את ההצעה: לכל שורה נדרשים תיאור ומחיר תקין, ונדרשת לפחות שורה אחת.",
@@ -2634,7 +2639,9 @@
       "disconnect": "נתק",
       "connected_as": "מחובר כ־{{email}}",
       "not_connected": "לא מחובר",
-      "not_available": "אינטגרציית Google Calendar אינה זמינה בתוכנית הנוכחית."
+      "not_available": "אינטגרציית Google Calendar אינה זמינה בתוכנית הנוכחית.",
+      "returning": "מחזירים אותך לסטודיו…",
+      "return_failed": "תוקף הקישור מ-Google פג. יש לחזור להגדרות הזמנה וללחוץ שוב על \"חבר את Google Calendar\"."
     }
   },
   "billing": {
@@ -4609,6 +4616,23 @@
     "update_card": "לעדכון הכרטיס",
     "dismiss": "סגירה"
   },
+  "attendance": {
+    "register": {
+      "button": "נוכחות",
+      "title": "נוכחות: {{name}}",
+      "date": "תאריך השיעור",
+      "no_class_that_day": "השיעור לא מתקיים ביום הזה.",
+      "nobody": "עדיין אין תלמידים רשומים לשיעור.",
+      "summary": "{{here}} הגיעו · {{away}} לא הגיעו · {{unmarked}} עוד לא סומנו",
+      "everyone_here": "סימון כל השאר כנוכחים",
+      "here": "הגיע/ה",
+      "not_here": "לא הגיע/ה",
+      "mark_for": "נוכחות של {{name}}",
+      "left_class": "כבר לא בשיעור הזה",
+      "load_error": "לא הצלחנו לטעון את הנוכחות. נסו שוב.",
+      "error": "השמירה לא הצליחה. נסו שוב."
+    }
+  },
   "class_cards": {
     "person": {
       "title": "כרטיסיות",
@@ -4651,7 +4675,7 @@
       "card_option": "{{name}} · {{card}} · נשארו {{left}}",
       "tick_in": "רישום",
       "error": "השמירה לא הצליחה. נסו שוב.",
-      "button": "כרטיסיות"
+      "card_holders": "בעלי כרטיסייה"
     },
     "portal": {
       "title": "הכרטיסיות שלך",

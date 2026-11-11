@@ -14,3 +14,4 @@ export { default as BookingConfirmedEmail } from './photographer/BookingConfirme
 export { default as ShootReminderEmail } from './photographer/ShootReminderEmail.js';
 export { default as ShootThankYouEmail } from './photographer/ShootThankYouEmail.js';
 export { default as GalleryReadyEmail } from './photographer/GalleryReadyEmail.js';
+export { default as ReviewRequestEmail } from './photographer/ReviewRequestEmail.js';

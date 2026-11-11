@@ -26,8 +26,7 @@ import type { Offering } from '@shared/schemas';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { formatClassAgeRange } from '../lib/formatClassAgeRange';
 import { deleteOfferingCover, uploadOfferingCover } from '../lib/offeringImageStorage';
-import { ClassCardRegister } from '@/features/class-cards/components/ClassCardRegister';
-import { useClassCardsEnabled } from '@/features/class-cards/hooks/useClassCardsEnabled';
+import { ClassRegister } from '@/features/attendance/components/ClassRegister';
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
@@ -47,7 +46,6 @@ export function AdminClassesList() {
   const [isCreating, setIsCreating] = useState(false);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [registerClassId, setRegisterClassId] = useState<string | null>(null);
-  const classCardsOn = useClassCardsEnabled();
 
   const classesData = useClasses({
     page,
@@ -314,16 +312,14 @@ export function AdminClassesList() {
                   >
                     {t('pages.admin_classes.requirements_button')}
                   </Button>
-                  {classCardsOn && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setRegisterClassId(registerClassId === classItem.id ? null : classItem.id)}
-                      aria-expanded={registerClassId === classItem.id}
-                    >
-                      {t('class_cards.register.button')}
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRegisterClassId(registerClassId === classItem.id ? null : classItem.id)}
+                    aria-expanded={registerClassId === classItem.id}
+                  >
+                    {t('attendance.register.button')}
+                  </Button>
                   <Link
                     to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
                     className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
@@ -344,7 +340,7 @@ export function AdminClassesList() {
                   />
                 )}
                 {registerClassId === classItem.id && (
-                  <ClassCardRegister
+                  <ClassRegister
                     offeringId={classItem.id}
                     className={classItem.name}
                     dayOfWeek={classItem.day_of_week ?? null}
@@ -468,16 +464,14 @@ export function AdminClassesList() {
                       >
                         {t('pages.admin_classes.requirements_button')}
                       </Button>
-                      {classCardsOn && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setRegisterClassId(registerClassId === classItem.id ? null : classItem.id)}
-                          aria-expanded={registerClassId === classItem.id}
-                        >
-                          {t('class_cards.register.button')}
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRegisterClassId(registerClassId === classItem.id ? null : classItem.id)}
+                        aria-expanded={registerClassId === classItem.id}
+                      >
+                        {t('attendance.register.button')}
+                      </Button>
                       <Link
                         to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
                         className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
@@ -511,7 +505,7 @@ export function AdminClassesList() {
                 {registerClassId === classItem.id && (
                   <tr>
                     <td colSpan={10} className="p-0">
-                      <ClassCardRegister
+                      <ClassRegister
                         offeringId={classItem.id}
                         className={classItem.name}
                         dayOfWeek={classItem.day_of_week ?? null}

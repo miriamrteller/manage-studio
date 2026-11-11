@@ -1,5 +1,5 @@
 -- =============================================================================
--- 20261111075700: Fix the "admins manage profiles" policy on user_profiles.
+-- 20261111084500: Fix the "admins manage profiles" policy on user_profiles.
 --
 -- The policy was
 --   USING (tenant_id = get_my_tenant_id() AND 'tenant_admin' = ANY(role))

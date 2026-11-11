@@ -1920,7 +1920,12 @@
         "shoot_thank_you": "Thank you",
         "shoot_thank_you_hint": "The day after the shoot.",
         "gallery_ready": "Gallery ready",
-        "gallery_ready_hint": "When you release the gallery."
+        "gallery_ready_hint": "When you release the gallery.",
+        "review_request": "Review request",
+        "review_request_hint": "Five days after you release the gallery. Asks the client for a review.",
+        "review_url_label": "Review link",
+        "review_url_hint": "Where clients leave a review, for example your Google reviews link. Without a link, this email isn't sent.",
+        "review_url_invalid": "Enter a full link starting with https://"
       },
       "errors": {
         "invalid": "Check the quote: each line needs a description and a valid price, and there must be at least one line.",
@@ -2624,7 +2629,9 @@
       "disconnect": "Disconnect",
       "connected_as": "Connected as {{email}}",
       "not_connected": "Not connected",
-      "not_available": "Google Calendar integration is not available on your current plan."
+      "not_available": "Google Calendar integration is not available on your current plan.",
+      "returning": "Taking you back to your studio…",
+      "return_failed": "This Google link has expired. Go back to Booking Settings and press Connect Google Calendar again."
     }
   },
   "billing": {
@@ -4587,6 +4594,23 @@
     "update_card": "Update your card",
     "dismiss": "Close"
   },
+  "attendance": {
+    "register": {
+      "button": "Register",
+      "title": "Register: {{name}}",
+      "date": "Class date",
+      "no_class_that_day": "This class does not run on that day.",
+      "nobody": "No students are enrolled in this class yet.",
+      "summary": "{{here}} here · {{away}} not here · {{unmarked}} not marked",
+      "everyone_here": "Mark the rest as here",
+      "here": "Here",
+      "not_here": "Not here",
+      "mark_for": "Attendance for {{name}}",
+      "left_class": "No longer in this class",
+      "load_error": "Could not load the register. Please try again.",
+      "error": "Could not save. Please try again."
+    }
+  },
   "class_cards": {
     "person": {
       "title": "Class cards",
@@ -4628,7 +4652,7 @@
       "card_option": "{{name}} · {{card}} · {{left}} left",
       "tick_in": "Tick in",
       "error": "Could not save. Please try again.",
-      "button": "Class cards"
+      "card_holders": "Class card holders"
     },
     "portal": {
       "title": "Your class cards",
