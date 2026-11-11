@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnrolmentPaymentSuccess } from '@/features/enrolment/components/EnrolmentPaymentSuccess';
 import { CheckoutPaymentShell } from '@/features/enrolment/components/CheckoutPaymentShell';
-import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { useCheckoutBootstrap } from '@/features/enrolment/hooks/useCheckoutBootstrap';
 import { resolvePendingEnrolmentAction } from '@/features/enrolment/lib/pendingEnrolmentAction';
 import { EnrolmentService } from '@/features/enrolment/service';
@@ -14,7 +13,7 @@ import { hasParentRole } from '@/lib/parentRoles';
 import { buildPortalHighlightState } from '@/lib/portalHighlight';
 import queryClient from '@/lib/query-client';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
-import type { ConsentTemplate, Engagement } from '@shared/schemas';
+import type { Engagement } from '@shared/schemas';
 import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
 
 interface AuthenticatedCompletionViewProps {
@@ -26,7 +25,6 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useCurrentUser();
   const tenant = useTenant();
-  const [waiverComplete, setWaiverComplete] = useState(false);
   const [linkingWaiver, setLinkingWaiver] = useState(false);
   const [paid, setPaid] = useState(false);
 
@@ -149,19 +147,8 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     navigate('/classes');
   };
 
-  const waiverTemplate = context.template as ConsentTemplate | null;
-  const showWaiverFirst =
-    Boolean(context.waiverRequired && !context.waiverAlreadySigned && !waiverComplete && waiverTemplate) ||
-    bootstrap.blockReason === 'waiver_required';
-
-  const handleWaiverComplete = async (evidenceId: string) => {
-    if (tenant && engagementId) {
-      await EnrolmentService.update(tenant, engagementId, { waiver_evidence_id: evidenceId });
-    }
-    setWaiverComplete(true);
-    void bootstrap.refetch();
-  };
-
+  // Owner rule: nothing ever blocks payment. The form is signed after paying
+  // (pending_waiver, handled above), never in front of the payment.
   if (context.alreadyComplete || paid) {
     return (
       <EnrolmentPaymentSuccess
@@ -173,26 +160,6 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
             : t('common.close')
         }
       />
-    );
-  }
-
-  if (showWaiverFirst && waiverTemplate) {
-    return (
-      <div className="max-w-lg mx-auto space-y-6">
-        <WaiverStep
-          personId={context.personId}
-          template={waiverTemplate}
-          offeringId={context.offeringId}
-          engagementId={context.engagementId}
-          tenantIdForInvalidation={tenant?.id}
-          studentName={context.studentName}
-          className={context.className}
-          isMinorStudent={context.isMinorStudent}
-          onComplete={(evidenceId) => void handleWaiverComplete(evidenceId)}
-          onPrevious={() => void finishCompletion()}
-          canGoBack
-        />
-      </div>
     );
   }
 

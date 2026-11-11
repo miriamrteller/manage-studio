@@ -56,18 +56,14 @@ describe('parsePrepareEnrolmentCheckoutBody', () => {
 
 describe('resolveBootstrapBlockReason', () => {
   it('maps active status to already_complete', () => {
-    expect(resolveBootstrapBlockReason('active', false)).toBe('already_complete');
+    expect(resolveBootstrapBlockReason('active')).toBe('already_complete');
   });
 
   it('maps pending_waiver to pending_waiver', () => {
-    expect(resolveBootstrapBlockReason('pending_waiver', false)).toBe('pending_waiver');
+    expect(resolveBootstrapBlockReason('pending_waiver')).toBe('pending_waiver');
   });
 
-  it('maps unsigned waiver to waiver_required', () => {
-    expect(resolveBootstrapBlockReason('pending_payment', true)).toBe('waiver_required');
-  });
-
-  it('returns undefined when payable', () => {
-    expect(resolveBootstrapBlockReason('pending_payment', false)).toBeUndefined();
+  it('a place waiting for payment is always payable (an unsigned form never blocks payment)', () => {
+    expect(resolveBootstrapBlockReason('pending_payment')).toBeUndefined();
   });
 });

@@ -296,7 +296,7 @@
       "ongoing_term_note": "Your studio has no terms yet, so this class runs with no end date (in a term called \"Ongoing\"). You can add terms later.",
       "ongoing_term_name": "Ongoing",
       "waiver_required": "Needs a signed form",
-      "waiver_required_help": "If yes, each person signs your form before their place is confirmed. A place that is not signed within 7 days is cancelled. Choose No for plans and services that don't need a form."
+      "waiver_required_help": "If yes, each person is asked to sign your form after paying. It never stops anyone paying, and a paid place is never cancelled for a missing form. Off unless you switch it on."
     },
     "requirement": {
       "type": "Requirement type",

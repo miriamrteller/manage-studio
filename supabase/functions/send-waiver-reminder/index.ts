@@ -7,9 +7,10 @@
  * Responsibilities:
  *   1. Send 5-day-before reminder email (first notice)
  *   2. Send 48-hour-before reminder email (final notice)
- *   3. Auto-cancel engagements past their deadline; paid engagements are
- *      flagged for a manual refund via audit_log (no automatic refund —
- *      current providers restrict refunds, e.g. Grow allows same-day only)
+ *   3. Past the deadline: a PAID place is kept and made active (owner rule:
+ *      the form is an optional step after payment, never a reason to lose a
+ *      paid place); the studio sees it in audit_log. An unpaid place is
+ *      cancelled as before.
  *
  * Processes LIMIT 100 records per run to avoid Edge Function timeouts.
  * If >100 records are found, it logs a warning — schedule should be made more
@@ -117,7 +118,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
     );
   }
 
-  const results: Record<string, string[]> = { cancelled: [], reminded_5d: [], reminded_48h: [], errors: [] };
+  const results: Record<string, string[]> = { cancelled: [], kept_unsigned: [], reminded_5d: [], reminded_48h: [], errors: [] };
 
   for (const eng of rows) {
     try {
@@ -130,9 +131,7 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
       const className = eng.offerings?.name ?? "your class";
       const schoolName = eng.tenants?.name ?? "Studio";
 
-      // 1. Past deadline — cancel. No automatic refund: current providers
-      // restrict refunds (Grow allows same-day only), so a paid engagement is
-      // flagged for the admin via audit_log instead.
+      // 1. Past deadline.
       if (msUntilDeadline <= 0) {
         const paymentRows = Array.isArray(eng.payments)
           ? eng.payments
@@ -142,37 +141,36 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
         const paidPayment = paymentRows.find(
           (p) => p.status === "succeeded" && (p.total_amount_minor ?? 0) > 0,
         );
-        const refundNote = paidPayment
-          ? "Please contact us to arrange your refund."
-          : "No payment was taken.";
+
+        // Paid: keep the place (owner rule: nothing undoes a payment for a
+        // missing form). It becomes active; the studio sees it in audit_log.
+        if (paidPayment) {
+          const { error: keepError } = await service
+            .from("engagements")
+            .update({ status: "active", waiver_deadline: null })
+            .eq("id", eng.id)
+            .eq("status", "pending_waiver");
+          if (keepError) throw keepError;
+          const { error: auditError } = await service.from("audit_log").insert({
+            tenant_id: eng.tenant_id,
+            action: "waiver_unsigned_place_kept",
+            entity_type: "engagement",
+            entity_id: eng.id,
+            after_state: { payment_id: paidPayment.id, reason: "waiver_deadline_passed" },
+          });
+          if (auditError) {
+            console.error("[send-waiver-reminder] kept-place audit insert failed:", auditError, { engagementId: eng.id });
+          }
+          results.kept_unsigned.push(eng.id);
+          continue;
+        }
+        const refundNote = "No payment was taken.";
 
         // Mark engagement cancelled
         await service
           .from("engagements")
           .update({ status: "cancelled" })
           .eq("id", eng.id);
-
-        if (paidPayment) {
-          const { error: auditError } = await service.from("audit_log").insert({
-            tenant_id: eng.tenant_id,
-            action: "waiver_cancel_refund_required",
-            entity_type: "payment",
-            entity_id: paidPayment.id,
-            after_state: {
-              engagement_id: eng.id,
-              amount_minor: paidPayment.total_amount_minor,
-              currency: paidPayment.currency,
-              reason: "waiver_deadline_exceeded",
-            },
-          });
-          if (auditError) {
-            console.error(
-              "[send-waiver-reminder] refund-required audit insert failed:",
-              auditError,
-              { engagementId: eng.id },
-            );
-          }
-        }
 
         // Insert waiver revoked event (extra data goes in metadata JSONB)
         const { error: revokeEventError } = await service.from("waiver_events").insert({

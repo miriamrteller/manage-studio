@@ -62,15 +62,18 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     return () => window.clearTimeout(timer);
   }, [bootstrap.isLoading]);
 
+  // Owner rule: nothing ever blocks payment. The form is offered only once the
+  // class is paid (pending_waiver); before that the link goes straight to payment.
   const tokenShowWaiver = useMemo(
     () =>
       Boolean(
-        context?.waiverRequired &&
+        context?.status === 'pending_waiver' &&
+          context.waiverRequired &&
           !context.waiverAlreadySigned &&
           !waiverComplete &&
           context.template,
-      ) || bootstrap.blockReason === 'waiver_required',
-    [context, waiverComplete, bootstrap.blockReason],
+      ),
+    [context, waiverComplete],
   );
 
   const waiverTemplate = context?.template as ConsentTemplate | null;

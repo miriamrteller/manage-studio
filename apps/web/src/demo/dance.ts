@@ -193,12 +193,11 @@ function offlineCharge(ctx: DemoContext, engagementId: string): Row {
   };
 }
 
-/** checkout-bootstrap-parse.ts resolveBootstrapBlockReason */
-function blockReason(status: string, waiverBlocks: boolean): string | undefined {
+/** checkout-bootstrap-parse.ts resolveBootstrapBlockReason (an unsigned form never blocks payment). */
+function blockReason(status: string): string | undefined {
   if (status === 'active') return 'already_complete';
   if (status === 'pending_waiver') return 'pending_waiver';
   if (status !== 'pending_payment') return 'not_payable';
-  if (waiverBlocks) return 'waiver_required';
   return undefined;
 }
 
@@ -216,7 +215,7 @@ export const danceFunctions: Record<string, FunctionHandler> = {
       }
     }
     const context = completionContext(ctx, engagementId);
-    const reason = blockReason(String(context.status), Boolean(context.waiverRequired && !context.waiverAlreadySigned));
+    const reason = blockReason(String(context.status));
     if (body.phase === 'load' || reason) return { context, charge: null, ...(reason ? { blockReason: reason } : {}) };
     return { context, charge: offlineCharge(ctx, engagementId) };
   },
