@@ -86,6 +86,15 @@ export function isYpaySuccess(json: YpayResponse): boolean {
 /** Throws a YpayApiError unless responseCode === 1. */
 function assertYpayOk(path: string, status: number, json: YpayResponse, text: string): YpayResponse {
   if (status < 200 || status >= 300) {
+    // YPay also sends its responseCode on HTTP errors (e.g. 400 with 4004): name it.
+    const code = Number(json.responseCode);
+    if (json.responseCode !== undefined && Number.isFinite(code)) {
+      throw new YpayApiError(
+        `YPay ${path} returned HTTP ${status}: ${ypayErrorMessage(code)} (responseCode ${code})`,
+        code,
+        status,
+      );
+    }
     throw new YpayApiError(`YPay ${path} returned HTTP ${status}: ${text.slice(0, 300)}`, undefined, status);
   }
   if (!isYpaySuccess(json)) {

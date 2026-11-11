@@ -78,3 +78,13 @@ export function defaultRequestTotalMinor(
   const left = packagePriceMinor - requested;
   return left > 0 ? left : null;
 }
+
+/**
+ * Plain words for a failed "Pay now". Never shows a raw server message such as
+ * "Internal error": the client always learns they can still pay the studio.
+ */
+export function payErrorText(message: string, studio: string, t: (key: string, opts?: Record<string, string>) => string): string {
+  if (message.includes('online_payment_unavailable')) return t('pages.pay.payStudioDirectly', { studio });
+  if (message.includes('Request is ') || message.includes('Job is cancelled')) return t('pages.pay.notCollectable');
+  return t('pages.pay.pageUnavailable', { studio });
+}
