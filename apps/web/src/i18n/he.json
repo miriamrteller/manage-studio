@@ -2634,7 +2634,9 @@
       "disconnect": "נתק",
       "connected_as": "מחובר כ־{{email}}",
       "not_connected": "לא מחובר",
-      "not_available": "אינטגרציית Google Calendar אינה זמינה בתוכנית הנוכחית."
+      "not_available": "אינטגרציית Google Calendar אינה זמינה בתוכנית הנוכחית.",
+      "returning": "מחזירים אותך לסטודיו…",
+      "return_failed": "תוקף הקישור מ-Google פג. יש לחזור להגדרות הזמנה וללחוץ שוב על \"חבר את Google Calendar\"."
     }
   },
   "billing": {

@@ -32,6 +32,8 @@ We do **not** embed Google Appointment Schedule or use Google as the checkout ho
 
 **Callback route:** `/admin/setup/integrations/google/callback` (behind `AdminRoute`; login redirect preserves `pathname + search` so `code`/`state` survive re-auth).
 
+**Return to the studio:** Google only returns to the one registered address, `{APP_URL}` = `https://app.opalswift.com`, where a studio admin is not signed in (sessions are per address). On `app.<root>` the callback page first calls `google-calendar-oauth-callback` with `{ action: "studio_url", state }` (no sign-in; checks the state's signature and expiry, builds the URL from the tenant row with `tenantBaseUrlFor`), then moves the browser to the same path and query on the studio's own address (subdomain or custom domain), where the code is exchanged as normal. The server still sends `redirect_uri = {APP_URL}/…` in the exchange, so Google needs only that one URI per environment.
+
 **Storage:** refresh/access tokens encrypted via `pgp_sym_encrypt` (`save_tenant_google_credentials` / `get_tenant_google_credentials`, `search_path = public, extensions`). Columns on `tenants` (and/or credentials RPCs from `03600`/`04000`).
 
 **Platform env (Edge Functions):**
