@@ -93,8 +93,9 @@ export default function DashboardRedirectPage() {
     // Determine redirect based on user role
     // Users can have multiple roles, so check in priority order
     if (isPlatformOwnerOnly(user)) {
-      // The platform owner on a studio address: a clear notice, not /classes.
-      navigate('/platform-owner', { replace: true });
+      // The platform owner on a studio address: the studio's admin, which
+      // first asks them to confirm (support access), never /classes.
+      navigate('/admin/setup', { replace: true });
     } else if (user.role.includes('tenant_admin')) {
       navigate('/admin/setup', { replace: true });
     } else if (hasTeacherRole(user.role)) {
