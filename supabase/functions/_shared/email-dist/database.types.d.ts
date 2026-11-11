@@ -536,6 +536,269 @@ export type Database = {
                     }
                 ];
             };
+            class_card_type_offerings: {
+                Row: {
+                    card_type_id: string;
+                    offering_id: string;
+                    tenant_id: string;
+                };
+                Insert: {
+                    card_type_id: string;
+                    offering_id: string;
+                    tenant_id: string;
+                };
+                Update: {
+                    card_type_id?: string;
+                    offering_id?: string;
+                    tenant_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_card_type_offerings_card_type_id_fkey";
+                        columns: ["card_type_id"];
+                        isOneToOne: false;
+                        referencedRelation: "class_card_types";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_card_type_offerings_offering_id_fkey";
+                        columns: ["offering_id"];
+                        isOneToOne: false;
+                        referencedRelation: "offerings";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_card_type_offerings_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            class_card_types: {
+                Row: {
+                    class_count: number;
+                    created_at: string;
+                    currency: string;
+                    id: string;
+                    is_active: boolean;
+                    name: string;
+                    price_minor: number;
+                    shareable: boolean;
+                    tenant_id: string;
+                    updated_at: string;
+                    valid_months: number | null;
+                };
+                Insert: {
+                    class_count: number;
+                    created_at?: string;
+                    currency?: string;
+                    id?: string;
+                    is_active?: boolean;
+                    name: string;
+                    price_minor: number;
+                    shareable?: boolean;
+                    tenant_id: string;
+                    updated_at?: string;
+                    valid_months?: number | null;
+                };
+                Update: {
+                    class_count?: number;
+                    created_at?: string;
+                    currency?: string;
+                    id?: string;
+                    is_active?: boolean;
+                    name?: string;
+                    price_minor?: number;
+                    shareable?: boolean;
+                    tenant_id?: string;
+                    updated_at?: string;
+                    valid_months?: number | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_card_types_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            class_card_visits: {
+                Row: {
+                    card_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    id: string;
+                    offering_id: string;
+                    person_id: string;
+                    session_date: string;
+                    starts_at: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    walk_in: boolean;
+                };
+                Insert: {
+                    card_id: string;
+                    created_at?: string;
+                    created_by?: string | null;
+                    id?: string;
+                    offering_id: string;
+                    person_id: string;
+                    session_date: string;
+                    starts_at: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at?: string;
+                    walk_in?: boolean;
+                };
+                Update: {
+                    card_id?: string;
+                    created_at?: string;
+                    created_by?: string | null;
+                    id?: string;
+                    offering_id?: string;
+                    person_id?: string;
+                    session_date?: string;
+                    starts_at?: string;
+                    status?: string;
+                    tenant_id?: string;
+                    updated_at?: string;
+                    walk_in?: boolean;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_card_visits_card_id_fkey";
+                        columns: ["card_id"];
+                        isOneToOne: false;
+                        referencedRelation: "class_cards";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_card_visits_offering_id_fkey";
+                        columns: ["offering_id"];
+                        isOneToOne: false;
+                        referencedRelation: "offerings";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_card_visits_person_id_fkey";
+                        columns: ["person_id"];
+                        isOneToOne: false;
+                        referencedRelation: "people";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_card_visits_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            class_cards: {
+                Row: {
+                    account_id: string | null;
+                    card_type_id: string;
+                    class_count: number;
+                    created_at: string;
+                    created_by: string | null;
+                    currency: string;
+                    extended_at: string | null;
+                    extension_requested_at: string | null;
+                    id: string;
+                    name: string;
+                    payment_id: string | null;
+                    person_id: string;
+                    price_minor: number;
+                    starts_on: string | null;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    valid_until: string | null;
+                };
+                Insert: {
+                    account_id?: string | null;
+                    card_type_id: string;
+                    class_count: number;
+                    created_at?: string;
+                    created_by?: string | null;
+                    currency: string;
+                    extended_at?: string | null;
+                    extension_requested_at?: string | null;
+                    id?: string;
+                    name: string;
+                    payment_id?: string | null;
+                    person_id: string;
+                    price_minor: number;
+                    starts_on?: string | null;
+                    status?: string;
+                    tenant_id: string;
+                    updated_at?: string;
+                    valid_until?: string | null;
+                };
+                Update: {
+                    account_id?: string | null;
+                    card_type_id?: string;
+                    class_count?: number;
+                    created_at?: string;
+                    created_by?: string | null;
+                    currency?: string;
+                    extended_at?: string | null;
+                    extension_requested_at?: string | null;
+                    id?: string;
+                    name?: string;
+                    payment_id?: string | null;
+                    person_id?: string;
+                    price_minor?: number;
+                    starts_on?: string | null;
+                    status?: string;
+                    tenant_id?: string;
+                    updated_at?: string;
+                    valid_until?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_cards_account_id_fkey";
+                        columns: ["account_id"];
+                        isOneToOne: false;
+                        referencedRelation: "accounts";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_cards_card_type_id_fkey";
+                        columns: ["card_type_id"];
+                        isOneToOne: false;
+                        referencedRelation: "class_card_types";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_cards_payment_id_fkey";
+                        columns: ["payment_id"];
+                        isOneToOne: false;
+                        referencedRelation: "payments";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_cards_person_id_fkey";
+                        columns: ["person_id"];
+                        isOneToOne: false;
+                        referencedRelation: "people";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "class_cards_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             class_discount_settings: {
                 Row: {
                     combine_mode: string;
@@ -1668,6 +1931,7 @@ export type Database = {
             job_payment_requests: {
                 Row: {
                     amount_minor: number;
+                    class_card_id: string | null;
                     created_at: string;
                     created_by: string | null;
                     currency: string;
@@ -1690,6 +1954,7 @@ export type Database = {
                 };
                 Insert: {
                     amount_minor: number;
+                    class_card_id?: string | null;
                     created_at?: string;
                     created_by?: string | null;
                     currency?: string;
@@ -1712,6 +1977,7 @@ export type Database = {
                 };
                 Update: {
                     amount_minor?: number;
+                    class_card_id?: string | null;
                     created_at?: string;
                     created_by?: string | null;
                     currency?: string;
@@ -1733,6 +1999,13 @@ export type Database = {
                     updated_at?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "job_payment_requests_class_card_id_fkey";
+                        columns: ["class_card_id"];
+                        isOneToOne: false;
+                        referencedRelation: "class_cards";
+                        referencedColumns: ["id"];
+                    },
                     {
                         foreignKeyName: "job_payment_requests_created_by_fkey";
                         columns: ["created_by"];
@@ -1909,6 +2182,61 @@ export type Database = {
                     }
                 ];
             };
+            job_photo_shop_photos: {
+                Row: {
+                    created_at: string;
+                    created_by: string | null;
+                    engagement_id: string;
+                    file_name: string;
+                    id: string;
+                    position: number;
+                    storage_path: string;
+                    tenant_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    engagement_id: string;
+                    file_name: string;
+                    id?: string;
+                    position?: number;
+                    storage_path: string;
+                    tenant_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    engagement_id?: string;
+                    file_name?: string;
+                    id?: string;
+                    position?: number;
+                    storage_path?: string;
+                    tenant_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "job_photo_shop_photos_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "job_photo_shop_photos_engagement_id_fkey";
+                        columns: ["engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "job_photo_shop_photos_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             job_photo_shops: {
                 Row: {
                     all_photos_price_minor: number | null;
@@ -1921,6 +2249,9 @@ export type Database = {
                     included_photos: number;
                     price_per_photo_minor: number | null;
                     provider: string;
+                    smugmug_check: Json | null;
+                    smugmug_checked_at: string | null;
+                    smugmug_photos: Json | null;
                     tenant_id: string;
                     updated_at: string;
                 };
@@ -1935,6 +2266,9 @@ export type Database = {
                     included_photos?: number;
                     price_per_photo_minor?: number | null;
                     provider?: string;
+                    smugmug_check?: Json | null;
+                    smugmug_checked_at?: string | null;
+                    smugmug_photos?: Json | null;
                     tenant_id: string;
                     updated_at?: string;
                 };
@@ -1949,6 +2283,9 @@ export type Database = {
                     included_photos?: number;
                     price_per_photo_minor?: number | null;
                     provider?: string;
+                    smugmug_check?: Json | null;
+                    smugmug_checked_at?: string | null;
+                    smugmug_photos?: Json | null;
                     tenant_id?: string;
                     updated_at?: string;
                 };
@@ -3141,6 +3478,7 @@ export type Database = {
                     id: boolean;
                     takbull_api_key_enc: string | null;
                     takbull_api_secret_enc: string | null;
+                    takbull_child_package_id: string | null;
                     takbull_credentials_updated_at: string | null;
                     takbull_credentials_updated_by: string | null;
                     updated_at: string;
@@ -3150,6 +3488,7 @@ export type Database = {
                     id?: boolean;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
+                    takbull_child_package_id?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_credentials_updated_by?: string | null;
                     updated_at?: string;
@@ -3159,6 +3498,7 @@ export type Database = {
                     id?: boolean;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
+                    takbull_child_package_id?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_credentials_updated_by?: string | null;
                     updated_at?: string;
@@ -4007,6 +4347,38 @@ export type Database = {
                     }
                 ];
             };
+            tenant_class_card_settings: {
+                Row: {
+                    cancel_cutoff_hours: number;
+                    enabled: boolean;
+                    extension_months: number;
+                    tenant_id: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    cancel_cutoff_hours?: number;
+                    enabled?: boolean;
+                    extension_months?: number;
+                    tenant_id: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    cancel_cutoff_hours?: number;
+                    enabled?: boolean;
+                    extension_months?: number;
+                    tenant_id?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "tenant_class_card_settings_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: true;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             tenant_custom_domains: {
                 Row: {
                     activated_at: string | null;
@@ -4515,10 +4887,12 @@ export type Database = {
                     smugmug_oauth_pending_enc: string | null;
                     sub_status: string;
                     subdomain: string;
+                    takbull_account_opened_at: string | null;
                     takbull_api_key_enc: string | null;
                     takbull_api_secret_enc: string | null;
                     takbull_credentials_updated_at: string | null;
                     takbull_document_type: number;
+                    takbull_merchant_id: string | null;
                     teaches_classes: boolean;
                     terms_url: string | null;
                     tranzila_terminal_name: string | null;
@@ -4608,10 +4982,12 @@ export type Database = {
                     smugmug_oauth_pending_enc?: string | null;
                     sub_status?: string;
                     subdomain: string;
+                    takbull_account_opened_at?: string | null;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_document_type?: number;
+                    takbull_merchant_id?: string | null;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -4701,10 +5077,12 @@ export type Database = {
                     smugmug_oauth_pending_enc?: string | null;
                     sub_status?: string;
                     subdomain?: string;
+                    takbull_account_opened_at?: string | null;
                     takbull_api_key_enc?: string | null;
                     takbull_api_secret_enc?: string | null;
                     takbull_credentials_updated_at?: string | null;
                     takbull_document_type?: number;
+                    takbull_merchant_id?: string | null;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -5228,6 +5606,13 @@ export type Database = {
                 };
                 Returns: string;
             };
+            add_job_photo_shop_photos: {
+                Args: {
+                    p_engagement_id: string;
+                    p_photos: Json;
+                };
+                Returns: Json;
+            };
             admin_enrolment_lookup_email: {
                 Args: {
                     p_email: string;
@@ -5286,6 +5671,34 @@ export type Database = {
                 };
                 Returns: undefined;
             };
+            book_class_with_card: {
+                Args: {
+                    p_card_id: string;
+                    p_offering_id: string;
+                    p_person_id?: string;
+                    p_session_date: string;
+                };
+                Returns: {
+                    card_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    id: string;
+                    offering_id: string;
+                    person_id: string;
+                    session_date: string;
+                    starts_at: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    walk_in: boolean;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_card_visits";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             cancel_active_engagement: {
                 Args: {
                     p_engagement_id: string;
@@ -5293,12 +5706,65 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            cancel_class_card_booking: {
+                Args: {
+                    p_visit_id: string;
+                };
+                Returns: {
+                    card_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    id: string;
+                    offering_id: string;
+                    person_id: string;
+                    session_date: string;
+                    starts_at: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    walk_in: boolean;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_card_visits";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             cancel_engagement: {
                 Args: {
                     p_engagement_id: string;
                     p_reason?: string;
                 };
                 Returns: Json;
+            };
+            check_in_with_class_card: {
+                Args: {
+                    p_card_id: string;
+                    p_offering_id: string;
+                    p_person_id?: string;
+                    p_session_date: string;
+                };
+                Returns: {
+                    card_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    id: string;
+                    offering_id: string;
+                    person_id: string;
+                    session_date: string;
+                    starts_at: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    walk_in: boolean;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_card_visits";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             check_subdomain_available: {
                 Args: {
@@ -5457,6 +5923,12 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            delete_job_photo_shop_photo: {
+                Args: {
+                    p_photo_id: string;
+                };
+                Returns: string;
+            };
             deliver_job_photo_order: {
                 Args: {
                     p_delivery_url: string;
@@ -5484,6 +5956,37 @@ export type Database = {
             export_tenant_data: {
                 Args: never;
                 Returns: Json;
+            };
+            extend_class_card: {
+                Args: {
+                    p_card_id: string;
+                };
+                Returns: {
+                    account_id: string | null;
+                    card_type_id: string;
+                    class_count: number;
+                    created_at: string;
+                    created_by: string | null;
+                    currency: string;
+                    extended_at: string | null;
+                    extension_requested_at: string | null;
+                    id: string;
+                    name: string;
+                    payment_id: string | null;
+                    person_id: string;
+                    price_minor: number;
+                    starts_on: string | null;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    valid_until: string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_cards";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
             };
             find_contacts_by_phone: {
                 Args: {
@@ -5544,6 +6047,13 @@ export type Database = {
                     name: string;
                     price_minor: number;
                 }[];
+            };
+            get_class_card_register: {
+                Args: {
+                    p_offering_id: string;
+                    p_session_date: string;
+                };
+                Returns: Json;
             };
             get_client_job_gallery: {
                 Args: {
@@ -5626,6 +6136,30 @@ export type Database = {
                 Args: never;
                 Returns: string[];
             };
+            get_my_class_card_sessions: {
+                Args: {
+                    p_card_id: string;
+                    p_days?: number;
+                };
+                Returns: Json;
+            };
+            get_my_class_cards: {
+                Args: never;
+                Returns: {
+                    class_count: number;
+                    classes_left: number;
+                    extended_at: string;
+                    extension_requested_at: string;
+                    id: string;
+                    name: string;
+                    pay_token: string;
+                    person_id: string;
+                    shared: boolean;
+                    starts_on: string;
+                    status: string;
+                    valid_until: string;
+                }[];
+            };
             get_my_last_signer_details: {
                 Args: never;
                 Returns: Json;
@@ -5673,6 +6207,25 @@ export type Database = {
                     current_status: string;
                     offering_id: string;
                     person_id: string;
+                }[];
+            };
+            get_person_class_cards: {
+                Args: {
+                    p_person_id: string;
+                };
+                Returns: {
+                    class_count: number;
+                    classes_left: number;
+                    created_at: string;
+                    extended_at: string;
+                    extension_requested_at: string;
+                    id: string;
+                    name: string;
+                    payment_id: string;
+                    shared: boolean;
+                    starts_on: string;
+                    status: string;
+                    valid_until: string;
                 }[];
             };
             get_person_consents: {
@@ -5774,6 +6327,12 @@ export type Database = {
                     p_evidence_id: string;
                 };
                 Returns: Json;
+            };
+            get_studio_card_token: {
+                Args: {
+                    p_tenant_id: string;
+                };
+                Returns: string;
             };
             get_supabase_functions_url: {
                 Args: never;
@@ -6100,6 +6659,39 @@ export type Database = {
                 };
                 Returns: boolean;
             };
+            issue_class_card: {
+                Args: {
+                    p_card_type_id: string;
+                    p_payment_id?: string;
+                    p_person_id: string;
+                };
+                Returns: {
+                    account_id: string | null;
+                    card_type_id: string;
+                    class_count: number;
+                    created_at: string;
+                    created_by: string | null;
+                    currency: string;
+                    extended_at: string | null;
+                    extension_requested_at: string | null;
+                    id: string;
+                    name: string;
+                    payment_id: string | null;
+                    person_id: string;
+                    price_minor: number;
+                    starts_on: string | null;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    valid_until: string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_cards";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             job_insert: {
                 Args: {
                     p_booked_ends_at: string;
@@ -6220,6 +6812,12 @@ export type Database = {
                 };
                 Returns: string;
             };
+            mark_job_photo_order_sent: {
+                Args: {
+                    p_order_id: string;
+                };
+                Returns: Json;
+            };
             mark_quote_sent: {
                 Args: {
                     p_quote_id: string;
@@ -6238,6 +6836,23 @@ export type Database = {
             my_login_has_password: {
                 Args: never;
                 Returns: boolean;
+            };
+            my_studio_subscription: {
+                Args: never;
+                Returns: {
+                    card_expiry: string;
+                    card_last4: string;
+                    card_saved_at: string;
+                    failed_attempts: number;
+                    founder: boolean;
+                    free_until: string;
+                    last_payment_agorot: number;
+                    last_payment_at: string;
+                    last_payment_status: string;
+                    next_charge_on: string;
+                    sub_status: string;
+                    trial_ends_at: string;
+                }[];
             };
             payment_provider_switch_allowed: {
                 Args: {
@@ -6324,6 +6939,10 @@ export type Database = {
                     keys_saved: boolean;
                     keys_saved_at: string;
                 }[];
+            };
+            platform_child_package: {
+                Args: never;
+                Returns: string;
             };
             platform_set_feature_override: {
                 Args: {
@@ -6492,6 +7111,37 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            request_class_card_extension: {
+                Args: {
+                    p_card_id: string;
+                };
+                Returns: {
+                    account_id: string | null;
+                    card_type_id: string;
+                    class_count: number;
+                    created_at: string;
+                    created_by: string | null;
+                    currency: string;
+                    extended_at: string | null;
+                    extension_requested_at: string | null;
+                    id: string;
+                    name: string;
+                    payment_id: string | null;
+                    person_id: string;
+                    price_minor: number;
+                    starts_on: string | null;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    valid_until: string | null;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_cards";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             resolve_engagement_billing_account: {
                 Args: {
                     p_student_person_id: string;
@@ -6558,6 +7208,28 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            save_job_photo_shop_smugmug_check: {
+                Args: {
+                    p_actor_id: string;
+                    p_album_key: string;
+                    p_album_name: string;
+                    p_check: Json;
+                    p_engagement_id: string;
+                    p_photos: Json;
+                    p_tenant_id: string;
+                };
+                Returns: undefined;
+            };
+            save_opened_takbull_account: {
+                Args: {
+                    p_actor_id: string;
+                    p_api_key: string;
+                    p_api_secret: string;
+                    p_merchant_id: string;
+                    p_tenant_id: string;
+                };
+                Returns: undefined;
+            };
             save_platform_takbull_credentials: {
                 Args: {
                     p_api_key: string;
@@ -6571,6 +7243,16 @@ export type Database = {
                     p_quote: Json;
                 };
                 Returns: string;
+            };
+            save_studio_card_token: {
+                Args: {
+                    p_expiry: string;
+                    p_last4: string;
+                    p_next_charge_on: string;
+                    p_tenant_id: string;
+                    p_token: string;
+                };
+                Returns: undefined;
             };
             save_tenant_google_credentials: {
                 Args: {
@@ -6744,6 +7426,32 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            set_class_card_visit_status: {
+                Args: {
+                    p_status: string;
+                    p_visit_id: string;
+                };
+                Returns: {
+                    card_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    id: string;
+                    offering_id: string;
+                    person_id: string;
+                    session_date: string;
+                    starts_at: string;
+                    status: string;
+                    tenant_id: string;
+                    updated_at: string;
+                    walk_in: boolean;
+                };
+                SetofOptions: {
+                    from: "*";
+                    to: "class_card_visits";
+                    isOneToOne: true;
+                    isSetofReturn: false;
+                };
+            };
             set_consent_template_lawyer_reviewed: {
                 Args: {
                     p_reviewed: boolean;
@@ -6756,6 +7464,18 @@ export type Database = {
                     p_feature_key: string;
                     p_off: boolean;
                     p_tenant_id: string;
+                };
+                Returns: undefined;
+            };
+            set_platform_charging: {
+                Args: {
+                    p_enabled: boolean;
+                };
+                Returns: undefined;
+            };
+            set_platform_child_package: {
+                Args: {
+                    p_package_id: string;
                 };
                 Returns: undefined;
             };
@@ -6801,6 +7521,13 @@ export type Database = {
             smugmug_admin_tenant_id: {
                 Args: never;
                 Returns: string;
+            };
+            start_class_card_purchase: {
+                Args: {
+                    p_card_type_id: string;
+                    p_person_id?: string;
+                };
+                Returns: Json;
             };
             studio_feature_states: {
                 Args: {

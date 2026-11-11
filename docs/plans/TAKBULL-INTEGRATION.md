@@ -132,7 +132,7 @@ What already exists and Takbull plugs into:
 - **Demo seed and fixtures:** a Takbull studio.
 - **Lawyer list:** Takbull as a data sub-processor (privacy policy, DPA), and the onboarding pass-through of ID and bank data. `[[LAWYER: confirm]]`
 
-## OpalSwift's own billing of studios (owner decision; plan 2026-11-10, not built yet)
+## OpalSwift's own billing of studios (owner decision; plan 2026-11-10; B1 #407 and B2 #411 merged, B3 built; all dev only)
 
 OpalSwift bills studios for their plan (trial, then paid) as a **Takbull merchant**, with its own Takbull account. There is no Grow account for OpalSwift. This replaces the Grow parts of `docs/plans/opalswift-billing-plan.md` (its prices, costs and market sections still stand).
 
@@ -142,8 +142,9 @@ Owner decisions that apply: trial 1 month; founders free until the end of 2026; 
 
 - **OpalSwift's keys:** saved encrypted in the database (`platform_billing_settings`, the same way a studio's keys are), entered or replaced by the platform owner in Platform → Billing, decrypted only by the service role. On dev they are the Takbull sandbox keys, copied inside the database from the studio where the owner saved them. On prod nothing is saved until the owner launches billing, and charging has its own switch (off), so nothing can charge on prod by accident. Not an edge secret, so it has only one copy.
 - **Card:** the studio adds a card on a Takbull payment page of OpalSwift's account (`DealType` 6, token). The docs describe no card save without a charge, so the card is saved with the **first charge** (the first month, at trial end), not at sign-up. The token comes back on the redirect and in the IPN (`CardExternalToken`, last 4 digits, expiry). Not confirmed: a ₪0 card check.
-- **Monthly charge:** a daily job charges each due studio's token with `ChargeToken`. Success is `internalCode` 0 **in the ChargeToken answer itself**, double-checked with `GetTransaction`, so it does not wait for a payment notice (the docs don't say ChargeToken sends one). The charge has one key per studio and month, so a rerun can't charge twice.
-- **Failed charge:** retry on days 3 and 7, email each time, and an in-app banner. The studio keeps working (never block the flow). What happens after the last retry is the owner's call (open question 1).
+- **Monthly charge:** a daily job charges each due studio's token with `ChargeToken`. Success is `internalCode` 0 **in the ChargeToken answer itself**, with an order status that isn't failed, cancelled, removed or abandoned, so it does not wait for a payment notice (the docs don't say ChargeToken sends one). ChargeToken answers with Takbull's `orderId`, not a transaction number, so there is nothing to pass to `GetTransaction`; the `orderId` is stored on the payment. A month with a successful charge is never charged again (unique index), and a charge that got no answer (timeout, network) stays pending and blocks that month until someone checks it, rather than risk a second charge.
+- **Failed charge:** retry on days 3 and 7 after the due date, email the studio's admins each time (from OpalSwift, replies to support), and a closable banner on the admin dashboard. The studio keeps working (never block the flow). After the last retry: banner only, until the studio adds a new card (owner decision 1).
+- **Switch and testing:** the daily job (`run-platform-billing`, 04:41 UTC) charges nothing unless the platform owner turned monthly charging on in Platform → Billing. On the dev website each studio row with a card has "Charge now (testing)", which charges that studio's next month at once (date and retries skipped, the founder and free-until rules kept).
 - **Receipt:** `CreateDocument` on the charge, issued by OpalSwift's account to the studio's business (name and business number from its legal profile).
 - **Founders:** no charge before 2027-01-01 for a studio marked founder.
 - **Data (platform-only, no studio access):** `studio_subscriptions` (one per studio: plan, status, trial end, next charge, token reference, failed attempts) and `platform_payments` (one per charge, unique per studio and month). The token is stored encrypted like the studio keys.
@@ -154,8 +155,8 @@ Owner decisions that apply: trial 1 month; founders free until the end of 2026; 
 |---|---|---|
 | B1 | OpalSwift's keys (encrypted in the database), the billing tables, Platform → Billing (dev website only): keys, Test connection, each studio's billing details | Keys check (`GetDocumentSettings` with the platform keys) |
 | B2 | "Add a card" page for a studio admin (dev only): Takbull page on OpalSwift's account, first charge of ₪1 on dev, token saved | A ₪1 charge with the test card; the token is saved |
-| B3 | The daily job: `ChargeToken` for due studios, retries, emails, banner | Set a studio's next charge to today and run the job: a ₪1 charge, one receipt, no second charge on a rerun |
-| PR 7 | Open the studio's Takbull account (`CreateAccount`, `SubscriptionPayer: "Parent"`), dev only: Settings → Payments → "Open my Takbull account (testing)" | One child account on the sandbox; its keys saved encrypted; Test connection passes for the new studio. If Takbull refuses, ask Takbull to enable account opening on the sandbox account |
+| B3 | The daily job: `ChargeToken` for due studios, retries, emails, banner | Turn monthly charging on, then "Charge now (testing)" for Lens Studio: a ₪1 charge, one receipt, the next charge moves on a month |
+| PR 7 (built) | Open the studio's Takbull account (`CreateAccount`, `SubscriptionPayer: "Parent"`), dev only: Settings → Payments → "Open my Takbull account (testing)". Business details prefilled from the legal details (behind "Details we filled in for you"); the owner types the Takbull password, their ID number and the bank account, which go to Takbull only. The package id is set in Platform → Billing (empty = the free package). On success the keys are saved encrypted (`save_opened_takbull_account`) and the studio's payments and invoicing switch to Takbull. Lawyer list row 33 | One child account on the sandbox; its keys saved encrypted; Test connection passes for the new studio. If Takbull refuses, ask Takbull to enable account opening on the sandbox account |
 
 ### Owner decisions (2026-11-10)
 

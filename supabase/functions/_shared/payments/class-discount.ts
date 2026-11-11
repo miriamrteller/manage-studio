@@ -4,7 +4,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
  * Automatic class discounts (sibling, extra class, early bird). The database works
  * the discount out once, when the enrolment is made, and stores it on the
  * enrolment (engagements.discount_minor / discount_lines, migration
- * 20261110111500_class_discounts.sql). Every price reader takes the class price
+ * 20261111075000_class_discounts.sql). Every price reader takes the class price
  * minus that amount; for a monthly class it is per month.
  */
 export type ClassDiscountKind = "sibling" | "extra_class" | "early_bird";

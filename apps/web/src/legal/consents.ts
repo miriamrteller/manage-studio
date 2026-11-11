@@ -17,7 +17,12 @@ export type ConsentKind =
   | 'marketing_whatsapp';
 
 export const PHOTO_KINDS: ConsentKind[] = ['photo_internal', 'photo_parents_group', 'photo_public'];
-export const MARKETING_KINDS: ConsentKind[] = ['marketing_email', 'marketing_sms', 'marketing_whatsapp'];
+/**
+ * Channels offered on forms. OpalSwift has no marketing SMS sender, so SMS is not offered
+ * (owner decision, 2026-11-10). 'marketing_sms' stays a valid kind so existing records,
+ * the admin history and unsubscribe links keep working.
+ */
+export const MARKETING_KINDS: ConsentKind[] = ['marketing_email', 'marketing_whatsapp'];
 
 export type ConsentSource = 'enrolment' | 'booking' | 'signup' | 'portal' | 'admin' | 'contract';
 

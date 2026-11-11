@@ -10,6 +10,8 @@ import queryClient from '@/lib/query-client';
 import { OfflinePaymentsSettingsForm, OFFLINE_PAYMENTS } from './OfflinePaymentsSettingsForm';
 import { YpaySettingsForm } from './YpaySettingsForm';
 import { TakbullTestingForm } from './TakbullTestingForm';
+import { PlanCardTestingForm } from './PlanCardTestingForm';
+import { TakbullOpenAccountForm } from './TakbullOpenAccountForm';
 import { tenantUsesBundledPayments } from '@/lib/tenantProviderRouting';
 import { BUNDLED_PAYMENTS_SETUP_PATH } from '@/lib/bundledProviderUi';
 
@@ -33,7 +35,9 @@ export function PaymentSettingsForm() {
     <div className="space-y-8">
       <PaymentSettingsBody />
       <BitPaymentSetting />
+      <TakbullOpenAccountForm />
       <TakbullTestingForm />
+      <PlanCardTestingForm />
     </div>
   );
 }

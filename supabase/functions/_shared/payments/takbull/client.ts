@@ -186,6 +186,56 @@ export interface TakbullDocumentSettings {
   [key: string]: unknown;
 }
 
+/**
+ * Account/CreateAccount (docs, read 2026-11-10): OpalSwift's own keys open a child merchant
+ * account for a studio. The parent is resolved from the keys, never from the body.
+ */
+export interface TakbullMerchantDetails {
+  Name: string;
+  NameEn?: string;
+  BusinessNumber: string;
+  /** 1 authorised dealer · 2 limited company · 3 exempt dealer · 4 non-profit · 5 partnership · 6 public company. */
+  BusinessType: number;
+  BizRegiEmail: string;
+  PhoneNumber1: string;
+  Address1: string;
+  City: string;
+  FirstName: string;
+  LastName: string;
+  IdentityNumber: string;
+  bankcode: string;
+  branchcode: string;
+  accountnumber: string;
+  Country?: string;
+  Mcc?: string;
+  BusinessDomainDescription?: string;
+}
+
+export interface TakbullCreateAccountRequest {
+  Email: string;
+  Password: string;
+  FirstName?: string;
+  LastName?: string;
+  Phone?: string;
+  PackageUniqId?: string;
+  SubscriptionPayer?: "Parent" | "Child";
+  RedirectUrl?: string;
+  IpnUrl?: string;
+  MerchantDetails: TakbullMerchantDetails;
+}
+
+export interface TakbullCreateAccountResult {
+  Success?: boolean;
+  /** 0 created · 1 created with the free package · 6001xx errors (see open-account.ts). */
+  ErrorCode?: number;
+  ErrorMessage?: string;
+  MerchantId?: string | null;
+  AffiliationId?: number | null;
+  PaymentRedirectUrl?: string | null;
+  ApiKey?: string | null;
+  ApiSecret?: string | null;
+}
+
 /** What a studio's Takbull account can do, behind one interface (live client or the mock). */
 export interface TakbullApi {
   getPaymentPageRedirectUrl(order: TakbullOrderRequest): Promise<TakbullRedirectUrlResult>;
@@ -195,6 +245,8 @@ export interface TakbullApi {
   refund(request: TakbullRefundRequest): Promise<TakbullValidation>;
   createDocument(request: TakbullDocumentRequest): Promise<TakbullDocumentResult>;
   getDocumentSettings(params?: { childMid?: string; lang?: "he" | "en" }): Promise<TakbullDocumentSettings>;
+  /** OpalSwift's account only: open a studio's child account. A refusal is an answer, not thrown. */
+  createAccount(request: TakbullCreateAccountRequest): Promise<TakbullCreateAccountResult>;
   updateDocumentSettings(params: {
     childMid?: string;
     language?: "he" | "en";
@@ -300,6 +352,10 @@ export class TakbullClient implements TakbullApi {
 
   async chargeToken(request: TakbullChargeTokenRequest): Promise<TakbullValidation> {
     return this.orderCall("api/ExtranalAPI/ChargeToken", request);
+  }
+
+  async createAccount(request: TakbullCreateAccountRequest): Promise<TakbullCreateAccountResult> {
+    return await this.call<TakbullCreateAccountResult>("api/Account/CreateAccount", { method: "POST", body: request });
   }
 
   async refund(request: TakbullRefundRequest): Promise<TakbullValidation> {

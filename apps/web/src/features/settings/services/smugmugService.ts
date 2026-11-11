@@ -62,6 +62,27 @@ export class SmugMugActionError extends Error {
   }
 }
 
+/** One of the photographer's SmugMug galleries. */
+export interface SmugMugAlbum {
+  key: string;
+  name: string;
+  imageCount: number | null;
+}
+
+/** One line of "Check gallery" (pages.jobs.photo_shop.source.item.*). */
+export interface GalleryCheckItem {
+  code: 'watermark' | 'largest_size' | 'downloads' | 'photos' | 'preview_public' | 'original_hidden';
+  ok: boolean;
+  value?: string;
+}
+
+export interface GalleryCheckResult {
+  passed: boolean;
+  albumName: string;
+  items: GalleryCheckItem[];
+  photoCount: number;
+}
+
 async function call(body: Record<string, string>): Promise<Record<string, unknown>> {
   const { data, error } = await supabase.functions.invoke('smugmug-connection', { body });
   const parsed = await parseFunctionInvokeBody(data, error);
@@ -116,6 +137,26 @@ export const SmugMugService = {
   /** The callback page: swap SmugMug's token + verifier for the access token. */
   async complete(oauthToken: string, oauthVerifier: string): Promise<void> {
     await call({ action: 'complete', oauth_token: oauthToken, oauth_verifier: oauthVerifier });
+  },
+
+  /** The photographer's galleries, and the one named like this shoot (to prefill the picker). */
+  async listAlbums(engagementId: string): Promise<{ albums: SmugMugAlbum[]; suggested: string | null }> {
+    const body = await call({ action: 'albums', engagement_id: engagementId });
+    return {
+      albums: Array.isArray(body.albums) ? (body.albums as SmugMugAlbum[]) : [],
+      suggested: typeof body.suggested === 'string' ? body.suggested : null,
+    };
+  },
+
+  /** "Check gallery": saves the gallery on the shoot and returns what the check found. */
+  async checkGallery(engagementId: string, albumKey: string): Promise<GalleryCheckResult> {
+    const body = await call({ action: 'check', engagement_id: engagementId, album_key: albumKey });
+    return {
+      passed: body.passed === true,
+      albumName: typeof body.albumName === 'string' ? body.albumName : '',
+      items: Array.isArray(body.items) ? (body.items as GalleryCheckItem[]) : [],
+      photoCount: typeof body.photoCount === 'number' ? body.photoCount : 0,
+    };
   },
 
   async disconnect(): Promise<void> {

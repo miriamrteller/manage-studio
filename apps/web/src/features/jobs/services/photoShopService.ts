@@ -1,14 +1,31 @@
 import { supabase } from '@/lib/supabase';
 
 /**
- * Photo shop (beta, flag billing:photo_shop). SmugMug keeps the photos; these
- * rows hold the shoot's gallery choice, prices and what was bought.
- * Server side: supabase/migrations/20261104171055_photo_shop.sql.
+ * Photo shop (beta, flag billing:photo_shop). The studio uploads low-res
+ * watermarked previews (made in its own browser, lib/photoPreview.ts); these
+ * rows hold the shoot's photos, prices and what was bought.
+ * Server side: supabase/migrations/20261104171055_photo_shop.sql and
+ * 20261110120000_photo_shop_uploads.sql.
  */
+
+export const PHOTO_SHOP_BUCKET = 'photo-shop-photos';
+/** How long the studio's own thumbnail links work. */
+const THUMB_URL_SECONDS = 60 * 60;
+/** Register uploads in small batches so a long upload keeps what's done. */
+const REGISTER_BATCH = 10;
+
+export interface ShopPhoto {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  /** Signed link to the preview, for the studio's own screens. */
+  url: string | null;
+}
 
 export interface JobPhotoShop {
   engagement_id: string;
-  provider: 'smugmug' | 'mock';
+  tenant_id: string;
+  provider: 'smugmug' | 'mock' | 'upload';
   gallery_key: string | null;
   gallery_name: string | null;
   included_photos: number;
@@ -16,6 +33,16 @@ export interface JobPhotoShop {
   all_photos_price_minor: number | null;
   currency: string;
   closes_at: string;
+  /** Last "Check gallery" for the SmugMug gallery (applies while album_key = gallery_key). */
+  smugmug_check?: {
+    album_key: string;
+    passed: boolean;
+    items: { code: string; ok: boolean; value?: string }[];
+  } | null;
+  /** Photos read at the last passed check (watermarked Large size). */
+  smugmug_photos?: { key: string; fileName: string; previewUrl: string }[] | null;
+  /** When the SmugMug gallery last passed its check; null = not passed. */
+  smugmug_checked_at?: string | null;
   /** false = not saved yet; the values are the prefill. */
   saved: boolean;
 }
@@ -100,6 +127,75 @@ export class PhotoShopService {
       throw new Error(typeof body?.error === 'string' ? body.error : error.message);
     }
     return { emailed: Boolean((data as { emailed?: boolean } | null)?.emailed) };
+  }
+
+  /** "Mark as sent": the photos went to the client another way; no link, no email. */
+  static async markSent(orderId: string): Promise<void> {
+    const { error } = await supabase.rpc('mark_job_photo_order_sent', { p_order_id: orderId });
+    if (error) throw new Error(error.message.replace(/^mark_job_photo_order_sent: /, ''));
+  }
+
+  /** The shoot's uploaded previews, in upload order, with signed links. */
+  static async listPhotos(engagementId: string): Promise<ShopPhoto[]> {
+    const { data, error } = await supabase
+      .from('job_photo_shop_photos')
+      .select('id, file_name, storage_path')
+      .eq('engagement_id', engagementId)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    const rows = (data ?? []) as Omit<ShopPhoto, 'url'>[];
+    if (rows.length === 0) return [];
+    const signed = await supabase.storage
+      .from(PHOTO_SHOP_BUCKET)
+      .createSignedUrls(rows.map((r) => r.storage_path), THUMB_URL_SECONDS);
+    const urls = new Map((signed.data ?? []).map((s) => [s.path, s.signedUrl]));
+    return rows.map((r) => ({ ...r, url: urls.get(r.storage_path) ?? null }));
+  }
+
+  /**
+   * Uploads ready-made previews (already shrunk and watermarked) to the shoot's
+   * folder and registers them. The first upload opens the shop.
+   */
+  static async uploadPreviews(
+    tenantId: string,
+    engagementId: string,
+    previews: { blob: Blob; fileName: string }[],
+    onProgress?: (done: number) => void,
+  ): Promise<number> {
+    let done = 0;
+    let pending: { path: string; file_name: string }[] = [];
+    const flush = async () => {
+      if (pending.length === 0) return;
+      const { error } = await supabase.rpc('add_job_photo_shop_photos', {
+        p_engagement_id: engagementId,
+        p_photos: pending as never,
+      });
+      if (error) throw error;
+      pending = [];
+    };
+    for (const p of previews) {
+      const path = `${tenantId}/${engagementId}/${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage
+        .from(PHOTO_SHOP_BUCKET)
+        .upload(path, p.blob, { contentType: 'image/jpeg', upsert: false });
+      if (error) throw error;
+      pending.push({ path, file_name: p.fileName });
+      done += 1;
+      onProgress?.(done);
+      if (pending.length >= REGISTER_BATCH) await flush();
+    }
+    await flush();
+    return done;
+  }
+
+  /** Removes a preview (not one a client has bought). */
+  static async deletePhoto(photoId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('delete_job_photo_shop_photo', { p_photo_id: photoId });
+    if (error) throw error;
+    if (typeof data === 'string' && data) {
+      await supabase.storage.from(PHOTO_SHOP_BUCKET).remove([data]);
+    }
   }
 
   static async getDefaults(tenantId: string): Promise<StudioPhotoShopDefaults> {

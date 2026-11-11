@@ -21,7 +21,38 @@ const state = vi.hoisted(() => ({
   orders: [] as PhotoOrder[],
   saveShop: vi.fn(),
   deliver: vi.fn(),
+  markSent: vi.fn(),
+  photos: [] as { id: string; file_name: string; storage_path: string; url: string | null }[],
+  upload: vi.fn(async (_t: string, _e: string, previews: unknown[]) => previews.length),
+  deletePhoto: vi.fn(async (_id: string) => undefined),
+  smugmugConnected: false,
+  listAlbums: vi.fn(),
+  checkGallery: vi.fn(),
 }));
+
+vi.mock('@/features/settings/services/smugmugService', async (orig) => {
+  const real = await orig<typeof import('@/features/settings/services/smugmugService')>();
+  return {
+    ...real,
+    SmugMugService: {
+      ...real.SmugMugService,
+      getStatus: async () => ({ hasKeys: state.smugmugConnected, connected: state.smugmugConnected, keysUpdatedAt: null, connectedAt: null }),
+      listAlbums: (id: string) => state.listAlbums(id),
+      checkGallery: (id: string, key: string) => state.checkGallery(id, key),
+    },
+  };
+});
+
+vi.mock('@/features/jobs/lib/photoPreview', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/lib/photoPreview')>();
+  return {
+    ...real,
+    makePreview: async (file: File) => {
+      if (file.name.endsWith('.heic')) throw new real.PreviewError('unreadable');
+      return new Blob(['jpeg'], { type: 'image/jpeg' });
+    },
+  };
+});
 
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:photo_shop', isLoading: false }),
@@ -35,12 +66,17 @@ vi.mock('@/features/jobs/services/photoShopService', async (orig) => {
       listOrders: async () => state.orders,
       saveShop: (id: string, patch: unknown) => state.saveShop(id, patch),
       deliver: (id: string, url: string) => state.deliver(id, url),
+      markSent: (id: string) => state.markSent(id),
+      listPhotos: async () => state.photos,
+      uploadPreviews: (t: string, e: string, previews: unknown[]) => state.upload(t, e, previews),
+      deletePhoto: (id: string) => state.deletePhoto(id),
     },
   };
 });
 
 const shop = (over: Partial<JobPhotoShop> = {}): JobPhotoShop => ({
   engagement_id: 'e1',
+  tenant_id: 't1',
   provider: 'smugmug',
   gallery_key: null,
   gallery_name: null,
@@ -95,6 +131,19 @@ describe('JobPhotoShopCard', () => {
     state.orders = [];
     state.saveShop.mockReset().mockImplementation(async (_id: string, patch: Partial<JobPhotoShop>) => shop({ ...patch, saved: true }));
     state.deliver.mockReset().mockResolvedValue(undefined);
+    state.markSent.mockReset().mockResolvedValue(undefined);
+    state.photos = [];
+    state.upload.mockClear();
+    state.deletePhoto.mockClear();
+    state.smugmugConnected = false;
+    state.listAlbums.mockReset().mockResolvedValue({
+      albums: [
+        { key: 'a1', name: 'Levi bar mitzvah', imageCount: 12 },
+        { key: 'a2', name: 'Cohen family', imageCount: 40 },
+      ],
+      suggested: 'a2',
+    });
+    state.checkGallery.mockReset();
   });
 
   it('is hidden without the photo shop flag', () => {
@@ -142,6 +191,108 @@ describe('JobPhotoShopCard', () => {
     await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/Alice-download'));
   });
 
+  it('a paid order shows each photo\'s thumbnail and file name, and can be marked as sent', async () => {
+    state.shop = shop({
+      provider: 'smugmug',
+      gallery_key: 'a1',
+      smugmug_photos: [{ key: 'k3', fileName: 'IMG_0003.jpg', previewUrl: 'https://photos.smugmug.test/k3-L.jpg' }],
+    });
+    state.photos = [{ id: 'k1', file_name: 'IMG_0001.jpg', storage_path: 't1/e1/k1.jpg', url: 'https://signed/k1' }];
+    state.orders = [paidOrder];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('Paid, to deliver')).toBeTruthy();
+    expect(((await screen.findByAltText('IMG_0001.jpg')) as HTMLImageElement).src).toBe('https://signed/k1');
+    expect((screen.getByAltText('IMG_0003.jpg') as HTMLImageElement).src).toBe('https://photos.smugmug.test/k3-L.jpg');
+    expect(screen.getByText('IMG_0002.jpg')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as sent' }));
+    await waitFor(() => expect(state.markSent).toHaveBeenCalledWith('o1'));
+    expect(state.deliver).not.toHaveBeenCalled();
+  });
+
+  it('uploads picked photos as previews, keeps file names, and says which could not be read', async () => {
+    state.shop = shop({ provider: 'upload' });
+    const { container } = renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
+    expect(screen.getByText(/your originals stay on your computer/)).toBeTruthy();
+    expect(screen.queryByText('Not chosen yet')).toBeNull();
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const files = [
+      new File(['a'], 'IMG_0423.jpg', { type: 'image/jpeg' }),
+      new File(['b'], 'IMG_0424.heic', { type: 'image/heic' }),
+    ];
+    state.photos = [{ id: 'p1', file_name: 'IMG_0423.jpg', storage_path: 't1/e1/x.jpg', url: 'https://signed/p1' }];
+    fireEvent.change(input, { target: { files } });
+    await waitFor(() => expect(screen.getByText(/1 photo added/)).toBeTruthy());
+    expect(state.upload).toHaveBeenCalledTimes(1);
+    const [tenantId, engagementId, previews] = state.upload.mock.calls[0];
+    expect([tenantId, engagementId]).toEqual(['t1', 'e1']);
+    expect((previews as { fileName: string }[]).map((p) => p.fileName)).toEqual(['IMG_0423.jpg']);
+    expect(screen.getByText(/IMG_0424\.heic/)).toBeTruthy();
+    expect(await screen.findByAltText('IMG_0423.jpg')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove IMG_0423.jpg' }));
+    await waitFor(() => expect(state.deletePhoto).toHaveBeenCalledWith('p1'));
+  });
+
+  it('without SmugMug connected: uploads, with a hint to connect SmugMug', async () => {
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
+    expect(screen.getByText(/Connect it in Photo shop > SmugMug/)).toBeTruthy();
+    expect(state.listAlbums).not.toHaveBeenCalled();
+  });
+
+  it('with SmugMug connected: prefills the gallery named like the shoot and checks it', async () => {
+    state.smugmugConnected = true;
+    state.checkGallery.mockResolvedValue({
+      passed: true,
+      albumName: 'Cohen family',
+      photoCount: 40,
+      items: [
+        { code: 'watermark', ok: true, value: 'true' },
+        { code: 'largest_size', ok: true, value: 'Large' },
+        { code: 'downloads', ok: true, value: 'false' },
+        { code: 'photos', ok: true, value: '40' },
+        { code: 'preview_public', ok: true },
+        { code: 'original_hidden', ok: true },
+      ],
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    await waitFor(() => expect(select.value).toBe('a2'));
+    expect(screen.getByRole('radio', { name: 'In a SmugMug gallery' })).toHaveProperty('checked', true);
+    expect(screen.queryByRole('button', { name: 'Add photos' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
+    expect(await screen.findByText('Watermark on')).toBeTruthy();
+    expect(screen.getByText('40 photos read')).toBeTruthy();
+    expect(screen.getByText(/Clients will see them once the first live check/)).toBeTruthy();
+  });
+
+  it('a failed check says what to change in SmugMug; uploading stays one click away', async () => {
+    state.smugmugConnected = true;
+    state.checkGallery.mockResolvedValue({
+      passed: false,
+      albumName: 'Cohen family',
+      photoCount: 0,
+      items: [
+        { code: 'watermark', ok: false, value: 'false' },
+        { code: 'largest_size', ok: false, value: 'Original' },
+        { code: 'downloads', ok: true, value: 'false' },
+        { code: 'photos', ok: false },
+        { code: 'preview_public', ok: false },
+        { code: 'original_hidden', ok: false },
+      ],
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: 'a1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
+    expect(await screen.findByText(/Settings > Photo Protection > Watermark Photos/)).toBeTruthy();
+    expect(screen.getByText(/Until then clients don't see this gallery/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: 'Upload them here' }));
+    expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
+  });
+
   it('has Hebrew text', async () => {
     await setLanguage('he');
     state.orders = [paidOrder];
@@ -149,5 +300,28 @@ describe('JobPhotoShopCard', () => {
     expect(await screen.findByText('חנות תמונות')).toBeTruthy();
     expect(await screen.findByText('שולם, למסירה')).toBeTruthy();
     expect(screen.getByText('פרטים שמילאנו בשבילך')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'הוספת תמונות' })).toBeTruthy();
+  });
+
+  it('has Hebrew text for the SmugMug gallery', async () => {
+    await setLanguage('he');
+    state.smugmugConnected = true;
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByLabelText('גלריה ב-SmugMug')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'בדיקת הגלריה' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'להעלות אותן כאן' })).toBeTruthy();
+  });
+});
+
+describe('photo previews', () => {
+  it('shrinks to at most 1200px on the longest edge, never enlarges, and names the studio', async () => {
+    const { previewSize, watermarkText } = await vi.importActual<typeof import('@/features/jobs/lib/photoPreview')>(
+      '@/features/jobs/lib/photoPreview',
+    );
+    expect(previewSize(6000, 4000)).toEqual({ width: 1200, height: 800 });
+    expect(previewSize(4000, 6000)).toEqual({ width: 800, height: 1200 });
+    expect(previewSize(800, 600)).toEqual({ width: 800, height: 600 });
+    expect(watermarkText('Lens Studio')).toBe('© Lens Studio');
+    expect(watermarkText('  ')).toBe('© PREVIEW');
   });
 });

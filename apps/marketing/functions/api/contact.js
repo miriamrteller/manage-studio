@@ -11,7 +11,9 @@
 // Spam: hidden honeypot fields and a time trap here (pretend success, send
 // nothing); then crm-lead-ingest runs the shared spam check on the name and
 // message. When it answers { outcome: "spam" } no email goes out and the
-// visitor is asked to check what they typed (422).
+// visitor is asked to check what they typed (422). When it answers
+// { outcome: "own_email" } (the OpalSwift team's own address: someone
+// trying the form) no email goes out either and the page says why (422).
 //
 // Settings (Cloudflare → Workers & Pages → opalswift-il → Settings → Variables and Secrets):
 //   RESEND_API_KEY      secret, required
@@ -77,7 +79,9 @@ export async function fileHqLead(env, { name, email, message }) {
     });
     if (res.ok) {
       const body = await res.json().catch(() => null);
-      return body && body.outcome === "spam" ? "spam" : "filed";
+      if (body && body.outcome === "spam") return "spam";
+      if (body && body.outcome === "own_email") return "own_email";
+      return "filed";
     }
     // 404 = the hq studio doesn't exist yet; 401/503 = the secret doesn't match or isn't set.
     console.error(`contact: HQ lead not filed, crm-lead-ingest answered ${res.status}`);
@@ -151,6 +155,7 @@ export async function handleContact({ request, env }) {
   // File the lead first: its spam check decides whether the email goes out.
   const lead = await fileHqLead(env, { name, email, message });
   if (lead === "spam") return fail(422, "looks_like_spam");
+  if (lead === "own_email") return fail(422, "own_email");
 
   let res;
   try {

@@ -1,6 +1,6 @@
 /**
  * Settings → Discounts: the studio's automatic class discounts (class_discount_settings,
- * migration 20261110111500_class_discounts.sql). The database applies them when a child
+ * migration 20261111075000_class_discounts.sql). The database applies them when a child
  * is enrolled; this file only maps the row to the form and back.
  */
 export type DiscountUnit = 'percent' | 'amount';

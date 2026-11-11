@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useJobPhotoShop, usePhotoShopEnabled } from '../hooks/usePhotoShop';
+import { useJobPhotoShop, useJobPhotoShopPhotos, usePhotoShopEnabled } from '../hooks/usePhotoShop';
+import { JobPhotoShopSource } from './JobPhotoShopSource';
 import {
   isDeliveryLink,
   majorToMinor,
@@ -11,6 +12,7 @@ import {
   type JobPhotoShop,
   type PhotoOrder,
   type PhotoOrderStatus,
+  type ShopPhoto,
 } from '../services/photoShopService';
 import { formatDueDate, formatMinor } from '../lib/jobPaymentFormat';
 
@@ -53,9 +55,11 @@ const ORDER_BADGE: Record<PhotoOrderStatus, 'default' | 'secondary' | 'success' 
 };
 
 /**
- * Shoot page: the photo shop. Clients buy downloads from the studio's own
- * gallery; prices are prefilled from the package and the studio defaults and
- * stay editable. Paid orders are delivered by pasting a download link.
+ * Shoot page: the photo shop. The studio picks the shoot's SmugMug gallery (or uploads
+ * watermarked copies) and
+ * clients buy downloads; prices are prefilled from the package and the studio defaults and
+ * stay editable. Paid orders show each bought photo's thumbnail and file name, and are
+ * delivered by pasting a download link or marked as sent.
  * Shown only to studios with the photo shop switched on.
  */
 export function JobPhotoShopCard({ engagementId }: { engagementId: string }) {
@@ -68,6 +72,7 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
   const { t, i18n } = useTranslation();
   const headingId = useId();
   const { shop, orders, save } = useJobPhotoShop(engagementId);
+  const { photos } = useJobPhotoShopPhotos(engagementId);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -131,16 +136,13 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
       </div>
 
       <div className="space-y-1 text-sm">
-        <p>
-          <span className="text-muted-foreground">{t('pages.jobs.photo_shop.gallery')}: </span>
-          {data.gallery_name ?? t('pages.jobs.photo_shop.gallery_none')}
-        </p>
-        {!data.gallery_key && <p className="text-muted-foreground">{t('pages.jobs.photo_shop.gallery_coming')}</p>}
         <p>{summary.join(' · ')}</p>
         {perPhoto == null && (
           <p className="text-muted-foreground">{t('pages.jobs.photo_shop.no_price_hint')}</p>
         )}
       </div>
+
+      <JobPhotoShopSource engagementId={engagementId} shop={data} />
 
       <details className="rounded-md border p-3">
         <summary className="cursor-pointer text-sm font-medium">{t('studio_setup.filled_for_you')}</summary>
@@ -183,7 +185,8 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
         {save.error && <p role="alert" className="mt-2 text-sm text-error">{(save.error as Error).message}</p>}
       </details>
 
-      <PhotoOrders engagementId={engagementId} orders={orders.data ?? []} loading={orders.isLoading} />
+      <PhotoOrders engagementId={engagementId} orders={orders.data ?? []} loading={orders.isLoading}
+        thumbs={thumbnailMap(data, photos.data ?? [])} />
     </section>
   );
 }
@@ -208,7 +211,25 @@ function ShopField({
   );
 }
 
-function PhotoOrders({ engagementId, orders, loading }: { engagementId: string; orders: PhotoOrder[]; loading: boolean }) {
+/** image_key → thumbnail: the uploaded previews, or the checked SmugMug gallery's photos. */
+function thumbnailMap(shop: JobPhotoShop, uploads: ShopPhoto[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const p of uploads) if (p.url) map.set(p.id, p.url);
+  for (const p of shop.smugmug_photos ?? []) if (p.previewUrl) map.set(p.key, p.previewUrl);
+  return map;
+}
+
+function PhotoOrders({
+  engagementId,
+  orders,
+  loading,
+  thumbs,
+}: {
+  engagementId: string;
+  orders: PhotoOrder[];
+  loading: boolean;
+  thumbs: Map<string, string>;
+}) {
   const { t } = useTranslation();
   if (loading) return null;
   return (
@@ -219,7 +240,7 @@ function PhotoOrders({ engagementId, orders, loading }: { engagementId: string; 
       ) : (
         <ul className="space-y-2">
           {orders.map((o) => (
-            <PhotoOrderRow key={o.id} engagementId={engagementId} order={o} />
+            <PhotoOrderRow key={o.id} engagementId={engagementId} order={o} thumbs={thumbs} />
           ))}
         </ul>
       )}
@@ -227,9 +248,9 @@ function PhotoOrders({ engagementId, orders, loading }: { engagementId: string; 
   );
 }
 
-function PhotoOrderRow({ engagementId, order }: { engagementId: string; order: PhotoOrder }) {
+function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; order: PhotoOrder; thumbs: Map<string, string> }) {
   const { t, i18n } = useTranslation();
-  const { deliver } = useJobPhotoShop(engagementId, false);
+  const { deliver, markSent } = useJobPhotoShop(engagementId, false);
   const linkId = useId();
   const [link, setLink] = useState(order.delivery_url ?? '');
   const [editing, setEditing] = useState(order.status === 'paid');
@@ -249,14 +270,31 @@ function PhotoOrderRow({ engagementId, order }: { engagementId: string; order: P
         <Badge variant={ORDER_BADGE[order.status]}>{t(`pages.jobs.photo_shop.status.${order.status}`)}</Badge>
       </div>
 
-      <details>
-        <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.file_names')}</summary>
-        <ul className="mt-1 list-disc ps-5" dir="ltr">
+      <details open={order.status === 'paid'}>
+        <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.order_photos_list')}</summary>
+        <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5" dir="ltr">
           {order.items.map((i) => (
-            <li key={i.image_key}>{i.file_name}</li>
+            <li key={i.image_key} className="space-y-1">
+              {thumbs.get(i.image_key) ? (
+                <img src={thumbs.get(i.image_key)} alt={i.file_name} loading="lazy"
+                  className="aspect-square w-full rounded object-cover" />
+              ) : (
+                <div aria-hidden="true" className="aspect-square w-full rounded bg-muted" />
+              )}
+              <p className="break-all text-xs">{i.file_name}</p>
+            </li>
           ))}
         </ul>
       </details>
+
+      {order.status === 'delivered' && !order.delivery_url && !editing && (
+        <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+          {t('pages.jobs.photo_shop.marked_sent')}
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+            {t('pages.jobs.photo_shop.add_link')}
+          </Button>
+        </p>
+      )}
 
       {order.status === 'delivered' && !editing && order.delivery_url && (
         <p className="flex flex-wrap items-center gap-2">
@@ -282,7 +320,17 @@ function PhotoOrderRow({ engagementId, order }: { engagementId: string; order: P
             </Button>
           </div>
           <p id={`${linkId}-hint`} className="text-xs text-muted-foreground">{t('pages.jobs.photo_shop.delivery_hint')}</p>
+          {order.status === 'paid' && (
+            <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {t('pages.jobs.photo_shop.mark_sent_hint')}
+              <Button size="sm" variant="secondary" isLoading={markSent.isPending}
+                onClick={() => markSent.mutate(order.id, { onSuccess: () => setEditing(false) })}>
+                {t('pages.jobs.photo_shop.mark_sent')}
+              </Button>
+            </p>
+          )}
           {deliver.error && <p role="alert" className="text-error">{(deliver.error as Error).message}</p>}
+          {markSent.error && <p role="alert" className="text-error">{(markSent.error as Error).message}</p>}
         </div>
       )}
     </li>

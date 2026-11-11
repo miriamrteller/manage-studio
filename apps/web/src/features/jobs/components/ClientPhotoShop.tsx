@@ -271,6 +271,8 @@ function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
             <a href={`/pay/${o.pay_token}`} className="font-medium underline">
               {t('pages.client_portal.photo_shop.pay_now')}
             </a>
+          ) : o.status === 'delivered' ? (
+            <span className="text-gray-600">{t('pages.client_portal.photo_shop.sent')}</span>
           ) : (
             <span className="text-gray-600">{t('pages.client_portal.photo_shop.preparing')}</span>
           )}

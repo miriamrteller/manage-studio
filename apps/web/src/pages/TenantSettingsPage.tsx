@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users, Percent } from 'lucide-react';
+import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users, Ticket, Percent } from 'lucide-react';
 
 import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
@@ -17,6 +17,7 @@ import { LeadDigestSetting } from '@/features/settings/components/LeadDigestSett
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
 import { ClassDiscountSettings } from '@/features/settings/components/ClassDiscountSettings';
+import { ClassCardSettings } from '@/features/class-cards/components/ClassCardSettings';
 import { useTenant } from '@/hooks/useTenant';
 
 /** Tax documents on/off and the invoicing service first, then that service's credentials. */
@@ -71,6 +72,13 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     component: StudioFeatureSettings,
   },
   {
+    id: 'class_cards',
+    labelKey: 'settings.tabs.class_cards',
+    label: 'Class cards',
+    icon: Ticket,
+    component: ClassCardSettings,
+  },
+  {
     id: 'locale',
     labelKey: 'settings.tabs.locale',
     label: 'Language & Region',
@@ -123,13 +131,15 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 
 const DEFAULT_TAB = 'branding';
 
-/** Tabs only some studios have: Discounts is for studios that teach classes. */
-const CLASS_ONLY_TABS = new Set(['discounts']);
+/** Tabs that only make sense for studios that teach classes. */
+const CLASS_ONLY_TABS = new Set(['class_cards', 'discounts']);
 
 export function TenantSettingsPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const teachesClasses = useTenant()?.profile?.teachesClasses ?? true;
+  const tenant = useTenant();
+  const teachesClasses = tenant?.profile?.teachesClasses !== false;
+
   const sections = useMemo(
     () => SETTINGS_SECTIONS.filter((s) => teachesClasses || !CLASS_ONLY_TABS.has(s.id)),
     [teachesClasses],

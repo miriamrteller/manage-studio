@@ -16,6 +16,7 @@ export function usePhotoShopEnabled(): boolean {
 
 const shopKey = (id: string) => ['photo-shop', id] as const;
 const ordersKey = (id: string) => ['photo-shop-orders', id] as const;
+const photosKey = (id: string) => ['photo-shop-photos', id] as const;
 const defaultsKey = (tenantId: string | undefined) => ['photo-shop-defaults', tenantId] as const;
 
 export function useJobPhotoShop(engagementId: string, enabled = true) {
@@ -38,7 +39,30 @@ export function useJobPhotoShop(engagementId: string, enabled = true) {
     mutationFn: (params: { orderId: string; url: string }) => PhotoShopService.deliver(params.orderId, params.url),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) }),
   });
-  return { shop, orders, save, deliver };
+  const markSent = useMutation({
+    mutationFn: (orderId: string) => PhotoShopService.markSent(orderId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) }),
+  });
+  return { shop, orders, save, deliver, markSent };
+}
+
+/** The shoot's uploaded previews, plus upload and remove. */
+export function useJobPhotoShopPhotos(engagementId: string) {
+  const queryClient = useQueryClient();
+  const photos = useQuery({
+    queryKey: photosKey(engagementId),
+    queryFn: () => PhotoShopService.listPhotos(engagementId),
+  });
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: photosKey(engagementId) }),
+      queryClient.invalidateQueries({ queryKey: shopKey(engagementId) }),
+    ]);
+  const remove = useMutation({
+    mutationFn: (photoId: string) => PhotoShopService.deletePhoto(photoId),
+    onSuccess: refresh,
+  });
+  return { photos, remove, refresh };
 }
 
 export function useStudioPhotoShopDefaults() {

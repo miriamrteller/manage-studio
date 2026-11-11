@@ -46,6 +46,10 @@
       var val = isHe ? el.getAttribute('data-he') : el.getAttribute('data-en');
       if (val !== null) el.innerHTML = val;
     });
+    // The search description follows the page language too (build-seo.mjs writes both).
+    var desc = document.querySelector('meta[name="description"]');
+    var d = desc && desc.getAttribute(isHe ? 'data-he-content' : 'data-en-content');
+    if (d) desc.setAttribute('content', d);
   }
 
   /* expose globally so onclick="setLang('en',true)" works on every page */

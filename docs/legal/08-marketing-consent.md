@@ -29,13 +29,13 @@ Unticked by default. Separate from accepting the terms. Not a condition of servi
 
 **Single checkbox / תיבה אחת**
 
-- EN: ☐ I agree to receive news and offers from [[STUDIO NAME]] by email, SMS and WhatsApp. I can unsubscribe at any time.
-- HE: ☐ אני מסכים/ה לקבל עדכונים והצעות מ-[[שם הסטודיו]] בדוא"ל, ב-SMS ובוואטסאפ. אפשר להסיר את עצמי בכל עת.
+- EN: ☐ I agree to receive news and offers from [[STUDIO NAME]] by email and WhatsApp. I can unsubscribe at any time. [[LAWYER: confirm]]
+- HE: ☐ אני מסכים/ה לקבל עדכונים והצעות מ-[[שם הסטודיו]] בדוא"ל ובוואטסאפ. אפשר להסיר את עצמי בכל עת. [[עו"ד: לאשר]]
 
 **Per channel (recommended) / לפי ערוץ (מומלץ)**
 
-- EN: I'd like to receive news and offers from [[STUDIO NAME]] by: ☐ Email ☐ SMS ☐ WhatsApp. I can unsubscribe at any time.
-- HE: אשמח לקבל עדכונים והצעות מ-[[שם הסטודיו]] ב: ☐ דוא"ל ☐ SMS ☐ וואטסאפ. אפשר להסיר את עצמי בכל עת.
+- EN: I'd like to receive news and offers from [[STUDIO NAME]] by: ☐ Email ☐ WhatsApp. I can unsubscribe at any time. (No SMS: OpalSwift sends no marketing SMS.) [[LAWYER: confirm]]
+- HE: אשמח לקבל עדכונים והצעות מ-[[שם הסטודיו]] ב: ☐ דוא"ל ☐ וואטסאפ. אפשר להסיר את עצמי בכל עת. [[עו"ד: לאשר]]
 
 **OpalSwift (to studio owners) / OpalSwift (לבעלי סטודיו)**
 

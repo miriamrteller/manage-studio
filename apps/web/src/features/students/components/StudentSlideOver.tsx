@@ -28,6 +28,7 @@ import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentM
 import { formatCurrency } from '@shared/format';
 import { formatSavedCard } from '../lib/studentBillingAccount';
 import { invalidateAfterOfflinePayment } from '../lib/offlinePaymentCaches';
+import { PersonClassCards } from '@/features/class-cards/components/PersonClassCards';
 
 interface StudentSlideOverProps {
   personId: string;
@@ -377,6 +378,8 @@ export function StudentSlideOver({
                   )}
                 </section>
               )}
+
+              {!isPhotographer && <PersonClassCards personId={person.id} />}
 
               {!isPhotographer && (
                 <>
