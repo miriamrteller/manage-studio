@@ -11,7 +11,9 @@
  * `offering_sessions` row for a date is an admin override and re-opens that date.
  *
  * Failure policy: if the tenant is connected but free/busy fails after one retry,
- * we FAIL CLOSED (drop all slots for the window) to minimise double-booking risk.
+ * we keep the studio's own free times (owner, 11 Nov 2026: nothing blocks booking or
+ * payment). The response says `freebusy_unavailable: true`; the booked shoot is still
+ * pushed to the studio's Google Calendar on payment, where any clash shows.
  */
 import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
@@ -168,8 +170,8 @@ Deno.serve(withMonitoring("get-available-slots", async (req) => {
   }
 
   if (busy === null) {
-    // Fail closed: cannot verify calendar → hide slots rather than risk double-booking.
-    return jsonResponse({ slots: [], freebusy_unavailable: true });
+    // Google can't be checked: keep the studio's own free times so booking never stops.
+    return jsonResponse({ slots, freebusy_unavailable: true });
   }
 
   slots = slots.filter((s) => !busy!.some((b) => overlaps(s, b)));
