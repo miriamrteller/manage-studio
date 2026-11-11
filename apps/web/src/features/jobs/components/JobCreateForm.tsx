@@ -46,6 +46,12 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // No package picked yet: start from the studio's first one (still editable), so the button is never stuck.
+  const firstPackageId = packagesQuery.data?.[0]?.id ?? '';
+  useEffect(() => {
+    if (firstPackageId) setOfferingId((current) => current || firstPackageId);
+  }, [firstPackageId]);
+
   // The package knows its location and length: fill them in (still editable).
   const selectedPackage = (packagesQuery.data ?? []).find((p) => p.id === offeringId);
   const packageLocation = selectedPackage?.location ?? '';

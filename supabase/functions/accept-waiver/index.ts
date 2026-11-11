@@ -1,6 +1,5 @@
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { STUDIO_LEGAL_NOT_READY, studioLegalReady } from "../_shared/studio-legal.ts";
 import { canSignJobContract, loadJobContractContext, renderJobContract } from "../_shared/job-contract.ts";
 import {
   currentHmacVersion,
@@ -110,9 +109,7 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
       return jsonResponse({ error: "view_token invalid" }, 401);
     }
 
-    if (!(await studioLegalReady(service, tenantId))) {
-      return jsonResponse({ error: STUDIO_LEGAL_NOT_READY }, 409);
-    }
+    // Signing never waits for the studio to confirm its draft legal pack (owner rule: no blocks).
 
     // --- Load and verify active template ---
     const { data: template } = await service
