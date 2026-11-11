@@ -6,7 +6,7 @@
  * dance unchanged, photographer trimmed, photographer clients see the portal.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import i18n from '@/i18n/i18n';
 import EnrolCompletePage from '@/pages/EnrolCompletePage';
@@ -201,21 +201,15 @@ describe('/enrol/complete job contract', () => {
       extraRoutes: { ...DESTINATIONS, '/pay/:token': <p>PAY PAGE</p> },
     });
 
-  it('signed: "Next: pay the deposit" still leads; after "Stay", signed-in client can go back to the portal', async () => {
+  it('signed: goes straight to the deposit payment', async () => {
     auth.user = CLIENT;
     mockFunctions({
       'get-waiver-engagement': { body: { alreadySigned: true, isJob: true } },
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 30000, currency: 'ILS' } },
     });
     renderSign();
-    expect(await screen.findByText('Next: pay the deposit')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Back to my bookings' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Stay on this page' }));
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 3500)); });
-    expect(screen.queryByText('PAY PAGE')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Back to my bookings' }));
-    expect(await screen.findByText('PORTAL PAGE')).toBeInTheDocument();
-  }, 15000);
+    expect(await screen.findByText('PAY PAGE')).toBeInTheDocument();
+  });
 
   it('signed, next step unavailable, signed out → login back to the portal (not /dashboard)', async () => {
     mockFunctions({
@@ -244,21 +238,21 @@ describe('menu per vertical', () => {
       roles,
     ).flatMap((section) => section.items.map((item) => item.path));
 
-  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Appointments, Notifications), then Finance and Setup', () => {
+  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Shop, Bookable services, Appointments, Notifications), then Finance and Setup', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
-      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers', '/admin/packages',
+      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });
 
-  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Photo shop, Appointments, Notifications; no family accounts or bundled payments', () => {
+  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Photo shop, Packages, Appointments, Notifications; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
-      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing', '/admin/packages',
+      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });

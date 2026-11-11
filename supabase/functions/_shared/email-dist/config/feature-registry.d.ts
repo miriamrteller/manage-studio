@@ -116,6 +116,8 @@ export declare const FEATURES: {
         readonly gatedDelivery: "billing:delivery.gated";
         /** Photo shop: clients buy downloads from the studio's own gallery (SmugMug). Beta, opt-in only. */
         readonly photoShop: "billing:photo_shop";
+        /** Studio shop: families buy the studio's uniforms and items, paid through the child's class. Beta, opt-in only. */
+        readonly studioShop: "billing:studio_shop";
         /** Takbull keys and Test connection on Settings -> Payments. Testing only, opt-in only. */
         readonly takbullTesting: "billing:takbull_testing";
     };

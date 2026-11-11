@@ -8,16 +8,21 @@
  *                 the access token and store it encrypted.
  *   - "albums":   { engagement_id? } the photographer's galleries, plus the one whose name
  *                 matches the shoot (client or service name) to prefill the picker.
- *   - "check":    { engagement_id, album_key } "Check gallery": reads the gallery's Photo
+ *   - "check":    { engagement_id, album_key, watermark_in_photos? } "Check gallery": reads the gallery's Photo
  *                 Protection settings and photos (smugmug/api.ts checkGallery) and saves the
  *                 gallery and the result on the shoot's shop.
- * Disconnect is the disconnect_tenant_smugmug RPC. Connecting does NOT open the shop to
- * clients: galleries stay "provider_locked" (_shared/photo-shop/gallery.ts) until the live check.
+ *   - "studio_url": { oauth_token } (no sign-in needed). SmugMug returns to the one fixed
+ *                 callback on app.<root>, where the studio admin is not signed in. This finds
+ *                 the studio whose pending request has this token (not expired) and returns
+ *                 its own address, so the page can carry on there. Built from the tenant row.
+ * Disconnect is the disconnect_tenant_smugmug RPC. Connecting alone does not open a gallery to
+ * clients: each stays "provider_locked" (_shared/photo-shop/gallery.ts) until its check passes.
  */
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { tenantBaseUrlFor } from "../_shared/tenant-url.ts";
 import { getStudioSmugMug } from "../_shared/photo-shop/smugmug/credentials.ts";
 import {
   authorizeUrl,
@@ -25,6 +30,7 @@ import {
   getRequestToken,
   PENDING_TTL_SECONDS,
   pendingMatches,
+  sameString,
   SMUGMUG_CALLBACK_PATH,
   SmugMugError,
   testSmugMugConnection,
@@ -47,10 +53,14 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
   if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  const auth = await requireAuthUser(req);
-  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
-
-  let body: { action?: string; oauth_token?: string; oauth_verifier?: string; engagement_id?: string; album_key?: string };
+  let body: {
+    action?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
+    engagement_id?: string;
+    album_key?: string;
+    watermark_in_photos?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -58,6 +68,23 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
   }
 
   const service = createServiceClient();
+
+  if (body.action === "studio_url") {
+    const oauthToken = body.oauth_token?.trim();
+    if (!oauthToken) return jsonResponse({ ok: false, code: "expired" }, 400);
+    const tenantId = await pendingTenantFor(service, oauthToken, Math.floor(Date.now() / 1000));
+    if (!tenantId) return jsonResponse({ ok: false, code: "expired" }, 400);
+    try {
+      return jsonResponse({ ok: true, studio_url: await tenantBaseUrlFor(service, tenantId) });
+    } catch (e) {
+      console.error("[smugmug-connection] studio_url", e instanceof Error ? e.message : "failed");
+      return jsonResponse({ ok: false, code: "expired" }, 404);
+    }
+  }
+
+  const auth = await requireAuthUser(req);
+  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+
   const { data: profile } = await service
     .from("user_profiles")
     .select("tenant_id, role")
@@ -156,7 +183,7 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
         if (!engagementId || !/^[A-Za-z0-9]{1,64}$/.test(albumKey)) {
           return jsonResponse({ ok: false, code: "missing_params" }, 400);
         }
-        const result = await checkGallery(reader, albumKey);
+        const result = await checkGallery(reader, albumKey, undefined, body.watermark_in_photos === true);
         const { error } = await service.rpc("save_job_photo_shop_smugmug_check", {
           p_tenant_id: tenantId,
           p_engagement_id: engagementId,
@@ -193,4 +220,26 @@ function smugmugFailure(err: unknown, rejectedCode: string): Response {
   }
   console.error("[smugmug-connection]", err instanceof Error ? err.message : "error");
   return jsonResponse({ ok: false, code: "failed" }, 500);
+}
+
+/**
+ * The studio whose pending "Connect SmugMug" request has this request token and has not
+ * expired. Only studios with a pending request are read (a handful at most). Null if none.
+ */
+async function pendingTenantFor(
+  service: ReturnType<typeof createServiceClient>,
+  oauthToken: string,
+  nowSeconds: number,
+): Promise<string | null> {
+  const { data, error } = await service
+    .from("tenants")
+    .select("id")
+    .not("smugmug_oauth_pending_enc", "is", null);
+  if (error || !data) return null;
+  for (const row of data as Array<{ id: string }>) {
+    const studio = await getStudioSmugMug(service, row.id).catch(() => null);
+    const pending = studio?.pending;
+    if (pending && pending.exp >= nowSeconds && sameString(pending.token, oauthToken)) return row.id;
+  }
+  return null;
 }

@@ -83,7 +83,7 @@ export interface GalleryCheckResult {
   photoCount: number;
 }
 
-async function call(body: Record<string, string>): Promise<Record<string, unknown>> {
+async function call(body: Record<string, string | boolean>): Promise<Record<string, unknown>> {
   const { data, error } = await supabase.functions.invoke('smugmug-connection', { body });
   const parsed = await parseFunctionInvokeBody(data, error);
   if (error || !parsed || parsed.ok === false) {
@@ -134,6 +134,16 @@ export const SmugMugService = {
     window.location.assign(body.url);
   },
 
+  /**
+   * The studio address a pending SmugMug request belongs to (no sign-in needed). SmugMug
+   * returns to the fixed callback on app.<root>; the page carries on at this address.
+   */
+  async studioUrl(oauthToken: string): Promise<string> {
+    const body = await call({ action: 'studio_url', oauth_token: oauthToken });
+    if (typeof body.studio_url !== 'string') throw new SmugMugActionError('expired');
+    return body.studio_url;
+  },
+
   /** The callback page: swap SmugMug's token + verifier for the access token. */
   async complete(oauthToken: string, oauthVerifier: string): Promise<void> {
     await call({ action: 'complete', oauth_token: oauthToken, oauth_verifier: oauthVerifier });
@@ -149,8 +159,13 @@ export const SmugMugService = {
   },
 
   /** "Check gallery": saves the gallery on the shoot and returns what the check found. */
-  async checkGallery(engagementId: string, albumKey: string): Promise<GalleryCheckResult> {
-    const body = await call({ action: 'check', engagement_id: engagementId, album_key: albumKey });
+  async checkGallery(engagementId: string, albumKey: string, watermarkInPhotos = false): Promise<GalleryCheckResult> {
+    const body = await call({
+      action: 'check',
+      engagement_id: engagementId,
+      album_key: albumKey,
+      ...(watermarkInPhotos ? { watermark_in_photos: true } : {}),
+    });
     return {
       passed: body.passed === true,
       albumName: typeof body.albumName === 'string' ? body.albumName : '',

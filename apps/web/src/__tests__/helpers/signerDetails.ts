@@ -10,7 +10,9 @@ const LABELS = {
   he: { id: 'מספר תעודת זהות', phone: 'מספר טלפון', address: 'כתובת מגורים', childName: 'שם מלא של הילד/ה', childDob: 'תאריך לידה של הילד/ה', confirm: 'הפרטים נכונים' },
 } as const;
 
-export function fillSignerDetails(options: { childName?: string; childDob?: string; lang?: 'en' | 'he' } = {}) {
+export function fillSignerDetails(
+  options: { childName?: string; childDob?: string; lang?: 'en' | 'he'; noConfirmTick?: boolean } = {},
+) {
   const L = LABELS[options.lang ?? 'en'];
   fireEvent.change(screen.getByLabelText(L.id, { exact: false }), { target: { value: '123456782' } });
   fireEvent.change(screen.getByLabelText(L.phone), { target: { value: '050-123-4567' } });
@@ -23,5 +25,6 @@ export function fillSignerDetails(options: { childName?: string; childDob?: stri
   if (childDob && !childDob.value) {
     fireEvent.change(childDob, { target: { value: options.childDob ?? '2016-01-02' } });
   }
-  fireEvent.click(screen.getByRole('checkbox', { name: L.confirm }));
+  // One-tick contracts have no separate details tick.
+  if (!options.noConfirmTick) fireEvent.click(screen.getByRole('checkbox', { name: L.confirm }));
 }

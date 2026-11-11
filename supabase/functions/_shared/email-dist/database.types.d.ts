@@ -822,6 +822,61 @@ export type Database = {
                     }
                 ];
             };
+            client_sign_in_links: {
+                Row: {
+                    created_at: string;
+                    engagement_id: string | null;
+                    expires_at: string;
+                    id: string;
+                    last_used_at: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                    user_profile_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    engagement_id?: string | null;
+                    expires_at: string;
+                    id?: string;
+                    last_used_at?: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                    user_profile_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    engagement_id?: string | null;
+                    expires_at?: string;
+                    id?: string;
+                    last_used_at?: string | null;
+                    tenant_id?: string;
+                    token_hash?: string;
+                    user_profile_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "client_sign_in_links_engagement_id_fkey";
+                        columns: ["engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "client_sign_in_links_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "client_sign_in_links_user_profile_id_fkey";
+                        columns: ["user_profile_id"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             consent_records: {
                 Row: {
                     created_at: string;
@@ -1897,6 +1952,7 @@ export type Database = {
                     refund_note: string | null;
                     refunded_at: string | null;
                     sent_at: string | null;
+                    shop_order_id: string | null;
                     status: string;
                     tenant_id: string;
                     updated_at: string;
@@ -1920,6 +1976,7 @@ export type Database = {
                     refund_note?: string | null;
                     refunded_at?: string | null;
                     sent_at?: string | null;
+                    shop_order_id?: string | null;
                     status?: string;
                     tenant_id: string;
                     updated_at?: string;
@@ -1943,6 +2000,7 @@ export type Database = {
                     refund_note?: string | null;
                     refunded_at?: string | null;
                     sent_at?: string | null;
+                    shop_order_id?: string | null;
                     status?: string;
                     tenant_id?: string;
                     updated_at?: string;
@@ -1974,6 +2032,13 @@ export type Database = {
                         columns: ["payment_id"];
                         isOneToOne: false;
                         referencedRelation: "payments";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "job_payment_requests_shop_order_id_fkey";
+                        columns: ["shop_order_id"];
+                        isOneToOne: false;
+                        referencedRelation: "shop_orders";
                         referencedColumns: ["id"];
                     },
                     {
@@ -2052,6 +2117,7 @@ export type Database = {
                     included_count: number;
                     job_payment_request_id: string | null;
                     paid_at: string | null;
+                    pay_by_cash: boolean;
                     person_id: string | null;
                     photo_count: number;
                     refunded_at: string | null;
@@ -2072,6 +2138,7 @@ export type Database = {
                     included_count?: number;
                     job_payment_request_id?: string | null;
                     paid_at?: string | null;
+                    pay_by_cash?: boolean;
                     person_id?: string | null;
                     photo_count: number;
                     refunded_at?: string | null;
@@ -2092,6 +2159,7 @@ export type Database = {
                     included_count?: number;
                     job_payment_request_id?: string | null;
                     paid_at?: string | null;
+                    pay_by_cash?: boolean;
                     person_id?: string | null;
                     photo_count?: number;
                     refunded_at?: string | null;
@@ -3395,6 +3463,61 @@ export type Database = {
                     }
                 ];
             };
+            photo_shop_links: {
+                Row: {
+                    created_at: string;
+                    created_by: string | null;
+                    engagement_id: string;
+                    expires_at: string;
+                    id: string;
+                    last_used_at: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    engagement_id: string;
+                    expires_at: string;
+                    id?: string;
+                    last_used_at?: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                };
+                Update: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    engagement_id?: string;
+                    expires_at?: string;
+                    id?: string;
+                    last_used_at?: string | null;
+                    tenant_id?: string;
+                    token_hash?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "photo_shop_links_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "photo_shop_links_engagement_id_fkey";
+                        columns: ["engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "photo_shop_links_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             platform_access_log: {
                 Row: {
                     actor_id: string;
@@ -4048,6 +4171,255 @@ export type Database = {
                     },
                     {
                         foreignKeyName: "service_credits_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            shop_order_lines: {
+                Row: {
+                    created_at: string;
+                    id: string;
+                    order_id: string;
+                    position: number;
+                    product_id: string | null;
+                    product_name: string;
+                    quantity: number;
+                    tenant_id: string;
+                    unit_price_minor: number;
+                    variant_id: string | null;
+                    variant_label: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    id?: string;
+                    order_id: string;
+                    position?: number;
+                    product_id?: string | null;
+                    product_name: string;
+                    quantity: number;
+                    tenant_id: string;
+                    unit_price_minor: number;
+                    variant_id?: string | null;
+                    variant_label: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: string;
+                    order_id?: string;
+                    position?: number;
+                    product_id?: string | null;
+                    product_name?: string;
+                    quantity?: number;
+                    tenant_id?: string;
+                    unit_price_minor?: number;
+                    variant_id?: string | null;
+                    variant_label?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "shop_order_lines_order_id_fkey";
+                        columns: ["order_id"];
+                        isOneToOne: false;
+                        referencedRelation: "shop_orders";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_order_lines_product_id_fkey";
+                        columns: ["product_id"];
+                        isOneToOne: false;
+                        referencedRelation: "shop_products";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_order_lines_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_order_lines_variant_id_fkey";
+                        columns: ["variant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "shop_product_variants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            shop_orders: {
+                Row: {
+                    cancelled_at: string | null;
+                    collected_at: string | null;
+                    created_at: string;
+                    currency: string;
+                    engagement_id: string;
+                    holds_stock: boolean;
+                    id: string;
+                    ordered_by: string | null;
+                    paid_at: string | null;
+                    person_id: string;
+                    ready_at: string | null;
+                    refunded_at: string | null;
+                    status: string;
+                    tenant_id: string;
+                    total_minor: number;
+                };
+                Insert: {
+                    cancelled_at?: string | null;
+                    collected_at?: string | null;
+                    created_at?: string;
+                    currency?: string;
+                    engagement_id: string;
+                    holds_stock?: boolean;
+                    id?: string;
+                    ordered_by?: string | null;
+                    paid_at?: string | null;
+                    person_id: string;
+                    ready_at?: string | null;
+                    refunded_at?: string | null;
+                    status?: string;
+                    tenant_id: string;
+                    total_minor: number;
+                };
+                Update: {
+                    cancelled_at?: string | null;
+                    collected_at?: string | null;
+                    created_at?: string;
+                    currency?: string;
+                    engagement_id?: string;
+                    holds_stock?: boolean;
+                    id?: string;
+                    ordered_by?: string | null;
+                    paid_at?: string | null;
+                    person_id?: string;
+                    ready_at?: string | null;
+                    refunded_at?: string | null;
+                    status?: string;
+                    tenant_id?: string;
+                    total_minor?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "shop_orders_engagement_id_fkey";
+                        columns: ["engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_orders_ordered_by_fkey";
+                        columns: ["ordered_by"];
+                        isOneToOne: false;
+                        referencedRelation: "people";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_orders_person_id_fkey";
+                        columns: ["person_id"];
+                        isOneToOne: false;
+                        referencedRelation: "people";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_orders_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            shop_product_variants: {
+                Row: {
+                    created_at: string;
+                    id: string;
+                    label: string;
+                    position: number;
+                    product_id: string;
+                    stock: number | null;
+                    tenant_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    id?: string;
+                    label: string;
+                    position?: number;
+                    product_id: string;
+                    stock?: number | null;
+                    tenant_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: string;
+                    label?: string;
+                    position?: number;
+                    product_id?: string;
+                    stock?: number | null;
+                    tenant_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "shop_product_variants_product_id_fkey";
+                        columns: ["product_id"];
+                        isOneToOne: false;
+                        referencedRelation: "shop_products";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_product_variants_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            shop_products: {
+                Row: {
+                    active: boolean;
+                    created_at: string;
+                    currency: string;
+                    description: string | null;
+                    id: string;
+                    image_path: string | null;
+                    name: string;
+                    position: number;
+                    price_minor: number;
+                    tenant_id: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    active?: boolean;
+                    created_at?: string;
+                    currency?: string;
+                    description?: string | null;
+                    id?: string;
+                    image_path?: string | null;
+                    name: string;
+                    position?: number;
+                    price_minor: number;
+                    tenant_id: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    active?: boolean;
+                    created_at?: string;
+                    currency?: string;
+                    description?: string | null;
+                    id?: string;
+                    image_path?: string | null;
+                    name?: string;
+                    position?: number;
+                    price_minor?: number;
+                    tenant_id?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "shop_products_tenant_id_fkey";
                         columns: ["tenant_id"];
                         isOneToOne: false;
                         referencedRelation: "tenants";
@@ -5726,6 +6098,12 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            cancel_shop_order: {
+                Args: {
+                    p_order_id: string;
+                };
+                Returns: undefined;
+            };
             check_in_with_class_card: {
                 Args: {
                     p_card_id: string;
@@ -5842,6 +6220,7 @@ export type Database = {
                     p_engagement_id: string;
                     p_items: Json;
                     p_label?: string;
+                    p_pay_by_cash?: boolean;
                     p_person_id: string;
                 };
                 Returns: Json;
@@ -5914,6 +6293,12 @@ export type Database = {
             delete_job_photo_shop_photo: {
                 Args: {
                     p_photo_id: string;
+                };
+                Returns: string;
+            };
+            delete_shop_product: {
+                Args: {
+                    p_product_id: string;
                 };
                 Returns: string;
             };
@@ -6183,6 +6568,10 @@ export type Database = {
                     isSetofReturn: true;
                 };
             };
+            get_my_shop_orders: {
+                Args: never;
+                Returns: Json;
+            };
             get_my_teaching: {
                 Args: never;
                 Returns: Json;
@@ -6321,6 +6710,10 @@ export type Database = {
                     title: string;
                 }[];
             };
+            get_shop_catalogue: {
+                Args: never;
+                Returns: Json;
+            };
             get_signed_record_details: {
                 Args: {
                     p_evidence_id: string;
@@ -6332,6 +6725,10 @@ export type Database = {
                     p_tenant_id: string;
                 };
                 Returns: string;
+            };
+            get_studio_shop_orders: {
+                Args: never;
+                Returns: Json;
             };
             get_supabase_functions_url: {
                 Args: never;
@@ -6922,6 +7319,13 @@ export type Database = {
                     isSetofReturn: true;
                 };
             };
+            place_shop_order: {
+                Args: {
+                    p_lines: Json;
+                    p_person_id?: string;
+                };
+                Returns: Json;
+            };
             platform_access_should_log: {
                 Args: {
                     p_tenant_id: string;
@@ -7257,6 +7661,12 @@ export type Database = {
                 };
                 Returns: string;
             };
+            save_shop_product: {
+                Args: {
+                    p_product: Json;
+                };
+                Returns: string;
+            };
             save_studio_card_token: {
                 Args: {
                     p_expiry: string;
@@ -7500,6 +7910,13 @@ export type Database = {
                     p_package_id: string;
                 };
                 Returns: undefined;
+            };
+            set_shop_order_status: {
+                Args: {
+                    p_order_id: string;
+                    p_status: string;
+                };
+                Returns: string;
             };
             set_tenant_smugmug_oauth_pending: {
                 Args: {

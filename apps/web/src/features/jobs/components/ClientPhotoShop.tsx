@@ -11,6 +11,7 @@ import {
   ClientPhotoShopService,
   type ClientPhotoGallery,
   type ClientPhotoOrder,
+  type PhotoPayBy,
 } from '../services/clientPhotoShopService';
 import { formatDueDate, formatMinor } from '../lib/jobPaymentFormat';
 
@@ -87,15 +88,20 @@ function ShopBody({
   const headingId = useId();
   const termsId = useId();
   const [cart, setCart] = useState<Set<string>>(new Set());
-  const [doneMessage, setDoneMessage] = useState(false);
+  const [doneMessage, setDoneMessage] = useState<'free' | 'cash' | null>(null);
+  // Card is the usual way; cash lets the client send the order in and pay the studio later.
+  const [payBy, setPayBy] = useState<PhotoPayBy>('card');
+  const payById = useId();
   const { shop, photos } = data;
   const lang = i18n.language;
   const money = (minor: number) => formatMinor(minor, shop.currency, lang);
 
   const bought = useMemo(() => new Set(shop.bought_image_keys), [shop.bought_image_keys]);
   const awaiting = useMemo(() => new Set(shop.awaiting_image_keys), [shop.awaiting_image_keys]);
-  // The client's own unpaid cart is replaced by a new one, so those photos stay pickable.
-  const available = photos.filter((p) => !bought.has(p.key));
+  const cashOrdered = useMemo(() => new Set(shop.cash_image_keys ?? []), [shop.cash_image_keys]);
+  // The client's own unpaid card cart is replaced by a new one, so those photos stay pickable.
+  // Photos sent in to pay in cash stay with that order.
+  const available = photos.filter((p) => !bought.has(p.key) && !cashOrdered.has(p.key));
 
   const prices: PhotoShopPrices = {
     includedPhotos: shop.included_photos,
@@ -109,14 +115,15 @@ function ShopBody({
   const suggestAll = allPhotosIsBetter(prices, cart.size, available.length);
 
   const order = useMutation({
-    mutationFn: (allPhotos: boolean) => ClientPhotoShopService.order(engagementId, [...cart], allPhotos),
+    mutationFn: (allPhotos: boolean) => ClientPhotoShopService.order(engagementId, [...cart], allPhotos, payBy),
+    onMutate: () => setDoneMessage(null),
     onSuccess: async (placed) => {
       setCart(new Set());
-      if (placed.payToken) {
+      if (placed.payToken && !placed.payByCash) {
         navigate(`/pay/${placed.payToken}`);
         return;
       }
-      setDoneMessage(true);
+      setDoneMessage(placed.payByCash ? 'cash' : 'free');
       await queryClient.invalidateQueries({ queryKey: galleryKey(engagementId) });
     },
   });
@@ -155,13 +162,16 @@ function ShopBody({
 
       {doneMessage && (
         <p role="status" className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          {t('pages.client_portal.photo_shop.ordered_free')}
+          {doneMessage === 'cash'
+            ? t('pages.client_portal.photo_shop.ordered_cash')
+            : t('pages.client_portal.photo_shop.ordered_free')}
         </p>
       )}
 
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {photos.map((p) => {
           const isBought = bought.has(p.key);
+          const isCashOrdered = !isBought && cashOrdered.has(p.key);
           const inCart = cart.has(p.key);
           return (
             <li key={p.key} className="space-y-1">
@@ -178,6 +188,8 @@ function ShopBody({
                 <span className="truncate text-gray-600" dir="ltr">{p.fileName}</span>
                 {isBought ? (
                   <Badge variant="success">{t('pages.client_portal.photo_shop.bought')}</Badge>
+                ) : isCashOrdered ? (
+                  <Badge variant="secondary">{t('pages.client_portal.photo_shop.cash_ordered')}</Badge>
                 ) : (
                   shop.open && !preview && (
                     <Button
@@ -191,7 +203,7 @@ function ShopBody({
                   )
                 )}
               </div>
-              {!isBought && awaiting.has(p.key) && (
+              {!isBought && !isCashOrdered && awaiting.has(p.key) && (
                 <p className="text-xs text-gray-500">{t('pages.client_portal.photo_shop.awaiting')}</p>
               )}
             </li>
@@ -214,6 +226,19 @@ function ShopBody({
               {t('pages.client_portal.photo_shop.suggest_all', { count: available.length, price: money(allTotal.totalMinor) })}
             </p>
           )}
+          <fieldset className="space-y-1 text-sm">
+            <legend className="font-medium" id={payById}>{t('pages.client_portal.photo_shop.pay_how')}</legend>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2">
+                <input type="radio" name={payById} value="card" checked={payBy === 'card'} onChange={() => setPayBy('card')} />
+                {t('pages.client_portal.photo_shop.pay_card')}
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" name={payById} value="cash" checked={payBy === 'cash'} onChange={() => setPayBy('cash')} />
+                {t('pages.client_portal.photo_shop.pay_cash')}
+              </label>
+            </div>
+          </fieldset>
           <p id={termsId} className="text-xs text-gray-500">{t('pages.client_portal.photo_shop.terms')}</p>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -223,9 +248,11 @@ function ShopBody({
               aria-describedby={termsId}
               onClick={() => order.mutate(false)}
             >
-              {total.totalMinor > 0
-                ? t('pages.client_portal.photo_shop.pay', { price: money(total.totalMinor) })
-                : t('pages.client_portal.photo_shop.take_free')}
+              {total.totalMinor <= 0
+                ? t('pages.client_portal.photo_shop.take_free')
+                : payBy === 'cash'
+                  ? t('pages.client_portal.photo_shop.send_cash', { price: money(total.totalMinor) })
+                  : t('pages.client_portal.photo_shop.pay', { price: money(total.totalMinor) })}
             </Button>
             {allTotal.problem === null && shop.all_photos_price_minor != null && (
               <Button
@@ -234,7 +261,9 @@ function ShopBody({
                 aria-describedby={termsId}
                 onClick={() => order.mutate(true)}
               >
-                {t('pages.client_portal.photo_shop.buy_all', { count: available.length, price: money(allTotal.totalMinor) })}
+                {payBy === 'cash' && allTotal.totalMinor > 0
+                  ? t('pages.client_portal.photo_shop.buy_all_cash', { count: available.length, price: money(allTotal.totalMinor) })
+                  : t('pages.client_portal.photo_shop.buy_all', { count: available.length, price: money(allTotal.totalMinor) })}
               </Button>
             )}
           </div>
@@ -267,6 +296,15 @@ function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
             <a href={o.delivery_url} target="_blank" rel="noopener noreferrer" className="font-medium underline">
               {t('pages.client_portal.photo_shop.download')}
             </a>
+          ) : o.status === 'awaiting_payment' && o.pay_by_cash ? (
+            <span className="flex flex-wrap items-center gap-2 text-gray-600">
+              {t('pages.client_portal.photo_shop.cash_waiting')}
+              {o.pay_token && (
+                <a href={`/pay/${o.pay_token}`} className="font-medium underline">
+                  {t('pages.client_portal.photo_shop.pay_online_instead')}
+                </a>
+              )}
+            </span>
           ) : o.status === 'awaiting_payment' && o.pay_token ? (
             <a href={`/pay/${o.pay_token}`} className="font-medium underline">
               {t('pages.client_portal.photo_shop.pay_now')}

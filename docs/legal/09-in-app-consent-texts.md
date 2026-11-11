@@ -61,6 +61,10 @@ Shown with the typed-name field / מוצג ליד שדה השם:
 - EN: Type your full name to sign. ☐ I have read the whole document above, I agree to it, and I understand that typing my name and ticking this box is my electronic signature and has the same effect as signing by hand.
 - HE: הקלידו את שמכם המלא לחתימה. ☐ קראתי את כל המסמך שלמעלה, אני מסכים/ה לו, ואני מבין/ה שהקלדת שמי וסימון תיבה זו הם החתימה האלקטרונית שלי ותוקפם כחתימה בכתב יד.
 
+Photography contracts (one tick, no scroll; the full contract opens from a link; the client may pay before signing) / חוזה צילום (סימון אחד, ללא גלילה; החוזה המלא נפתח מקישור; אפשר לשלם לפני החתימה) [[LAWYER: confirm]]:
+- EN: ☐ I have read and agree to the contract, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.
+- HE: ☐ קראתי את החוזה ואני מסכים/ה לו, הפרטים שלמעלה נכונים, ואני מבין/ה שהקלדת שמי וסימון תיבה זו הם החתימה האלקטרונית שלי.
+
 After signing / לאחר החתימה:
 - EN: Signed by {{signed_by_name}} on {{signed_at}}. A PDF copy has been sent to {{email}}.
 - HE: נחתם על ידי {{signed_by_name}} בתאריך {{signed_at}}. עותק PDF נשלח אל {{email}}.

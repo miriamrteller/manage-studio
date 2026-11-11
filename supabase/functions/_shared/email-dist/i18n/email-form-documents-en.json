@@ -10,10 +10,10 @@
             "subject": "Reminder: sign your health declaration for {className}",
             "subject_urgent": "URGENT: Final reminder — sign your health declaration for {className}",
             "body": "This is a reminder that your enrollment in {className} will not be active until you sign the health declaration.",
-            "body_urgent": "This is your FINAL reminder. Your enrollment in {className} will be cancelled if the health declaration is not signed within 48 hours.",
+            "body_urgent": "This is your final reminder to sign the health declaration for {className}. Your place is paid and kept; the studio just needs your signed health declaration.",
             "waiver_warning": "Your spot is reserved but your enrollment is NOT active. You will not be permitted to attend class until the health declaration is signed. Classes missed while your health declaration is pending are not eligible for refund, credit, or makeup.",
             "cta": "Sign Your Health Declaration Now",
-            "cancellation_warning": "If the health declaration is not signed by this date, your enrollment will be automatically cancelled and a full refund will be issued."
+            "cancellation_warning": "Your place will not be cancelled if you miss this date, but please sign so the studio has your health declaration."
         },
         "waiver_cancelled": {
             "preview": "Enrollment cancelled — health declaration not signed",
@@ -26,10 +26,10 @@
             "subject_urgent": "URGENT: Final reminder — sign your contract for {className}",
             "preview": "Action needed: your booking is not yet confirmed",
             "body": "This is a reminder that your booking for {className} is not confirmed until you sign the contract.",
-            "body_urgent": "This is your FINAL reminder. Your booking for {className} will be cancelled if the contract is not signed within 48 hours.",
+            "body_urgent": "This is your final reminder to sign the contract for {className}. Your booking is kept; the studio just needs your signed contract.",
             "waiver_warning": "Your date is held but your booking is NOT confirmed until the contract is signed.",
             "cta": "Sign Your Contract Now",
-            "cancellation_warning": "If the contract is not signed by this date, your booking will be cancelled."
+            "cancellation_warning": "Your booking will not be cancelled if you miss this date, but please sign so the studio has your contract."
         },
         "waiver_cancelled": {
             "subject": "Your booking for {className} has been cancelled",

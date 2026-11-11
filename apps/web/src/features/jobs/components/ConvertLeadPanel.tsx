@@ -41,6 +41,12 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
   const [startsAt, setStartsAt] = useState(() => eventDateToLocal(eventDate));
   const [location, setLocation] = useState(defaultLocation ?? '');
 
+  // No package picked yet: start from the studio's first one (still editable), so the button is never stuck.
+  const firstPackageId = packagesQuery.data?.[0]?.id ?? '';
+  useEffect(() => {
+    if (firstPackageId) setOfferingId((current) => current || firstPackageId);
+  }, [firstPackageId]);
+
   // No location from the enquiry: use the package's own, when it has one.
   const packageLocation = (packagesQuery.data ?? []).find((p) => p.id === offeringId)?.location ?? '';
   useEffect(() => {

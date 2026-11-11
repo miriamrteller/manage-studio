@@ -52,6 +52,7 @@ const BookingServicesPage = lazy(() => import("./pages/BookingServicesPage"));
 const GoogleCalendarCallbackPage = lazy(() => import("./pages/GoogleCalendarCallbackPage"));
 const SmugMugCallbackPage = lazy(() => import("./pages/SmugMugCallbackPage"));
 const PhotoShopPage = lazy(() => import("./pages/PhotoShopPage"));
+const StudioShopPage = lazy(() => import("./pages/StudioShopPage"));
 const WaiversPage = lazy(() => import("./pages/WaiversPage"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const PortalDashboard = lazy(() => import("./pages/PortalDashboard"));
@@ -60,6 +61,8 @@ const EnrolPayPage = lazy(() => import("./pages/EnrolPayPage"));
 const EnrolReturnPage = lazy(() => import("./pages/EnrolReturnPage"));
 const EnrolCompletePage = lazy(() => import("./pages/EnrolCompletePage"));
 const PayRequestPage = lazy(() => import("./pages/PayRequestPage"));
+const SignInLinkPage = lazy(() => import("./pages/SignInLinkPage"));
+const ShopLinkPage = lazy(() => import("./pages/ShopLinkPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const FinanceHubPage = lazy(() => import("./pages/FinanceHubPage"));
 const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
@@ -203,6 +206,9 @@ const router = createBrowserRouter([
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
           // Public pay link for a job (shoot) deposit/balance request — token is the capability.
           { path: 'pay/:token', element: <PayRequestPage /> },
+          // Booking email "Go to my page": signs the client in (token in the fragment, 3 days).
+          { path: 'signin', element: <SignInLinkPage /> },
+          { path: 'shop/:token', element: <ShopLinkPage /> },
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },
@@ -225,6 +231,7 @@ const router = createBrowserRouter([
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/photo-shop", element: <AdminRoute><PhotoShopPage /></AdminRoute> },
+          { path: "admin/shop", element: <AdminRoute><StudioShopPage /></AdminRoute> },
           { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
           { path: "admin/quotes/:id", element: <AdminRoute><AdminQuoteEditorPage /></AdminRoute> },
           { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
@@ -250,7 +257,8 @@ const router = createBrowserRouter([
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
           // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.
           { path: "admin/setup/integrations/google/callback", element: <GoogleCalendarCallbackPage /> },
-          { path: "admin/setup/integrations/smugmug/callback", element: <AdminRoute><SmugMugCallbackPage /></AdminRoute> },
+          // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.
+          { path: "admin/setup/integrations/smugmug/callback", element: <SmugMugCallbackPage /> },
           { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
           { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
           { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },

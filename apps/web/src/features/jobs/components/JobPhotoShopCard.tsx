@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useJobPhotoShop, useJobPhotoShopPhotos, usePhotoShopEnabled } from '../hooks/usePhotoShop';
 import { JobPhotoShopSource } from './JobPhotoShopSource';
+import { PhotoShopLinkError, PhotoShopLinkService, shopLinkMessage, type PhotoShopLink } from '../services/photoShopLinkService';
 import {
   isDeliveryLink,
   majorToMinor,
@@ -144,6 +145,8 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
 
       <JobPhotoShopSource engagementId={engagementId} shop={data} />
 
+      {data.gallery_key && <SendShopLink engagementId={engagementId} />}
+
       <details className="rounded-md border p-3">
         <summary className="cursor-pointer text-sm font-medium">{t('studio_setup.filled_for_you')}</summary>
         <p className="mt-2 text-xs text-muted-foreground">{t('pages.jobs.photo_shop.filled_hint')}</p>
@@ -250,7 +253,7 @@ function PhotoOrders({
 
 function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; order: PhotoOrder; thumbs: Map<string, string> }) {
   const { t, i18n } = useTranslation();
-  const { deliver, markSent } = useJobPhotoShop(engagementId, false);
+  const { deliver, markSent, recordCash } = useJobPhotoShop(engagementId, false);
   const linkId = useId();
   const [link, setLink] = useState(order.delivery_url ?? '');
   const [editing, setEditing] = useState(order.status === 'paid');
@@ -270,7 +273,20 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
         <Badge variant={ORDER_BADGE[order.status]}>{t(`pages.jobs.photo_shop.status.${order.status}`)}</Badge>
       </div>
 
-      <details open={order.status === 'paid'}>
+      {order.status === 'awaiting_payment' && order.pay_by_cash && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground">{t('pages.jobs.photo_shop.paying_cash')}</span>
+          {order.job_payment_request_id && (
+            <Button size="sm" variant="primary" isLoading={recordCash.isPending}
+              onClick={() => recordCash.mutate(order.job_payment_request_id as string)}>
+              {t('pages.jobs.photo_shop.record_cash')}
+            </Button>
+          )}
+          {recordCash.error && <p role="alert" className="w-full text-error">{(recordCash.error as Error).message}</p>}
+        </div>
+      )}
+
+      <details open={order.status === 'paid' || (order.status === 'awaiting_payment' && order.pay_by_cash === true)}>
         <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.order_photos_list')}</summary>
         <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5" dir="ltr">
           {order.items.map((i) => (
@@ -334,5 +350,71 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
         </div>
       )}
     </li>
+  );
+}
+
+/** "Send shop link": a 3-day link that signs the client straight in to their photos. */
+function SendShopLink({ engagementId }: { engagementId: string }) {
+  const { t, i18n } = useTranslation();
+  const [link, setLink] = useState<PhotoShopLink | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const make = async () => {
+    setBusy(true);
+    setError(null);
+    setCopied(false);
+    try {
+      setLink(await PhotoShopLinkService.create(engagementId));
+    } catch (e) {
+      setError(e instanceof PhotoShopLinkError && e.code === 'no_email'
+        ? t('pages.jobs.photo_shop.link_no_email')
+        : t('pages.jobs.photo_shop.link_error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const message = link ? shopLinkMessage(t('pages.jobs.photo_shop.link_message'), link.url) : '';
+  const copy = async () => {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link.url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" variant="primary" isLoading={busy} onClick={make}>
+          {t('pages.jobs.photo_shop.send_link')}
+        </Button>
+        <span className="text-xs text-muted-foreground">{t('pages.jobs.photo_shop.send_link_hint')}</span>
+      </div>
+      {link && (
+        <div className="space-y-2 rounded-md border p-3">
+          <p>{t('pages.jobs.photo_shop.link_ready', { email: link.email, date: formatDueDate(link.expiresAt, i18n.language) })}</p>
+          <p dir="ltr" className="break-all font-mono text-xs">{link.url}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={copy}>
+              {copied ? t('pages.jobs.photo_shop.link_copied') : t('pages.jobs.photo_shop.link_copy')}
+            </Button>
+            <Button size="sm" variant="secondary"
+              onClick={() => window.location.assign(`mailto:${encodeURIComponent(link.email)}?subject=${encodeURIComponent(t('pages.jobs.photo_shop.link_subject'))}&body=${encodeURIComponent(message)}`)}>
+              {t('pages.jobs.photo_shop.link_email')}
+            </Button>
+            <Button size="sm" variant="secondary"
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')}>
+              {t('pages.jobs.photo_shop.link_whatsapp')}
+            </Button>
+          </div>
+        </div>
+      )}
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
+    </div>
   );
 }

@@ -15,6 +15,8 @@ export interface ClientPhotoShopView {
   spent_minor: number;
   bought_image_keys: string[];
   awaiting_image_keys: string[];
+  /** Photos already sent in to be paid in cash: not pickable again. */
+  cash_image_keys?: string[];
   orders: ClientPhotoOrder[];
 }
 
@@ -30,6 +32,8 @@ export interface ClientPhotoOrder {
   delivered_at: string | null;
   pay_token: string | null;
   delivery_url: string | null;
+  /** Sent in to pay the studio in cash (waits for the studio to record it). */
+  pay_by_cash?: boolean;
 }
 
 export interface ClientGalleryPhoto {
@@ -54,7 +58,10 @@ export interface PlacedPhotoOrder {
   totalMinor: number;
   currency: string;
   payToken: string | null;
+  payByCash?: boolean;
 }
+
+export type PhotoPayBy = 'card' | 'cash';
 
 /** The function's error code (e.g. "no_gallery", "already_bought"), or null. */
 async function errorCode(error: unknown): Promise<string | null> {
@@ -97,9 +104,15 @@ export class ClientPhotoShopService {
     return data as PhotoShopPreview;
   }
 
-  static async order(engagementId: string, imageKeys: string[], allPhotos: boolean): Promise<PlacedPhotoOrder> {
+  /** payBy "cash": the order is sent in now and paid to the studio in cash later. */
+  static async order(
+    engagementId: string,
+    imageKeys: string[],
+    allPhotos: boolean,
+    payBy: PhotoPayBy = 'card',
+  ): Promise<PlacedPhotoOrder> {
     const { data, error } = await supabase.functions.invoke('client-photo-shop', {
-      body: { action: 'order', engagementId, imageKeys, allPhotos },
+      body: { action: 'order', engagementId, imageKeys, allPhotos, ...(payBy === 'cash' ? { payBy } : {}) },
     });
     if (error) throw new ClientPhotoShopError((await errorCode(error)) ?? 'server_error');
     return data as PlacedPhotoOrder;

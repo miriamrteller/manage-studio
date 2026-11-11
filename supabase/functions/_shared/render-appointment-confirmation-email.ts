@@ -5,6 +5,7 @@ import {
   interpolateTemplate,
 } from "./email-dist/i18n/email.js";
 import type { AppointmentConfirmationPayload } from "./build-appointment-confirmation-payload.ts";
+import { isHttpLink, signInBlockHtml } from "./sign-in-email-block.ts";
 
 type EmailLanguage = "en" | "he";
 
@@ -41,6 +42,7 @@ function renderShell(params: {
   paymentHeading?: string;
   paymentRows?: string;
   waiverBlock?: string;
+  signInBlock?: string;
   footerNote?: string;
   primaryColor: string;
 }): string {
@@ -56,6 +58,7 @@ function renderShell(params: {
   ${renderDetailsTable(params.detailsRows)}
   ${params.paymentHeading && params.paymentRows ? `<h2 style="margin:24px 0 8px;font-size:14px;color:#374151;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(params.paymentHeading)}</h2>${renderDetailsTable(params.paymentRows)}` : ""}
   ${params.waiverBlock ?? ""}
+  ${params.signInBlock ?? ""}
   ${params.footerNote ? `<p style="margin:24px 0 0;color:#6b7280;font-size:14px;">${escapeHtml(params.footerNote)}</p>` : ""}
 </div></body></html>`;
 }
@@ -101,6 +104,13 @@ export function renderAppointmentClientConfirmationHtml(
     </div>`;
   }
 
+  // Sign-in button: every booked client has a login; this signs them straight in (3 days).
+  const signInBody = str(strings.sign_in_body);
+  const signInCta = str(strings.sign_in_cta);
+  const signInBlock = isHttpLink(payload.signInUrl) && signInBody && signInCta
+    ? signInBlockHtml({ body: signInBody, cta: signInCta, url: payload.signInUrl, color: brand.fill })
+    : "";
+
   return renderShell({
     language,
     schoolName: payload.schoolName,
@@ -111,6 +121,7 @@ export function renderAppointmentClientConfirmationHtml(
     paymentHeading: str(strings.payment_summary_heading) ?? "Payment summary",
     paymentRows,
     waiverBlock,
+    signInBlock,
     footerNote: str(strings.confirmation_note),
     primaryColor,
   });

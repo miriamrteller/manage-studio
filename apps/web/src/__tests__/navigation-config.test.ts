@@ -192,24 +192,24 @@ describe('admin menu: working pages at the top level', () => {
     }
   });
 
-  it('dance and generic: Leads, Students, Families, Classes, Appointments, Notifications', () => {
+  it('dance and generic: Leads, Students, Families, Classes, Shop, Bookable services, Appointments, Notifications', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
       expect(adminMenu(vertical)[0].items.map((i) => i.path)).toEqual([
-        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes',
-        '/admin/appointments', '/admin/notifications',
+        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop',
+        '/admin/packages', '/admin/appointments', '/admin/notifications',
       ]);
     }
   });
 
-  it('photographer: Leads, Clients, Shoots, Quotes, Photo shop, Appointments, Notifications (no families or classes)', () => {
+  it('photographer: Leads, Clients, Shoots, Quotes, Photo shop, Packages, Appointments, Notifications (no families or classes)', () => {
     expect(adminMenu('photographer')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
     ]);
   });
 
-  it('beautician: Leads, Clients, Appointments, Notifications (only what fits an appointment business)', () => {
+  it('beautician: Leads, Clients, services, Appointments, Notifications (only what fits an appointment business)', () => {
     expect(adminMenu('beautician')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/packages', '/admin/appointments', '/admin/notifications',
     ]);
   });
 
