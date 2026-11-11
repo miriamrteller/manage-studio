@@ -31,7 +31,7 @@ function flatten(obj: Json, prefix = ''): Record<string, string> {
   return out;
 }
 
-const base = { en: flatten(enBase as Json), he: flatten(heBase as Json) };
+const base = { en: flatten(enBase as unknown as Json), he: flatten(heBase as unknown as Json) };
 const noFamilies = { en: flatten(enNoFamilies as Json), he: flatten(heNoFamilies as Json) };
 const photographer = flatten(enPhotographer as Json);
 
