@@ -246,11 +246,11 @@ entrypoint = "./functions/check-invoicing-auth/index.ts"
 
 # --- Scheduling (native booking + Google Calendar) ---------------------------
 # Public / anon-callable booking endpoints (no user session).
+[functions.client-sign-in]
+enabled = true
 # Booked clients sign in without a password: "open" (the email link's token is the
 # credential) and "prepare" (makes a booked client's login before the login page sends
 # the sign-in email; same answer for everyone). Public, checked in-function.
-[functions.client-sign-in]
-enabled = true
 verify_jwt = false
 entrypoint = "./functions/client-sign-in/index.ts"
 

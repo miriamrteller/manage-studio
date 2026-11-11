@@ -16,7 +16,6 @@
  * Callers on a booking or payment path must treat every failure here as "no login yet":
  * nothing here may stand in the way of booking or paying.
  */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { inviteTokenHash, newInviteToken } from "./lead-form-invite.ts";
 
@@ -283,6 +282,8 @@ export async function sessionForEmail(
   const url = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   if (!url || !anonKey) return null;
+  // Loaded here, not at the top: payment code (and its Node tests) imports this file.
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.105.3");
   const anon = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: verified, error: verifyError } = await anon.auth.verifyOtp({ token_hash: hashed, type: "email" });
   const session = verified?.session;
