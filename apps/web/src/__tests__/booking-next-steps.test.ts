@@ -149,7 +149,7 @@ describe('resolveQuoteNextSteps (accept-quote)', () => {
 
 function nextDeps(over: Partial<JobNextStepDeps> = {}): JobNextStepDeps {
   return {
-    loadJob: vi.fn(async () => ({ personId: 'person-1', waiverEvidenceId: 'ev-1' })),
+    loadJob: vi.fn(async () => ({ personId: 'person-1' })),
     allowedEmails: vi.fn(async () => new Set(['pat@example.test'])),
     loadAcceptedQuoteResult: vi.fn(async () => acceptResult()),
     loadRequests: vi.fn(async () => openRequests()),
@@ -218,10 +218,10 @@ describe('resolveJobNextStep (after signing)', () => {
     });
   });
 
-  it('waits for the signature', async () => {
-    const deps = nextDeps({ loadJob: async () => ({ personId: 'person-1', waiverEvidenceId: null }) });
-    expect(await resolveJobNextStep(deps, { token, requestedEngagementId: ENG })).toEqual({
-      ok: false, status: 409, code: 'not_signed',
+  it('never waits for the signature: the deposit can be paid before the contract is signed', async () => {
+    const deps = nextDeps();
+    expect(await resolveJobNextStep(deps, { token, requestedEngagementId: ENG })).toMatchObject({
+      ok: true, next: 'pay_deposit',
     });
   });
 });

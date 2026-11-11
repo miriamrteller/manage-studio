@@ -1,9 +1,10 @@
 /**
  * job-next-step
  *
- * After a client signs a JOB contract on /enrol/complete, tells the page
- * where to send them next: the deposit pay page (/pay/:token) while the
- * deposit is unpaid, otherwise the client portal. The pay link is looked up
+ * From a JOB contract signing link on /enrol/complete (signed or not yet:
+ * signing never blocks payment), tells the page where to send the client:
+ * the deposit pay page (/pay/:token) while the deposit is unpaid, otherwise
+ * the client portal. The pay link is looked up
  * here from the job's accepted quote — never taken from the URL.
  *
  * Authorization: WaiverToken <token> (the same signing link; no session)
@@ -13,7 +14,7 @@
  *   200 { next: "pay_deposit", payPath, amountMinor, currency }
  *   200 { next: "portal", portalPath, reason: "deposit_paid" | "no_deposit" }
  *   401 invalid/expired token · 403 token for another job / email mismatch
- *   404 not a job (dance waivers never call this) · 409 contract not signed yet
+ *   404 not a job (dance waivers never call this)
  */
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
@@ -49,15 +50,12 @@ Deno.serve(withMonitoring("job-next-step", async (req) => {
         if (!job) return null;
         const { data: eng } = await service
           .from("engagements")
-          .select("person_id, waiver_evidence_id")
+          .select("person_id")
           .eq("tenant_id", tenantId)
           .eq("id", engagementId)
           .maybeSingle();
         if (!eng) return null;
-        return {
-          personId: eng.person_id as string,
-          waiverEvidenceId: (eng.waiver_evidence_id as string | null) ?? null,
-        };
+        return { personId: eng.person_id as string };
       },
       allowedEmails: (engagementId, personId) =>
         resolveAllowedTokenRecipientEmails(service, { tenantId, engagementId, personId }),
