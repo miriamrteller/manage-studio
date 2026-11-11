@@ -7,6 +7,7 @@ import {
   type JobPhotoShopPatch,
   type StudioPhotoShopDefaults,
 } from '../services/photoShopService';
+import { JobPaymentService } from '../services/jobPaymentService';
 
 /** The photo shop is a beta: only studios the owner switched it on for. */
 export function usePhotoShopEnabled(): boolean {
@@ -43,7 +44,15 @@ export function useJobPhotoShop(engagementId: string, enabled = true) {
     mutationFn: (orderId: string) => PhotoShopService.markSent(orderId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) }),
   });
-  return { shop, orders, save, deliver, markSent };
+  /** An order sent in to pay in cash: the studio records the cash it received (record-job-payment). */
+  const recordCash = useMutation({
+    mutationFn: (requestId: string) => JobPaymentService.recordManualPayment(requestId, 'cash'),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) });
+      await queryClient.invalidateQueries({ queryKey: ['job-payment-requests', engagementId] });
+    },
+  });
+  return { shop, orders, save, deliver, markSent, recordCash };
 }
 
 /** The shoot's uploaded previews, plus upload and remove. */

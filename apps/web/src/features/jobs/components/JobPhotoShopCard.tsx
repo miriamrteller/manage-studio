@@ -250,7 +250,7 @@ function PhotoOrders({
 
 function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; order: PhotoOrder; thumbs: Map<string, string> }) {
   const { t, i18n } = useTranslation();
-  const { deliver, markSent } = useJobPhotoShop(engagementId, false);
+  const { deliver, markSent, recordCash } = useJobPhotoShop(engagementId, false);
   const linkId = useId();
   const [link, setLink] = useState(order.delivery_url ?? '');
   const [editing, setEditing] = useState(order.status === 'paid');
@@ -270,7 +270,20 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
         <Badge variant={ORDER_BADGE[order.status]}>{t(`pages.jobs.photo_shop.status.${order.status}`)}</Badge>
       </div>
 
-      <details open={order.status === 'paid'}>
+      {order.status === 'awaiting_payment' && order.pay_by_cash && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground">{t('pages.jobs.photo_shop.paying_cash')}</span>
+          {order.job_payment_request_id && (
+            <Button size="sm" variant="primary" isLoading={recordCash.isPending}
+              onClick={() => recordCash.mutate(order.job_payment_request_id as string)}>
+              {t('pages.jobs.photo_shop.record_cash')}
+            </Button>
+          )}
+          {recordCash.error && <p role="alert" className="w-full text-error">{(recordCash.error as Error).message}</p>}
+        </div>
+      )}
+
+      <details open={order.status === 'paid' || (order.status === 'awaiting_payment' && order.pay_by_cash === true)}>
         <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.order_photos_list')}</summary>
         <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5" dir="ltr">
           {order.items.map((i) => (

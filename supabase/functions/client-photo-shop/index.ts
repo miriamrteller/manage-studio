@@ -4,8 +4,10 @@
  * The client's photo shop for one shoot (beta, feature billing:photo_shop).
  *   { action: "gallery", engagementId }
  *     → { shop, photos: [{ key, fileName, previewUrl }] }
- *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean }
- *     → { orderId, status, totalMinor, currency, payToken }
+ *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean, payBy?: "card" | "cash" }
+ *     → { orderId, status, totalMinor, currency, payToken, payByCash }
+ *       payBy "cash": the order is sent in to pay the studio in cash. It waits for
+ *       payment (the pay link still works) and the studio is emailed at once.
  *   { action: "preview", engagementId }   (studio admins only)
  *     → { shop, photos, sample } — what the shoot's client sees. While the shoot's gallery
  *       is not ready (none chosen, or SmugMug still locked) the photos are the sample
@@ -32,7 +34,7 @@ import {
   uploadedPhotoSource,
 } from "../_shared/photo-shop/gallery.ts";
 import { photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
-import { notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
+import { notifyStudioPhotoOrderCash, notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
 const FEATURE = "billing:photo_shop";
 
@@ -134,14 +136,16 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     if (typeof personId !== "string") return jsonResponse({ error: "not_this_client" }, 403);
 
     const taken = [...(view.bought_image_keys ?? []), ...(view.awaiting_image_keys ?? [])];
-    // The person's own unpaid cart is replaced by this one, so its photos are free to pick again.
+    // The person's own unpaid card cart is replaced by this one, so its photos are free to pick
+    // again. An order sent in to pay in cash is kept, so its photos stay taken.
     const { data: ownAwaiting } = await service
       .from("job_photo_order_items")
       .select("image_key, job_photo_orders!inner(person_id, status)")
       .eq("engagement_id", engagementId)
       .is("voided_at", null)
       .eq("job_photo_orders.person_id", personId)
-      .eq("job_photo_orders.status", "awaiting_payment");
+      .eq("job_photo_orders.status", "awaiting_payment")
+      .eq("job_photo_orders.pay_by_cash", false);
     const mine = new Set((ownAwaiting ?? []).map((r) => r.image_key as string));
 
     const resolved = resolveOrderItems(
@@ -159,12 +163,14 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       .maybeSingle();
     const language = tenant?.language_default === "en" ? "en" : "he";
 
+    const payByCash = body?.payBy === "cash";
     const { data: order, error: orderError } = await service.rpc("create_job_photo_order", {
       p_engagement_id: engagementId,
       p_person_id: personId,
       p_items: resolved.items,
       p_all_photos: body?.allPhotos === true,
       p_label: photoOrderLabel(resolved.items.length, language),
+      p_pay_by_cash: payByCash,
     });
     if (orderError || !order) {
       const code = orderErrorCode(orderError?.message ?? "");
@@ -176,6 +182,11 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       await notifyStudioPhotoOrderPaid(service, o.order_id as string).catch((e) =>
         console.error("[client-photo-shop] studio email failed", e)
       );
+    } else if (o.pay_by_cash === true) {
+      // Sent in to pay in cash: the studio hears now, not only when the cash is recorded.
+      await notifyStudioPhotoOrderCash(service, o.order_id as string).catch((e) =>
+        console.error("[client-photo-shop] studio email failed", e)
+      );
     }
     return jsonResponse({
       orderId: o.order_id,
@@ -183,6 +194,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       totalMinor: o.total_minor,
       currency: o.currency,
       payToken: o.pay_token ?? null,
+      payByCash: o.pay_by_cash === true,
     });
   } catch (e) {
     if (e instanceof Response) return e;
