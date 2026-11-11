@@ -135,8 +135,11 @@ export type Database = {
                     attended: boolean;
                     created_at: string;
                     id: string;
+                    marked_by: string | null;
+                    offering_id: string | null;
                     person_id: string;
-                    session_id: string;
+                    session_date: string | null;
+                    session_id: string | null;
                     tenant_id: string;
                     updated_at: string;
                 };
@@ -144,8 +147,11 @@ export type Database = {
                     attended?: boolean;
                     created_at?: string;
                     id?: string;
+                    marked_by?: string | null;
+                    offering_id?: string | null;
                     person_id: string;
-                    session_id: string;
+                    session_date?: string | null;
+                    session_id?: string | null;
                     tenant_id: string;
                     updated_at?: string;
                 };
@@ -153,12 +159,29 @@ export type Database = {
                     attended?: boolean;
                     created_at?: string;
                     id?: string;
+                    marked_by?: string | null;
+                    offering_id?: string | null;
                     person_id?: string;
-                    session_id?: string;
+                    session_date?: string | null;
+                    session_id?: string | null;
                     tenant_id?: string;
                     updated_at?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "attendance_marked_by_fkey";
+                        columns: ["marked_by"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "attendance_offering_id_fkey";
+                        columns: ["offering_id"];
+                        isOneToOne: false;
+                        referencedRelation: "offerings";
+                        referencedColumns: ["id"];
+                    },
                     {
                         foreignKeyName: "attendance_person_id_fkey";
                         columns: ["person_id"];
@@ -5984,6 +6007,13 @@ export type Database = {
                 };
                 Returns: Json;
             };
+            get_class_register: {
+                Args: {
+                    p_offering_id: string;
+                    p_session_date: string;
+                };
+                Returns: Json;
+            };
             get_client_job_gallery: {
                 Args: {
                     p_engagement_id: string;
@@ -7354,6 +7384,15 @@ export type Database = {
                     p_tenant_id: string;
                 };
                 Returns: Json;
+            };
+            set_class_attendance: {
+                Args: {
+                    p_attended: boolean;
+                    p_offering_id: string;
+                    p_person_ids: string[];
+                    p_session_date: string;
+                };
+                Returns: number;
             };
             set_class_card_visit_status: {
                 Args: {
