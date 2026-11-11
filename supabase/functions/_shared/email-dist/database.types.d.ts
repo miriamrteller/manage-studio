@@ -2917,6 +2917,13 @@ export type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "offerings_staff_id_fkey";
+                        columns: ["staff_id"];
+                        isOneToOne: false;
+                        referencedRelation: "staff_names";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "offerings_tenant_id_fkey";
                         columns: ["tenant_id"];
                         isOneToOne: false;
@@ -4843,6 +4850,7 @@ export type Database = {
                     takbull_credentials_updated_at: string | null;
                     takbull_document_type: number;
                     takbull_merchant_id: string | null;
+                    teachers_own_classes_only: boolean;
                     teaches_classes: boolean;
                     terms_url: string | null;
                     tranzila_terminal_name: string | null;
@@ -4939,6 +4947,7 @@ export type Database = {
                     takbull_credentials_updated_at?: string | null;
                     takbull_document_type?: number;
                     takbull_merchant_id?: string | null;
+                    teachers_own_classes_only?: boolean;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -5035,6 +5044,7 @@ export type Database = {
                     takbull_credentials_updated_at?: string | null;
                     takbull_document_type?: number;
                     takbull_merchant_id?: string | null;
+                    teachers_own_classes_only?: boolean;
                     teaches_classes?: boolean;
                     terms_url?: string | null;
                     tranzila_terminal_name?: string | null;
@@ -5533,6 +5543,32 @@ export type Database = {
                     },
                     {
                         foreignKeyName: "job_details_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            staff_names: {
+                Row: {
+                    id: string | null;
+                    name: string | null;
+                    tenant_id: string | null;
+                };
+                Insert: {
+                    id?: string | null;
+                    name?: string | null;
+                    tenant_id?: string | null;
+                };
+                Update: {
+                    id?: string | null;
+                    name?: string | null;
+                    tenant_id?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "staff_tenant_id_fkey";
                         columns: ["tenant_id"];
                         isOneToOne: false;
                         referencedRelation: "tenants";
@@ -6147,6 +6183,10 @@ export type Database = {
                     isSetofReturn: true;
                 };
             };
+            get_my_teaching: {
+                Args: never;
+                Returns: Json;
+            };
             get_my_tenant_id: {
                 Args: never;
                 Returns: string;
@@ -6616,6 +6656,12 @@ export type Database = {
                 Args: never;
                 Returns: boolean;
             };
+            is_teacher_for_offering: {
+                Args: {
+                    p_offering_id: string;
+                };
+                Returns: boolean;
+            };
             is_valid_israeli_id: {
                 Args: {
                     p_id: string;
@@ -6734,6 +6780,10 @@ export type Database = {
             link_my_guardian_accounts: {
                 Args: never;
                 Returns: number;
+            };
+            link_my_teacher_login: {
+                Args: never;
+                Returns: boolean;
             };
             list_admin_quotes: {
                 Args: never;

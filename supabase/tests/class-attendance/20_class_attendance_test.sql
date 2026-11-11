@@ -47,6 +47,8 @@ $$;
 SET session_replication_role = replica;
 INSERT INTO auth.users (id, email) SELECT teacher_u, 'teacher@x.test' FROM ids;
 INSERT INTO user_profiles (id, tenant_id, role, email) SELECT teacher_u, studio, '{staff}', 'teacher@x.test' FROM ids;
+-- A teacher is a staff row linked to their login (teacher logins, 20261111084600).
+INSERT INTO staff (tenant_id, name, email, user_profile_id) SELECT studio, 'Teacher', 'teacher@x.test', teacher_u FROM ids;
 SET session_replication_role = DEFAULT;
 
 -- Yoga runs on d1's weekday. Alice and Ari are enrolled; Bob is not.

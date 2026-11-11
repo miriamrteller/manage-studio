@@ -28,6 +28,7 @@
       "is_active_custom_domain",
       "is_my_studio_admin",
       "is_super_admin",
+      "is_teacher_for_offering",
       "legal_document_is_public",
       "record_consents",
       "record_legal_acceptance",
@@ -79,6 +80,7 @@
       "get_my_class_cards",
       "get_my_last_signer_details",
       "get_my_profile",
+      "get_my_teaching",
       "get_pending_waiver_engagement",
       "get_person_class_cards",
       "get_platform_terms_acceptance",
@@ -93,6 +95,7 @@
       "link_auth_user_to_guardian_for_engagement",
       "link_auth_user_to_person",
       "link_my_guardian_accounts",
+      "link_my_teacher_login",
       "list_admin_quotes",
       "log_platform_view",
       "log_sensitive_read",
@@ -223,7 +226,9 @@
       "quote_job_offering_id",
       "quote_lines_json",
       "seed_expense_categories",
+      "staff_login_after",
       "sync_profile_email_from_auth",
+      "sync_teacher_role",
       "tenant_default_features"
     ]
   }

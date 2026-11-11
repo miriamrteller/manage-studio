@@ -249,7 +249,7 @@ describe('menu per vertical', () => {
       '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
-      '/admin/setup/levels', '/admin/setup/terms', '/admin/packages',
+      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers', '/admin/packages',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });

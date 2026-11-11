@@ -6,6 +6,7 @@ import { useTenantQuery } from '../hooks/useTenant';
 import { isMemberOfTenant } from '@/lib/tenantMembership';
 import { usePlatformViewLog } from '@/hooks/usePlatformViewLog';
 import { hasParentRole } from '@/lib/parentRoles';
+import { hasTeacherRole } from '@/lib/teacherRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
 import { PlatformOwnerNotice, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
@@ -86,7 +87,8 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 }
 
 /**
- * TeacherRoute: requires role to include 'teacher'
+ * TeacherRoute: requires the teacher role ('staff', given when a teacher the
+ * studio added signs in with their email; see link_my_teacher_login).
  */
 export function TeacherRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useTenantScopedUser();
@@ -101,7 +103,7 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
     return <PlatformOwnerNotice />;
   }
 
-  if (!user || !user.role.includes('teacher')) {
+  if (!user || !hasTeacherRole(user.role)) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 

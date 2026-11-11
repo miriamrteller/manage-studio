@@ -2090,7 +2090,8 @@
       "platform": "Platform",
       "portal": "My portal",
       "learning": "My learning",
-      "account": "Account"
+      "account": "Account",
+      "teaching": "Teaching"
     },
     "jobs": "Shoots",
     "contracts": "Contracts",
@@ -2099,7 +2100,9 @@
     "platform_studios": "Studios",
     "platform_features": "Platform features",
     "platform_skins": "Skins",
-    "platform_feedback": "Feedback"
+    "platform_feedback": "Feedback",
+    "teachers": "Teachers",
+    "my_classes": "My classes"
   },
   "platform_billing": {
     "dev_only": "This page is on the dev website only.",
@@ -4692,5 +4695,49 @@
       "waiting_payment": "Waiting for payment.",
       "pay_now": "Pay now"
     }
+  },
+  "teachers": {
+    "title": "Teachers",
+    "description": "Add the people who teach at your studio. A teacher signs in with the email you enter here and sees the classes and the register.",
+    "add": "Add teacher",
+    "edit_title": "Edit teacher",
+    "name": "Name",
+    "email": "Email",
+    "email_help": "They sign in with this email. Leave it empty if they don't need to sign in.",
+    "phone": "Phone",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "remove": "Remove",
+    "remove_confirm": "Remove {{name}}? Their classes stay, without a teacher, and they can no longer sign in as a teacher.",
+    "sign_in": "Sign-in",
+    "status_linked": "Signed in",
+    "status_waiting": "Not signed in yet",
+    "status_no_email": "No email, so no sign-in",
+    "share_heading": "How {{name}} signs in",
+    "share_text": "Send them this link. They sign in with {{email}} and get a code by email.",
+    "copy_link": "Copy link",
+    "copied": "Link copied",
+    "whatsapp": "Send on WhatsApp",
+    "whatsapp_message": "Hi {{name}}, you can now sign in to {{studio}} to see your classes and take the register: {{url}} (sign in with {{email}})",
+    "empty_title": "No teachers yet",
+    "empty_message": "Add a teacher, then choose them on a class.",
+    "own_only_label": "Teachers see only their own classes",
+    "own_only_help": "Off: every teacher sees all the studio's classes and can take any register, which helps with cover. On: each teacher sees only the classes they teach.",
+    "saved": "Saved",
+    "error": "Something went wrong. Please try again."
+  },
+  "my_classes": {
+    "title": "My classes",
+    "intro_all": "All the studio's classes. Yours come first.",
+    "intro_own": "The classes you teach.",
+    "mine": "Your class",
+    "taught_by": "Teacher: {{name}}",
+    "no_teacher": "No teacher chosen",
+    "enrolled_one": "{{count}} enrolled",
+    "enrolled_other": "{{count}} enrolled",
+    "empty_title": "No classes yet",
+    "empty_message": "The studio will add you to a class.",
+    "error": "Your classes didn't load. Please try again."
   }
 }
