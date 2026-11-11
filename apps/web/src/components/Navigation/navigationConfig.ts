@@ -180,6 +180,15 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.billing.studioShop,
   },
   {
+    // Packages (photographers and other non-class studios; "Bookable services" otherwise):
+    // a top-level item, not under Setup (owner decision).
+    path: '/admin/packages',
+    labelKey: 'nav.booking_services',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    featureKey: FEATURES.scheduling.adminBooking,
+  },
+  {
     path: '/admin/appointments',
     labelKey: 'nav.appointments',
     requiredRoles: ['tenant_admin'],
@@ -308,14 +317,6 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['tenant_admin'],
     sectionKey: 'setup',
     indent: true,
-  },
-  {
-    path: '/admin/packages',
-    labelKey: 'nav.booking_services',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-    featureKey: FEATURES.scheduling.adminBooking,
   },
   {
     path: '/admin/setup/booking',

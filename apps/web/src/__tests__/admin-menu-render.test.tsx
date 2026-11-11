@@ -55,15 +55,15 @@ afterEach(async () => {
 });
 
 describe('studio admin menu (English)', () => {
-  it('dance: Leads, Students, Families, Classes, Shop, Appointments, Notifications, then the Finance and Setup groups', async () => {
+  it('dance: Leads, Students, Families, Classes, Shop, Bookable Services, Appointments, Notifications, then the Finance and Setup groups', async () => {
     await setLanguage('en');
     renderMenu('dance');
-    expect(menuLabels().slice(0, 9)).toEqual([
-      'Leads', 'Students', 'Families', 'Classes', 'Shop', 'Appointments', 'Notifications', 'Finance', 'Setup',
+    expect(menuLabels().slice(0, 10)).toEqual([
+      'Leads', 'Students', 'Families', 'Classes', 'Shop', 'Bookable Services', 'Appointments', 'Notifications', 'Finance', 'Setup',
     ]);
     expect(screen.queryByRole('button', { name: 'Browse' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Administration' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Book/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Book(?!able Services)/ })).toBeNull();
   });
 
   it('photographer: Leads first, then the contacts, shoots and quotes words', async () => {
@@ -75,6 +75,9 @@ describe('studio admin menu (English)', () => {
     expect(labels).not.toContain('Browse');
     expect(labels).toContain('Quotes');
     expect(labels.indexOf('Quotes')).toBeLessThan(labels.indexOf('Notifications'));
+    // Packages is a top-level item, before Finance and Setup.
+    expect(labels).toContain('Packages');
+    expect(labels.indexOf('Packages')).toBeLessThan(labels.indexOf('Finance'));
     expect(labels.indexOf('Finance')).toBeGreaterThan(labels.indexOf('Notifications'));
   });
 
@@ -92,7 +95,7 @@ describe('studio admin menu (English)', () => {
   it('generic: same as dance', async () => {
     await setLanguage('en');
     renderMenu('generic');
-    expect(menuLabels().slice(0, 7)).toEqual(['Leads', 'Students', 'Families', 'Classes', 'Shop', 'Appointments', 'Notifications']);
+    expect(menuLabels().slice(0, 8)).toEqual(['Leads', 'Students', 'Families', 'Classes', 'Shop', 'Bookable Services', 'Appointments', 'Notifications']);
   });
 
   it('marks the current page with aria-current and opens Setup/Finance with the keyboard-reachable toggle', async () => {
