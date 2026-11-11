@@ -54,7 +54,7 @@ export function ClassRegister({
     mark.mutate({ ids: [s.person_id], attended: s.attended === attended ? null : attended });
 
   return (
-    <section className="space-y-4 border-t p-4" aria-labelledby={`${id}-title`}>
+    <section className="max-w-2xl space-y-4 border-t p-4" aria-labelledby={`${id}-title`}>
       <h3 id={`${id}-title`} className="font-semibold">
         {t('attendance.register.title', { name: className })}
       </h3>
