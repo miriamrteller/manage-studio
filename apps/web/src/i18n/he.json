@@ -112,6 +112,8 @@
     "support_access_enter": "כניסה לניהול הסטודיו",
     "support_access_banner": "נכנסת לניהול של {{studio}} כתמיכה של OpalSwift. כל דף שנפתח וכל שינוי נרשמים.",
     "support_access_leave": "יציאה",
+    "support_access_two_step": "יש להתחבר מחדש עם קוד האימות הדו־שלבי ב-app.opalswift.com, ואז לנסות שוב.",
+    "support_access_failed": "זה לא הצליח. אפשר לנסות שוב.",
     "set_password_prompt": {
       "title": "הגדרת סיסמה",
       "description": "בחרו סיסמה, ובפעם הבאה תוכלו להיכנס מהר יותר עם האימייל והסיסמה, בלי לחכות לקישור.",

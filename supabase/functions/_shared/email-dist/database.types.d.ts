@@ -5445,6 +5445,7 @@ export type Database = {
                     created_at: string;
                     email: string | null;
                     id: string;
+                    is_platform_support: boolean;
                     language: string | null;
                     person_id: string | null;
                     role: string[];
@@ -5456,6 +5457,7 @@ export type Database = {
                     created_at?: string;
                     email?: string | null;
                     id: string;
+                    is_platform_support?: boolean;
                     language?: string | null;
                     person_id?: string | null;
                     role?: string[];
@@ -5467,6 +5469,7 @@ export type Database = {
                     created_at?: string;
                     email?: string | null;
                     id?: string;
+                    is_platform_support?: boolean;
                     language?: string | null;
                     person_id?: string | null;
                     role?: string[];
@@ -6555,6 +6558,7 @@ export type Database = {
                     created_at: string;
                     email: string | null;
                     id: string;
+                    is_platform_support: boolean;
                     language: string | null;
                     person_id: string | null;
                     role: string[];
@@ -7369,6 +7373,12 @@ export type Database = {
                     p_tenant_id: string;
                 };
                 Returns: undefined;
+            };
+            platform_support_auth_user_id: {
+                Args: {
+                    p_email: string;
+                };
+                Returns: string;
             };
             platform_tenant_feature_states: {
                 Args: {

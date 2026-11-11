@@ -64,7 +64,7 @@ async function sendDeclineEmails(service: ReturnType<typeof createServiceClient>
   const replyTo = Deno.env.get("SUPPORT_EMAIL")?.trim() || "support@opalswift.com";
   const [{ data: tenant }, { data: admins }] = await Promise.all([
     service.from("tenants").select("name, language_default").eq("id", email.tenantId).single(),
-    service.from("user_profiles").select("email, language").eq("tenant_id", email.tenantId).contains("role", ["tenant_admin"]),
+    service.from("user_profiles").select("email, language").eq("tenant_id", email.tenantId).contains("role", ["tenant_admin"]).eq("is_platform_support", false),
   ]);
   const settingsUrl = `${(await tenantBaseUrlFor(service, email.tenantId)).replace(/\/+$/, "")}/admin/setup/payments`;
   for (const admin of (admins ?? []) as Array<{ email: string | null; language: string | null }>) {

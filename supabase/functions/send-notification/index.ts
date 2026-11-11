@@ -500,6 +500,7 @@ async function handleAgeReviewRequestedNotification(
     .from("user_profiles")
     .select("email, role")
     .eq("tenant_id", payload.tenantId)
+    .eq("is_platform_support", false)
     .not("email", "is", null);
 
   const adminEmails = (admins ?? [])

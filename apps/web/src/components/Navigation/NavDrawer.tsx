@@ -10,7 +10,6 @@ import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useTenantQuery } from '@/hooks/useTenant';
 import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { supabase } from '@/lib/supabase';
-import { rolesWithSupportAccess, useSupportAccess } from '@/lib/supportAccess';
 import { cn } from '@/lib/utils';
 import { useReportProblem } from '@/components/ReportProblem';
 import { useNavDrawer } from './NavDrawerContext';
@@ -70,10 +69,8 @@ export function NavDrawer() {
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Platform owner in a studio's admin as support: show that studio's admin menu.
-  const supportAccess = useSupportAccess(tenant?.id);
   const { sections, isAuthenticated } = useNavItems({
-    userRoles: rolesWithSupportAccess(user?.role ?? null, supportAccess),
+    userRoles: user?.role ?? null,
     isAuthenticated: Boolean(user),
     modules,
     tenant,
