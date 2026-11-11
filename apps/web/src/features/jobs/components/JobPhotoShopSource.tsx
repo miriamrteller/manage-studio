@@ -154,8 +154,7 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
             <p>
               {t('pages.jobs.photo_shop.source.passed', {
                 date: formatDueDate(shop.smugmug_checked_at ?? new Date().toISOString(), i18n.language),
-              })}{' '}
-              <span className="text-muted-foreground">{t('pages.jobs.photo_shop.source.live_check')}</span>
+              })}
             </p>
           ) : (
             <p className="text-muted-foreground">{t('pages.jobs.photo_shop.source.failed')}</p>

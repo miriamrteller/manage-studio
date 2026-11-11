@@ -264,7 +264,7 @@ describe('JobPhotoShopCard', () => {
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     expect(await screen.findByText('Watermark on')).toBeTruthy();
     expect(screen.getByText('40 photos read')).toBeTruthy();
-    expect(screen.getByText(/Clients will see them once the first live check/)).toBeTruthy();
+    expect(screen.queryByText(/first live check/)).toBeNull();
   });
 
   it('a failed check says what to change in SmugMug; uploading stays one click away', async () => {

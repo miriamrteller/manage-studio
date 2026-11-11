@@ -1761,7 +1761,6 @@
           "check_again": "Check again",
           "check_hint": "We read the gallery's photo protection settings and its photos. Nothing is changed in SmugMug. Added photos to the gallery later? Press Check again.",
           "passed": "Gallery checked on {{date}}. You can see its photos in Photo shop > Preview.",
-          "live_check": "Clients will see them once the first live check with SmugMug is done.",
           "failed": "Change the settings marked ✗ in SmugMug, then press Check again. Until then clients don't see this gallery.",
           "item": {
             "watermark": {
@@ -4027,7 +4026,6 @@
       "disconnected": "Disconnected. Your API Key and Secret are still saved.",
       "connected_since": "Connected to SmugMug since {{date}}.",
       "not_connected": "Connect SmugMug to open your shop.",
-      "shop_locked": "Clients can't buy photos from SmugMug galleries yet. This opens after a final check of SmugMug galleries.",
       "result": {
         "keys": "Your API Key and Secret work. Press Connect SmugMug to finish.",
         "account": "Connected and working.",

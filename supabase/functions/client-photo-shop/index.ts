@@ -17,9 +17,9 @@
  * order. Photos and file names come from the gallery, never from the request,
  * and prices are worked out in the database.
  *
- * SmugMug galleries answer "provider_locked" to clients until the live check
- * passes (see _shared/photo-shop/gallery.ts); a gallery that passed "Check gallery"
- * already shows its real watermarked photos in the studio's own preview.
+ * A SmugMug gallery answers "provider_locked" until its "Check gallery" has passed
+ * (see _shared/photo-shop/gallery.ts); then clients and the studio's preview see its
+ * watermarked photos.
  */
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";

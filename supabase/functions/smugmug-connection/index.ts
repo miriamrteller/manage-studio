@@ -15,8 +15,8 @@
  *                 callback on app.<root>, where the studio admin is not signed in. This finds
  *                 the studio whose pending request has this token (not expired) and returns
  *                 its own address, so the page can carry on there. Built from the tenant row.
- * Disconnect is the disconnect_tenant_smugmug RPC. Connecting does NOT open the shop to
- * clients: galleries stay "provider_locked" (_shared/photo-shop/gallery.ts) until the live check.
+ * Disconnect is the disconnect_tenant_smugmug RPC. Connecting alone does not open a gallery to
+ * clients: each stays "provider_locked" (_shared/photo-shop/gallery.ts) until its check passes.
  */
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
