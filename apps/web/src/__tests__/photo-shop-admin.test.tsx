@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
   saveShop: vi.fn(),
   deliver: vi.fn(),
   markSent: vi.fn(),
+  recordCash: vi.fn(),
   photos: [] as { id: string; file_name: string; storage_path: string; url: string | null }[],
   upload: vi.fn(async (_t: string, _e: string, previews: unknown[]) => previews.length),
   deletePhoto: vi.fn(async (_id: string) => undefined),
@@ -57,6 +58,14 @@ vi.mock('@/features/jobs/lib/photoPreview', async (orig) => {
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:photo_shop', isLoading: false }),
 }));
+vi.mock('@/features/jobs/services/jobPaymentService', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/services/jobPaymentService')>();
+  return {
+    ...real,
+    JobPaymentService: { recordManualPayment: (id: string, method: string) => state.recordCash(id, method) },
+  };
+});
+
 vi.mock('@/features/jobs/services/photoShopService', async (orig) => {
   const real = await orig<typeof import('@/features/jobs/services/photoShopService')>();
   return {
@@ -207,6 +216,16 @@ describe('JobPhotoShopCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mark as sent' }));
     await waitFor(() => expect(state.markSent).toHaveBeenCalledWith('o1'));
     expect(state.deliver).not.toHaveBeenCalled();
+  });
+
+  it('an order sent in to pay in cash shows its photos and records the cash', async () => {
+    state.recordCash.mockReset().mockResolvedValue({ paymentId: 'pay1' });
+    state.orders = [{ ...paidOrder, status: 'awaiting_payment', paid_at: null, pay_by_cash: true, job_payment_request_id: 'r1' }];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('The client will pay in cash.')).toBeTruthy();
+    expect(screen.getByText('IMG_0002.jpg')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Record cash payment' }));
+    await waitFor(() => expect(state.recordCash).toHaveBeenCalledWith('r1', 'cash'));
   });
 
   it('uploads picked photos as previews, keeps file names, and says which could not be read', async () => {

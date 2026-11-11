@@ -462,7 +462,16 @@
         },
         "link_opening": "Opening your photos…",
         "link_expired": "This link has expired or doesn't work any more. Sign in with your email to see your photos, or ask the studio for a new link.",
-        "link_sign_in": "Sign in"
+        "link_sign_in": "Sign in",
+        "pay_how": "How will you pay?",
+        "pay_card": "By card now",
+        "pay_cash": "In cash to the studio",
+        "send_cash": "Send order ({{price}} in cash)",
+        "buy_all_cash": "Order all {{count}} photos ({{price}} in cash)",
+        "ordered_cash": "Order sent. Pay the studio in cash; they will prepare your photos.",
+        "cash_ordered": "Ordered, paying in cash",
+        "cash_waiting": "Sent in, paying in cash.",
+        "pay_online_instead": "Pay by card instead"
       }
     },
     "admin": {
@@ -1836,7 +1845,9 @@
         "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
         "link_subject": "Your photos are ready",
         "link_error": "We couldn't make the link. Please try again.",
-        "link_no_email": "Add the client's email first, so the link can sign them in."
+        "link_no_email": "Add the client's email first, so the link can sign them in.",
+        "paying_cash": "The client will pay in cash.",
+        "record_cash": "Record cash payment"
       }
     },
     "pay": {

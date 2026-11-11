@@ -30,3 +30,16 @@ Deno.test("client email has the download link and the account link", () => {
   });
   assert(he.body.startsWith("סטודיו אור שלח/ה את 3 התמונות שקנית."));
 });
+
+Deno.test("cash order email says it isn't paid yet and how to record the cash", () => {
+  const e = buildStudioOrderEmail({
+    language: "en", clientName: "Pat", totalFormatted: "₪30.00",
+    photos: [{ fileName: "IMG_0001.jpg", key: "g-0001" }], shootUrl: "https://studio.example/admin/jobs/e1", payInCash: true,
+  });
+  assertEquals(e.subject, "New photo order, paying in cash: Pat (1)");
+  assert(e.body.includes("will pay you in cash"));
+  assert(e.body.includes("• IMG_0001.jpg (g-0001)"));
+  assert(e.body.includes('"Record cash payment"'));
+  const he = buildStudioOrderEmail({ language: "he", clientName: "פט", totalFormatted: "₪30", photos: [], shootUrl: "u", payInCash: true });
+  assert(he.subject.startsWith("הזמנת תמונות חדשה, תשלום במזומן"));
+});

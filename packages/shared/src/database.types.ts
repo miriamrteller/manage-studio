@@ -2069,6 +2069,7 @@ export type Database = {
           included_count: number
           job_payment_request_id: string | null
           paid_at: string | null
+          pay_by_cash: boolean
           person_id: string | null
           photo_count: number
           refunded_at: string | null
@@ -2089,6 +2090,7 @@ export type Database = {
           included_count?: number
           job_payment_request_id?: string | null
           paid_at?: string | null
+          pay_by_cash?: boolean
           person_id?: string | null
           photo_count: number
           refunded_at?: string | null
@@ -2109,6 +2111,7 @@ export type Database = {
           included_count?: number
           job_payment_request_id?: string | null
           paid_at?: string | null
+          pay_by_cash?: boolean
           person_id?: string | null
           photo_count?: number
           refunded_at?: string | null
@@ -6065,6 +6068,7 @@ export type Database = {
           p_engagement_id: string
           p_items: Json
           p_label?: string
+          p_pay_by_cash?: boolean
           p_person_id: string
         }
         Returns: Json

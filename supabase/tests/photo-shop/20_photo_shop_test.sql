@@ -334,3 +334,36 @@ BEGIN
   IF (r->>'open')::bool OR jsonb_array_length(r->'bought_image_keys') <> 2 THEN RAISE EXCEPTION 'FAIL closed view: %', r; END IF;
   RAISE NOTICE 'ok  closed shop takes no orders; bought photos still listed';
 END $$;
+
+-- 14. Pay in cash: the order is sent in and waits for payment; the client's next card cart
+--     doesn't replace it; its photos aren't pickable again; recording the cash makes it paid.
+DO $$
+DECLARE r JSONB; c JSONB; v JSONB; v_cash UUID;
+BEGIN
+  r := create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), pg_temp.items(40, 41), false, 'Photos (2)', true);
+  v_cash := (r->>'order_id')::uuid;
+  IF r->>'status' <> 'awaiting_payment' OR NOT (r->>'pay_by_cash')::bool OR r->>'pay_token' IS NULL THEN
+    RAISE EXCEPTION 'FAIL cash order: %', r;
+  END IF;
+  c := create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), pg_temp.items(42, 42));
+  IF (SELECT status FROM job_photo_orders WHERE id = v_cash) <> 'awaiting_payment' THEN
+    RAISE EXCEPTION 'FAIL the next card cart replaced the cash order';
+  END IF;
+  PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
+  v := get_client_photo_shop((SELECT shoot_a FROM ids));
+  IF NOT (v->'cash_image_keys' @> '["k40","k41"]'::jsonb) OR v->'cash_image_keys' @> '["k42"]'::jsonb THEN
+    RAISE EXCEPTION 'FAIL cash photos: %', v->'cash_image_keys';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v->'orders') o WHERE o->>'id' = v_cash::text AND (o->>'pay_by_cash')::bool) THEN
+    RAISE EXCEPTION 'FAIL cash order not marked in the client view';
+  END IF;
+  -- A second card cart still replaces the first card cart, never the cash order.
+  PERFORM create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), pg_temp.items(43, 43));
+  IF (SELECT status FROM job_photo_orders WHERE id = (c->>'order_id')::uuid) <> 'cancelled'
+     OR (SELECT status FROM job_photo_orders WHERE id = v_cash) <> 'awaiting_payment' THEN
+    RAISE EXCEPTION 'FAIL replace rules';
+  END IF;
+  PERFORM pg_temp.pay((r->>'job_payment_request_id')::uuid);
+  IF (SELECT status FROM job_photo_orders WHERE id = v_cash) <> 'paid' THEN RAISE EXCEPTION 'FAIL cash recorded but not paid'; END IF;
+  RAISE NOTICE 'ok  pay in cash: kept, photos taken, paid once the cash is recorded';
+END $$;
