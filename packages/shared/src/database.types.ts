@@ -6338,9 +6338,9 @@ export type Database = {
         Returns: boolean
       }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
+      is_my_studio_admin: { Args: never; Returns: boolean }
       is_platform_owner_email: { Args: { p_email: string }; Returns: boolean }
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
-      is_my_studio_admin: { Args: never; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_valid_israeli_id: { Args: { p_id: string }; Returns: boolean }
