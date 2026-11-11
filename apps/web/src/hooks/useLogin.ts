@@ -17,6 +17,7 @@ import { sendLoginEmailOtp, verifyLoginEmailOtp } from '@/lib/loginEmailOtp';
 import { useCaptcha, type Captcha } from '@/components/captcha/useCaptcha';
 import { loginOtpOptions } from '@/lib/loginOtpOptions';
 import { verifySessionBelongsToTenant } from '@/lib/tenantMembership';
+import { prepareClientLogin } from '@/features/auth/lib/clientSignIn';
 
 export type PostLoginRedirect = {
   to?: string;
@@ -156,6 +157,9 @@ export function useLogin(
         return;
       }
 
+      // A booked client with no login yet gets one now, so the code reaches them.
+      if (otpOptions.data.subdomain) await prepareClientLogin(otpOptions.data.subdomain, parsed.email);
+
       const { error } = await sendLoginEmailOtp(
         parsed.email,
         otpOptions,
@@ -273,6 +277,9 @@ export function useLogin(
           });
           return;
         }
+
+        // A booked client with no login yet gets one now, so the link reaches them.
+        if (otpOptions.data.subdomain) await prepareClientLogin(otpOptions.data.subdomain, magicLinkData.email);
 
         const { error } = await supabase.auth.signInWithOtp({
           email: magicLinkData.email,

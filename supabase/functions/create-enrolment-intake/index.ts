@@ -2,6 +2,7 @@ import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runt
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { ensureClientLogin } from "../_shared/client-login.ts";
 
 interface GuardianInput {
   name: string;
@@ -274,6 +275,14 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
 
       if (engagementError || !engagement) {
         return internalError("create-enrolment-intake", engagementError ?? "Failed to create engagement");
+      }
+
+      // Every booked client gets a login (the payer: the family's account holder, or the
+      // adult themselves). Never in the way of enrolling: a failure just means no login yet.
+      try {
+        await ensureClientLogin(service, { tenantId, email: tokenRecipientEmail });
+      } catch (err) {
+        console.error("[create-enrolment-intake] client login:", err instanceof Error ? err.message : err);
       }
 
       const enrolmentToken = await signWaiverToken(service, {
