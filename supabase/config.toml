@@ -468,6 +468,13 @@ verify_jwt = false
 entrypoint = "./functions/run-lead-followup-digest/index.ts"
 
 # --- Photographer beta: job (shoot) deposit/balance payments ---------------
+[functions.photo-shop-link]
+# Photo shop "Send shop link": "open" is public (the link's token is the credential);
+# "create" checks the studio admin's JWT in-function.
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/photo-shop-link/index.ts"
+
 # Public pay page backend: the request's public_token is the capability.
 [functions.job-payment-request-public]
 enabled = true

@@ -466,6 +466,9 @@
           "no_photos": "Choose at least one photo.",
           "server_error": "Something went wrong. Please try again."
         },
+        "link_opening": "Opening your photos…",
+        "link_expired": "This link has expired or doesn't work any more. Sign in with your email to see your photos, or ask the studio for a new link.",
+        "link_sign_in": "Sign in",
         "pay_how": "How will you pay?",
         "pay_card": "By card now",
         "pay_cash": "In cash to the studio",
@@ -1840,6 +1843,17 @@
           "cancelled": "Cancelled",
           "refunded": "Refunded"
         },
+        "send_link": "Send shop link",
+        "send_link_hint": "The client opens their photos straight away, without signing in. The link works for 3 days.",
+        "link_ready": "Link for {{email}}, works until {{date}}:",
+        "link_copy": "Copy link",
+        "link_copied": "Copied",
+        "link_email": "Email",
+        "link_whatsapp": "WhatsApp",
+        "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
+        "link_subject": "Your photos are ready",
+        "link_error": "We couldn't make the link. Please try again.",
+        "link_no_email": "Add the client's email first, so the link can sign them in.",
         "paying_cash": "The client will pay in cash.",
         "record_cash": "Record cash payment"
       }
