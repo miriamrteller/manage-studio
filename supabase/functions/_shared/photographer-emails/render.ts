@@ -9,6 +9,28 @@ import {
   type PhotographerEmailLanguage,
 } from "../photographer-email-shells/generated.ts";
 import { applyEmailBrand } from "../email-brand.ts";
+import { getEmailStrings } from "../email-dist/i18n/email.js";
+import { insertBeforeParagraph, isHttpLink, signInBlockHtml } from "../sign-in-email-block.ts";
+
+/** Emails that carry the "Go to my page" sign-in button when signInUrl is set. */
+const SIGN_IN_EMAILS: readonly PhotographerEmailKey[] = ["booking_confirmed"];
+
+/** Puts the sign-in button above the email's closing line (the shells are pre-rendered). */
+function withSignInBlock(
+  key: PhotographerEmailKey,
+  language: PhotographerEmailLanguage,
+  html: string,
+  signInUrl: string | undefined,
+  color: string,
+): string {
+  if (!SIGN_IN_EMAILS.includes(key) || !isHttpLink(signInUrl)) return html;
+  const strings = getEmailStrings(language, key as Parameters<typeof getEmailStrings>[1]);
+  const closing = typeof strings.closing === "string" ? strings.closing : "";
+  const body = typeof strings.sign_in_body === "string" ? strings.sign_in_body : "";
+  const cta = typeof strings.sign_in_cta === "string" ? strings.sign_in_cta : "";
+  if (!closing || !body || !cta) return html;
+  return insertBeforeParagraph(html, closing, signInBlockHtml({ body, cta, url: signInUrl, color }));
+}
 
 export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
   "quote_sent",
@@ -65,7 +87,11 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     accentColor: input.accentColor,
     variables: input.variables,
   });
-  const html = applyEmailBrand(shellHtml, input.primaryColor, input.accentColor);
+  const html = applyEmailBrand(
+    withSignInBlock(input.key, language, shellHtml, input.variables.signInUrl, input.primaryColor),
+    input.primaryColor,
+    input.accentColor,
+  );
   // Subjects interpolate {schoolName} and any template variable (e.g. {clientName}).
   let subject = PHOTOGRAPHER_EMAIL_SUBJECTS[input.key][language].split("{schoolName}").join(input.schoolName);
   for (const [name, value] of Object.entries(input.variables)) {

@@ -21,6 +21,7 @@ import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
+import { clientSignInUrlFor } from "../_shared/client-login.ts";
 import {
   AUTOMATIC_EMAIL_TENANT_COLUMNS,
   type AutomaticEmailTenant,
@@ -158,6 +159,14 @@ async function sendBookingConfirmation(
   if (!recipient?.client_email) return;
 
   const baseUrl = tenantBaseUrl(t);
+  // Every booked client gets a login; the email signs them straight in (3 days).
+  // Any failure: the email goes without the button.
+  const signInUrl = await clientSignInUrlFor(service, {
+    tenantId: t.id,
+    email: recipient.client_email,
+    engagementId: result.engagement_id ?? null,
+    tenantBase: baseUrl,
+  }).catch(() => null);
   const outcome = await sendAutomaticEmail(service, {
     tenant: t,
     key: "booking_confirmed",
@@ -168,6 +177,7 @@ async function sendBookingConfirmation(
       quoteUrl: `${baseUrl}/quote/${payload.token}`,
       signUrl: nextSteps.contractSignPath ? `${baseUrl}${nextSteps.contractSignPath}` : null,
       payUrl: nextSteps.depositPayPath ? `${baseUrl}${nextSteps.depositPayPath}` : null,
+      signInUrl,
       language: t.language_default === "he" ? "he" : "en",
     }),
   });

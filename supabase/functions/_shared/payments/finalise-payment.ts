@@ -16,6 +16,7 @@ import { signWaiverToken } from "../waiver-token.ts";
 import { advanceBillingSchedule } from "./advance-billing-schedule.ts";
 import { syncBookingEventInsert } from "../sync-booking-event.ts";
 import { tenantBaseUrlFor } from "../tenant-url.ts";
+import { clientSignInUrlFor } from "../client-login.ts";
 import type { FinalisePaymentParams } from "./types.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
@@ -167,6 +168,17 @@ async function sendConfirmationEmail(
     });
     return;
   }
+
+  // Every booked client has a login: the email signs them straight in (3 days).
+  // Any failure: the email goes without the button.
+  const signInUrl = await (async () =>
+    clientSignInUrlFor(service, {
+      tenantId: params.tenantId,
+      email: payload.recipientEmail,
+      engagementId: params.engagementId,
+      tenantBase: await tenantBaseUrlFor(service, params.tenantId),
+    }))().catch(() => null);
+  if (signInUrl) payload.variables.signInUrl = signInUrl;
 
   try {
     await sendRenderedEmail({

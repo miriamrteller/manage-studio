@@ -1997,6 +1997,12 @@
       "continue": "Continue",
       "no_session": "This link has expired or was already used. Ask for a new one from the sign-in page.",
       "back_to_login": "Back to sign in"
+    },
+    "sign_in_link": {
+      "title": "Signing you in",
+      "opening": "Opening your page…",
+      "expired": "This link has expired. Sign in with your email instead, no password needed.",
+      "sign_in": "Sign in"
     }
   },
   "signup": {

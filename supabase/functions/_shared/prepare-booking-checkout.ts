@@ -3,6 +3,7 @@ import { createServiceClient } from "./edge-runtime/supabase.ts";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
 import { requireFeature } from "./feature-gate.ts";
 import { signWaiverToken } from "./waiver-token.ts";
+import { ensureClientLogin } from "./client-login.ts";
 
 export interface PrepareBookingCheckoutBody {
   subdomain: string;
@@ -155,6 +156,14 @@ export async function prepareBookingCheckout(
     .from("scheduling_holds")
     .update({ engagement_id: engagementId })
     .eq("id", hold.id);
+
+  // Every booked client gets a login, so they can sign in to their page. Never in the way
+  // of the booking: any failure just means no login yet (the login page makes it later).
+  try {
+    await ensureClientLogin(service, { tenantId, email: body.client_email });
+  } catch (err) {
+    console.error("[prepare-booking-checkout] client login:", err instanceof Error ? err.message : err);
+  }
 
   const token = await mintToken(service, engagementId, tenantId, body.client_email, hold.expires_at as string);
 
