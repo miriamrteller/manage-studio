@@ -27,6 +27,15 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
+/**
+ * Google Calendar and SmugMug always return to app.<root>, where the studio admin is not
+ * signed in. Their callback pages carry on to the studio's own address (and guard
+ * themselves there), so they must not be sent to login first.
+ */
+export function isIntegrationCallbackPath(pathname: string): boolean {
+  return /^\/admin\/setup\/integrations\/[a-z-]+\/callback\/?$/.test(pathname);
+}
+
 function AppLayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -88,7 +97,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const publicRoute = isPublicRoute(location.pathname);
 
   useEffect(() => {
-    if (!isLoading && !user && window.location.pathname.startsWith('/admin')) {
+    const path = window.location.pathname;
+    if (!isLoading && !user && path.startsWith('/admin') && !isIntegrationCallbackPath(path)) {
       navigate('/login', { replace: true });
     }
   }, [user, isLoading, navigate]);
