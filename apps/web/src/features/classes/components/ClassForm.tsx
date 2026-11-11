@@ -103,7 +103,8 @@ function toFormValues(
     end_time: classItem?.end_time || '10:00',
     is_public: (classItem?.is_public ?? true) ? 'true' : 'false',
     // New classes need a signed form, as the database default; a studio can say no (e.g. a plan).
-    waiver_required: (classItem?.waiver_required ?? true) ? 'true' : 'false',
+    // Off unless the studio switches it on (owner rule).
+    waiver_required: (classItem?.waiver_required ?? false) ? 'true' : 'false',
     billing_mode: classItem?.billing_mode ?? (monthlyAllowed ? 'recurring' : 'one_time'),
     status: classItem?.status || 'active',
     location: classItem?.location ?? '',
@@ -127,7 +128,7 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     start_time: values.start_time,
     end_time: values.end_time,
     is_public: values.is_public === 'true',
-    waiver_required: values.waiver_required !== 'false',
+    waiver_required: values.waiver_required === 'true',
     delivery_mode: 'scheduled',
     billing_mode: billingMode,
     billing_interval: billingMode === 'recurring' ? 'monthly' : null,

@@ -7,7 +7,6 @@ import { useWaiverStatus } from './useWaiverStatus';
 
 interface UseWaiverFlowStateParams {
   enrolmentContextWaiverRequired: boolean | null | undefined;
-  enrolmentContextMode: string;
   personId?: string;
   offeringId?: string;
   initialClassId?: string;
@@ -16,7 +15,6 @@ interface UseWaiverFlowStateParams {
 
 export function useWaiverFlowState({
   enrolmentContextWaiverRequired,
-  enrolmentContextMode,
   personId,
   offeringId,
   initialClassId,
@@ -33,8 +31,10 @@ export function useWaiverFlowState({
   const effectiveWaiverRequired =
     enrolmentContextWaiverRequired ?? localWaiverRequired ?? false;
 
-  const showWaiverStep =
-    effectiveWaiverRequired && enrolmentContextMode !== 'admin' && !!user;
+  // Owner rule: nothing ever blocks payment, so there is no form step before
+  // checkout. A required form is signed after paying: the booking waits in
+  // pending_waiver and the signing link is emailed (finalise-payment).
+  const showWaiverStep = false;
 
   const { data: waiverStatus } = useWaiverStatus({
     personId,

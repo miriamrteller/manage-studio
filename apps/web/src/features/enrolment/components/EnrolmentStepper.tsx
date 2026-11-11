@@ -97,7 +97,6 @@ export function EnrolmentStepper({
 
   const waiverFlow = useWaiverFlowState({
     enrolmentContextWaiverRequired: enrolmentContext.waiverRequired,
-    enrolmentContextMode: enrolmentContext.mode,
     personId: enrolmentData.person_id,
     offeringId: enrolmentData.offering_id,
     initialClassId,
