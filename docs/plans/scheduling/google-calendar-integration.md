@@ -15,7 +15,7 @@ Part of [scheduling/00-overview.md](00-overview.md). Normative: [SPEC §2.2.1](.
 | Public slot picker (`/book`) | ✅ | — |
 | Holds, conflict rules, Jerusalem TZ | ✅ | — |
 | Checkout + invoice | ✅ (existing finance) | — |
-| Block slots when provider busy elsewhere | Uses | ✅ `freebusy.query` (fail-closed on error) |
+| Block slots when provider busy elsewhere | Uses | ✅ `freebusy.query` (on error: keep the studio's own free times, never block booking) |
 | Show booking on **studio** calendar | Uses | ✅ `events.insert` / `delete` |
 | Client “Add to my calendar” after pay | ✅ Google template URL + `.ics` (no OAuth) | — |
 | Group class term enrolment | ✅ `/enrol` | Optional later |
@@ -64,7 +64,7 @@ Frontend Strict Mode: single in-flight exchange per `code`; `sessionStorage` suc
 1. Admin defines **working hours** + slot duration + buffer (`tenant_scheduling_*`).
 2. `get_available_slots` generates candidates in `Asia/Jerusalem`.
 3. Subtract open holds, blocks, and engagements in `pending_payment` | `active` | `pending_waiver`.
-4. If Google connected: Edge `get-available-slots` layers `freebusy.query` (fail-closed).
+4. If Google connected: Edge `get-available-slots` layers `freebusy.query` (on error the studio's own free times stay, flagged `freebusy_unavailable`).
 5. Client UI: FullCalendar + day slot buttons; “next available” search window.
 
 Hours replace-all uses RPC `replace_tenant_scheduling_hours` (single transaction).
@@ -133,5 +133,5 @@ Migrations: `03200`–`03600` (GCal + booking), `03700`–`04200` (offering_type
 - Feature gate on oauth start **and** callback
 - Minimal scopes: `calendar.events`, `calendar.readonly`, `userinfo.email`
 - Hold checkout bound to hold `client_email`
-- Free/busy fail-closed
+- Free/busy error never blocks booking (owner, 11 Nov 2026)
 - Disconnect revokes DB credentials
