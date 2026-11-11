@@ -88,7 +88,7 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
 
   return (
     <LabelsContext.Provider value={value}>
-      <VerticalI18nProvider vertical={value.vertical}>{children}</VerticalI18nProvider>
+      <VerticalI18nProvider vertical={value.vertical} familyAccounts={value.profile.familyAccounts}>{children}</VerticalI18nProvider>
     </LabelsContext.Provider>
   );
 }
