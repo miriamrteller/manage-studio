@@ -85,14 +85,14 @@ describe('lead → shoot', () => {
     expect(screen.getByLabelText(i18n.t('pages.jobs.location'))).toHaveValue('Park');
   });
 
-  it('opens a quote for the new shoot, so the details and pay link go out from there', async () => {
+  it('opens a quote for the new shoot (package preselected), so the details and pay link go out from there', async () => {
     render(
       <I18nextProvider i18n={i18n}>
         <MemoryRouter initialEntries={['/admin/leads']}>
           <Routes>
             <Route
               path="/admin/leads"
-              element={<ConvertLeadPanel leadId="l-3" leadName="Noa" defaultOfferingId="p1" onClose={() => {}} />}
+              element={<ConvertLeadPanel leadId="l-3" leadName="Noa" onClose={() => {}} />}
             />
             <Route path="/admin/quotes/new" element={<p>quote editor</p>} />
           </Routes>
