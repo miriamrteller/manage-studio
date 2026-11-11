@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Pre-render the photographer automatic emails (quote_sent, booking_confirmed,
- * shoot_reminder, shoot_thank_you, gallery_ready, review_request, contract_signed_*) in Node, where React Email
+ * shoot_reminder, shoot_thank_you, gallery_ready, review_request, shoot_cancelled, contract_signed_*) in Node, where React Email
  * works. Edge Functions substitute runtime values — no React in Deno.
  * Same approach as build-admin-announcement-email-shells.mjs.
  */
@@ -24,6 +24,7 @@ const TEMPLATES = {
   shoot_thank_you: ['recipientName'],
   gallery_ready: ['recipientName', 'galleryUrl'],
   review_request: ['recipientName', 'reviewUrl'],
+  shoot_cancelled: ['recipientName', 'shootDate', 'shootTime'],
   contract_signed_client: ['recipientName', 'shootDate', 'packageName', 'signedAt', 'downloadUrl'],
   contract_signed_studio: ['clientName', 'shootDate', 'packageName', 'signedAt', 'downloadUrl'],
 };

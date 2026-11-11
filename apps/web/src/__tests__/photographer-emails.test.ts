@@ -7,6 +7,7 @@ import {
   bookingConfirmedVariables,
   dueShootEmailVariables,
   isSafeLink,
+  shootCancelledVariables,
   type DueShootEmail,
 } from '../../../../supabase/functions/_shared/photographer-emails/variables.ts';
 import {
@@ -86,6 +87,13 @@ describe('dueShootEmailVariables', () => {
   it('review request carries the studio review link', () => {
     const vars = dueShootEmailVariables(due({ email_key: 'review_request' }), 'en', 'https://g.page/r/example/review');
     expect(vars).toEqual({ recipientName: 'Dana', reviewUrl: 'https://g.page/r/example/review' });
+  });
+
+  it('shoot cancelled carries the date and time that no longer go ahead', () => {
+    expect(shootCancelledVariables({ recipientName: 'Dana', startsAt: '2026-11-20T08:00:00Z' }, 'en')).toEqual({
+      recipientName: 'Dana', shootDate: 'Friday, 20 November 2026', shootTime: '10:00',
+    });
+    expect(shootCancelledVariables({ recipientName: null, startsAt: null }, 'he').recipientName).toBe('לקוח/ה יקר/ה');
   });
 
   it('only accepts http(s) gallery links', () => {

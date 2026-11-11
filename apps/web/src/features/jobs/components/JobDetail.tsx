@@ -11,6 +11,7 @@ import { JobContractCard } from './JobContractCard';
 import { JobBookingProgress } from './JobBookingProgress';
 import { JobPaymentsPanel } from './JobPaymentsPanel';
 import { JobPhotoShopCard } from './JobPhotoShopCard';
+import { CancelShootButton } from './CancelShootButton';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 
 /**
@@ -57,6 +58,7 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {job.job_status !== 'cancelled' && <CreateQuoteButton engagementId={job.engagement_id} />}
+          <CancelShootButton job={job} />
           <JobStatusBadge status={job.job_status} />
         </div>
       </header>

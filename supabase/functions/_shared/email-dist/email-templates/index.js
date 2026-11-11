@@ -15,3 +15,4 @@ export { default as ShootReminderEmail } from './photographer/ShootReminderEmail
 export { default as ShootThankYouEmail } from './photographer/ShootThankYouEmail.js';
 export { default as GalleryReadyEmail } from './photographer/GalleryReadyEmail.js';
 export { default as ReviewRequestEmail } from './photographer/ReviewRequestEmail.js';
+export { default as ShootCancelledEmail } from './photographer/ShootCancelledEmail.js';

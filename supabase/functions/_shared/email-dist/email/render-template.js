@@ -21,6 +21,7 @@ import ShootReminderEmail from '../email-templates/photographer/ShootReminderEma
 import ShootThankYouEmail from '../email-templates/photographer/ShootThankYouEmail.js';
 import GalleryReadyEmail from '../email-templates/photographer/GalleryReadyEmail.js';
 import ReviewRequestEmail from '../email-templates/photographer/ReviewRequestEmail.js';
+import ShootCancelledEmail from '../email-templates/photographer/ShootCancelledEmail.js';
 import ContractSignedEmail from '../email-templates/photographer/ContractSignedEmail.js';
 import ContractSignedStudioEmail from '../email-templates/photographer/ContractSignedStudioEmail.js';
 import { getEmailColors } from '../config/email-colors.js';
@@ -247,6 +248,13 @@ function buildComponent(input, strings, colors, footerStrings) {
                 ...common,
                 recipientName: str(v.recipientName, 'there'),
                 galleryUrl: str(v.galleryUrl, '#'),
+            });
+        case EMAIL_TEMPLATE_NAMES.SHOOT_CANCELLED:
+            return React.createElement(ShootCancelledEmail, {
+                ...common,
+                recipientName: str(v.recipientName, 'there'),
+                shootDate: str(v.shootDate, '—'),
+                shootTime: str(v.shootTime, '—'),
             });
         case EMAIL_TEMPLATE_NAMES.REVIEW_REQUEST:
             return React.createElement(ReviewRequestEmail, {

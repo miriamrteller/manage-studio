@@ -294,6 +294,16 @@
         "cta": "Open your gallery",
         "closing": "We hope you love them."
     },
+    "shoot_cancelled": {
+        "subject": "Your shoot with {schoolName} is cancelled",
+        "preview": "Your shoot with {schoolName} is cancelled",
+        "greeting": "Hi {recipientName},",
+        "body": "Your shoot with us has been cancelled. Any payment links we sent you for it no longer work.",
+        "details_heading": "Cancelled shoot",
+        "shoot_date_label": "Date",
+        "shoot_time_label": "Time",
+        "closing": "Questions, or want to book another date? Just reply to this email."
+    },
     "review_request": {
         "subject": "How was your shoot with {schoolName}?",
         "preview": "How was your shoot with {schoolName}?",
