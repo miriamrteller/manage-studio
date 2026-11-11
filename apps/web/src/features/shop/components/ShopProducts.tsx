@@ -149,6 +149,9 @@ export function ShopProducts() {
           ))}
         </ul>
       )}
+      {remove.data === 'hidden' && (
+        <p role="status" className="text-sm text-muted-foreground">{t('studio_shop.items.hidden_not_deleted')}</p>
+      )}
       {remove.error && <p role="alert" className="text-sm text-error">{t('studio_shop.errors.failed')}</p>}
     </div>
   );

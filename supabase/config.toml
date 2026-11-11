@@ -408,6 +408,12 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/smugmug-connection/index.ts"
 
+# Studio shop: the studio marks a paid order ready to collect (emails the family) or collected.
+[functions.studio-shop-order]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/studio-shop-order/index.ts"
+
 [functions.verify-takbull-credentials]
 enabled = true
 verify_jwt = true

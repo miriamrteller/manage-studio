@@ -24,6 +24,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { calculateAge } from '@/lib/utils';
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
 import { PortalClassCards } from '@/features/class-cards/components/PortalClassCards';
+import { PortalShop, type ShopPerson } from '@/features/shop/components/PortalShop';
 
 function formatMoney(amountMinor: number, currency: string): string {
   return (amountMinor / 100).toLocaleString(undefined, {
@@ -85,6 +86,14 @@ export function ParentPortal() {
   );
 
   const showPersonNameOnUpcoming = Object.keys(personNames).length > 1;
+
+  // Shop orders are for one person and paid through an active class enrolment: children first.
+  const shopPeople = useMemo<ShopPerson[]>(() => {
+    const isEnrolled = (id: string) => (enrolmentsByPerson?.[id] ?? []).some((e) => e.status === 'active');
+    const list = (children ?? []).map((c) => ({ id: c.id, name: c.name, enrolled: isEnrolled(c.id) }));
+    if (guardian) list.push({ id: guardian.personId, name: guardian.name, enrolled: isEnrolled(guardian.personId) });
+    return list;
+  }, [children, guardian, enrolmentsByPerson]);
 
   const highlightPersonId = useMemo(() => {
     if (portalHighlight?.highlightPersonId) return portalHighlight.highlightPersonId;
@@ -213,6 +222,8 @@ export function ParentPortal() {
       )}
 
       <PortalClassCards myPersonId={guardian?.personId ?? null} />
+
+      <PortalShop people={shopPeople} />
 
       <section aria-labelledby="portal-children-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

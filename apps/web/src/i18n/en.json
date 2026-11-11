@@ -2025,8 +2025,7 @@
   "studio_shop": {
     "title": "Shop",
     "beta": "Beta",
-    "intro": "Uniforms, shoes and other items you sell to your families. Families pay through their child's class and collect at the studio.",
-    "coming": "Families can't order yet: their shop opens in the next step. Add your items now.",
+    "intro": "Uniforms, shoes and other items you sell to your families. Families order in their account, pay through their child's class and collect at the studio.",
     "items": {
       "add": "Add item",
       "add_title": "New item",
@@ -2059,7 +2058,9 @@
       "edit_label": "Change {{name}}",
       "delete": "Delete",
       "delete_label": "Delete {{name}}",
-      "delete_confirm": "Delete {{name}}?"
+      "delete_confirm": "Delete {{name}}?",
+      "title": "Items for sale",
+      "hidden_not_deleted": "Families have ordered this item, so it is hidden instead of deleted. Their orders stay complete."
     },
     "errors": {
       "name_required": "Please give the item a name.",
@@ -2068,6 +2069,24 @@
       "size_label_required": "Every size needs a name.",
       "bad_stock": "Stock can't be below 0.",
       "failed": "Something went wrong. Please try again."
+    },
+    "orders": {
+      "title": "Orders",
+      "none": "No orders yet. Families see your shown items in their account.",
+      "group": {
+        "paid": "Paid, to get ready",
+        "ready": "Ready to collect",
+        "awaiting_payment": "Waiting for payment",
+        "collected": "Collected",
+        "cancelled": "Cancelled"
+      },
+      "ordered_by": "ordered by {{name}}",
+      "refunded": "Refunded",
+      "mark_ready": "Ready to collect",
+      "mark_collected": "Collected",
+      "cancel": "Cancel order",
+      "cancel_confirm": "Cancel {{name}}'s unpaid order? Its items go back into stock.",
+      "not_emailed": "The order is marked ready, but we couldn't email the family (no email address on file). Please let them know."
     }
   },
   "photo_shop_admin": {
@@ -4813,5 +4832,38 @@
     "empty_title": "No classes yet",
     "empty_message": "The studio will add you to a class.",
     "error": "Your classes didn't load. Please try again."
+  },
+  "portal_shop": {
+    "title": "Studio shop",
+    "intro": "Uniforms and items from the studio. Pay through your child's class and collect at the studio.",
+    "orders_title": "Your orders",
+    "order_for": "Order for {{name}}",
+    "status": {
+      "awaiting_payment": "Waiting for payment.",
+      "paid": "Paid. The studio is getting it ready.",
+      "ready": "Ready to collect at the studio.",
+      "collected": "Collected {{date}}."
+    },
+    "pay_now": "Pay now",
+    "cancel_order": "Cancel order",
+    "add": "Add to cart",
+    "add_label": "Add {{name}} to cart",
+    "quantity": "How many",
+    "sold_out": "Sold out",
+    "cart": "Your cart",
+    "remove": "Remove",
+    "remove_label": "Remove {{name}} from cart",
+    "for": "Who is it for?",
+    "for_one": "For {{name}}",
+    "needs_enrolment": "Orders are paid through a class, so ordering opens once someone in your family is enrolled. You can ask the studio in the meantime.",
+    "collect_note": "You'll get an email when your order is ready to collect at the studio.",
+    "total": "Total: {{total}}",
+    "pay": "Go to payment",
+    "errors": {
+      "sold_out": "Some of these sold out just now. Please check the sizes and try again.",
+      "item_not_found": "One of these items isn't on sale any more. Please check your cart.",
+      "needs_enrolment": "Orders are paid through a class. Please ask the studio, or enrol first.",
+      "failed": "Something went wrong. Please try again."
+    }
   }
 }

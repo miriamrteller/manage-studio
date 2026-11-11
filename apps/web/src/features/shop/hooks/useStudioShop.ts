@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { StudioShopService, type ShopProductInput } from '../services/studioShopService';
+import { ShopOrdersService } from '../services/shopOrdersService';
 
 /** The studio shop is a beta: only studios the owner switched it on for. */
 export function useStudioShopEnabled(): boolean {
@@ -24,4 +25,25 @@ export function useStudioShopProducts() {
     onSuccess: refresh,
   });
   return { products, save, remove };
+}
+
+const studioOrdersKey = ['studio-shop-orders'] as const;
+
+export function useStudioShopOrders() {
+  const queryClient = useQueryClient();
+  const orders = useQuery({ queryKey: studioOrdersKey, queryFn: () => ShopOrdersService.studioOrders() });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: studioOrdersKey });
+  const setStatus = useMutation({
+    mutationFn: (v: { orderId: string; status: 'ready' | 'collected' }) => ShopOrdersService.setStatus(v.orderId, v.status),
+    onSuccess: refresh,
+  });
+  const cancel = useMutation({
+    mutationFn: (orderId: string) => ShopOrdersService.cancelOrder(orderId),
+    onSuccess: async () => {
+      await refresh();
+      // A cancelled order gives its stock back.
+      await queryClient.invalidateQueries({ queryKey: productsKey });
+    },
+  });
+  return { orders, setStatus, cancel };
 }

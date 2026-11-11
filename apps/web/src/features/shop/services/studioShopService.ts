@@ -76,13 +76,18 @@ export const StudioShopService = {
     return data as string;
   },
 
-  async deleteProduct(productId: string): Promise<void> {
+  /** Deletes an item; one that families have ordered is hidden instead ('hidden'). */
+  async deleteProduct(productId: string): Promise<'deleted' | 'hidden'> {
     const { data, error } = await supabase.rpc('delete_shop_product', { p_product_id: productId });
     if (error) throw new Error(shopErrorCode(error.message));
     if (typeof data === 'string' && data) {
       // The item is gone; a picture left behind is only wasted space.
       await supabase.storage.from(SHOP_IMAGES_BUCKET).remove([data]).catch(() => undefined);
+      return 'deleted';
     }
+    // No picture path back: either it had none, or it was hidden because it was ordered.
+    const { data: still } = await supabase.from('shop_products').select('id').eq('id', productId).maybeSingle();
+    return still ? 'hidden' : 'deleted';
   },
 
   /** Uploads an item's picture (already shrunk) into the studio's folder; returns its path. */
