@@ -104,8 +104,14 @@
     "handoff_failed": "לא הצלחנו לחבר אותך בכתובת הזו. אפשר להתחבר כאן.",
     "handoff_sign_in": "כניסה",
     "platform_owner_title": "נכנסת כבעלת הפלטפורמה של OpalSwift",
-    "platform_owner_body": "דפי הניהול של הסטודיו מיועדים למנהלי הסטודיו עצמו.",
+    "platform_owner_body": "דפי הניהול של הסטודיו מיועדים למנהלי הסטודיו. אפשר בכל זאת להיכנס כדי לעזור להם.",
     "platform_owner_back": "חזרה ל-app.opalswift.com",
+    "platform_owner_sign_out": "התנתקות, כדי שמנהלי הסטודיו יוכלו להתחבר כאן",
+    "support_access_warning": "הכול נרשם. הסטודיו רואה כל דף שנפתח וכל שינוי שנעשה, בהגדרות ← התחברות ואבטחה ← גישת OpalSwift.",
+    "support_access_confirm": "כן, אני רוצה להיכנס לניהול של {{studio}}",
+    "support_access_enter": "כניסה לניהול הסטודיו",
+    "support_access_banner": "נכנסת לניהול של {{studio}} כתמיכה של OpalSwift. כל דף שנפתח וכל שינוי נרשמים.",
+    "support_access_leave": "יציאה",
     "set_password_prompt": {
       "title": "הגדרת סיסמה",
       "description": "בחרו סיסמה, ובפעם הבאה תוכלו להיכנס מהר יותר עם האימייל והסיסמה, בלי לחכות לקישור.",
@@ -4379,6 +4385,7 @@
       "access_kind_view": "צפייה",
       "access_kind_change": "שינוי",
       "access_area": {
+        "support-entry": "כניסה לניהול (תמיכה)",
         "tenants": "הגדרות הסטודיו",
         "tenant_feature_overrides": "תכונות הסטודיו",
         "user_profiles": "חשבונות משתמשים",

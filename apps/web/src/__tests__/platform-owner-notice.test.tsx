@@ -1,17 +1,22 @@
 // @vitest-environment jsdom
 /**
  * The OpalSwift platform owner (super_admin, one account) on a studio's own
- * address gets a clear notice instead of the studio's admin pages (owner
- * decision): never a bounce to /login (which looked signed out), never the
- * /classes fallback. A studio's own tenant_admin is unchanged.
+ * address first gets a confirm page (owner decision, 11 Nov 2026): tick "Yes,
+ * I want to enter this studio's admin", with the warning that everything is
+ * recorded, then continue into the admin with a support banner. Never a
+ * bounce to /login (which looked signed out), never the /classes fallback.
+ * A studio's own tenant_admin is unchanged.
  * Run: pnpm -C apps/web test platform-owner-notice.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-const h = vi.hoisted(() => ({ user: null as unknown }));
+const h = vi.hoisted(() => ({ user: null as unknown, rpc: vi.fn(), signOut: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({
+  supabase: { rpc: (...a: unknown[]) => { h.rpc(...a); return Promise.resolve({ data: null, error: null }); }, auth: { signOut: () => { h.signOut(); return Promise.resolve({}); } } },
+}));
 vi.mock('@/hooks/useAuth', () => ({ useAuthSession: () => ({ session: { user: { id: 'u' } }, isLoading: false }) }));
 vi.mock('@/hooks/useCurrentUser', () => ({ useCurrentUser: () => ({ user: h.user, isLoading: false }) }));
 vi.mock('@/hooks/useTenant', () => {
@@ -58,6 +63,9 @@ beforeEach(() => {
 });
 afterEach(async () => {
   vi.unstubAllEnvs();
+  sessionStorage.clear();
+  h.rpc.mockReset();
+  h.signOut.mockReset();
   await i18n.changeLanguage('en');
 });
 
@@ -66,13 +74,48 @@ describe('the platform owner on a studio address', () => {
     h.user = OWNER;
   });
 
-  it('admin pages show the notice, with a way back to app.opalswift.com (not the sign-in page)', () => {
+  it('admin pages show the confirm page, with a way back to app.opalswift.com (not the sign-in page)', () => {
     renderAt('/admin/setup');
     expect(screen.getByRole('heading', { name: "You're signed in as the OpalSwift platform owner" })).toBeInTheDocument();
-    expect(screen.getByText("Studio admin pages are for the studio's own admins.")).toBeInTheDocument();
+    expect(screen.getByTestId('support-access-warning')).toHaveTextContent('Everything is recorded');
     expect(screen.getByRole('link', { name: 'Back to app.opalswift.com' })).toHaveAttribute('href', 'https://app.opalswift.com');
     expect(screen.queryByText('studio admin')).toBeNull();
     expect(screen.queryByText('login page')).toBeNull();
+  });
+
+  it('ticking the box and continuing opens the admin, logs the entry and shows the banner', () => {
+    renderAt('/admin/setup');
+    const enter = screen.getByRole('button', { name: "Enter the studio's admin" });
+    expect(enter).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: "Yes, I want to enter Creative Ballet's admin" }));
+    fireEvent.click(enter);
+    expect(screen.getByText('studio admin')).toBeInTheDocument();
+    expect(screen.getByTestId('support-access-banner')).toHaveTextContent("You're in Creative Ballet's admin as OpalSwift support");
+    expect(h.rpc).toHaveBeenCalledWith('log_platform_view', { p_tenant_id: 't-1', p_area: 'support-entry' });
+  });
+
+  it('Leave ends support access', () => {
+    sessionStorage.setItem('support-access:t-1', '1');
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign } });
+    renderAt('/admin/setup');
+    fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
+    expect(sessionStorage.getItem('support-access:t-1')).toBeNull();
+    expect(assign).toHaveBeenCalledWith('https://app.opalswift.com');
+  });
+
+  it('can sign out so the studio admin signs in on this device', async () => {
+    renderAt('/admin/setup');
+    fireEvent.click(screen.getByRole('button', { name: "Sign out, so the studio's admin can sign in here" }));
+    expect(await screen.findByText('login page')).toBeInTheDocument();
+    expect(h.signOut).toHaveBeenCalled();
+  });
+
+  it('from another studio page, entering goes on to the admin', () => {
+    renderAt('/dashboard/portal');
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: "Enter the studio's admin" }));
+    expect(screen.getByText('studio admin')).toBeInTheDocument();
   });
 
   it('other studio pages too', () => {
@@ -80,7 +123,7 @@ describe('the platform owner on a studio address', () => {
     expect(screen.getByRole('heading', { name: /platform owner/ })).toBeInTheDocument();
   });
 
-  it('after the handoff, /dashboard opens the notice, not /classes', async () => {
+  it('after the handoff, /dashboard opens the confirm page, not /classes', async () => {
     renderAt('/dashboard');
     expect(await screen.findByRole('heading', { name: /platform owner/ })).toBeInTheDocument();
     expect(screen.queryByText('classes')).toBeNull();
@@ -91,6 +134,7 @@ describe('the platform owner on a studio address', () => {
     renderAt('/admin/setup');
     expect(screen.getByRole('heading', { name: 'נכנסת כבעלת הפלטפורמה של OpalSwift' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'חזרה ל-app.opalswift.com' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'כניסה לניהול הסטודיו' })).toBeInTheDocument();
   });
 });
 

@@ -104,8 +104,14 @@
     "handoff_failed": "We couldn't sign you in on this address. Please sign in here.",
     "handoff_sign_in": "Sign in",
     "platform_owner_title": "You're signed in as the OpalSwift platform owner",
-    "platform_owner_body": "Studio admin pages are for the studio's own admins.",
+    "platform_owner_body": "Studio admin pages are for the studio's own admins. You can still go in to help them.",
     "platform_owner_back": "Back to app.opalswift.com",
+    "platform_owner_sign_out": "Sign out, so the studio's admin can sign in here",
+    "support_access_warning": "Everything is recorded. The studio sees each page you open and each change you make, under Settings → Sign-in & security → OpalSwift access.",
+    "support_access_confirm": "Yes, I want to enter {{studio}}'s admin",
+    "support_access_enter": "Enter the studio's admin",
+    "support_access_banner": "You're in {{studio}}'s admin as OpalSwift support. Everything you open or change is recorded.",
+    "support_access_leave": "Leave",
     "set_password_prompt": {
       "title": "Set a password",
       "description": "Choose a password so you can sign in faster next time, with your email and password instead of waiting for a link.",
@@ -4362,6 +4368,7 @@
       "access_kind_view": "Viewed",
       "access_kind_change": "Changed",
       "access_area": {
+        "support-entry": "Entered the admin (support)",
         "tenants": "Studio settings",
         "tenant_feature_overrides": "Studio features",
         "user_profiles": "User accounts",
