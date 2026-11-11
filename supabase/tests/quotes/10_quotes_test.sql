@@ -414,6 +414,40 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 
+-- Review request: 5 days after the gallery, only with a review link
+SET ROLE service_role;
+DO $$ BEGIN
+  ASSERT (SELECT count(*) FROM list_due_shoot_emails(now() + interval '6 days') WHERE email_key = 'review_request') = 0,
+    'no review request without a review link';
+END $$;
+RESET ROLE;
+UPDATE tenants SET review_url = 'https://reviews.example.test/studio' WHERE id = '00000000-0000-0000-0000-0000000000a1';
+SET ROLE service_role;
+DO $$ BEGIN
+  ASSERT (SELECT count(*) FROM list_due_shoot_emails(now() + interval '2 days') WHERE email_key = 'review_request') = 0,
+    'review request waits 5 days';
+  ASSERT (SELECT count(*) FROM list_due_shoot_emails(now() + interval '6 days') WHERE email_key = 'review_request') = 1,
+    'review request due after 5 days';
+  ASSERT (SELECT count(*) FROM list_due_shoot_emails(now() + interval '13 days') WHERE email_key = 'review_request') = 0,
+    'review request window closes';
+END $$;
+RESET ROLE;
+INSERT INTO tenant_automatic_emails (tenant_id, email_key, enabled)
+VALUES ('00000000-0000-0000-0000-0000000000a1', 'review_request', false);
+SET ROLE service_role;
+DO $$ BEGIN
+  ASSERT (SELECT count(*) FROM list_due_shoot_emails(now() + interval '6 days') WHERE email_key = 'review_request') = 0,
+    'review request toggle off';
+END $$;
+RESET ROLE;
+DO $$ BEGIN
+  BEGIN
+    UPDATE tenants SET review_url = 'javascript:alert(1)' WHERE id = '00000000-0000-0000-0000-0000000000a1';
+    RAISE EXCEPTION 'unsafe review link accepted';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+END $$;
+
 -- Cron registered once
 DO $$ BEGIN
   ASSERT (SELECT count(*) FROM cron.job WHERE command ILIKE '%run-shoot-emails%') = 1, 'cron scheduled';

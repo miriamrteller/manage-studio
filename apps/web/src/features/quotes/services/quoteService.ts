@@ -1,7 +1,7 @@
 import { BaseService } from '@/services/base.service';
 import { supabase } from '@/lib/supabase';
 import type { AcceptedQuoteSnapshot } from '@/features/jobs/lib/bookingProgress';
-import type { AutomaticEmailKey, QuoteDraft, QuoteStatus } from '../lib/quoteSchemas';
+import { reviewUrlSchema, type AutomaticEmailKey, type QuoteDraft, type QuoteStatus } from '../lib/quoteSchemas';
 
 /**
  * Admin quotes. Reads and writes go through SECURITY DEFINER RPCs
@@ -144,11 +144,25 @@ export class QuoteService extends BaseService {
     fail(error);
     const settings: Record<AutomaticEmailKey, boolean> = {
       quote_sent: true, booking_confirmed: true, shoot_reminder: true, shoot_thank_you: true, gallery_ready: true,
+      review_request: true,
     };
     for (const row of (data ?? []) as { email_key: AutomaticEmailKey; enabled: boolean }[]) {
       settings[row.email_key] = row.enabled;
     }
     return settings;
+  }
+
+  /** The link the review request email opens; null = none set. */
+  static async reviewUrl(tenantId: string): Promise<string | null> {
+    const { data, error } = await supabase.from('tenants').select('review_url').eq('id', tenantId).single();
+    fail(error);
+    return (data as { review_url: string | null } | null)?.review_url ?? null;
+  }
+
+  static async setReviewUrl(tenantId: string, url: string): Promise<void> {
+    const value = reviewUrlSchema.parse(url).trim();
+    const { error } = await supabase.from('tenants').update({ review_url: value || null }).eq('id', tenantId);
+    fail(error);
   }
 
   static async setAutomaticEmail(tenantId: string, key: AutomaticEmailKey, enabled: boolean): Promise<void> {
