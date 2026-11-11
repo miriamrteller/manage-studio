@@ -10,7 +10,8 @@ import { functionInvokeErrorMessage, parseFunctionInvokeBody } from '@/lib/parse
 /**
  * /platform/billing, dev website only (step B1 of OpalSwift's own billing,
  * docs/plans/TAKBULL-INTEGRATION.md). The platform owner saves and tests OpalSwift's own
- * Takbull keys and sees each studio's billing details. Nothing is charged from here.
+ * Takbull keys, switches the monthly charge on or off (step B3), sees each studio's billing
+ * details, and can charge one studio now to test it.
  */
 export function PlatformBilling() {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export function PlatformBilling() {
         <p className="mt-1 text-sm text-muted-foreground">{t('platform_billing.intro')}</p>
       </div>
       <PlatformKeys />
+      <ChildPackage />
       <StudiosBilling />
     </div>
   );
@@ -91,11 +93,7 @@ function PlatformKeys() {
             ? t('platform_billing.not_saved')
             : null}
       </p>
-      {s && (
-        <p className="text-sm text-muted-foreground">
-          {s.charging_enabled ? t('platform_billing.charging_on') : t('platform_billing.charging_off')}
-        </p>
-      )}
+      {s && <ChargingSwitch enabled={s.charging_enabled} />}
 
       <label className="block text-sm font-medium">
         {t('platform_billing.api_key')}
@@ -153,6 +151,153 @@ function PlatformKeys() {
   );
 }
 
+function ChargingSwitch({ enabled }: { enabled: boolean }) {
+  const { t } = useTranslation();
+  const toggle = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('set_platform_charging', { p_enabled: !enabled });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['platform-billing-status'] }),
+  });
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-muted-foreground">
+        <span>{enabled ? t('platform_billing.charging_on') : t('platform_billing.charging_off')}</span>{' '}
+        <span>{t('platform_billing.charging_hint')}</span>
+      </p>
+      {toggle.isError && <p role="alert" className="text-sm text-destructive">{t('platform_billing.charging_failed')}</p>}
+      <Button
+        type="button"
+        variant="outline"
+        disabled={toggle.isPending}
+        isLoading={toggle.isPending}
+        onClick={() => toggle.mutate()}
+      >
+        {enabled ? t('platform_billing.charging_turn_off') : t('platform_billing.charging_turn_on')}
+      </Button>
+    </div>
+  );
+}
+
+/** Takbull PR 7: the package studio accounts OpalSwift opens get (empty = Takbull's free package). */
+function ChildPackage() {
+  const { t } = useTranslation();
+  const [value, setValue] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const current = useQuery({
+    queryKey: ['platform-child-package'],
+    queryFn: async (): Promise<string> => {
+      const { data, error } = await supabase.rpc('platform_child_package');
+      if (error) throw error;
+      return (data as string | null) ?? '';
+    },
+  });
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('set_platform_child_package', { p_package_id: (value ?? '').trim() });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      setMessage({ kind: 'ok', text: t('platform_billing.package_saved') });
+      await queryClient.invalidateQueries({ queryKey: ['platform-child-package'] });
+    },
+    onError: () => setMessage({ kind: 'error', text: t('platform_billing.package_failed') }),
+  });
+  const shown = value ?? current.data ?? '';
+  return (
+    <section className="space-y-3 max-w-lg" aria-labelledby="child-package-title">
+      <h2 id="child-package-title" className="text-lg font-semibold">{t('platform_billing.package_title')}</h2>
+      <p className="text-sm text-muted-foreground">{t('platform_billing.package_hint')}</p>
+      <label className="block text-sm font-medium">
+        {t('platform_billing.package_label')}
+        <input
+          type="text"
+          dir="ltr"
+          className="mt-1 w-full border border-border rounded px-3 py-2"
+          value={shown}
+          onChange={(e) => setValue(e.target.value)}
+          autoComplete="off"
+        />
+      </label>
+      {message && (
+        <p
+          className={`text-sm ${message.kind === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+          role={message.kind === 'error' ? 'alert' : 'status'}
+        >
+          {message.text}
+        </p>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        disabled={save.isPending || value === null}
+        isLoading={save.isPending}
+        onClick={() => {
+          setMessage(null);
+          save.mutate();
+        }}
+      >
+        {t('platform_billing.package_save')}
+      </Button>
+    </section>
+  );
+}
+
+type ChargeResult = { result: string; reason?: string; nextTryOn?: string | null };
+
+function ChargeNow({ tenantId }: { tenantId: string }) {
+  const { t } = useTranslation();
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const charge = useMutation({
+    mutationFn: async (): Promise<ChargeResult | null> => {
+      const { data, error } = await supabase.functions.invoke('run-platform-billing', { body: { tenant_id: tenantId } });
+      const body = await parseFunctionInvokeBody(data, error);
+      if (body?.code === 'charging_off') throw new Error(t('platform_billing.charge_off'));
+      if (body?.code === 'not_set_up') throw new Error(t('platform_billing.not_saved'));
+      if (body?.ok !== true) throw new Error(functionInvokeErrorMessage(error, body, t('platform_billing.charge_failed')));
+      const studios = Array.isArray(body.studios) ? (body.studios as ChargeResult[]) : [];
+      return studios[0] ?? null;
+    },
+    onSuccess: async (r) => {
+      if (!r) setMessage({ kind: 'error', text: t('platform_billing.charge_no_card') });
+      else if (r.result === 'succeeded') setMessage({ kind: 'ok', text: t('platform_billing.charge_succeeded') });
+      else if (r.result === 'declined') setMessage({ kind: 'error', text: t('platform_billing.charge_declined') });
+      else if (r.result === 'skipped') {
+        setMessage({ kind: 'ok', text: t(`platform_billing.skip_${r.reason ?? 'other'}`, { defaultValue: t('platform_billing.skip_other') }) });
+      } else if (r.result === 'unclear') setMessage({ kind: 'error', text: t('platform_billing.charge_unclear') });
+      else setMessage({ kind: 'error', text: t('platform_billing.charge_failed') });
+      await queryClient.invalidateQueries({ queryKey: ['platform-billing-overview'] });
+    },
+    onError: (err: Error) => setMessage({ kind: 'error', text: err.message }),
+  });
+  return (
+    <div className="space-y-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={charge.isPending}
+        isLoading={charge.isPending}
+        onClick={() => {
+          setMessage(null);
+          charge.mutate();
+        }}
+      >
+        {t('platform_billing.charge_now')}
+      </Button>
+      {message && (
+        <p
+          className={`text-xs ${message.kind === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+          role={message.kind === 'error' ? 'alert' : 'status'}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 type StudioRow = {
   tenant_id: string;
   name: string;
@@ -197,6 +342,7 @@ function StudiosBilling() {
                 <th scope="col" className="py-2 pe-4 text-start">{t('platform_billing.col_card')}</th>
                 <th scope="col" className="py-2 pe-4 text-start">{t('platform_billing.col_next_charge')}</th>
                 <th scope="col" className="py-2 pe-4 text-start">{t('platform_billing.col_last_paid')}</th>
+                <th scope="col" className="py-2 pe-4 text-start">{t('platform_billing.col_test')}</th>
               </tr>
             </thead>
             <tbody>
@@ -210,7 +356,15 @@ function StudiosBilling() {
                   <td className="py-2 pe-4">{date(r.trial_ends_at)}</td>
                   <td className="py-2 pe-4" dir="ltr">{r.card_last4 ? `•••• ${r.card_last4}` : t('platform_billing.no_card')}</td>
                   <td className="py-2 pe-4">{date(r.next_charge_on)}</td>
-                  <td className="py-2 pe-4">{date(r.last_paid_month)}</td>
+                  <td className="py-2 pe-4">
+                    {date(r.last_paid_month)}
+                    {r.failed_attempts > 0 && (
+                      <span className="block text-xs text-destructive">
+                        {t('platform_billing.failed_attempts', { count: r.failed_attempts })}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 pe-4">{r.card_last4 ? <ChargeNow tenantId={r.tenant_id} /> : null}</td>
                 </tr>
               ))}
             </tbody>

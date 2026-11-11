@@ -8,10 +8,12 @@
 // failed (that is logged). Until the lead settings are set, or before the hq
 // studio exists, only the email is sent.
 //
-// Spam: hidden honeypot fields and a time trap here (pretend success, send
+// Spam: hidden honeypot fields and the page timer (shown_at: missing or too fast) here (pretend success, send
 // nothing); then crm-lead-ingest runs the shared spam check on the name and
 // message. When it answers { outcome: "spam" } no email goes out and the
-// visitor is asked to check what they typed (422).
+// visitor is asked to check what they typed (422). When it answers
+// { outcome: "own_email" } (the OpalSwift team's own address: someone
+// trying the form) no email goes out either and the page says why (422).
 //
 // Settings (Cloudflare → Workers & Pages → opalswift-il → Settings → Variables and Secrets):
 //   RESEND_API_KEY      secret, required
@@ -53,10 +55,15 @@ const escapeHtml = (s) =>
  * File the enquiry in HQ's Leads. Never throws and never logs the submission
  * or the secret: only whether it worked, or the status it got.
  */
-/** True when the page says the form was sent within seconds of opening. Missing: not judged. */
-export function filledTooFast(shownAt, now = Date.now()) {
+/**
+ * True when the form was not filled in on our page by a person: the page's
+ * timer is missing or unreadable (a script posting straight to /api/contact;
+ * our page always sets it), or it says the form was sent within seconds of
+ * opening.
+ */
+export function notSentFromPage(shownAt, now = Date.now()) {
   const t = Number(shownAt);
-  if (!shownAt || !Number.isFinite(t)) return false;
+  if (!shownAt || !Number.isFinite(t)) return true;
   const elapsed = now - t;
   return elapsed >= 0 && elapsed < MIN_FILL_MS;
 }
@@ -77,7 +84,9 @@ export async function fileHqLead(env, { name, email, message }) {
     });
     if (res.ok) {
       const body = await res.json().catch(() => null);
-      return body && body.outcome === "spam" ? "spam" : "filed";
+      if (body && body.outcome === "spam") return "spam";
+      if (body && body.outcome === "own_email") return "own_email";
+      return "filed";
     }
     // 404 = the hq studio doesn't exist yet; 401/503 = the secret doesn't match or isn't set.
     console.error(`contact: HQ lead not filed, crm-lead-ingest answered ${res.status}`);
@@ -125,7 +134,6 @@ export async function handleContact({ request, env }) {
   };
 
   if (HONEYPOTS.some((k) => field(k).trim() !== "")) return json(200, { ok: true });
-  if (filledTooFast(field(SHOWN_AT_FIELD))) return json(200, { ok: true });
 
   const name = oneLine(field("name"));
   const email = oneLine(field("email"));
@@ -136,6 +144,9 @@ export async function handleContact({ request, env }) {
     return fail(400, "A field is too long");
   }
   if (!EMAIL_RE.test(email)) return fail(400, "Invalid email address");
+
+  // After the field checks, so an empty POST (the deploy smoke check) still gets its 400.
+  if (notSentFromPage(field(SHOWN_AT_FIELD))) return json(200, { ok: true });
 
   if (!env.RESEND_API_KEY) {
     console.error("contact: RESEND_API_KEY is not set");
@@ -151,6 +162,7 @@ export async function handleContact({ request, env }) {
   // File the lead first: its spam check decides whether the email goes out.
   const lead = await fileHqLead(env, { name, email, message });
   if (lead === "spam") return fail(422, "looks_like_spam");
+  if (lead === "own_email") return fail(422, "own_email");
 
   let res;
   try {

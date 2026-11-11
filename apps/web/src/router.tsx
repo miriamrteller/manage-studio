@@ -2,7 +2,7 @@ import { PlatformOwnerNotice } from '@/components/PlatformOwnerNotice';
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
-import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute } from "./layouts/RouteGuards";
+import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute, TeacherRoute } from "./layouts/RouteGuards";
 import { LabelsProvider } from "./contexts/LabelsContext";
 import { StudioHostGate } from "./layouts/StudioHostGate";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -42,6 +42,8 @@ const PlatformFeedbackPage = lazy(() => import("./pages/PlatformFeedbackPage"));
 const SkinsPage = lazy(() => import("./features/skins/SkinsPage"));
 const FinanceWalkthroughPage = lazy(() => import("./pages/FinanceWalkthroughPage"));
 const LevelsPage = lazy(() => import("./pages/LevelsPage"));
+const TeachersPage = lazy(() => import("./pages/TeachersPage"));
+const MyClassesPage = lazy(() => import("./pages/MyClassesPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const AdminClassesPage = lazy(() => import("./pages/AdminClassesPage"));
 const AdminAppointmentsPage = lazy(() => import("./pages/AdminAppointmentsPage"));
@@ -239,6 +241,8 @@ const router = createBrowserRouter([
           { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
           { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
           { path: "admin/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+          { path: "admin/setup/teachers", element: <AdminRoute><TeachersPage /></AdminRoute> },
+          { path: "teach", element: <TeacherRoute><MyClassesPage /></TeacherRoute> },
           { path: "admin/setup/classes", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
           // Legacy redirect — the admin-only calendar was removed in favour of the
           // client-facing classes calendar on /classes.
@@ -246,8 +250,10 @@ const router = createBrowserRouter([
           { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
           { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
-          { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
-          { path: "admin/setup/integrations/smugmug/callback", element: <AdminRoute><SmugMugCallbackPage /></AdminRoute> },
+          // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.
+          { path: "admin/setup/integrations/google/callback", element: <GoogleCalendarCallbackPage /> },
+          // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.
+          { path: "admin/setup/integrations/smugmug/callback", element: <SmugMugCallbackPage /> },
           { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
           { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
           { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },

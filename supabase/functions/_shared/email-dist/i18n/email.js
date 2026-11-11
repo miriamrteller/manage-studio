@@ -38,6 +38,7 @@ export const EMAIL_TEMPLATE_NAMES = {
     SHOOT_REMINDER: 'shoot_reminder',
     SHOOT_THANK_YOU: 'shoot_thank_you',
     GALLERY_READY: 'gallery_ready',
+    REVIEW_REQUEST: 'review_request',
     CONTRACT_SIGNED_CLIENT: 'contract_signed_client',
     CONTRACT_SIGNED_STUDIO: 'contract_signed_studio',
 };

@@ -134,6 +134,16 @@ export const SmugMugService = {
     window.location.assign(body.url);
   },
 
+  /**
+   * The studio address a pending SmugMug request belongs to (no sign-in needed). SmugMug
+   * returns to the fixed callback on app.<root>; the page carries on at this address.
+   */
+  async studioUrl(oauthToken: string): Promise<string> {
+    const body = await call({ action: 'studio_url', oauth_token: oauthToken });
+    if (typeof body.studio_url !== 'string') throw new SmugMugActionError('expired');
+    return body.studio_url;
+  },
+
   /** The callback page: swap SmugMug's token + verifier for the access token. */
   async complete(oauthToken: string, oauthVerifier: string): Promise<void> {
     await call({ action: 'complete', oauth_token: oauthToken, oauth_verifier: oauthVerifier });

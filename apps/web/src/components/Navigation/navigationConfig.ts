@@ -23,7 +23,7 @@ export {
  * - 'super_admin': Platform onboarding
  * - 'parent', 'guardian', or 'account_holder': Parent portal access
  * - 'student' or 'adult_student': Student dashboard access
- * - 'teacher': (reserved for future use)
+ * - 'staff': a teacher (My classes)
  */
 
 export type NavSectionKey =
@@ -33,7 +33,8 @@ export type NavSectionKey =
   | 'setup'
   | 'platform'
   | 'portal'
-  | 'learning';
+  | 'learning'
+  | 'teaching';
 
 export type NavTenantFilter = 'bundled' | 'split';
 
@@ -86,6 +87,7 @@ export const SECTION_LABELS: Record<NavSectionKey, string> = {
   platform: 'nav.section.platform',
   portal: 'nav.section.portal',
   learning: 'nav.section.learning',
+  teaching: 'nav.section.teaching',
 };
 
 /** The studio home with the setup checklist forced open. */
@@ -300,6 +302,14 @@ export const navigationConfig: NavItem[] = [
     moduleKey: 'scheduling',
   },
   {
+    path: '/admin/setup/teachers',
+    needs: 'teaches_classes',
+    labelKey: 'nav.teachers',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'setup',
+    indent: true,
+  },
+  {
     path: '/admin/packages',
     labelKey: 'nav.booking_services',
     requiredRoles: ['tenant_admin'],
@@ -366,6 +376,12 @@ export const navigationConfig: NavItem[] = [
     requiredRoles: ['student', 'adult_student'],
     sectionKey: 'learning',
   },
+  {
+    path: '/teach',
+    labelKey: 'nav.my_classes',
+    requiredRoles: ['staff'],
+    sectionKey: 'teaching',
+  },
 ];
 
 /** Unauthenticated navigation items */
@@ -414,6 +430,7 @@ const SECTION_ORDER: NavSectionKey[] = [
   'finance',
   'setup',
   'platform',
+  'teaching',
   'portal',
   'learning',
 ];

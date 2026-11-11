@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Studio shop (beta, flag billing:studio_shop): the items a studio sells to its families,
- * with their sizes and stock. Server side: supabase/migrations/20261110160000_studio_shop.sql.
+ * with their sizes and stock. Server side: supabase/migrations/20261111110000_studio_shop.sql.
  * Pictures are of the item only and live in the public shop-product-images bucket.
  */
 

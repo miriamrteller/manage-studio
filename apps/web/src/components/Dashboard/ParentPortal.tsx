@@ -23,6 +23,7 @@ import { readPortalHighlightState } from '@/lib/portalHighlight';
 import { useTenant } from '@/hooks/useTenant';
 import { calculateAge } from '@/lib/utils';
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
+import { PortalClassCards } from '@/features/class-cards/components/PortalClassCards';
 
 function formatMoney(amountMinor: number, currency: string): string {
   return (amountMinor / 100).toLocaleString(undefined, {
@@ -210,6 +211,8 @@ export function ParentPortal() {
           }
         />
       )}
+
+      <PortalClassCards myPersonId={guardian?.personId ?? null} />
 
       <section aria-labelledby="portal-children-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

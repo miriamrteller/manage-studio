@@ -141,3 +141,71 @@ BEGIN
   END;
   RAISE NOTICE 'ok  a studio admin sees their own plan card; a parent cannot';
 END $$;
+
+-- 7. Step B3: only the platform owner switches the monthly charge on or off.
+DO $$
+DECLARE
+  owner_id UUID := 'b0000000-0000-4000-8000-0000000000f1';
+  admin    UUID := 'b0000000-0000-4000-8000-00000000000e';
+  r RECORD;
+BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', false);
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  BEGIN
+    PERFORM set_platform_charging(true);
+    RAISE EXCEPTION 'FAIL a studio admin switched charging on';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  PERFORM set_config('request.jwt.claim.sub', owner_id::text, false);
+  PERFORM set_platform_charging(true);
+  SELECT * INTO r FROM platform_billing_status();
+  IF NOT r.charging_enabled THEN RAISE EXCEPTION 'FAIL charging not on'; END IF;
+  PERFORM set_platform_charging(false);
+  SELECT * INTO r FROM platform_billing_status();
+  IF r.charging_enabled THEN RAISE EXCEPTION 'FAIL charging not off'; END IF;
+  RAISE NOTICE 'ok  only the platform owner switches monthly charging';
+END $$;
+
+-- 8. Takbull PR 7: only the service role saves an opened account's keys (encrypted) and
+--    switches the studio to Takbull; only the platform owner sets the package.
+DO $$
+DECLARE
+  owner_id UUID := 'b0000000-0000-4000-8000-0000000000f1';
+  admin    UUID := 'b0000000-0000-4000-8000-00000000000e';
+  photo    UUID := 'a0000000-0000-4000-8000-000000000001';
+  r RECORD;
+  v TEXT;
+BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', false);
+  PERFORM set_config('request.jwt.claim.sub', admin::text, false);
+  BEGIN
+    PERFORM save_opened_takbull_account(photo, admin, 'k', 's', 'mid');
+    RAISE EXCEPTION 'FAIL an admin saved opened-account keys';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    PERFORM set_platform_child_package('pkg');
+    RAISE EXCEPTION 'FAIL an admin set the package';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  PERFORM set_config('request.jwt.claim.sub', owner_id::text, false);
+  PERFORM set_platform_child_package('  pkg-1 ');
+  SELECT platform_child_package() INTO v;
+  IF v <> 'pkg-1' THEN RAISE EXCEPTION 'FAIL package %', v; END IF;
+  PERFORM set_platform_child_package('');
+  SELECT platform_child_package() INTO v;
+  IF v IS NOT NULL THEN RAISE EXCEPTION 'FAIL empty package kept'; END IF;
+
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', false);
+  PERFORM save_opened_takbull_account(photo, admin, ' child-key-1234 ', ' child-secret ', ' mid-77 ');
+  SELECT * INTO r FROM tenants WHERE id = photo;
+  IF r.payment_provider <> 'takbull' OR r.invoicing_provider <> 'takbull' OR r.takbull_merchant_id <> 'mid-77'
+     OR r.takbull_account_opened_at IS NULL THEN
+    RAISE EXCEPTION 'FAIL opened account row';
+  END IF;
+  IF position('child-key-1234' IN encode(r.takbull_api_key_enc, 'escape')) > 0 THEN RAISE EXCEPTION 'FAIL key not encrypted'; END IF;
+  SELECT * INTO r FROM get_tenant_takbull_credentials(photo);
+  IF r.api_key <> 'child-key-1234' OR r.api_secret <> 'child-secret' THEN RAISE EXCEPTION 'FAIL keys read back'; END IF;
+  RAISE NOTICE 'ok  an opened Takbull account is saved encrypted and the studio switches to Takbull';
+END $$;

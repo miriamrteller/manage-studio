@@ -142,8 +142,11 @@ export type Database = {
           attended: boolean
           created_at: string
           id: string
+          marked_by: string | null
+          offering_id: string | null
           person_id: string
-          session_id: string
+          session_date: string | null
+          session_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -151,8 +154,11 @@ export type Database = {
           attended?: boolean
           created_at?: string
           id?: string
+          marked_by?: string | null
+          offering_id?: string | null
           person_id: string
-          session_id: string
+          session_date?: string | null
+          session_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -160,12 +166,29 @@ export type Database = {
           attended?: boolean
           created_at?: string
           id?: string
+          marked_by?: string | null
+          offering_id?: string | null
           person_id?: string
-          session_id?: string
+          session_date?: string | null
+          session_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_person_id_fkey"
             columns: ["person_id"]
@@ -536,6 +559,269 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_card_type_offerings: {
+        Row: {
+          card_type_id: string
+          offering_id: string
+          tenant_id: string
+        }
+        Insert: {
+          card_type_id: string
+          offering_id: string
+          tenant_id: string
+        }
+        Update: {
+          card_type_id?: string
+          offering_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_card_type_offerings_card_type_id_fkey"
+            columns: ["card_type_id"]
+            isOneToOne: false
+            referencedRelation: "class_card_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_card_type_offerings_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_card_type_offerings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_card_types: {
+        Row: {
+          class_count: number
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          name: string
+          price_minor: number
+          shareable: boolean
+          tenant_id: string
+          updated_at: string
+          valid_months: number | null
+        }
+        Insert: {
+          class_count: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_minor: number
+          shareable?: boolean
+          tenant_id: string
+          updated_at?: string
+          valid_months?: number | null
+        }
+        Update: {
+          class_count?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_minor?: number
+          shareable?: boolean
+          tenant_id?: string
+          updated_at?: string
+          valid_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_card_types_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_card_visits: {
+        Row: {
+          card_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          offering_id: string
+          person_id: string
+          session_date: string
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          walk_in: boolean
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          offering_id: string
+          person_id: string
+          session_date: string
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at?: string
+          walk_in?: boolean
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          offering_id?: string
+          person_id?: string
+          session_date?: string
+          starts_at?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          walk_in?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_card_visits_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "class_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_card_visits_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_card_visits_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_card_visits_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_cards: {
+        Row: {
+          account_id: string | null
+          card_type_id: string
+          class_count: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          extended_at: string | null
+          extension_requested_at: string | null
+          id: string
+          name: string
+          payment_id: string | null
+          person_id: string
+          price_minor: number
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          card_type_id: string
+          class_count: number
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          extended_at?: string | null
+          extension_requested_at?: string | null
+          id?: string
+          name: string
+          payment_id?: string | null
+          person_id: string
+          price_minor: number
+          starts_on?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          card_type_id?: string
+          class_count?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          extended_at?: string | null
+          extension_requested_at?: string | null
+          id?: string
+          name?: string
+          payment_id?: string | null
+          person_id?: string
+          price_minor?: number
+          starts_on?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_cards_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cards_card_type_id_fkey"
+            columns: ["card_type_id"]
+            isOneToOne: false
+            referencedRelation: "class_card_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cards_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cards_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cards_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1601,6 +1887,7 @@ export type Database = {
       job_payment_requests: {
         Row: {
           amount_minor: number
+          class_card_id: string | null
           created_at: string
           created_by: string | null
           currency: string
@@ -1623,6 +1910,7 @@ export type Database = {
         }
         Insert: {
           amount_minor: number
+          class_card_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1645,6 +1933,7 @@ export type Database = {
         }
         Update: {
           amount_minor?: number
+          class_card_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1666,6 +1955,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "job_payment_requests_class_card_id_fkey"
+            columns: ["class_card_id"]
+            isOneToOne: false
+            referencedRelation: "class_cards"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "job_payment_requests_created_by_fkey"
             columns: ["created_by"]
@@ -2628,6 +2924,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "offerings_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_names"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "offerings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -3138,6 +3441,7 @@ export type Database = {
           id: boolean
           takbull_api_key_enc: string | null
           takbull_api_secret_enc: string | null
+          takbull_child_package_id: string | null
           takbull_credentials_updated_at: string | null
           takbull_credentials_updated_by: string | null
           updated_at: string
@@ -3147,6 +3451,7 @@ export type Database = {
           id?: boolean
           takbull_api_key_enc?: string | null
           takbull_api_secret_enc?: string | null
+          takbull_child_package_id?: string | null
           takbull_credentials_updated_at?: string | null
           takbull_credentials_updated_by?: string | null
           updated_at?: string
@@ -3156,6 +3461,7 @@ export type Database = {
           id?: boolean
           takbull_api_key_enc?: string | null
           takbull_api_secret_enc?: string | null
+          takbull_child_package_id?: string | null
           takbull_credentials_updated_at?: string | null
           takbull_credentials_updated_by?: string | null
           updated_at?: string
@@ -4099,6 +4405,38 @@ export type Database = {
           },
         ]
       }
+      tenant_class_card_settings: {
+        Row: {
+          cancel_cutoff_hours: number
+          enabled: boolean
+          extension_months: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_cutoff_hours?: number
+          enabled?: boolean
+          extension_months?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_cutoff_hours?: number
+          enabled?: boolean
+          extension_months?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_class_card_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_custom_domains: {
         Row: {
           activated_at: string | null
@@ -4596,6 +4934,7 @@ export type Database = {
           primary_color: string
           privacy_policy_url: string | null
           require_admin_mfa: boolean
+          review_url: string | null
           signup_source: string
           skin: string
           smugmug_access_secret_enc: string | null
@@ -4607,10 +4946,13 @@ export type Database = {
           smugmug_oauth_pending_enc: string | null
           sub_status: string
           subdomain: string
+          takbull_account_opened_at: string | null
           takbull_api_key_enc: string | null
           takbull_api_secret_enc: string | null
           takbull_credentials_updated_at: string | null
           takbull_document_type: number
+          takbull_merchant_id: string | null
+          teachers_own_classes_only: boolean
           teaches_classes: boolean
           terms_url: string | null
           tranzila_terminal_name: string | null
@@ -4689,6 +5031,7 @@ export type Database = {
           primary_color?: string
           privacy_policy_url?: string | null
           require_admin_mfa?: boolean
+          review_url?: string | null
           signup_source?: string
           skin?: string
           smugmug_access_secret_enc?: string | null
@@ -4700,10 +5043,13 @@ export type Database = {
           smugmug_oauth_pending_enc?: string | null
           sub_status?: string
           subdomain: string
+          takbull_account_opened_at?: string | null
           takbull_api_key_enc?: string | null
           takbull_api_secret_enc?: string | null
           takbull_credentials_updated_at?: string | null
           takbull_document_type?: number
+          takbull_merchant_id?: string | null
+          teachers_own_classes_only?: boolean
           teaches_classes?: boolean
           terms_url?: string | null
           tranzila_terminal_name?: string | null
@@ -4782,6 +5128,7 @@ export type Database = {
           primary_color?: string
           privacy_policy_url?: string | null
           require_admin_mfa?: boolean
+          review_url?: string | null
           signup_source?: string
           skin?: string
           smugmug_access_secret_enc?: string | null
@@ -4793,10 +5140,13 @@ export type Database = {
           smugmug_oauth_pending_enc?: string | null
           sub_status?: string
           subdomain?: string
+          takbull_account_opened_at?: string | null
           takbull_api_key_enc?: string | null
           takbull_api_secret_enc?: string | null
           takbull_credentials_updated_at?: string | null
           takbull_document_type?: number
+          takbull_merchant_id?: string | null
+          teachers_own_classes_only?: boolean
           teaches_classes?: boolean
           terms_url?: string | null
           tranzila_terminal_name?: string | null
@@ -5302,6 +5652,32 @@ export type Database = {
           },
         ]
       }
+      staff_names: {
+        Row: {
+          id: string | null
+          name: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          id?: string | null
+          name?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          id?: string | null
+          name?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_quote: {
@@ -5360,13 +5736,92 @@ export type Database = {
         Args: { p_tenant_id: string; p_user_id: string }
         Returns: undefined
       }
+      book_class_with_card: {
+        Args: {
+          p_card_id: string
+          p_offering_id: string
+          p_person_id?: string
+          p_session_date: string
+        }
+        Returns: {
+          card_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          offering_id: string
+          person_id: string
+          session_date: string
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          walk_in: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_card_visits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_active_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
       }
+      cancel_class_card_booking: {
+        Args: { p_visit_id: string }
+        Returns: {
+          card_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          offering_id: string
+          person_id: string
+          session_date: string
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          walk_in: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_card_visits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_engagement: {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
+      }
+      check_in_with_class_card: {
+        Args: {
+          p_card_id: string
+          p_offering_id: string
+          p_person_id?: string
+          p_session_date: string
+        }
+        Returns: {
+          card_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          offering_id: string
+          person_id: string
+          session_date: string
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          walk_in: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_card_visits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       check_subdomain_available: {
         Args: { p_subdomain: string }
@@ -5518,6 +5973,35 @@ export type Database = {
         Returns: number
       }
       export_tenant_data: { Args: never; Returns: Json }
+      extend_class_card: {
+        Args: { p_card_id: string }
+        Returns: {
+          account_id: string | null
+          card_type_id: string
+          class_count: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          extended_at: string | null
+          extension_requested_at: string | null
+          id: string
+          name: string
+          payment_id: string | null
+          person_id: string
+          price_minor: number
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          valid_until: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       find_contacts_by_phone: {
         Args: { p_phone: string }
         Returns: {
@@ -5556,6 +6040,14 @@ export type Database = {
           name: string
           price_minor: number
         }[]
+      }
+      get_class_card_register: {
+        Args: { p_offering_id: string; p_session_date: string }
+        Returns: Json
+      }
+      get_class_register: {
+        Args: { p_offering_id: string; p_session_date: string }
+        Returns: Json
       }
       get_client_job_gallery: {
         Args: { p_engagement_id: string }
@@ -5608,6 +6100,27 @@ export type Database = {
         Returns: Json
       }
       get_my_account_ids: { Args: never; Returns: string[] }
+      get_my_class_card_sessions: {
+        Args: { p_card_id: string; p_days?: number }
+        Returns: Json
+      }
+      get_my_class_cards: {
+        Args: never
+        Returns: {
+          class_count: number
+          classes_left: number
+          extended_at: string
+          extension_requested_at: string
+          id: string
+          name: string
+          pay_token: string
+          person_id: string
+          shared: boolean
+          starts_on: string
+          status: string
+          valid_until: string
+        }[]
+      }
       get_my_last_signer_details: { Args: never; Returns: Json }
       get_my_person_id: { Args: never; Returns: string }
       get_my_profile: {
@@ -5630,6 +6143,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_teaching: { Args: never; Returns: Json }
       get_my_tenant_id: { Args: never; Returns: string }
       get_named_lead_form: {
         Args: { p_slug: string; p_tenant_id: string }
@@ -5641,6 +6155,23 @@ export type Database = {
           current_status: string
           offering_id: string
           person_id: string
+        }[]
+      }
+      get_person_class_cards: {
+        Args: { p_person_id: string }
+        Returns: {
+          class_count: number
+          classes_left: number
+          created_at: string
+          extended_at: string
+          extension_requested_at: string
+          id: string
+          name: string
+          payment_id: string
+          shared: boolean
+          starts_on: string
+          status: string
+          valid_until: string
         }[]
       }
       get_person_consents: {
@@ -5970,11 +6501,49 @@ export type Database = {
         Returns: boolean
       }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
+      is_my_studio_admin: { Args: never; Returns: boolean }
       is_platform_owner_email: { Args: { p_email: string }; Returns: boolean }
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      is_teacher_for_offering: {
+        Args: { p_offering_id: string }
+        Returns: boolean
+      }
       is_valid_israeli_id: { Args: { p_id: string }; Returns: boolean }
+      issue_class_card: {
+        Args: {
+          p_card_type_id: string
+          p_payment_id?: string
+          p_person_id: string
+        }
+        Returns: {
+          account_id: string | null
+          card_type_id: string
+          class_count: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          extended_at: string | null
+          extension_requested_at: string | null
+          id: string
+          name: string
+          payment_id: string | null
+          person_id: string
+          price_minor: number
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          valid_until: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       job_insert: {
         Args: {
           p_booked_ends_at: string
@@ -6026,6 +6595,7 @@ export type Database = {
         Returns: undefined
       }
       link_my_guardian_accounts: { Args: never; Returns: number }
+      link_my_teacher_login: { Args: never; Returns: boolean }
       list_admin_quotes: { Args: never; Returns: Json }
       list_due_shoot_emails: {
         Args: { p_now?: string }
@@ -6145,6 +6715,7 @@ export type Database = {
           keys_saved_at: string
         }[]
       }
+      platform_child_package: { Args: never; Returns: string }
       platform_set_feature_override: {
         Args: {
           p_enabled: boolean
@@ -6278,6 +6849,35 @@ export type Database = {
         }
         Returns: Json
       }
+      request_class_card_extension: {
+        Args: { p_card_id: string }
+        Returns: {
+          account_id: string | null
+          card_type_id: string
+          class_count: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          extended_at: string | null
+          extension_requested_at: string | null
+          id: string
+          name: string
+          payment_id: string | null
+          person_id: string
+          price_minor: number
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          valid_until: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolve_engagement_billing_account: {
         Args: { p_student_person_id: string; p_tenant_id: string }
         Returns: string
@@ -6335,6 +6935,16 @@ export type Database = {
           p_check: Json
           p_engagement_id: string
           p_photos: Json
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
+      save_opened_takbull_account: {
+        Args: {
+          p_actor_id: string
+          p_api_key: string
+          p_api_secret: string
+          p_merchant_id: string
           p_tenant_id: string
         }
         Returns: undefined
@@ -6501,12 +7111,52 @@ export type Database = {
         }
         Returns: Json
       }
+      set_class_attendance: {
+        Args: {
+          p_attended: boolean
+          p_offering_id: string
+          p_person_ids: string[]
+          p_session_date: string
+        }
+        Returns: number
+      }
+      set_class_card_visit_status: {
+        Args: { p_status: string; p_visit_id: string }
+        Returns: {
+          card_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          offering_id: string
+          person_id: string
+          session_date: string
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          walk_in: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_card_visits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_consent_template_lawyer_reviewed: {
         Args: { p_reviewed: boolean; p_template_id: string }
         Returns: boolean
       }
       set_feature_optout: {
         Args: { p_feature_key: string; p_off: boolean; p_tenant_id: string }
+        Returns: undefined
+      }
+      set_platform_charging: {
+        Args: { p_enabled: boolean }
+        Returns: undefined
+      }
+      set_platform_child_package: {
+        Args: { p_package_id: string }
         Returns: undefined
       }
       set_tenant_smugmug_oauth_pending: {
@@ -6546,6 +7196,10 @@ export type Database = {
         Returns: string
       }
       smugmug_admin_tenant_id: { Args: never; Returns: string }
+      start_class_card_purchase: {
+        Args: { p_card_type_id: string; p_person_id?: string }
+        Returns: Json
+      }
       studio_feature_states: {
         Args: { p_tenant_id: string }
         Returns: {

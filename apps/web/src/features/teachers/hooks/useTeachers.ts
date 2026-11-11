@@ -76,3 +76,13 @@ export function useTeachers({ page = 1, enabled = true }: UseTeachersOptions = {
     isDeleting: deleteMutation.isPending,
   };
 }
+
+/** The signed-in teacher's classes (all the studio's, or only their own: studio setting). */
+export function useMyTeaching() {
+  const tenant = useTenant();
+  return useQuery({
+    queryKey: ['my-teaching', tenant?.id],
+    queryFn: () => TeacherService.getMyTeaching(),
+    enabled: !!tenant?.id,
+  });
+}

@@ -12,6 +12,7 @@ import {
   type EnrollmentIntent,
 } from '@/lib/enrollment-intent';
 import { hasParentRole } from '@/lib/parentRoles';
+import { hasTeacherRole } from '@/lib/teacherRoles';
 import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
 
 /**
@@ -23,6 +24,7 @@ import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
  *   their clients have no class enrolment / child setup, so the intent is
  *   dropped and they continue to their portal below)
  * - tenant_admin → /admin/setup
+ * - teacher (staff) → /teach
  * - parent/guardian/account_holder → /dashboard/portal
  * - student/adult_student → /dashboard/student
  * - No matching role → /classes (fallback)
@@ -95,6 +97,8 @@ export default function DashboardRedirectPage() {
       navigate('/platform-owner', { replace: true });
     } else if (user.role.includes('tenant_admin')) {
       navigate('/admin/setup', { replace: true });
+    } else if (hasTeacherRole(user.role)) {
+      navigate('/teach', { replace: true });
     } else if (hasParentRole(user.role)) {
       navigate('/dashboard/portal', { replace: true });
     } else if (user.role.some((r: string) => ['student', 'adult_student'].includes(r))) {

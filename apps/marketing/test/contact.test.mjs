@@ -33,7 +33,13 @@ function form(fields) {
 function post(body, headers = {}) {
   return new Request(URL_, { method: "POST", body, headers: { origin: "https://opalswift.com", ...headers } });
 }
-const good = { name: "דנה כהן", email: "dana@example.com", message: "Invoices take me hours.\nHelp!" };
+// shown_at: the page's timer, as a person a minute into the form would send it.
+const good = {
+  name: "דנה כהן",
+  email: "dana@example.com",
+  message: "Invoices take me hours.\nHelp!",
+  shown_at: String(Date.now() - 60_000),
+};
 const call = (request, env = ENV) => onRequest({ request, env });
 
 test("valid submission → 200 {ok:true}, one Resend email", async () => {
@@ -242,12 +248,20 @@ test("sent within seconds of the form showing → pretend success, no email, no 
   assert.equal(calls.length, 0);
 });
 
-test("a person taking their time, or no shown_at (no JavaScript), goes through", async () => {
-  for (const extra of [{ shown_at: String(Date.now() - 20_000) }, {}, { shown_at: "junk" }]) {
+test("a person taking their time goes through", async () => {
+  const res = await call(post(form({ ...good, shown_at: String(Date.now() - 20_000) })), LEAD_ENV);
+  assert.equal(res.status, 200);
+  assert.ok(calls.some((c) => c.url === "https://api.resend.com/emails"));
+});
+
+test("no page timer, or junk in it (a script posting directly) → pretend success, no email, no lead", async () => {
+  const { shown_at: _omit, ...withoutTimer } = good;
+  for (const fields of [withoutTimer, { ...good, shown_at: "" }, { ...good, shown_at: "junk" }]) {
     calls = [];
-    const res = await call(post(form({ ...good, ...extra })), LEAD_ENV);
+    const res = await call(post(form(fields)), LEAD_ENV);
     assert.equal(res.status, 200);
-    assert.ok(calls.some((c) => c.url === "https://api.resend.com/emails"));
+    assert.deepEqual(await res.json(), { ok: true });
+    assert.equal(calls.length, 0);
   }
 });
 
@@ -259,5 +273,16 @@ test("crm-lead-ingest says spam → 422, no email", async () => {
   const res = await call(post(form(good)), LEAD_ENV);
   assert.equal(res.status, 422);
   assert.equal((await res.json()).error, "looks_like_spam");
+  assert.deepEqual(calls.map((c) => c.url), [INGEST]);
+});
+
+test("crm-lead-ingest says own_email (the team's own address) → 422 own_email, no email", async () => {
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init, body: JSON.parse(init.body) });
+    return new Response(JSON.stringify(url === INGEST ? { outcome: "own_email" } : { id: "x" }), { status: 200 });
+  };
+  const res = await call(post(form(good)), LEAD_ENV);
+  assert.equal(res.status, 422);
+  assert.equal((await res.json()).error, "own_email");
   assert.deepEqual(calls.map((c) => c.url), [INGEST]);
 });

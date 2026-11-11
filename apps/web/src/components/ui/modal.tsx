@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -43,6 +44,7 @@ export function Modal({
   size = 'md',
   describedById,
 }: ModalProps) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
@@ -94,7 +96,7 @@ export function Modal({
           type="button"
           variant="ghost"
           size="sm"
-          aria-label="Close dialog"
+          aria-label={t('common.close')}
           onClick={onClose}
           className="text-2xl font-bold leading-none hover:opacity-70"
         >

@@ -427,7 +427,7 @@ export default function WaiversPage() {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : error ? (
-          <p className="text-sm text-destructive">{error.message}</p>
+          <p className="text-sm text-destructive">{t('pages.waivers.load_failed')}</p>
         ) : !templates.length ? (
           <p className="text-sm text-muted-foreground">{t('pages.waivers.no_templates')}</p>
         ) : (

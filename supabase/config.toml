@@ -388,6 +388,20 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/platform-billing-ipn/index.ts"
 
+# OpalSwift's own billing: the monthly charge on studios' saved cards (daily cron, or the
+# platform owner's "Charge now" on the dev website).
+[functions.run-platform-billing]
+enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron); a signed-in caller must be super_admin.
+verify_jwt = false
+entrypoint = "./functions/run-platform-billing/index.ts"
+
+# Takbull PR 7 (dev only): a studio admin opens the studio's own Takbull account.
+[functions.takbull-open-account]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/takbull-open-account/index.ts"
+
 # Photo shop: Test connection / Connect SmugMug with the studio's own key (admins only).
 [functions.smugmug-connection]
 enabled = true

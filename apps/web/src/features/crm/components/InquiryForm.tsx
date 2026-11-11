@@ -65,7 +65,7 @@ export function InquiryForm({
   }, [invite.prefill]);
   // The class example only for studios that teach classes; a general one for everyone else.
   const teachesClasses = (tenant?.profile?.teachesClasses ?? true) && tenant?.vertical !== 'photographer';
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam' | 'own_email'>('idle');
   // Time trap: when the form first showed (the server ignores enquiries sent within seconds).
   const [shownAt] = useState(() => Date.now());
   const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
@@ -117,7 +117,7 @@ export function InquiryForm({
           setStatus('answers');
           return;
         }
-        setStatus(refusedAsSpam(body) ? 'spam' : 'error');
+        setStatus(refusedAsSpam(body) ? 'spam' : refusedAsOwnEmail(body) ? 'own_email' : 'error');
         return;
       }
       setStatus('sent');
@@ -241,6 +241,11 @@ export function InquiryForm({
             {t('pages.crm.inquire.spam_error')}
           </div>
         )}
+        {status === 'own_email' && (
+          <div className="alert-error" role="alert">
+            {t('pages.crm.inquire.own_email_error')}
+          </div>
+        )}
         {status === 'answers' && invalid.length > 0 && (
           <div className="alert-error" role="alert">
             {t('pages.crm.inquire.answers_error')}
@@ -302,6 +307,11 @@ function invalidFieldsFrom(body: unknown): string[] {
 /** The server's spam check refused it (422 looks_like_spam). */
 function refusedAsSpam(body: unknown): boolean {
   return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'looks_like_spam';
+}
+
+/** Sent with the studio's own email (422 own_studio_email): someone at the studio trying the form. */
+function refusedAsOwnEmail(body: unknown): boolean {
+  return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'own_studio_email';
 }
 
 function marketingPayload(state: ConsentState, lang: 'he' | 'en', studio?: string) {

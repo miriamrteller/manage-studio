@@ -26,6 +26,7 @@ import type { Offering } from '@shared/schemas';
 import { computeClassTotal } from '@/features/enrolment/lib/computeClassTotal';
 import { formatClassAgeRange } from '../lib/formatClassAgeRange';
 import { deleteOfferingCover, uploadOfferingCover } from '../lib/offeringImageStorage';
+import { ClassRegister } from '@/features/attendance/components/ClassRegister';
 
 export function AdminClassesList() {
   const { t, i18n } = useTranslation();
@@ -44,6 +45,7 @@ export function AdminClassesList() {
   const [editingClass, setEditingClass] = useState<Offering | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
+  const [registerClassId, setRegisterClassId] = useState<string | null>(null);
 
   const classesData = useClasses({
     page,
@@ -310,6 +312,14 @@ export function AdminClassesList() {
                   >
                     {t('pages.admin_classes.requirements_button')}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRegisterClassId(registerClassId === classItem.id ? null : classItem.id)}
+                    aria-expanded={registerClassId === classItem.id}
+                  >
+                    {t('attendance.register.button')}
+                  </Button>
                   <Link
                     to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
                     className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
@@ -327,6 +337,14 @@ export function AdminClassesList() {
                     className={classItem.name}
                     minAge={classItem.min_age}
                     maxAge={classItem.max_age}
+                  />
+                )}
+                {registerClassId === classItem.id && (
+                  <ClassRegister
+                    offeringId={classItem.id}
+                    className={classItem.name}
+                    dayOfWeek={classItem.day_of_week ?? null}
+                    isAdmin
                   />
                 )}
               </li>
@@ -446,6 +464,14 @@ export function AdminClassesList() {
                       >
                         {t('pages.admin_classes.requirements_button')}
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRegisterClassId(registerClassId === classItem.id ? null : classItem.id)}
+                        aria-expanded={registerClassId === classItem.id}
+                      >
+                        {t('attendance.register.button')}
+                      </Button>
                       <Link
                         to={`/admin/notifications?offering=${encodeURIComponent(classItem.id)}`}
                         className="inline-flex items-center rounded-[var(--radius-button)] border border-[var(--border-hairline)] px-3 py-1 text-sm whitespace-nowrap text-[var(--color-text-primary)] hover:bg-[var(--tint-primary-05)] focus-visible:outline-2 outline-offset-2"
@@ -472,6 +498,18 @@ export function AdminClassesList() {
                         className={classItem.name}
                         minAge={classItem.min_age}
                         maxAge={classItem.max_age}
+                      />
+                    </td>
+                  </tr>
+                )}
+                {registerClassId === classItem.id && (
+                  <tr>
+                    <td colSpan={10} className="p-0">
+                      <ClassRegister
+                        offeringId={classItem.id}
+                        className={classItem.name}
+                        dayOfWeek={classItem.day_of_week ?? null}
+                        isAdmin
                       />
                     </td>
                   </tr>

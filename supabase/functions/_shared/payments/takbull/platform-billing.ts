@@ -96,7 +96,7 @@ export type StartCardResult =
   | { ok: false; code: "already_paid" | "not_set_up" | "takbull_error"; message?: string };
 
 /** The studio's name, email and business number for OpalSwift's receipt (from its legal details). */
-async function loadStudioPayer(service: SupabaseClient, tenantId: string): Promise<{ payer: StudioPayer; language: "he" | "en" }> {
+export async function loadStudioPayer(service: SupabaseClient, tenantId: string): Promise<{ payer: StudioPayer; language: "he" | "en" }> {
   const { data } = await service
     .from("tenants")
     .select("name, contact_email, legal_profile, language_default")

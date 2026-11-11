@@ -16,6 +16,7 @@ export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
   "shoot_reminder",
   "shoot_thank_you",
   "gallery_ready",
+  "review_request",
   "contract_signed_client",
   "contract_signed_studio",
 ];

@@ -74,7 +74,11 @@ export function convert(md, lang) {
   );
   const leftover = text.match(/\]\([^)]*\.md\)/);
   if (leftover) throw new Error(`unconverted link to a .md file: ${leftover[0]}`);
-  const html = marked.parse(text, { gfm: true, async: false });
+  // Hebrew writes "ל-hello@…"; marked's email autolink swallows the hyphen
+  // (mailto:-hello@…). Keep the hyphen as text, outside the link.
+  const html = marked
+    .parse(text, { gfm: true, async: false })
+    .replace(/<a href="mailto:-([^"]+)">-([^<]+)<\/a>/g, '-<a href="mailto:$1">$2</a>');
   return { html, todo };
 }
 

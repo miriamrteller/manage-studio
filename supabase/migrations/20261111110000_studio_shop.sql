@@ -1,5 +1,5 @@
 -- =============================================================================
--- 20261110160000: Studio shop (beta), studio side. A studio sells its own items
+-- 20261111110000: Studio shop (beta), studio side. A studio sells its own items
 -- (uniforms, clothes, shoes, accessories) to its families. This migration holds
 -- the catalogue: items, their sizes with stock, and a picture of each item.
 -- Parents' cart, orders and payment come in the next migration (orders belong

@@ -27,6 +27,7 @@ else
   "${PSQL[@]}" -f "$HERE/01_b_fallback.sql"
 fi
 "${PSQL[@]}" -f "$ROOT/supabase/migrations/20261030000300_quotes.sql" >/dev/null
+"${PSQL[@]}" -f "$ROOT/supabase/migrations/20261111075500_review_request_email.sql" >/dev/null
 "${PSQL[@]}" -f "$HERE/10_quotes_test.sql"
 
 # ── Double-click race: two sessions accept the same quote concurrently ──

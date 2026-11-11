@@ -7,6 +7,7 @@ import {
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
 import { assessLeadSpam } from "../_shared/crm-contract/lead-spam.ts";
+import { enquiryUsesStudioEmail } from "../_shared/crm-contract/studio-own-email.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 
 /**
@@ -25,6 +26,12 @@ import { withMonitoring } from "../_shared/monitoring.ts";
  * Spam: every enquiry goes through the shared spam check (lead-spam.ts)
  * first. Spam gets 200 { outcome: "spam" } and no row, so callers don't
  * retry; the contact form then skips its email too.
+ *
+ * Own email: a contact-form enquiry sent with the studio's own email (for hq:
+ * the OpalSwift team's) is someone trying the form, not a lead. It gets 200
+ * { outcome: "own_email" } and no row; the contact form shows a polite
+ * message. Lead emails are not checked: a studio may forward an enquiry to
+ * its leads address from its own mailbox.
  *
  * Auth: `Authorization: Bearer <CRM_INGEST_SECRET>` — machine-to-machine,
  * same shape as the CRON_SECRET functions but FAIL-CLOSED: with no secret
@@ -87,6 +94,10 @@ Deno.serve(withMonitoring("crm-lead-ingest", async (req) => {
     if (spamCheck.spam) {
       console.warn(`crm-lead-ingest: refused as spam (${spamCheck.reasons.join(", ")})`);
       return json({ outcome: "spam" });
+    }
+    if (!isEmail && await enquiryUsesStudioEmail(service, (tenant as LeadTenant).id, fields.email)) {
+      console.warn("crm-lead-ingest: refused, sent with the studio's own email");
+      return json({ outcome: "own_email" });
     }
     const result = await writeInboundLead(service, tenant as LeadTenant, fields, opts);
 

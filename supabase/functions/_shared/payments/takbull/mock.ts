@@ -1,6 +1,8 @@
 import type {
   TakbullApi,
   TakbullChargeTokenRequest,
+  TakbullCreateAccountRequest,
+  TakbullCreateAccountResult,
   TakbullDocumentRequest,
   TakbullDocumentResult,
   TakbullDocumentSettings,
@@ -23,6 +25,7 @@ export class MockTakbullApi implements TakbullApi {
   readonly documents: TakbullDocumentRequest[] = [];
   readonly refunds: TakbullRefundRequest[] = [];
   readonly tokenCharges: TakbullChargeTokenRequest[] = [];
+  readonly accounts: TakbullCreateAccountRequest[] = [];
   private settings: TakbullDocumentSettings = { DefaultDocumentType: 320, IsItemIncludeTax: true };
 
   constructor(private readonly apiKey: string = "mock") {}
@@ -106,6 +109,24 @@ export class MockTakbullApi implements TakbullApi {
   getDocumentSettings(): Promise<TakbullDocumentSettings> {
     this.checkKeys();
     return Promise.resolve({ ...this.settings });
+  }
+
+  createAccount(request: TakbullCreateAccountRequest): Promise<TakbullCreateAccountResult> {
+    this.checkKeys();
+    if (this.accounts.some((a) => a.Email === request.Email)) {
+      return Promise.resolve({ Success: false, ErrorCode: 600109, ErrorMessage: "Email already exists" });
+    }
+    this.accounts.push(request);
+    const n = this.accounts.length;
+    return Promise.resolve({
+      Success: true,
+      ErrorCode: request.PackageUniqId ? 0 : 1,
+      ErrorMessage: "OK",
+      MerchantId: `mock-mid-${n}`,
+      AffiliationId: n,
+      ApiKey: `mock-child-key-${n}`,
+      ApiSecret: `mock-child-secret-${n}`,
+    });
   }
 
   updateDocumentSettings(params: { settings: TakbullDocumentSettings }): Promise<TakbullDocumentSettings> {
