@@ -4055,6 +4055,101 @@ export type Database = {
                     }
                 ];
             };
+            shop_product_variants: {
+                Row: {
+                    created_at: string;
+                    id: string;
+                    label: string;
+                    position: number;
+                    product_id: string;
+                    stock: number | null;
+                    tenant_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    id?: string;
+                    label: string;
+                    position?: number;
+                    product_id: string;
+                    stock?: number | null;
+                    tenant_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: string;
+                    label?: string;
+                    position?: number;
+                    product_id?: string;
+                    stock?: number | null;
+                    tenant_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "shop_product_variants_product_id_fkey";
+                        columns: ["product_id"];
+                        isOneToOne: false;
+                        referencedRelation: "shop_products";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "shop_product_variants_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            shop_products: {
+                Row: {
+                    active: boolean;
+                    created_at: string;
+                    currency: string;
+                    description: string | null;
+                    id: string;
+                    image_path: string | null;
+                    name: string;
+                    position: number;
+                    price_minor: number;
+                    tenant_id: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    active?: boolean;
+                    created_at?: string;
+                    currency?: string;
+                    description?: string | null;
+                    id?: string;
+                    image_path?: string | null;
+                    name: string;
+                    position?: number;
+                    price_minor: number;
+                    tenant_id: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    active?: boolean;
+                    created_at?: string;
+                    currency?: string;
+                    description?: string | null;
+                    id?: string;
+                    image_path?: string | null;
+                    name?: string;
+                    position?: number;
+                    price_minor?: number;
+                    tenant_id?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "shop_products_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             staff: {
                 Row: {
                     contract_type: string | null;
@@ -5917,6 +6012,12 @@ export type Database = {
                 };
                 Returns: string;
             };
+            delete_shop_product: {
+                Args: {
+                    p_product_id: string;
+                };
+                Returns: string;
+            };
             deliver_job_photo_order: {
                 Args: {
                     p_delivery_url: string;
@@ -7254,6 +7355,12 @@ export type Database = {
                 Args: {
                     p_lines: Json;
                     p_quote: Json;
+                };
+                Returns: string;
+            };
+            save_shop_product: {
+                Args: {
+                    p_product: Json;
                 };
                 Returns: string;
             };

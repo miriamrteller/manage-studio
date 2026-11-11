@@ -39,6 +39,7 @@ export const PROFILE_GATES = {
     [FEATURES.scheduling.calendarView]: 'teaches_classes',
     [FEATURES.people.families]: 'family_accounts',
     [FEATURES.billing.photoShop]: 'opt_in',
+    [FEATURES.billing.studioShop]: 'opt_in',
     [FEATURES.billing.takbullTesting]: 'opt_in',
 };
 export function profileHasGate(profile, gate) {

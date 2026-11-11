@@ -55,11 +55,11 @@ afterEach(async () => {
 });
 
 describe('studio admin menu (English)', () => {
-  it('dance: Leads, Students, Families, Classes, Appointments, Notifications, then the Finance and Setup groups', async () => {
+  it('dance: Leads, Students, Families, Classes, Shop, Appointments, Notifications, then the Finance and Setup groups', async () => {
     await setLanguage('en');
     renderMenu('dance');
-    expect(menuLabels().slice(0, 8)).toEqual([
-      'Leads', 'Students', 'Families', 'Classes', 'Appointments', 'Notifications', 'Finance', 'Setup',
+    expect(menuLabels().slice(0, 9)).toEqual([
+      'Leads', 'Students', 'Families', 'Classes', 'Shop', 'Appointments', 'Notifications', 'Finance', 'Setup',
     ]);
     expect(screen.queryByRole('button', { name: 'Browse' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Administration' })).toBeNull();
@@ -92,7 +92,7 @@ describe('studio admin menu (English)', () => {
   it('generic: same as dance', async () => {
     await setLanguage('en');
     renderMenu('generic');
-    expect(menuLabels().slice(0, 6)).toEqual(['Leads', 'Students', 'Families', 'Classes', 'Appointments', 'Notifications']);
+    expect(menuLabels().slice(0, 7)).toEqual(['Leads', 'Students', 'Families', 'Classes', 'Shop', 'Appointments', 'Notifications']);
   });
 
   it('marks the current page with aria-current and opens Setup/Finance with the keyboard-reachable toggle', async () => {
