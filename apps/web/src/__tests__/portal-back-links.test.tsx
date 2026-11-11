@@ -238,21 +238,21 @@ describe('menu per vertical', () => {
       roles,
     ).flatMap((section) => section.items.map((item) => item.path));
 
-  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Shop, Appointments, Notifications), then Finance and Setup', () => {
+  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Shop, Bookable services, Appointments, Notifications), then Finance and Setup', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
       '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
-      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers', '/admin/packages',
+      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });
 
-  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Photo shop, Appointments, Notifications; no family accounts or bundled payments', () => {
+  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Photo shop, Packages, Appointments, Notifications; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/appointments', '/admin/notifications',
+      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
       '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
-      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing', '/admin/packages',
+      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing',
       '/admin/setup/booking', '/admin/setup/waivers',
     ]);
   });
