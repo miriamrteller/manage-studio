@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   BookingSettingsService,
   DEFAULT_BOOKING_SETTINGS,
+  DEFAULT_BOOKING_HOURS,
   HOLD_EXPIRY_OPTIONS,
   EXPIRY_REMINDER_OPTIONS,
   type BookingSettings,
@@ -21,6 +22,7 @@ import {
 import { GoogleCalendarSettings } from '@/features/scheduling/components/GoogleCalendarSettings';
 import { BookingPenaltySettingsFields } from '@/features/scheduling/components/BookingPenaltySettingsFields';
 import { BookingHoursEditor } from '@/features/scheduling/components/BookingHoursEditor';
+import { BlockedTimesEditor } from '@/features/scheduling/components/BlockedTimesEditor';
 
 const DAY_LABELS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -33,6 +35,8 @@ export default function BookingSettingsPage() {
 
   const [settings, setSettings] = useState<BookingSettings>(DEFAULT_BOOKING_SETTINGS);
   const [hours, setHours] = useState<BookingHours[]>([]);
+  // No hours saved: booking is open on the default hours, shown prefilled.
+  const [hoursAreDefault, setHoursAreDefault] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; msg: string } | null>(null);
 
@@ -58,7 +62,10 @@ export default function BookingSettingsPage() {
   useEffect(() => {
     if (settingsQuery.data) {
       setSettings(settingsQuery.data.s ?? DEFAULT_BOOKING_SETTINGS);
-      setHours(settingsQuery.data.h ?? []);
+      const saved = settingsQuery.data.h ?? [];
+      const noneSaved = !saved.some((h) => h.is_active);
+      setHoursAreDefault(noneSaved);
+      setHours(noneSaved ? DEFAULT_BOOKING_HOURS.map((h) => ({ ...h })) : saved);
     }
   }, [settingsQuery.data]);
 
@@ -85,6 +92,7 @@ export default function BookingSettingsPage() {
     try {
       await BookingSettingsService.saveSettings(tenant as never, settings);
       await BookingSettingsService.saveHours(tenant as never, hours);
+      setHoursAreDefault(false);
       // Prefix match also refreshes the services page and the nav drawer's
       // booking-enabled state, which cache under ['bookingSettings', id].
       await queryClient.invalidateQueries({ queryKey: ['bookingSettings', tenant.id] });
@@ -216,6 +224,11 @@ export default function BookingSettingsPage() {
         </div>
       </section>
 
+      {hoursAreDefault && (
+        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" role="status">
+          {t('scheduling.booking.hours_default_note')}
+        </p>
+      )}
       <BookingHoursEditor
         hours={hours}
         dayLabels={dayLabels}
@@ -223,6 +236,8 @@ export default function BookingSettingsPage() {
         onUpdate={updateHour}
         onRemove={removeHour}
       />
+
+      {tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
 
       <section className="card border border-gray-200 space-y-2 p-4">
         <h2 className="text-lg font-semibold">{t('scheduling.booking.manage_services')}</h2>
