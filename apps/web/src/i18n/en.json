@@ -1839,6 +1839,7 @@
       "installmentsAvailable": "Pay in up to {{count}} card installments.",
       "invoiceNote": "A tax invoice-receipt is issued automatically on payment.",
       "payStudioDirectly": "{{studio}} does not take card payments online for this request. Please pay {{studio}} directly, by bank transfer or as agreed.",
+      "pageUnavailable": "The card payment page couldn't open just now. Please try again in a few minutes, or contact {{studio}} to pay another way, for example by bank transfer, or as agreed.",
       "jobDate": "Shoot {{date}}"
     },
     "quotes": {

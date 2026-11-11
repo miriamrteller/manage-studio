@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatDueDate, formatMinor, statusBadgeVariant, statusI18nKey } from '../lib/jobPaymentFormat';
+import { formatDueDate, formatMinor, payErrorText, statusBadgeVariant, statusI18nKey } from '../lib/jobPaymentFormat';
 import { JobPaymentService } from '../services/jobPaymentService';
 import { BackToPortalButton } from './BackToPortalButton';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
@@ -61,12 +61,7 @@ export function PublicPayRequest({ token, result }: Props) {
       window.location.assign(res.pageUrl);
     } catch (err) {
       setRedirecting(false);
-      const message = err instanceof Error ? err.message : '';
-      setError(
-        message.includes('online_payment_unavailable')
-          ? t('pages.pay.payStudioDirectly', { studio: request?.studio.name ?? '' })
-          : message || t('errors.generic'),
-      );
+      setError(payErrorText(err instanceof Error ? err.message : '', request?.studio.name ?? '', t));
     }
   };
 
