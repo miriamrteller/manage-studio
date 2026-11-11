@@ -8,10 +8,30 @@ export interface StudioOrderEmailInput {
   totalFormatted: string;
   photos: { fileName: string; key: string }[];
   shootUrl: string;
+  /** Sent in to be paid in cash: not paid yet. */
+  payInCash?: boolean;
 }
 
 export function buildStudioOrderEmail(i: StudioOrderEmailInput): { subject: string; body: string } {
   const list = i.photos.map((p) => `• ${p.fileName} (${p.key})`).join("\n");
+  if (i.payInCash) {
+    if (i.language === "he") {
+      return {
+        subject: `הזמנת תמונות חדשה, תשלום במזומן: ${i.clientName} (${i.photos.length})`,
+        body:
+          `${i.clientName} הזמין/ה ${i.photos.length} תמונות, בסך ${i.totalFormatted}, וישלם/תשלם במזומן.\n\n` +
+          `התמונות:\n${list}\n\n` +
+          `כשמקבלים את הכסף, יש ללחוץ על "רישום תשלום במזומן" בהזמנה:\n${i.shootUrl}`,
+      };
+    }
+    return {
+      subject: `New photo order, paying in cash: ${i.clientName} (${i.photos.length})`,
+      body:
+        `${i.clientName} ordered ${i.photos.length} photos, ${i.totalFormatted} in total, and will pay you in cash.\n\n` +
+        `The photos:\n${list}\n\n` +
+        `When you have the money, press "Record cash payment" on the order:\n${i.shootUrl}`,
+    };
+  }
   if (i.language === "he") {
     return {
       subject: `הזמנת תמונות חדשה: ${i.clientName} (${i.photos.length})`,
