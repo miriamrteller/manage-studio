@@ -51,9 +51,9 @@ CREATE POLICY class_discount_settings_super_admin ON class_discount_settings FOR
   USING (is_super_admin());
 CREATE POLICY class_discount_settings_admin ON class_discount_settings FOR ALL
   USING (tenant_id = get_my_tenant_id() AND EXISTS (
-    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)))
+    SELECT 1 FROM user_profiles WHERE id = (SELECT auth.uid()) AND 'tenant_admin' = ANY(role)))
   WITH CHECK (tenant_id = get_my_tenant_id() AND EXISTS (
-    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+    SELECT 1 FROM user_profiles WHERE id = (SELECT auth.uid()) AND 'tenant_admin' = ANY(role)));
 REVOKE ALL ON class_discount_settings FROM anon;
 GRANT SELECT, INSERT, UPDATE ON class_discount_settings TO authenticated;
 
