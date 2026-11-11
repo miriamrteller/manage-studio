@@ -6571,6 +6571,10 @@ export type Database = {
                 };
                 Returns: boolean;
             };
+            is_my_studio_admin: {
+                Args: never;
+                Returns: boolean;
+            };
             is_service_role: {
                 Args: never;
                 Returns: boolean;
