@@ -3408,6 +3408,61 @@ export type Database = {
                     }
                 ];
             };
+            photo_shop_links: {
+                Row: {
+                    created_at: string;
+                    created_by: string | null;
+                    engagement_id: string;
+                    expires_at: string;
+                    id: string;
+                    last_used_at: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    engagement_id: string;
+                    expires_at: string;
+                    id?: string;
+                    last_used_at?: string | null;
+                    tenant_id: string;
+                    token_hash: string;
+                };
+                Update: {
+                    created_at?: string;
+                    created_by?: string | null;
+                    engagement_id?: string;
+                    expires_at?: string;
+                    id?: string;
+                    last_used_at?: string | null;
+                    tenant_id?: string;
+                    token_hash?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "photo_shop_links_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "photo_shop_links_engagement_id_fkey";
+                        columns: ["engagement_id"];
+                        isOneToOne: false;
+                        referencedRelation: "engagements";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "photo_shop_links_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             platform_access_log: {
                 Row: {
                     actor_id: string;
