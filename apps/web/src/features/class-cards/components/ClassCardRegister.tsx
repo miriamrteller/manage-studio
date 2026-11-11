@@ -20,15 +20,20 @@ export function ClassCardRegister({
   className,
   dayOfWeek,
   isAdmin,
+  date: fixedDate,
 }: {
   offeringId: string;
   className: string;
   dayOfWeek: number | null;
   isAdmin: boolean;
+  /** Set when shown inside the class register, which owns the date. */
+  date?: string;
 }) {
   const { t, i18n } = useTranslation();
   const id = useId();
-  const [date, setDate] = useState(() => nextSessionDate(dayOfWeek));
+  const [ownDate, setDate] = useState(() => nextSessionDate(dayOfWeek));
+  const date = fixedDate ?? ownDate;
+  const embedded = fixedDate !== undefined;
   const [walkInCard, setWalkInCard] = useState('');
   const [failed, setFailed] = useState(false);
   const key = ['class-cards', 'register', offeringId, date];
@@ -57,22 +62,30 @@ export function ClassCardRegister({
       : t(`class_cards.register.status_${v.status}`);
 
   return (
-    <section className="space-y-3 border-t p-4" aria-labelledby={`${id}-title`}>
-      <h3 id={`${id}-title`} className="font-semibold">
-        {t('class_cards.register.title', { name: className })}
-      </h3>
-      <label className="block text-sm">
-        {t('class_cards.register.date')}
-        <input
-          type="date"
-          className="mt-1 block rounded border border-border px-3 py-2"
-          value={date}
-          lang={i18n.language}
-          onChange={(e) => e.target.value && setDate(e.target.value)}
-        />
-      </label>
+    <section className={embedded ? 'space-y-3' : 'space-y-3 border-t p-4'} aria-labelledby={`${id}-title`}>
+      {embedded ? (
+        <h4 id={`${id}-title`} className="text-sm font-semibold">
+          {t('class_cards.register.card_holders')}
+        </h4>
+      ) : (
+        <>
+          <h3 id={`${id}-title`} className="font-semibold">
+            {t('class_cards.register.title', { name: className })}
+          </h3>
+          <label className="block text-sm">
+            {t('class_cards.register.date')}
+            <input
+              type="date"
+              className="mt-1 block rounded border border-border px-3 py-2"
+              value={date}
+              lang={i18n.language}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+            />
+          </label>
+        </>
+      )}
 
-      {data && !data.runs && (
+      {data && !data.runs && !embedded && (
         <p className="text-sm text-muted-foreground">{t('class_cards.register.no_class_that_day')}</p>
       )}
 
