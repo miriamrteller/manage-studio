@@ -244,7 +244,8 @@ const router = createBrowserRouter([
           { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
           { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
-          { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
+          // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.
+          { path: "admin/setup/integrations/google/callback", element: <GoogleCalendarCallbackPage /> },
           { path: "admin/setup/integrations/smugmug/callback", element: <AdminRoute><SmugMugCallbackPage /></AdminRoute> },
           { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
           { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },

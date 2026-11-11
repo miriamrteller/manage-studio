@@ -58,15 +58,8 @@ export async function signGoogleOAuthState(
   return `${payloadB64}.${sig}`;
 }
 
-/**
- * Verifies signature, expiry, and that tid/uid match the authenticated admin.
- * Returns the payload or null if invalid.
- */
-export async function verifyGoogleOAuthState(
-  state: string,
-  expectedTenantId: string,
-  expectedUserId: string,
-): Promise<GoogleOAuthStatePayload | null> {
+/** Signature + expiry only. Returns the payload or null. Not proof of who is signed in. */
+async function readSignedState(state: string): Promise<GoogleOAuthStatePayload | null> {
   try {
     const dotIdx = state.lastIndexOf(".");
     if (dotIdx === -1) return null;
@@ -91,11 +84,33 @@ export async function verifyGoogleOAuthState(
     }
 
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-    if (payload.tid !== expectedTenantId) return null;
-    if (payload.uid !== expectedUserId) return null;
-
     return payload;
   } catch {
     return null;
   }
+}
+
+/**
+ * The studio a genuine, unexpired state was made for. Used only to send the browser
+ * from the platform callback (app.<root>) back to that studio's own address, where
+ * the admin is signed in. Never enough to save tokens: that needs verifyGoogleOAuthState.
+ */
+export async function googleOAuthStateTenant(state: string): Promise<string | null> {
+  return (await readSignedState(state))?.tid ?? null;
+}
+
+/**
+ * Verifies signature, expiry, and that tid/uid match the authenticated admin.
+ * Returns the payload or null if invalid.
+ */
+export async function verifyGoogleOAuthState(
+  state: string,
+  expectedTenantId: string,
+  expectedUserId: string,
+): Promise<GoogleOAuthStatePayload | null> {
+  const payload = await readSignedState(state);
+  if (!payload) return null;
+  if (payload.tid !== expectedTenantId) return null;
+  if (payload.uid !== expectedUserId) return null;
+  return payload;
 }

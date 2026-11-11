@@ -2624,7 +2624,9 @@
       "disconnect": "Disconnect",
       "connected_as": "Connected as {{email}}",
       "not_connected": "Not connected",
-      "not_available": "Google Calendar integration is not available on your current plan."
+      "not_available": "Google Calendar integration is not available on your current plan.",
+      "returning": "Taking you back to your studio…",
+      "return_failed": "This Google link has expired. Go back to Booking Settings and press Connect Google Calendar again."
     }
   },
   "billing": {
