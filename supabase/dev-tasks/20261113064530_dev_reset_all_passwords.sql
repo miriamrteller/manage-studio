@@ -6,6 +6,7 @@
 -- made-up test password, not a real one, and it only ever exists on the dev database.
 --
 -- Everything is found, not named (the repository is public). Each step prints its row count:
+--   0. A seeded test studio with no owner login on dev gets one (made-up .test address, as in the seeds).
 --   1. Every login that is not deleted and not anonymous gets the dev password. Email is marked
 --      confirmed if it was not, and the four GoTrue token columns are set to '' where NULL
 --      (GoTrue refuses password sign-in with "Database error querying schema" when they are NULL).
@@ -16,7 +17,23 @@
 --      then one SELECT listing all logins (only the count is shown).
 -- Note: the base seed (seed.sql) gave its three studio owners 'devpassword' while every other seed
 -- used 'devPassword123'. After this task every dev login uses devPassword123.
--- Nothing else changes: same user ids, emails, roles and studios.
+-- Otherwise nothing changes: same user ids, emails, roles and studios.
+
+-- 0. Each seeded test studio that exists on dev but has no owner login gets one (same shape as the
+--    seed files). The new-login trigger makes its profile in that studio; step 2b makes it the owner.
+WITH want(email, sub) AS (VALUES ('owner@ballet.test', 'belladance'), ('owner@photo.test', 'lensstudio'),
+               ('owner@beauty.test', 'velvetbeauty'), ('owner@artclass.test', 'artclass'),
+               ('owner@photographer.test', 'photographer'), ('owner@sofer.test', 'sofer'),
+               ('owner@therapist.test', 'therapist'))
+INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+                        raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                        confirmation_token, email_change, email_change_token_new, recovery_token)
+SELECT gen_random_uuid(), '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated',
+       w.email, extensions.crypt('devPassword123', extensions.gen_salt('bf')), now(),
+       '{"provider":"email","providers":["email"]}'::jsonb, jsonb_build_object('subdomain', w.sub),
+       now(), now(), '', '', '', ''
+  FROM want w JOIN public.tenants t ON t.subdomain = w.sub
+ WHERE NOT EXISTS (SELECT 1 FROM auth.users u WHERE lower(u.email) = w.email);
 
 -- 1. Same password for every login.
 UPDATE auth.users u
@@ -41,6 +58,27 @@ SELECT gen_random_uuid(), u.id,
    AND coalesce(u.is_anonymous, false) = false
    AND u.email IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM auth.identities i WHERE i.user_id = u.id AND i.provider = 'email');
+
+-- 2b. Each seeded owner login is the owner (tenant_admin) of its test studio: a missing profile is
+--     made, a profile in that studio without tenant_admin gets it. Logins in another studio are left.
+WITH want(email, sub) AS (VALUES ('owner@ballet.test', 'belladance'), ('owner@photo.test', 'lensstudio'),
+               ('owner@beauty.test', 'velvetbeauty'), ('owner@artclass.test', 'artclass'),
+               ('owner@photographer.test', 'photographer'), ('owner@sofer.test', 'sofer'),
+               ('owner@therapist.test', 'therapist'))
+INSERT INTO public.user_profiles (id, tenant_id, role, email, created_at, updated_at)
+SELECT u.id, t.id, ARRAY['tenant_admin'], u.email, now(), now()
+  FROM want w JOIN public.tenants t ON t.subdomain = w.sub JOIN auth.users u ON lower(u.email) = w.email
+ WHERE NOT EXISTS (SELECT 1 FROM public.user_profiles p WHERE p.id = u.id)
+ON CONFLICT (id) DO NOTHING;
+
+WITH want(email, sub) AS (VALUES ('owner@ballet.test', 'belladance'), ('owner@photo.test', 'lensstudio'),
+               ('owner@beauty.test', 'velvetbeauty'), ('owner@artclass.test', 'artclass'),
+               ('owner@photographer.test', 'photographer'), ('owner@sofer.test', 'sofer'),
+               ('owner@therapist.test', 'therapist'))
+UPDATE public.user_profiles p
+   SET role = array_append(p.role, 'tenant_admin'), updated_at = now()
+  FROM want w JOIN public.tenants t ON t.subdomain = w.sub JOIN auth.users u ON lower(u.email) = w.email
+ WHERE p.id = u.id AND p.tenant_id = t.id AND NOT ('tenant_admin' = ANY (p.role));
 
 -- 3. Check.
 DO $$
