@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
 import { ClientShootList } from '@/features/jobs/components/ClientShootList';
@@ -28,11 +28,15 @@ import { formatCurrency } from '@shared/format';
 import { formatSavedCard } from '../lib/studentBillingAccount';
 import { invalidateAfterOfflinePayment } from '../lib/offlinePaymentCaches';
 import { PersonClassCards } from '@/features/class-cards/components/PersonClassCards';
+import { personPagePath } from '@/features/people/lib/personPagePath';
+import { PersonBookings } from './PersonBookings';
 
 interface StudentSlideOverProps {
   personId: string;
   highlightEngagementId?: string | null;
   onClose: () => void;
+  /** 'page': the person's own page (/admin/students/:personId), not a panel over the list. */
+  variant?: 'panel' | 'page';
 }
 
 interface CancelTarget {
@@ -50,14 +54,16 @@ export function StudentSlideOver({
   personId,
   highlightEngagementId = null,
   onClose,
+  variant = 'panel',
 }: StudentSlideOverProps) {
+  const asPage = variant === 'page';
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   // Photographers: a client's bookings are shoots (/admin/jobs), and there's
   // no class enrolment, age review or guardian/family record.
-  const { vertical } = useEntityLabels();
+  const { vertical, profile } = useEntityLabels();
   const isPhotographer = vertical === 'photographer';
   const { jobs } = useJobs({ enabled: isPhotographer });
   const clientShoots = jobs.filter((job) => job.person_id === personId);
@@ -134,23 +140,33 @@ export function StudentSlideOver({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-40 z-40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      {!asPage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-40"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Panel */}
+      {/* Panel, or the person's own page */}
       <div
-        className="fixed top-0 end-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col"
-        role="dialog"
-        aria-modal="true"
-        aria-label={person?.name ?? t('pages.students.title')}
+        className={
+          asPage
+            ? 'max-w-3xl flex flex-col'
+            : 'fixed top-0 end-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col'
+        }
+        role={asPage ? undefined : 'dialog'}
+        aria-modal={asPage ? undefined : true}
+        aria-label={asPage ? undefined : person?.name ?? t('pages.students.title')}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b flex-shrink-0">
+        <div className={asPage ? 'flex items-start justify-between pb-4 border-b' : 'flex items-start justify-between p-5 border-b flex-shrink-0'}>
           <div>
-            <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
+            {asPage ? (
+              <h1 className="text-3xl font-bold">{person?.name ?? '...'}</h1>
+            ) : (
+              <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
+            )}
             {!isPhotographer && age !== undefined && age !== null && (
               <p className="text-sm text-gray-500">
                 {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
@@ -158,17 +174,29 @@ export function StudentSlideOver({
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            aria-label={t('common.close')}
-          >
-            ✕
-          </button>
+          {asPage ? (
+            <Button variant="outline" size="sm" onClick={onClose}>
+              {t('pages.people.back_to_list')}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1">
+              {/* The person's own page, with room for everything about them. */}
+              <Button variant="ghost" size="sm" onClick={() => navigate(personPagePath(personId))}>
+                {t('pages.people.open_page')}
+              </Button>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label={t('common.close')}
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className={asPage ? 'py-5 space-y-6' : 'flex-1 overflow-y-auto p-5 space-y-6'}>
           {isLoading && <p className="text-center py-8 text-gray-500">{t('common.loading')}</p>}
           {error && <p className="text-red-600">{t('errors.server_error')}</p>}
 
@@ -379,9 +407,14 @@ export function StudentSlideOver({
                         {t('pages.students.contact_section_guardian')}
                       </h3>
                       {family && !isEditingContact && (
-                        <Button variant="ghost" size="sm" onClick={startEditContact}>
-                          {t('common.edit')}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/families/${family.id}`)}>
+                            {t('pages.people.open_family')}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={startEditContact}>
+                            {t('common.edit')}
+                          </Button>
+                        </div>
                       )}
                     </div>
 
@@ -463,7 +496,13 @@ export function StudentSlideOver({
                         <ul className="divide-y text-sm">
                           {members.map((m) => (
                             <li key={m.id} className="py-1.5 flex justify-between">
-                              <span>{m.name}</span>
+                              {m.person_id && m.person_id !== personId ? (
+                                <Link to={personPagePath(m.person_id)} className="underline">
+                                  {m.name}
+                                </Link>
+                              ) : (
+                                <span>{m.name}</span>
+                              )}
                               <span className="text-xs text-gray-400">{m.role}</span>
                             </li>
                           ))}
@@ -475,6 +514,14 @@ export function StudentSlideOver({
               )}
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
+
+              {/* ── Bookings (appointment businesses; a photographer's bookings are the shoots above) ── */}
+              {profile.clientBooking && !isPhotographer && (
+                <>
+                  <PersonBookings personId={personId} />
+                  <hr style={{ borderColor: 'var(--color-border-default)' }} />
+                </>
+              )}
 
               {/* ── 4. Notification preferences ── */}
               <section className="space-y-2">

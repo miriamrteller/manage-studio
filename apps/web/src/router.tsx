@@ -79,6 +79,7 @@ const NamedFormPage = lazy(() => import("./pages/NamedFormPage"));
 const LeadFormsPage = lazy(() => import("./pages/LeadFormsPage"));
 const LeadsHelpPage = lazy(() => import("./pages/LeadsHelpPage"));
 const LeadSettingsPage = lazy(() => import("./pages/LeadSettingsPage"));
+const PersonPage = lazy(() => import("./pages/PersonPage"));
 const ClassCardsSettingsPage = lazy(() => import("./pages/ClassCardsSettingsPage"));
 const GetLeadsPage = lazy(() => import("./pages/GetLeadsPage"));
 const AdminQuotesPage = lazy(() => import("./pages/AdminQuotesPage"));
@@ -222,6 +223,7 @@ const router = createBrowserRouter([
 
           // ADMIN ROUTES
           { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },
+          { path: "admin/students/:personId", element: <AdminRoute><PersonPage /></AdminRoute> },
           // Legacy redirects — keep URLs working
           { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
           { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },

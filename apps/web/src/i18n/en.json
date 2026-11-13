@@ -605,7 +605,13 @@
       "waiver_pending": "Not accepted",
       "empty_title": "No students yet",
       "empty_message": "Enrol your first student to start managing enrolments and family links.",
-      "delete_note": "To request data removal, please contact support. Hard deletion is not permitted under data retention policy."
+      "delete_note": "To request data removal, please contact support. Hard deletion is not permitted under data retention policy.",
+      "back_to_list": "Back to the list",
+      "open_page": "Open full page",
+      "open_family": "Open family",
+      "bookings_section": "Bookings",
+      "open_calendar": "Calendar",
+      "no_bookings": "No bookings yet."
     },
     "families": {
       "email_family": "Email this family",

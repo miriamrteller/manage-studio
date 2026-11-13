@@ -30,6 +30,7 @@ import { useJobs } from '@/features/jobs/hooks/useJobs';
 import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
 import type { JobRow } from '@/features/jobs/services/jobService';
 import { StudentSlideOver } from './StudentSlideOver';
+import { personPagePath } from '@/features/people/lib/personPagePath';
 import { useStudentsListColumns } from './students-list/useStudentsListColumns';
 import { StudentsFilterDrawer } from './students-list/StudentsFilterDrawer';
 import { StudentsTable } from './students-list/StudentsTable';
@@ -166,7 +167,8 @@ export function StudentsList() {
     jobsByPerson,
     openEnrolModal,
     openNewShoot,
-    openDetails: setSlideOverPersonId,
+    // A name opens the person's own page, with everything about them.
+    openDetails: (personId: string) => navigate(personPagePath(personId)),
   });
 
   const table = useReactTable({
