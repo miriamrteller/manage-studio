@@ -124,12 +124,12 @@ describe('studio admin menu (English)', () => {
 });
 
 describe('tabs along the top of an area', () => {
-  it('Bookings: Calendar, Packages, Availability', async () => {
+  it('Bookings: Packages first, then Diary', async () => {
     await setLanguage('en');
-    renderTabs('photographer', '/admin/setup/booking');
-    expect(tabLabels()).toEqual(['Calendar', 'Packages', 'Availability']);
-    expect(screen.getByRole('link', { name: 'Availability' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Availability' })).toHaveAttribute('href', '/admin/setup/booking');
+    renderTabs('photographer', '/admin/appointments');
+    expect(tabLabels()).toEqual(['Packages', 'Diary']);
+    expect(screen.getByRole('link', { name: 'Diary' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Packages' })).toHaveAttribute('href', '/admin/packages');
   });
 
   it('Classes: classes, levels, seasons, teachers, class cards', async () => {
@@ -157,7 +157,7 @@ describe('tabs along the top of an area', () => {
   it('Hebrew tab names', async () => {
     await setLanguage('he');
     renderTabs('photographer', '/admin/appointments');
-    expect(tabLabels()).toEqual(expect.arrayContaining(['יומן', 'חבילות', 'זמינות']));
+    expect(tabLabels()).toEqual(['חבילות', 'יומן']);
   });
 });
 

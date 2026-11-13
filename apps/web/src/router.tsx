@@ -47,7 +47,6 @@ const MyClassesPage = lazy(() => import("./pages/MyClassesPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const AdminClassesPage = lazy(() => import("./pages/AdminClassesPage"));
 const AdminAppointmentsPage = lazy(() => import("./pages/AdminAppointmentsPage"));
-const BookingSettingsPage = lazy(() => import("./pages/BookingSettingsPage"));
 const BookingServicesPage = lazy(() => import("./pages/BookingServicesPage"));
 const GoogleCalendarCallbackPage = lazy(() => import("./pages/GoogleCalendarCallbackPage"));
 const SmugMugCallbackPage = lazy(() => import("./pages/SmugMugCallbackPage"));
@@ -260,8 +259,8 @@ const router = createBrowserRouter([
           // Legacy redirect — the admin-only calendar was removed in favour of the
           // client-facing classes calendar on /classes.
           { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
-          { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
-          { path: "admin/setup/booking/availability", element: <AdminRoute><Navigate to="/admin/setup/booking" replace /></AdminRoute> },
+          { path: "admin/setup/booking", element: <AdminRoute><Navigate to="/admin/appointments" replace /></AdminRoute> },
+          { path: "admin/setup/booking/availability", element: <AdminRoute><Navigate to="/admin/appointments" replace /></AdminRoute> },
           { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
           // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.

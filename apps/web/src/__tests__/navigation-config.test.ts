@@ -207,12 +207,10 @@ describe('admin menu: one flat list of areas, pages are tabs', () => {
     expect(lines('beautician')).toEqual(['home', 'leads', 'people', 'bookings', 'finance', 'settings']);
   });
 
-  it('Bookings holds the calendar, packages and availability, in that order', () => {
+  it('Bookings: Packages first, then the Diary (owner, 13 Nov 2026)', () => {
     const bookings = groupNavEntries(adminMenu('photographer')[0].items).find((e) => e.area === 'bookings')!;
-    expect(bookings.items.map((i) => i.path)).toEqual([
-      '/admin/appointments', '/admin/packages', '/admin/setup/booking',
-    ]);
-    expect(bookings.path).toBe('/admin/appointments');
+    expect(bookings.items.map((i) => i.path)).toEqual(['/admin/packages', '/admin/appointments']);
+    expect(bookings.path).toBe('/admin/packages');
   });
 
   it('a menu line opens its first page', () => {
@@ -224,7 +222,7 @@ describe('admin menu: one flat list of areas, pages are tabs', () => {
   it('finds the current tab: most specific page, sub-pages, and Settings ?tab=', () => {
     const items = adminMenu('dance-studio')[0].items;
     const area = (key: string) => groupNavEntries(items).find((e) => e.area === key)!.items;
-    expect(resolveActiveTab('/admin/setup/booking', '', area('bookings'))?.path).toBe('/admin/setup/booking');
+    expect(resolveActiveTab('/admin/appointments', '', area('bookings'))?.path).toBe('/admin/appointments');
     expect(resolveActiveTab('/admin/leads/forms', '', area('leads'))?.path).toBe('/admin/leads/get');
     expect(resolveActiveTab('/admin/families/f1', '', area('people'))?.path).toBe('/admin/families');
     expect(resolveActiveTab('/admin/setup/settings', '?tab=legal', area('settings'))?.path).toBe('/admin/setup/settings?tab=legal');

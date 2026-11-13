@@ -247,7 +247,7 @@ describe('menu per vertical', () => {
     '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
     '/admin/finance/import', '/admin/setup/billing',
   ];
-  const bookings = ['/admin/appointments', '/admin/packages', '/admin/setup/booking'];
+  const bookings = ['/admin/packages', '/admin/appointments'];
 
   it('dance admin menu: Home, Leads, Students, Classes, Bookings, Shop, Finance, Settings, each with its pages as tabs', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([

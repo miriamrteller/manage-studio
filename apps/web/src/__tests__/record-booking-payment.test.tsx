@@ -14,7 +14,16 @@ const { rows, modalProps } = vi.hoisted(() => ({
   modalProps: { current: null as Record<string, unknown> | null },
 }));
 
-vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1', currency: 'ILS' }) }));
+vi.mock('@/hooks/useTenant', () => ({
+  useTenant: () => ({ id: 't1', currency: 'ILS' }),
+  useTenantQuery: () => ({ tenant: { id: 't1', currency: 'ILS' }, isLoading: false }),
+}));
+vi.mock('@/hooks/useEntityLabels', () => ({
+  useEntityLabels: () => ({ vertical: 'beautician', profile: { clientBooking: false } }),
+}));
+vi.mock('@/features/crm/hooks/useLeads', () => ({ useLeads: () => ({ leads: [] }) }));
+vi.mock('@/features/scheduling/components/BlockedTimesEditor', () => ({ BlockedTimesEditor: () => null }));
+vi.mock('@/features/scheduling/components/GoogleCalendarSettings', () => ({ GoogleCalendarSettings: () => null }));
 vi.mock('@/hooks/useFeatureGate', () => ({ useFeatureGate: () => ({ hasFeature: () => true, isLoading: false }) }));
 vi.mock('@/features/scheduling/appointmentsService', () => ({ AppointmentsService: { list: async () => rows, close: vi.fn() } }));
 vi.mock('@/features/scheduling/bookingSettingsService', () => ({ BookingSettingsService: { getSettings: async () => null } }));
