@@ -3676,7 +3676,7 @@
     },
     "business": {
       "title": "Your business",
-      "intro": "How you charge and which areas you use. Switch an area off and it is hidden: nothing is deleted, and you can switch it back on any time.",
+      "intro": "How clients work with you decides which pages you see. Untick something and it is hidden: nothing is deleted, and you can tick it again any time.",
       "flow_legend": "How do clients pay you?",
       "flow_recurring": "Monthly",
       "flow_project": "Per project",
@@ -3685,7 +3685,7 @@
       "classes_label": "I teach classes",
       "classes_hint": "Classes, levels, seasons and the timetable.",
       "families_label": "Parents pay for children",
-      "families_hint": "Family accounts.",
+      "families_hint": "One parent account pays for several children.",
       "booking_label": "Clients book time slots",
       "booking_hint": "Calendar booking, Google Calendar sync and no-show rules.",
       "classes_off_notice": "You still have active enrolments ({{count}}). They stay as they are and keep billing; only the class pages are hidden.",
@@ -3694,7 +3694,15 @@
       "saved": "Saved.",
       "error": "Could not save. Please try again.",
       "health_label": "Clients sign a health declaration",
-      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts."
+      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts.",
+      "work_legend": "How do clients work with you?",
+      "work_hint": "Tick all that fit.",
+      "work_classes_label": "Classes",
+      "work_classes_hint": "Regular weekly classes. Clients sign up for a season and pay monthly or for the whole season.",
+      "work_projects_label": "Projects",
+      "work_projects_hint": "Each job is tailor-made. The client sends a request and gets a quote, pays a deposit to book, and pays the balance later.",
+      "work_appointments_label": "Appointments",
+      "work_appointments_hint": "Clients pick a free time slot online, and it’s booked as soon as they pay."
     },
     "lead_digest": {
       "title": "Daily follow-up email",

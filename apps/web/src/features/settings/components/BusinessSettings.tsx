@@ -1,14 +1,13 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
-import { EXISTING_STUDIO_PROFILE, type PaymentFlow, type StudioProfile } from '@shared/index';
+import { EXISTING_STUDIO_PROFILE, type StudioProfile } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
 import { supabase } from '@/lib/supabase';
 import queryClient from '@/lib/query-client';
 import { useTenantLegalProfile } from '@/legal/useLegalDocument';
-
-const FLOWS: PaymentFlow[] = ['recurring', 'project', 'both'];
+import { profileOf, workModesOf, type WorkModes } from '../lib/workModes';
 
 /** Active enrolments, so switching classes off can say they keep running. Never blocks. */
 async function countActiveEnrolments(): Promise<number> {
@@ -68,9 +67,16 @@ export function BusinessSettings() {
   });
 
   if (!tenant || !draft) return null;
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved) || health !== savedHealth;
+  const sameProfile =
+    !!saved &&
+    draft.paymentFlow === saved.paymentFlow &&
+    draft.teachesClasses === saved.teachesClasses &&
+    draft.familyAccounts === saved.familyAccounts &&
+    draft.clientBooking === saved.clientBooking;
+  const dirty = !sameProfile || health !== savedHealth;
 
-  const set = (patch: Partial<StudioProfile>) => setDraft({ ...draft, ...patch });
+  const modes = workModesOf(draft);
+  const setMode = (patch: Partial<WorkModes>) => setDraft(profileOf({ ...modes, ...patch }));
 
   return (
     <section className="space-y-4" aria-labelledby={`${id}-title`}>
@@ -79,45 +85,39 @@ export function BusinessSettings() {
         <p className="text-sm text-muted-foreground">{t('settings.business.intro')}</p>
       </header>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">{t('settings.business.flow_legend')}</legend>
-        <div className="flex flex-wrap gap-4">
-          {FLOWS.map((flow) => (
-            <label key={flow} className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name={`${id}-flow`}
-                checked={draft.paymentFlow === flow}
-                onChange={() => set({ paymentFlow: flow })}
-              />
-              <span>{t(`settings.business.flow_${flow}`)}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium">{t('settings.business.switches_legend')}</legend>
-        {(
-          [
-            ['teachesClasses', 'classes'],
-            ['familyAccounts', 'families'],
-            ['clientBooking', 'booking'],
-          ] as const
-        ).map(([field, key]) => (
-          <div key={key} className="text-sm">
+        <legend className="text-sm font-medium">{t('settings.business.work_legend')}</legend>
+        <p className="text-xs text-muted-foreground">{t('settings.business.work_hint')}</p>
+        {(['classes', 'projects', 'appointments'] as const).map((mode) => (
+          <div key={mode} className="text-sm">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={draft[field]}
-                onChange={(e) => set({ [field]: e.target.checked })}
-                aria-describedby={`${id}-${key}-hint`}
+                checked={modes[mode]}
+                onChange={(e) => setMode({ [mode]: e.target.checked })}
+                aria-describedby={`${id}-${mode}-hint`}
               />
-              <span>{t(`settings.business.${key}_label`)}</span>
+              <span className="font-medium">{t(`settings.business.work_${mode}_label`)}</span>
             </label>
-            <p id={`${id}-${key}-hint`} className="ms-6 text-xs text-muted-foreground">
-              {t(`settings.business.${key}_hint`)}
+            <p id={`${id}-${mode}-hint`} className="ms-6 text-xs text-muted-foreground">
+              {t(`settings.business.work_${mode}_hint`)}
             </p>
+            {mode === 'classes' && modes.classes && (
+              <div className="ms-6 mt-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={modes.families}
+                    onChange={(e) => setMode({ families: e.target.checked })}
+                    aria-describedby={`${id}-families-hint`}
+                  />
+                  <span>{t('settings.business.families_label')}</span>
+                </label>
+                <p id={`${id}-families-hint`} className="ms-6 text-xs text-muted-foreground">
+                  {t('settings.business.families_hint')}
+                </p>
+              </div>
+            )}
           </div>
         ))}
       </fieldset>
