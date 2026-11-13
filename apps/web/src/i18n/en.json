@@ -1825,6 +1825,11 @@
               "ok": "Full-size photos stay private",
               "fix": "Tip: a full-size photo opens without signing in. Lowering the largest display size keeps full-size photos private.",
               "in_photos": "Bigger sizes carry your watermark too"
+            },
+            "some_private": {
+              "ok": "All photos open for clients",
+              "fix_one": "Tip: {{count}} photo is hidden or private in SmugMug, so clients won't see it. To sell it, unhide it or make it public in SmugMug, then press Check again.",
+              "fix_other": "Tip: {{count}} photos are hidden or private in SmugMug, so clients won't see them. To sell them, unhide them or make them public in SmugMug, then press Check again."
             }
           },
           "error": {
@@ -1874,6 +1879,11 @@
         "link_no_email": "Add the client's email first, so the link can sign them in.",
         "paying_cash": "The client will pay in cash.",
         "record_cash": "Record cash payment"
+      },
+      "tabs": {
+        "details": "Details",
+        "shop": "Photo shop",
+        "client": "What your client sees"
       }
     },
     "pay": {

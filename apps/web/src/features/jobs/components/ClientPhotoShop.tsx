@@ -105,7 +105,10 @@ function ShopBody({
   const cashOrdered = useMemo(() => new Set(shop.cash_image_keys ?? []), [shop.cash_image_keys]);
   // The client's own unpaid card cart is replaced by a new one, so those photos stay pickable.
   // Photos sent in to pay in cash stay with that order.
-  const available = photos.filter((p) => !bought.has(p.key) && !cashOrdered.has(p.key));
+  // A preview that doesn't load (e.g. hidden or private in SmugMug) is left out, never a blank tile.
+  const [broken, setBroken] = useState<Set<string>>(new Set());
+  const shown = photos.filter((p) => !broken.has(p.key));
+  const available = shown.filter((p) => !bought.has(p.key) && !cashOrdered.has(p.key));
 
   const prices: PhotoShopPrices = {
     includedPhotos: shop.included_photos,
@@ -195,7 +198,7 @@ function ShopBody({
       )}
 
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {photos.map((p) => {
+        {shown.map((p) => {
           const isBought = bought.has(p.key);
           const isCashOrdered = !isBought && cashOrdered.has(p.key);
           const inCart = cart.has(p.key);
@@ -208,6 +211,15 @@ function ShopBody({
                 referrerPolicy="no-referrer"
                 draggable={false}
                 onContextMenu={(e) => e.preventDefault()}
+                onError={() => {
+                  setBroken((prev) => new Set(prev).add(p.key));
+                  setCart((prev) => {
+                    if (!prev.has(p.key)) return prev;
+                    const next = new Set(prev);
+                    next.delete(p.key);
+                    return next;
+                  });
+                }}
                 className="aspect-[4/3] w-full select-none rounded object-cover"
               />
               <div className="flex flex-wrap items-center justify-between gap-1 text-xs">

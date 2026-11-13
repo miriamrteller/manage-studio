@@ -42,6 +42,13 @@ vi.mock('@/features/jobs/components/JobContractCard', () => ({ JobContractCard: 
 vi.mock('@/features/jobs/components/JobBookingProgress', () => ({ JobBookingProgress: () => null }));
 vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () => null }));
 vi.mock('@/features/quotes/components/CreateQuoteButton', () => ({ CreateQuoteButton: () => null }));
+const shop = vi.hoisted(() => ({ on: false }));
+vi.mock('@/features/jobs/hooks/usePhotoShop', async (orig) => ({
+  ...(await orig<typeof import('@/features/jobs/hooks/usePhotoShop')>()),
+  usePhotoShopEnabled: () => shop.on,
+}));
+vi.mock('@/features/jobs/components/JobPhotoShopCard', () => ({ JobPhotoShopCard: () => <p>photo shop card</p> }));
+vi.mock('@/features/jobs/components/ClientPhotoShop', () => ({ PhotoShopPreview: () => <p>client view</p> }));
 
 function job(overrides: Partial<JobRow> = {}): JobRow {
   return {
@@ -109,6 +116,23 @@ describe('JobDetail (photographer admin shoot page)', () => {
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
   afterEach(() => warn.mockRestore());
+
+  it('with the photo shop on, the shop and the client view are tabs at the top', () => {
+    shop.on = true;
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1?tab=client' });
+    expect(screen.getAllByRole('tab').map((x) => x.textContent)).toEqual(['Details', 'Photo shop', 'What your client sees']);
+    expect(screen.getByText('client view')).toBeTruthy();
+    expect(screen.queryByText('payments panel')).toBeNull();
+    shop.on = false;
+  });
+
+  it('without the photo shop there are no tabs', () => {
+    shop.on = false;
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.getByText('payments panel')).toBeTruthy();
+    expect(screen.queryByText('photo shop card')).toBeNull();
+  });
 
   it('renders every section heading as a string (Payments heading fixed)', () => {
     renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });

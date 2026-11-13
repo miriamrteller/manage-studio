@@ -147,7 +147,7 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
       <JobPhotoShopSource engagementId={engagementId} shop={data} />
 
       <p className="text-sm">
-        <Link to={`/admin/photo-shop?tab=preview&shoot=${engagementId}`} className="font-medium underline">
+        <Link to={`/admin/jobs/${engagementId}?tab=client`} className="font-medium underline">
           {t('photo_shop_admin.preview.open_from_shoot')}
         </Link>
       </p>

@@ -31,7 +31,7 @@ const CONCURRENCY = 6;
  */
 export const SAFE_LARGEST_SIZES = ["Large", "XLarge"] as const;
 /** Check lines that are tips only: they never stop a gallery opening (owner, 11 Nov 2026). */
-export const TIP_CODES: readonly string[] = ["watermark", "largest_size", "downloads", "original_hidden"];
+export const TIP_CODES: readonly string[] = ["watermark", "largest_size", "downloads", "original_hidden", "some_private"];
 /** Sizes that must not be reachable without signing in. */
 const UNSAFE_SIZE_KEYS = ["ImageSizeOriginal", "ImageSizeX5Large", "ImageSizeX4Large", "ImageSizeX3Large", "ImageSizeX2Large"];
 
@@ -167,7 +167,7 @@ export async function getAlbum(reader: SmugMugReader, albumKey: string): Promise
 
 /** One gallery setting the check looked at. `ok` false keeps the gallery locked. */
 export interface GalleryCheckItem {
-  code: "watermark" | "largest_size" | "downloads" | "photos" | "preview_public" | "original_hidden";
+  code: "watermark" | "largest_size" | "downloads" | "photos" | "preview_public" | "original_hidden" | "some_private";
   ok: boolean;
   /** What SmugMug reported, e.g. "Large" (never a URL). */
   value?: string;
@@ -234,6 +234,7 @@ interface ReadImages {
   /** Items SmugMug listed in the gallery, and how many of them were videos. */
   listed: number;
   videos: number;
+  hidden: number;
 }
 
 async function readImages(reader: SmugMugReader, album: Json): Promise<ReadImages> {
@@ -241,8 +242,10 @@ async function readImages(reader: SmugMugReader, album: Json): Promise<ReadImage
   if (!imagesPath) throw new SmugMugShapeError("photos_unavailable");
   const rows = await readAll(reader, imagesPath, "AlbumImage", MAX_ALBUM_PHOTOS);
   const videos = rows.filter((r) => r.IsVideo === true).length;
-  const usable = rows.filter((r) => r.IsVideo !== true && str(r.ImageKey) && linkPath(r, "ImageSizeDetails"));
-  if (usable.length < rows.length - videos) {
+  // Hidden photos (Image.Hidden, SmugMug reference) don't open for visitors, so clients can't see them.
+  const hidden = rows.filter((r) => r.IsVideo !== true && r.Hidden === true).length;
+  const usable = rows.filter((r) => r.IsVideo !== true && r.Hidden !== true && str(r.ImageKey) && linkPath(r, "ImageSizeDetails"));
+  if (usable.length < rows.length - videos - hidden) {
     // Shape only (field and link names, never values), so a live mismatch can be read in the logs.
     const first = rows.find((r) => r.IsVideo !== true);
     console.warn("[smugmug] gallery items skipped", JSON.stringify({
@@ -261,7 +264,7 @@ async function readImages(reader: SmugMugReader, album: Json): Promise<ReadImage
       sizes: obj(res.ImageSizeDetails) ?? {},
     };
   });
-  return { images, listed: rows.length, videos };
+  return { images, listed: rows.length, videos, hidden };
 }
 
 function sizeUrl(sizes: Json, key: string): string | null {
@@ -321,26 +324,33 @@ export async function checkGallery(
 
   // Owner (11 Nov 2026): nothing blocks. The protection settings are tips only
   // (TIP_CODES); a gallery opens once its photos can be read and the Large preview loads.
-  const { images, listed, videos } = await readImages(reader, album);
-  const photos = images
+  const { images, listed, videos, hidden } = await readImages(reader, album);
+  const withSize = images
     .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: previewSizeUrl(im.sizes) }))
     .filter((p): p is SmugMugPhoto => !!p.previewUrl);
-  const allHaveLarge = images.length > 0 && photos.length === images.length;
-  if (images.length === 0) {
+  if (withSize.length === 0) {
     // Nothing to sell yet, so the client-side checks below can't run: say only why.
-    const detail = listed === 0 ? "empty" : videos === listed ? "videos_only" : "unreadable";
+    const detail = listed === 0 || listed === hidden ? "empty" : videos === listed ? "videos_only" : "unreadable";
     items.push({ code: "photos", ok: false, value: String(listed), detail });
     return { passed: false, albumKey, albumName, items, photos: [] };
   }
-  items.push({ code: "photos", ok: allHaveLarge, value: String(images.length) });
 
-  let previewPublic = false;
+  // Every preview must load without signing in, as in a client's browser. A photo that
+  // doesn't (hidden or private in SmugMug, or without a preview size) is left out of the
+  // shop and counted in one tip; the gallery still opens with the rest (never block).
+  const loads = await mapLimit(withSize, CONCURRENCY, (p) => probe(p.previewUrl));
+  const photos = withSize.filter((_, i) => loads[i]);
+  const leftOut = hidden + (images.length - withSize.length) + (withSize.length - photos.length);
+  if (leftOut > 0) {
+    console.warn("[smugmug] photos left out of the shop", JSON.stringify({ listed, hidden, noSize: images.length - withSize.length, notPublic: withSize.length - photos.length }));
+  }
+  items.push({ code: "photos", ok: true, value: String(photos.length || withSize.length) });
+
+  const previewPublic = photos.length > 0;
   let originalHidden = false;
-  if (allHaveLarge) {
-    const first = images[0];
+  if (previewPublic) {
+    const first = images.find((im) => im.key === photos[0].key) as ImageWithSizes;
     const bigger = UNSAFE_SIZE_KEYS.map((k) => sizeUrl(first.sizes, k)).filter((u): u is string => !!u);
-    // The Large size must load for clients. Bigger sizes loading is only a tip.
-    previewPublic = await probe(photos[0].previewUrl);
     originalHidden = true;
     // Watermark in the photo files: bigger sizes carry it too, so they may open.
     for (const url of watermarkInPhotos ? [] : bigger) {
@@ -351,6 +361,7 @@ export async function checkGallery(
     }
   }
   items.push({ code: "preview_public", ok: previewPublic });
+  if (previewPublic && leftOut > 0) items.push({ code: "some_private", ok: false, value: String(leftOut) });
   items.push({ code: "original_hidden", ok: originalHidden, value: watermarkInPhotos && originalHidden ? "in_photos" : undefined });
 
   const passed = items.every((i) => i.ok || TIP_CODES.includes(i.code));
