@@ -313,6 +313,28 @@ describe('JobPhotoShopCard', () => {
     expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
   });
 
+  it('a gallery with only videos says so, in one line', async () => {
+    state.smugmugConnected = true;
+    state.checkGallery.mockResolvedValue({
+      passed: false,
+      albumName: 'Slideshow',
+      photoCount: 0,
+      items: [
+        { code: 'watermark', ok: true, value: 'in_photos' },
+        { code: 'largest_size', ok: true, value: '5K' },
+        { code: 'downloads', ok: false, value: 'true' },
+        { code: 'photos', ok: false, value: '1', detail: 'videos_only' },
+      ],
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: 'a1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    expect(await screen.findByText(/This gallery only has videos/)).toBeTruthy();
+    expect(screen.getAllByText('✗')).toHaveLength(1);
+    expect(screen.queryByText(/Clients couldn't open the watermarked photos/)).toBeNull();
+  });
+
   it('has Hebrew text', async () => {
     await setLanguage('he');
     state.orders = [paidOrder];

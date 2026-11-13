@@ -171,6 +171,8 @@ export interface GalleryCheckItem {
   ok: boolean;
   /** What SmugMug reported, e.g. "Large" (never a URL). */
   value?: string;
+  /** photos only: why none could be read ("empty", "videos_only" or "unreadable"). */
+  detail?: "empty" | "videos_only" | "unreadable";
 }
 
 export interface SmugMugPhoto {
@@ -227,12 +229,31 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return out;
 }
 
-async function readImages(reader: SmugMugReader, album: Json): Promise<ImageWithSizes[]> {
+interface ReadImages {
+  images: ImageWithSizes[];
+  /** Items SmugMug listed in the gallery, and how many of them were videos. */
+  listed: number;
+  videos: number;
+}
+
+async function readImages(reader: SmugMugReader, album: Json): Promise<ReadImages> {
   const imagesPath = linkPath(album, "AlbumImages");
   if (!imagesPath) throw new SmugMugShapeError("photos_unavailable");
   const rows = await readAll(reader, imagesPath, "AlbumImage", MAX_ALBUM_PHOTOS);
+  const videos = rows.filter((r) => r.IsVideo === true).length;
   const usable = rows.filter((r) => r.IsVideo !== true && str(r.ImageKey) && linkPath(r, "ImageSizeDetails"));
-  return mapLimit(usable, CONCURRENCY, async (r) => {
+  if (usable.length < rows.length - videos) {
+    // Shape only (field and link names, never values), so a live mismatch can be read in the logs.
+    const first = rows.find((r) => r.IsVideo !== true);
+    console.warn("[smugmug] gallery items skipped", JSON.stringify({
+      listed: rows.length,
+      videos,
+      usable: usable.length,
+      fields: first ? Object.keys(first).sort() : [],
+      links: first ? Object.keys(obj(first.Uris) ?? {}).sort() : [],
+    }));
+  }
+  const images = await mapLimit(usable, CONCURRENCY, async (r) => {
     const res = await reader.get(linkPath(r, "ImageSizeDetails") as string);
     return {
       key: str(r.ImageKey) as string,
@@ -240,6 +261,7 @@ async function readImages(reader: SmugMugReader, album: Json): Promise<ImageWith
       sizes: obj(res.ImageSizeDetails) ?? {},
     };
   });
+  return { images, listed: rows.length, videos };
 }
 
 function sizeUrl(sizes: Json, key: string): string | null {
@@ -250,6 +272,19 @@ function sizeUrl(sizes: Json, key: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The size clients see: Large, or the biggest smaller size when SmugMug has no Large
+ * (it lists only sizes up to the photo's own, so a small photo has no Large).
+ */
+const PREVIEW_SIZE_KEYS = ["ImageSizeLarge", "ImageSizeMedium", "ImageSizeSmall"];
+function previewSizeUrl(sizes: Json): string | null {
+  for (const k of PREVIEW_SIZE_KEYS) {
+    const url = sizeUrl(sizes, k);
+    if (url) return url;
+  }
+  return null;
 }
 
 /** Fetches a URL WITHOUT signing in, as a client's browser would. True when it loads. */
@@ -286,11 +321,17 @@ export async function checkGallery(
 
   // Owner (11 Nov 2026): nothing blocks. The protection settings are tips only
   // (TIP_CODES); a gallery opens once its photos can be read and the Large preview loads.
-  const images = await readImages(reader, album);
+  const { images, listed, videos } = await readImages(reader, album);
   const photos = images
-    .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: sizeUrl(im.sizes, "ImageSizeLarge") }))
+    .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: previewSizeUrl(im.sizes) }))
     .filter((p): p is SmugMugPhoto => !!p.previewUrl);
   const allHaveLarge = images.length > 0 && photos.length === images.length;
+  if (images.length === 0) {
+    // Nothing to sell yet, so the client-side checks below can't run: say only why.
+    const detail = listed === 0 ? "empty" : videos === listed ? "videos_only" : "unreadable";
+    items.push({ code: "photos", ok: false, value: String(listed), detail });
+    return { passed: false, albumKey, albumName, items, photos: [] };
+  }
   items.push({ code: "photos", ok: allHaveLarge, value: String(images.length) });
 
   let previewPublic = false;

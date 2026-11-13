@@ -1812,7 +1812,10 @@
             "photos": {
               "ok_one": "{{count}} photo read",
               "ok_other": "{{count}} photos read",
-              "fix": "We couldn't read the gallery's photos at a preview size."
+              "fix": "We couldn't read the gallery's photos at a preview size.",
+              "fix_empty": "This gallery has no photos in SmugMug yet. Add the shoot's photos to it, then press Check again.",
+              "fix_videos_only": "This gallery only has videos. The shop sells photos, so add the shoot's photos to the gallery, then press Check again.",
+              "fix_unreadable": "SmugMug listed this gallery's photos but didn't send their sizes. Please press Check again; if it still fails, we've logged it and will look."
             },
             "preview_public": {
               "ok": "Clients can open the watermarked photos",
