@@ -77,6 +77,24 @@ SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN publi
  WHERE lower(u.email) = 'owner@sofer.test' AND t.subdomain = 'sofer' AND 'tenant_admin' = ANY (p.role);
 SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
  WHERE lower(u.email) = 'owner@therapist.test' AND t.subdomain = 'therapist' AND 'tenant_admin' = ANY (p.role);
--- 5. Every login on dev (only the count is shown).
+-- 5. How many logins each studio has on dev (only the count is shown), so logins that are not in
+--    the seed files show up as a difference from step 4.
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'creativeballet' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'belladance' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'lensstudio' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'velvetbeauty' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'artclass' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'photographer' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'sofer' AND u.deleted_at IS NULL;
+SELECT u.id FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE t.subdomain = 'therapist' AND u.deleted_at IS NULL;
+-- 6. Every login on dev (only the count is shown).
 SELECT u.id FROM auth.users u
  WHERE u.deleted_at IS NULL AND coalesce(u.is_anonymous, false) = false AND u.email IS NOT NULL;
