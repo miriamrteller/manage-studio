@@ -163,12 +163,47 @@ Deno.test("check gallery: watermark already in the photos", async () => {
   assertEquals(probed, ["https://photos.smugmug.com/K1-L.jpg"], "bigger sizes are not probed");
 });
 
-Deno.test("check gallery: a photo without a Large size fails the check", async () => {
+Deno.test("check gallery: a photo with no preview size at all fails the check", async () => {
   const routes = galleryRoutes();
   routes["/api/v2/image/K2!sizedetails"] = { ImageSizeDetails: {} };
   const result = await checkGallery(fakeReader(routes), "abc123", () => Promise.resolve(true));
   assert(!result.passed);
   assertEquals(result.items.find((i) => i.code === "photos")?.ok, false);
+});
+
+Deno.test("check gallery: a small photo with no Large size uses its biggest smaller size", async () => {
+  const routes = galleryRoutes();
+  routes["/api/v2/image/K2!sizedetails"] = {
+    ImageSizeDetails: { ImageSizeMedium: { Url: "https://photos.smugmug.com/K2-M.jpg" } },
+  };
+  const result = await checkGallery(fakeReader(routes), "abc123", () => Promise.resolve(true));
+  assert(result.passed);
+  assertEquals(result.photos.find((p) => p.key === "K2")?.previewUrl, "https://photos.smugmug.com/K2-M.jpg");
+});
+
+Deno.test("check gallery: an empty gallery, or one with only videos, says just that", async () => {
+  const probe = () => Promise.reject(new Error("must not probe"));
+  const empty = await checkGallery(fakeReader({
+    "/api/v2/album/abc123": { Album: safeAlbum },
+    "/api/v2/album/abc123!images": { AlbumImage: [] },
+  }), "abc123", probe);
+  assert(!empty.passed);
+  assertEquals(empty.items.find((i) => i.code === "photos"), { code: "photos", ok: false, value: "0", detail: "empty" });
+  assertEquals(empty.items.some((i) => i.code === "preview_public" || i.code === "original_hidden"), false);
+
+  const videos = await checkGallery(fakeReader({
+    "/api/v2/album/abc123": { Album: safeAlbum },
+    "/api/v2/album/abc123!images": {
+      AlbumImage: [{ ImageKey: "V1", FileName: "clip.mp4", IsVideo: true, Uris: { ImageSizeDetails: { Uri: "/api/v2/image/V1!sizedetails" } } }],
+    },
+  }), "abc123", probe);
+  assertEquals(videos.items.find((i) => i.code === "photos"), { code: "photos", ok: false, value: "1", detail: "videos_only" });
+
+  const odd = await checkGallery(fakeReader({
+    "/api/v2/album/abc123": { Album: safeAlbum },
+    "/api/v2/album/abc123!images": { AlbumImage: [{ FileName: "IMG_9.jpg" }] },
+  }), "abc123", probe);
+  assertEquals(odd.items.find((i) => i.code === "photos"), { code: "photos", ok: false, value: "1", detail: "unreadable" });
 });
 
 Deno.test("check gallery: unknown album and bad keys", async () => {

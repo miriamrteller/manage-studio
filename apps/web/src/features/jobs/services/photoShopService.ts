@@ -37,7 +37,7 @@ export interface JobPhotoShop {
   smugmug_check?: {
     album_key: string;
     passed: boolean;
-    items: { code: string; ok: boolean; value?: string }[];
+    items: { code: string; ok: boolean; value?: string; detail?: string }[];
   } | null;
   /** Photos read at the last passed check (watermarked Large size). */
   smugmug_photos?: { key: string; fileName: string; previewUrl: string }[] | null;

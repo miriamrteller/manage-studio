@@ -74,6 +74,8 @@ export interface GalleryCheckItem {
   code: 'watermark' | 'largest_size' | 'downloads' | 'photos' | 'preview_public' | 'original_hidden';
   ok: boolean;
   value?: string;
+  /** photos only: why none could be read. */
+  detail?: 'empty' | 'videos_only' | 'unreadable';
 }
 
 export interface GalleryCheckResult {

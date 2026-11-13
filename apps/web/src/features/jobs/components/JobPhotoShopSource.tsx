@@ -164,7 +164,7 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
                 <li key={code} className="flex gap-2">
                   <span aria-hidden="true">{item.ok ? '✓' : tip ? '⚠' : '✗'}</span>
                   <span className={item.ok || tip ? '' : 'text-error'}>
-                    {t(`pages.jobs.photo_shop.source.item.${code}.${item.ok ? (item.value === 'in_photos' ? 'in_photos' : 'ok') : 'fix'}`, {
+                    {t(`pages.jobs.photo_shop.source.item.${code}.${item.ok ? (item.value === 'in_photos' ? 'in_photos' : 'ok') : item.detail ? `fix_${item.detail}` : 'fix'}`, {
                       value: item.value ?? '',
                       count: Number(item.value) || 0,
                     })}
