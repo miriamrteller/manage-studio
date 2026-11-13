@@ -480,7 +480,10 @@
         "cash_ordered": "Ordered, paying in cash",
         "cash_waiting": "Sent in, paying in cash.",
         "pay_online_instead": "Pay by card instead"
-      }
+      },
+      "bookings_heading": "My bookings",
+      "book_again": "Book a time",
+      "no_bookings": "No bookings yet."
     },
     "admin": {
       "setup": {
@@ -726,7 +729,11 @@
         "send_quote": "Send quote",
         "send_quote_hint": "Books it in and emails the client the quote at the package price, to accept and pay the deposit.",
         "edit_before_sending": "Edit before sending",
-        "next_step": "Next step"
+        "next_step": "Next step",
+        "send_class_link": "Send class link",
+        "send_booking_link": "Send booking link",
+        "link_sent": "Sent to {{email}}",
+        "link_needs_email": "Add an email to send the link"
       },
       "named_forms": {
         "title": "Forms",
@@ -2910,7 +2917,15 @@
       "past_title_one": "Past ({{count}})",
       "past_title_other": "Past ({{count}})",
       "hours_title": "Booking hours",
-      "hours_hint": "When clients can book a time slot online. It’s already filled in, so open it only to change something."
+      "hours_hint": "When clients can book a time slot online. It’s already filled in, so open it only to change something.",
+      "book_for_client": "Book for a client",
+      "pick_a_time": "Pick a time",
+      "book_at": "Book {{when}}",
+      "booked_for_client": "Booked: {{name}}, {{when}}",
+      "booked_pay_hint": "It is in the Diary below, where you can record a payment. Or send them the pay link.",
+      "copy_pay_link": "Copy pay link",
+      "pay_link_copied": "Pay link copied",
+      "book_another": "Book another"
     }
   },
   "billing": {
@@ -3523,7 +3538,11 @@
     "waiver_guardian_confirm": "I confirm I am the parent or legal guardian of {{studentName}} and am authorised to sign this form on their behalf.",
     "waiver_this_student": "the enrolled student",
     "waiver_minor_cannot_sign_title": "A parent or guardian must sign",
-    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
+    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment.",
+    "form_agree": "I have read and agree to this form, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
+    "form_read": "Read the full form",
+    "form_hide": "Hide the form",
+    "form_view_error": "Could not load the form. Please refresh the page and try again."
   },
   "settings": {
     "custom_domain": {

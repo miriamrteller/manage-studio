@@ -102,6 +102,43 @@ export function formLinkEmail(input) {
     const text = `${greeting}\n\n${line}\n\n${formUrl}\n\n${reply}\n`;
     return { subject, html, text };
 }
+export const STUDIO_LINK_PATHS = {
+    class_link: '/classes',
+    booking_link: '/book',
+};
+/**
+ * "<Studio>: our classes" / "<Studio>: book a time": the lead's next step for class
+ * studios and appointment businesses (13 Nov 2026, fewer steps), the way photographers
+ * send a quote. Fixed text; the admin supplies only the recipient and a first name.
+ */
+export function studioLinkEmail(input) {
+    const { studio, url, lang, kind } = input;
+    const name = input.recipientName?.trim();
+    const colour = input.colour && HEX_RE.test(input.colour) ? input.colour : '#4A58E8';
+    const he = lang === 'he';
+    const classes = kind === 'class_link';
+    const subject = classes
+        ? he
+            ? `החוגים של ${studio}`
+            : `${studio}: our classes`
+        : he
+            ? `${studio}: קביעת תור`
+            : `${studio}: book a time`;
+    const greeting = name ? (he ? `שלום ${name},` : `Hello ${name},`) : he ? 'שלום,' : 'Hello,';
+    const line = classes
+        ? he
+            ? `תודה על הפנייה ל${studio}. כאן אפשר לראות את החוגים ולהירשם.`
+            : `Thank you for contacting ${studio}. Here you can see the classes and sign up.`
+        : he
+            ? `תודה על הפנייה ל${studio}. כאן אפשר לבחור מועד שנוח לכם.`
+            : `Thank you for contacting ${studio}. Here you can pick a time that suits you.`;
+    const cta = classes ? (he ? 'לצפייה בחוגים' : 'See the classes') : he ? 'לקביעת תור' : 'Book a time';
+    const reply = he ? 'שאלות? אפשר להשיב למייל הזה.' : 'Questions? Reply to this email.';
+    const html = shell(lang, `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(line)}</p>${button(url, cta, colour)}` +
+        `<p style="font-size:13px;color:#4B5563" dir="ltr">${escapeHtml(url)}</p><p>${escapeHtml(reply)}</p>`);
+    const text = `${greeting}\n\n${line}\n\n${url}\n\n${reply}\n`;
+    return { subject, html, text };
+}
 /** "How to add <Studio>'s enquiry form to the website": the code plus steps per builder. */
 export function websiteInstructionsEmail(input) {
     const { studio, formOrigin, lang } = input;

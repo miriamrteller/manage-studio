@@ -285,7 +285,7 @@ describe('/enrol/complete — dance health declaration behaves as before (only i
       'job-next-step': { body: { next: 'pay_deposit', payPath: PAY_PATH, amountMinor: 1, currency: 'ILS' } },
     });
     renderSignPage();
-    fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this health declaration' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.' }));
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Dancer' } });
     fillSignerDetails();
     fireEvent.click(screen.getByRole('button', { name: 'Sign and Continue' }));

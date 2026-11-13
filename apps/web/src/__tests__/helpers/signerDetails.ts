@@ -25,6 +25,7 @@ export function fillSignerDetails(
   if (childDob && !childDob.value) {
     fireEvent.change(childDob, { target: { value: options.childDob ?? '2016-01-02' } });
   }
-  // One-tick contracts have no separate details tick.
-  if (!options.noConfirmTick) fireEvent.click(screen.getByRole('checkbox', { name: L.confirm }));
+  // Signing is one tick now (13 Nov 2026), so there is usually no separate details tick.
+  const confirm = options.noConfirmTick ? null : screen.queryByRole('checkbox', { name: L.confirm });
+  if (confirm) fireEvent.click(confirm);
 }

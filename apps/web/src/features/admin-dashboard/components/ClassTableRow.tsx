@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OccupancyBar } from './OccupancyBar';
 import type { AdminDashboardTodayClass } from '../types';
@@ -8,6 +9,8 @@ interface ClassTableRowProps {
   /** Show waitlist badge when count > 0. Default: true */
   showWaitlist?: boolean;
   className?: string;
+  /** An extra last cell, e.g. the Register button on today's classes. */
+  action?: ReactNode;
 }
 
 export const ClassTableRow = ({
@@ -15,6 +18,7 @@ export const ClassTableRow = ({
   onClick,
   showWaitlist = true,
   className = '',
+  action,
 }: ClassTableRowProps) => {
   const { t } = useTranslation();
   const handleClick = () => {
@@ -54,6 +58,11 @@ export const ClassTableRow = ({
           </span>
         )}
       </td>
+      {action !== undefined && (
+        <td className="px-4 py-3 text-sm" onClick={(event) => event.stopPropagation()}>
+          {action}
+        </td>
+      )}
     </tr>
   );
 };

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * The signing step collects the signer's details (ID or passport, phone, address, and for a minor
- * the child's name and date of birth), a "These details are correct" tick, and sends them with
+ * the child's name and date of birth), confirmed by the one signing tick, and sends them with
  * the signature. Nothing is sent until the details are valid.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -62,7 +62,7 @@ function renderStep(props: { isMinorStudent?: boolean; studentDateOfBirth?: stri
 }
 
 async function readAndName() {
-  fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and accept this health declaration' }));
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.' }));
   fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Levi' } });
 }
 
@@ -84,12 +84,16 @@ afterEach(() => {
 });
 
 describe('signer details on the signing step', () => {
-  it('keeps Sign off until the "These details are correct" tick is ticked', async () => {
+  it('keeps Sign off until the one tick is ticked (it also confirms the details)', async () => {
     renderStep();
-    await readAndName();
+    fireEvent.change(await screen.findByLabelText('Full legal name'), { target: { value: 'Dana Levi' } });
+    fillSignerDetails();
     const sign = screen.getByRole('button', { name: 'Sign and Continue' });
     expect(sign).toBeDisabled();
-    fillSignerDetails();
+    expect(screen.queryByRole('checkbox', { name: 'These details are correct' })).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.' }),
+    );
     expect(sign).toBeEnabled();
   });
 
@@ -108,7 +112,9 @@ describe('signer details on the signing step', () => {
       address: '1 Herzl St, Haifa',
     });
     expect(body.signer_details.confirmed).toBe(true);
-    expect(body.signer_details.confirmed_wording).toBe('These details are correct');
+    expect(body.signer_details.confirmed_wording).toBe(
+      'I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.',
+    );
     expect(body.signer_details.child).toBeUndefined();
   });
 
@@ -220,7 +226,7 @@ describe('signer details on the signing step', () => {
         canGoBack={false}
       />,
     );
-    await screen.findByRole('checkbox', { name: 'I have read and accept this health declaration' });
+    await screen.findByRole('checkbox', { name: 'I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.' });
     expect(rpc).not.toHaveBeenCalled();
   });
 });
