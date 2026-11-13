@@ -30,6 +30,10 @@ vi.mock('@/features/jobs/hooks/useJobs', () => ({
   useConvertLead: () => ({ mutateAsync: vi.fn().mockResolvedValue('eng-9'), isPending: false }),
 }));
 
+vi.mock('@/features/quotes/services/sendShootRequestQuote', () => ({
+  sendShootRequestQuote: vi.fn().mockRejectedValue(new Error('no quote')),
+}));
+
 import i18n from '@/i18n/i18n';
 import { ExpenseForm } from '@/features/finance-admin/components/ExpenseForm';
 import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
@@ -85,7 +89,7 @@ describe('lead → shoot', () => {
     expect(screen.getByLabelText(i18n.t('pages.jobs.location'))).toHaveValue('Park');
   });
 
-  it('opens a quote for the new shoot (package preselected), so the details and pay link go out from there', async () => {
+  it('if the quote cannot be sent, a quote for the new shoot opens (package preselected)', async () => {
     render(
       <I18nextProvider i18n={i18n}>
         <MemoryRouter initialEntries={['/admin/leads']}>
@@ -99,7 +103,7 @@ describe('lead → shoot', () => {
         </MemoryRouter>
       </I18nextProvider>,
     );
-    fireEvent.click(screen.getByRole('button', { name: i18n.t('pages.crm.leads.convert') }));
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('pages.crm.leads.send_quote') }));
     await waitFor(() => expect(screen.getByText('quote editor')).toBeInTheDocument());
   });
 });

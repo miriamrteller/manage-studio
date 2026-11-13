@@ -692,8 +692,6 @@
         "capture_linkedin": "LinkedIn link",
         "empty_title": "No leads yet",
         "empty_message": "Share your capture links, or add a lead manually when someone calls or messages.",
-        "convert": "Convert to shoot",
-        "convert_hint": "Creates the client and a shoot from this lead, then opens a quote so you can check the price and send the details and pay link. Pick a package and an optional date.",
         "open_job": "Open shoot",
         "empty_message_get": "Share your enquiry link or QR code, and new enquiries will appear here.",
         "empty_action": "Get leads",
@@ -708,7 +706,11 @@
         "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page.",
         "shoot_request": "Shoot request: {{day}}",
         "confirm_shoot": "Confirm",
-        "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit."
+        "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit.",
+        "send_quote": "Send quote",
+        "send_quote_hint": "Books the shoot and emails the client the quote at the package price, to accept and pay the deposit.",
+        "edit_before_sending": "Edit before sending",
+        "next_step": "Next step"
       },
       "named_forms": {
         "title": "Forms",

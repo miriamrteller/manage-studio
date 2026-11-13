@@ -11,6 +11,7 @@ import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMe
 import { useManualPaymentMethods } from '@/features/finance/hooks/useManualPaymentMethods';
 import { NoDocumentConfirmationOption } from '@/features/finance/components/NoDocumentConfirmationOption';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,7 +20,9 @@ import type { JobPaymentRequest } from '../services/jobPaymentService';
 
 export type ManualAction =
   | { kind: 'mark_paid'; request: JobPaymentRequest }
-  | { kind: 'refund'; request: JobPaymentRequest };
+  | { kind: 'refund'; request: JobPaymentRequest }
+  /** "Record a payment" with nothing open to pay: the amount starts from what is left of the package. */
+  | { kind: 'record_new'; amountMinor: number | null; currency: string };
 
 interface Props {
   action: ManualAction | null;
@@ -28,13 +31,38 @@ interface Props {
   onClose: () => void;
   onMarkPaid: (requestId: string, method: ManualPaymentMethod, note?: string, sendConfirmation?: boolean) => Promise<unknown>;
   onRefund: (paymentId: string, reason?: string, amountMinor?: number) => Promise<unknown>;
+  /** Makes a payment request for the amount and records it as paid. */
+  onRecordNew?: (amountMinor: number, method: ManualPaymentMethod, note?: string, sendConfirmation?: boolean) => Promise<unknown>;
+}
+
+/** "120" or "120.50" → minor units; null when not a positive amount. */
+export function amountTextToMinor(text: string): number | null {
+  const n = Number(text.replace(',', '.').trim());
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null;
 }
 
 /**
  * Human-approved money actions (never automatic): record a cash/bank payment,
  * or record a refund already made outside the platform (YPay has no refund API).
  */
-export function ManualPaymentDialog({ action, language, isSubmitting, onClose, onMarkPaid, onRefund }: Props) {
+export function ManualPaymentDialog({ action, language, isSubmitting, onClose, onMarkPaid, onRefund, onRecordNew }: Props) {
+  if (!action) return null;
+  // Keyed so each opening starts from its own prefilled amount.
+  return (
+    <ManualPaymentForm
+      key={action.kind === 'record_new' ? `new-${action.amountMinor ?? ''}` : `${action.kind}-${action.request.id}`}
+      action={action}
+      language={language}
+      isSubmitting={isSubmitting}
+      onClose={onClose}
+      onMarkPaid={onMarkPaid}
+      onRefund={onRefund}
+      onRecordNew={onRecordNew}
+    />
+  );
+}
+
+function ManualPaymentForm({ action, language, isSubmitting, onClose, onMarkPaid, onRefund, onRecordNew }: Props & { action: ManualAction }) {
   const { t } = useTranslation();
   const tenant = useTenant();
   const methods = useManualPaymentMethods();
@@ -43,13 +71,17 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
   const [sendConfirmation, setSendConfirmation] = useState(true);
   const [refundAmount, setRefundAmount] = useState<RefundAmountValue>({ kind: 'full', text: '' });
   const [error, setError] = useState<string | null>(null);
+  const [newAmount, setNewAmount] = useState(() =>
+    action.kind === 'record_new' && action.amountMinor ? String(action.amountMinor / 100) : '',
+  );
 
-  if (!action) return null;
-  const { request } = action;
-  const amount = formatMinor(request.amount_minor, request.currency, language);
+  const request = action.kind === 'record_new' ? null : action.request;
+  const isNew = action.kind === 'record_new';
+  const newAmountMinor = amountTextToMinor(newAmount);
+  const amount = request ? formatMinor(request.amount_minor, request.currency, language) : '';
   const isRefund = action.kind === 'refund';
-  const paidMinor = request.payment?.total_amount_minor ?? request.amount_minor;
-  const refundedMinor = request.payment?.refund_amount_minor ?? 0;
+  const paidMinor = request ? request.payment?.total_amount_minor ?? request.amount_minor : 0;
+  const refundedMinor = request?.payment?.refund_amount_minor ?? 0;
   const remainingMinor = Math.max(paidMinor - refundedMinor, 0);
   const refundMinor = refundAmountToSend(refundAmount, remainingMinor);
 
@@ -57,11 +89,17 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
     e.preventDefault();
     setError(null);
     try {
-      if (isRefund) {
+      if (action.kind === 'record_new') {
+        if (newAmountMinor === null || !onRecordNew) {
+          setError(t('pages.jobs.payments.form.amountInvalid'));
+          return;
+        }
+        await onRecordNew(newAmountMinor, method, note || undefined, sendConfirmation);
+      } else if (isRefund && request) {
         if (!request.payment_id) throw new Error(t('pages.jobs.payments.manual.noPayment'));
         if (refundMinor === null) return;
         await onRefund(request.payment_id, note || undefined, refundMinor);
-      } else {
+      } else if (request) {
         await onMarkPaid(request.id, method, note || undefined, sendConfirmation);
       }
       setNote('');
@@ -79,9 +117,27 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
       size="sm"
     >
       <form onSubmit={submit} className="space-y-3">
-        <p className="text-sm">
-          <bdi>{request.label}</bdi> · <bdi dir="ltr">{amount}</bdi>
-        </p>
+        {isNew ? (
+          <div>
+            <Label htmlFor="jpr-new-amount">
+              {t('finance.record_payment.amount', { currency: action.kind === 'record_new' ? action.currency : '' })}
+            </Label>
+            <Input
+              id="jpr-new-amount"
+              inputMode="decimal"
+              dir="ltr"
+              value={newAmount}
+              onChange={(e) => setNewAmount(e.target.value)}
+              required
+            />
+          </div>
+        ) : (
+          request && (
+            <p className="text-sm">
+              <bdi>{request.label}</bdi> · <bdi dir="ltr">{amount}</bdi>
+            </p>
+          )
+        )}
         {isRefund ? (
           <>
             <p className="text-sm text-muted-foreground">{t('pages.jobs.payments.manual.refundHint')}</p>
@@ -90,7 +146,7 @@ export function ManualPaymentDialog({ action, language, isSubmitting, onClose, o
               onChange={setRefundAmount}
               totalMinor={paidMinor}
               alreadyRefundedMinor={refundedMinor}
-              currency={request.currency}
+              currency={request?.currency ?? ''}
             />
             <p className="text-xs text-muted-foreground">
               {t(refundDocumentNoteKey(tenant?.invoicing_provider), {

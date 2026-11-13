@@ -81,12 +81,8 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
 
       <JobContractCard job={job} />
 
-      <section className="card p-4 space-y-2" aria-labelledby="job-payments-heading">
-        <h2 id="job-payments-heading" className="font-semibold">
-          {t('pages.jobs.payments.title')}
-        </h2>
-        <JobPaymentsPanel engagementId={job.engagement_id} packagePriceMinor={job.price_minor} />
-      </section>
+      {/* The panel is its own "Payments" card (one heading, not two). */}
+      <JobPaymentsPanel engagementId={job.engagement_id} packagePriceMinor={job.price_minor} />
     </>
   );
 
