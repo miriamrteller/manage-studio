@@ -107,6 +107,18 @@ export async function ensureClientLogin(
 }
 
 /**
+ * Whether a client's login goes on their own record even when they have a billing account:
+ * studios without families (family accounts off: photographers, beauticians, any studio that
+ * turns it off) and the services / catalog presets. Same rule as link_auth_user_to_person.
+ */
+export function loginIsClientsOwn(
+  tenant: { business_preset?: string | null; family_accounts?: boolean | null } | null | undefined,
+): boolean {
+  const preset = tenant?.business_preset ?? "programs";
+  return preset === "services" || preset === "catalog" || tenant?.family_accounts === false;
+}
+
+/**
  * Links the login to the client's own record and to family accounts that carry their
  * email, the same rows signing in would link (link_auth_user_to_person,
  * link_my_guardian_accounts). Never changes an existing link.
@@ -125,11 +137,10 @@ async function linkClientLogin(
 
   const { data: tenant } = await service
     .from("tenants")
-    .select("business_preset")
+    .select("business_preset, family_accounts")
     .eq("id", params.tenantId)
     .maybeSingle();
-  const preset = (tenant?.business_preset as string | null) ?? "programs";
-  const linkPersonDirectly = preset === "services" || preset === "catalog";
+  const linkPersonDirectly = loginIsClientsOwn(tenant);
 
   const personIds = rows.filter((p) => !p.account_id || linkPersonDirectly).map((p) => p.id);
   if (personIds.length > 0) {

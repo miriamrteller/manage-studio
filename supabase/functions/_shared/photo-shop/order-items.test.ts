@@ -11,7 +11,7 @@ import {
   SMUGMUG_OPEN_TO_CLIENTS,
   uploadedPhotoSource,
 } from "./gallery.ts";
-import { photoOrderLabel, resolveOrderItems } from "./order-items.ts";
+import { orderPersonId, photoOrderLabel, resolveOrderItems } from "./order-items.ts";
 
 const gallery = mockGalleryPhotos("g");
 
@@ -152,4 +152,14 @@ Deno.test("all photos: everything not taken yet, whatever was picked", () => {
 Deno.test("receipt label in the studio's language", () => {
   assertEquals(photoOrderLabel(3, "en"), "Photos (3)");
   assertEquals(photoOrderLabel(3, "he"), "תמונות (3)");
+});
+
+Deno.test("order person: the caller's own record, else the shoot's client (family-account login)", async () => {
+  const service = (personId: string | null) => ({
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: personId ? { person_id: personId } : null }) }) }) }),
+  });
+  const caller = (mine: string | null) => ({ rpc: () => Promise.resolve({ data: mine }) });
+  assertEquals(await orderPersonId(caller("p-me"), service("p-shoot"), "e1"), "p-me");
+  assertEquals(await orderPersonId(caller(null), service("p-shoot"), "e1"), "p-shoot");
+  assertEquals(await orderPersonId(caller(null), service(null), "e1"), null);
 });

@@ -18,7 +18,7 @@ const IN_PHOTOS_KEY = 'os_photo_shop_watermark_in_photos';
 type Source = 'smugmug' | 'upload';
 
 /** Same list as TIP_CODES in supabase/functions/_shared/photo-shop/smugmug/api.ts. */
-const TIP_CODES: GalleryCheckItem['code'][] = ['watermark', 'largest_size', 'downloads', 'original_hidden'];
+const TIP_CODES: GalleryCheckItem['code'][] = ['watermark', 'largest_size', 'downloads', 'original_hidden', 'some_private'];
 
 const CHECK_ORDER: GalleryCheckItem['code'][] = [
   'watermark',
@@ -26,6 +26,7 @@ const CHECK_ORDER: GalleryCheckItem['code'][] = [
   'downloads',
   'photos',
   'preview_public',
+  'some_private',
   'original_hidden',
 ];
 
@@ -164,7 +165,7 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
                 <li key={code} className="flex gap-2">
                   <span aria-hidden="true">{item.ok ? '✓' : tip ? '⚠' : '✗'}</span>
                   <span className={item.ok || tip ? '' : 'text-error'}>
-                    {t(`pages.jobs.photo_shop.source.item.${code}.${item.ok ? (item.value === 'in_photos' ? 'in_photos' : 'ok') : 'fix'}`, {
+                    {t(`pages.jobs.photo_shop.source.item.${code}.${item.ok ? (item.value === 'in_photos' ? 'in_photos' : 'ok') : item.detail ? `fix_${item.detail}` : 'fix'}`, {
                       value: item.value ?? '',
                       count: Number(item.value) || 0,
                     })}
