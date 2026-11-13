@@ -33,7 +33,7 @@ import {
   mockGalleryPhotos,
   uploadedPhotoSource,
 } from "../_shared/photo-shop/gallery.ts";
-import { photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
+import { orderPersonId, photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
 import { notifyStudioPhotoOrderCash, notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
 const FEATURE = "billing:photo_shop";
@@ -132,8 +132,12 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     // ── place an order ──────────────────────────────────────────────────────
     if (!view.open) return jsonResponse({ error: "shop_closed" }, 409);
 
-    const { data: personId } = await auth.supabase.rpc("get_my_person_id");
-    if (typeof personId !== "string") return jsonResponse({ error: "not_this_client" }, 403);
+    // Who the order is for. get_client_photo_shop above already let this caller in (the
+    // shoot's client, or a member of their family account). A family-account login is linked
+    // through account_members, not people.user_profile_id, so get_my_person_id can be empty:
+    // then the order is the shoot's own client's (13 Nov 2026: a cash order was refused).
+    const personId = await orderPersonId(auth.supabase, service, engagementId);
+    if (!personId) return jsonResponse({ error: "not_this_client" }, 403);
 
     const taken = [...(view.bought_image_keys ?? []), ...(view.awaiting_image_keys ?? [])];
     // The person's own unpaid card cart is replaced by this one, so its photos are free to pick
