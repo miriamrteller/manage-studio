@@ -119,7 +119,10 @@
     "waiver_loading": "Loading contract…",
     "waiver_no_template": "No active contract is set up yet. Please contact the studio.",
     "waiver_context_student": "Client",
-    "waiver_context_class": "Package"
+    "waiver_context_class": "Package",
+    "form_agree": "I have read and agree to the contract, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
+    "form_read": "Read the full contract",
+    "form_hide": "Hide the contract"
   },
   "finance": {
     "hub": {

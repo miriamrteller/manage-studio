@@ -60,6 +60,9 @@
     "waiver_loading": "Loading health declaration…",
     "waiver_no_template": "No active health declaration template is set up. Please ask a studio administrator to add a health declaration template before enrolling.",
     "waiver_guardian_confirm": "I confirm I am the parent or legal guardian of {{studentName}} and am authorised to sign this health declaration on their behalf.",
-    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the health declaration. Please ask a parent or guardian to log in and complete the enrolment."
+    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the health declaration. Please ask a parent or guardian to log in and complete the enrolment.",
+    "form_agree": "I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
+    "form_read": "Read the full health declaration",
+    "form_hide": "Hide the health declaration"
   }
 }

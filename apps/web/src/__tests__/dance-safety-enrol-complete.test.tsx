@@ -125,10 +125,12 @@ describe.each(DANCE_LIKE)('EnrolCompletePage — %s tenant keeps the enrolment f
     expect(
       await screen.findByText(`Please read the ${doc.name} carefully and sign below to activate your enrolment.`),
     ).toBeInTheDocument();
+    // One tick (13 Nov 2026): the full text opens from a link, no scrolling.
+    fireEvent.click(await screen.findByRole('button', { name: `Read the full ${doc.name}` }));
     expect(screen.getByRole('region', { name: `${doc.Name} document` })).toBeInTheDocument();
 
-    const checkbox = await screen.findByRole('checkbox', { name: `I have read and accept this ${doc.name}` });
-    expect(screen.getByText(`I have read and accept this ${doc.name}`)).toBeInTheDocument();
+    const tick = `I have read and agree to this ${doc.name}, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.`;
+    const checkbox = await screen.findByRole('checkbox', { name: tick });
     fireEvent.click(checkbox);
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Dana Dancer' } });
     fillSignerDetails();
@@ -171,8 +173,11 @@ describe('WaiverStep — dance tenant (enrolment stepper usage)', () => {
     expect(screen.getByText('Student')).toBeInTheDocument();
     expect(screen.getByText('Class')).toBeInTheDocument();
     expect(screen.getByText('Ballet 1 — Autumn')).toBeInTheDocument();
+    expect(
+      await screen.findByText('I have read and agree to this health declaration, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Read the full health declaration' }));
     expect(screen.getByRole('region', { name: 'Health declaration document' })).toBeInTheDocument();
-    expect(await screen.findByText('I have read and accept this health declaration')).toBeInTheDocument();
     expect(
       screen.getByText(
         'I confirm I am the parent or legal guardian of Noa and am authorised to sign this health declaration on their behalf.',
@@ -215,8 +220,9 @@ describe('EnrolCompletePage — photographer tenant gets the contract wording', 
     expect(
       await screen.findByText('Please read the contract carefully and sign below to confirm your booking.'),
     ).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Read the full contract' }));
     expect(screen.getByRole('region', { name: 'Contract document' })).toBeInTheDocument();
-    const checkbox = await screen.findByRole('checkbox', { name: 'I have read and accept this contract' });
+    const checkbox = await screen.findByRole('checkbox', { name: 'I have read and agree to the contract, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.' });
     fireEvent.click(checkbox);
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Pat Client' } });
     fillSignerDetails();
@@ -249,7 +255,7 @@ describe('EnrolCompletePage — photographer tenant gets the contract wording', 
     mockGuestFetch({ personId: PERSON_ID, offeringId: OFFERING_ID, template: TEMPLATE });
     renderPage();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('חתמו על החוזה');
-    const checkbox = await screen.findByRole('checkbox', { name: 'קראתי את החוזה ואני מסכים/ה לו' });
+    const checkbox = await screen.findByRole('checkbox', { name: 'קראתי את החוזה ואני מסכים/ה לו, הפרטים שלמעלה נכונים, ואני מבין/ה שהקלדת שמי וסימון תיבה זו הם החתימה האלקטרונית שלי.' });
     fireEvent.click(checkbox);
     fireEvent.change(screen.getByLabelText(baseValue('enrolment.waiver_name_label', 'he')), {
       target: { value: 'לקוח' },
@@ -278,6 +284,7 @@ describe('WaiverStep — the form\'s language', () => {
   it('says so when the form is only in the other language, and marks the text\'s language', async () => {
     renderInApp(step('he'));
     expect(await screen.findByText("This form is in Hebrew: the studio hasn't added an English version.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Read the full health declaration' }));
     const region = screen.getByRole('region', { name: /document/i });
     expect(region).toHaveAttribute('lang', 'he');
     expect(region).toHaveAttribute('dir', 'rtl');

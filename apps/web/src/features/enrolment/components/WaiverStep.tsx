@@ -151,9 +151,11 @@ function WaiverStepInner({
     phone: guestPrefill?.phone ?? '',
   });
   const [signerErrors, setSignerErrors] = useState<SignerDetailsErrors>({});
-  // Photographer job contracts: one tick instead of the long scrolling text
-  // (owner decision). The full contract stays one click away.
-  const singleTick = isJobContract === true;
+  // Every signed form is one tick instead of the long scrolling text: photography contracts
+  // (owner decision, 11 Nov 2026) and, since 13 Nov 2026, class waivers and health forms too
+  // (fewer steps; lawyer list row 42). The full text stays one click away.
+  const singleTick = true;
+  const agreeKey = isJobContract ? 'enrolment.job_contract_agree' : 'enrolment.form_agree';
   const [showFullText, setShowFullText] = useState(false);
 
   // No name from an earlier signed form: the signer is the signed-in person
@@ -219,7 +221,7 @@ function WaiverStepInner({
     if (error || !data?.view_token) {
       setViewError(
         singleTick
-          ? t('enrolment.job_contract_view_error')
+          ? t(isJobContract ? 'enrolment.job_contract_view_error' : 'enrolment.form_view_error')
           : t('enrolment.waiver_view_error', { defaultValue: 'Could not confirm reading. Please try scrolling again.' }),
       );
       return false;
@@ -269,7 +271,7 @@ function WaiverStepInner({
 
     // Check the signer details here first (the server and database repeat the same rules).
     // One-tick contracts: that single tick also confirms the details, and its wording is what is recorded.
-    const confirmedWording = singleTick ? t('enrolment.job_contract_agree') : t('enrolment.signer.confirm');
+    const confirmedWording = singleTick ? t(agreeKey) : t('enrolment.signer.confirm');
     const signerInput = buildSignerInput(
       singleTick ? { ...signerDraft, confirmed: affirmed } : signerDraft,
       typedName.trim(),
@@ -508,7 +510,7 @@ function WaiverStepInner({
                     onChange={(e) => setAffirmed(e.target.checked)}
                     className="mt-0.5"
                   />
-                  <span className="text-sm font-medium">{t('enrolment.job_contract_agree')}</span>
+                  <span className="text-sm font-medium">{t(agreeKey)}</span>
                 </label>
                 <button
                   type="button"
@@ -517,19 +519,23 @@ function WaiverStepInner({
                   aria-controls="waiver-document"
                   onClick={() => setShowFullText((v) => !v)}
                 >
-                  {showFullText ? t('enrolment.job_contract_hide') : t('enrolment.job_contract_read')}
+                  {showFullText
+                    ? t(isJobContract ? 'enrolment.job_contract_hide' : 'enrolment.form_hide')
+                    : t(isJobContract ? 'enrolment.job_contract_read' : 'enrolment.form_read')}
                 </button>
               </div>
-              <div className="rounded-md border p-3">
-                <ConsentCheckboxes
-                  legend={t('legal.consents.portfolio_legend')}
-                  hint={t('legal.consents.portfolio_hint')}
-                  kinds={['portfolio']}
-                  value={portfolio}
-                  onChange={setPortfolio}
-                  lang={legalLang}
-                />
-              </div>
+              {isJobContract && (
+                <div className="rounded-md border p-3">
+                  <ConsentCheckboxes
+                    legend={t('legal.consents.portfolio_legend')}
+                    hint={t('legal.consents.portfolio_hint')}
+                    kinds={['portfolio']}
+                    value={portfolio}
+                    onChange={setPortfolio}
+                    lang={legalLang}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

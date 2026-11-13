@@ -119,7 +119,10 @@
     "waiver_loading": "טוען את החוזה…",
     "waiver_no_template": "עדיין לא הוגדר חוזה פעיל. צרו קשר עם הסטודיו.",
     "waiver_context_student": "לקוח/ה",
-    "waiver_context_class": "חבילה"
+    "waiver_context_class": "חבילה",
+    "form_agree": "קראתי את החוזה ואני מסכים/ה לו, הפרטים שלמעלה נכונים, ואני מבין/ה שהקלדת שמי וסימון תיבה זו הם החתימה האלקטרונית שלי.",
+    "form_read": "לקריאת החוזה המלא",
+    "form_hide": "הסתרת החוזה"
   },
   "finance": {
     "hub": {
