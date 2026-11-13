@@ -70,3 +70,23 @@ export function buildClientDeliveredEmail(
       `The link is also in your account:\n${i.portalUrl}`,
   };
 }
+
+/** "Email shop link to client": the shoot's photos are ready to view and order. */
+export function buildClientShopLinkEmail(
+  i: { language: Lang; studioName: string; url: string; days: number },
+): { subject: string; body: string } {
+  if (i.language === "he") {
+    return {
+      subject: "התמונות מהצילום מוכנות",
+      body:
+        `התמונות מהצילום ב${i.studioName} מוכנות. אפשר לצפות בהן ולבחור תמונות כאן:\n${i.url}\n\n` +
+        `הקישור פעיל ${i.days} ימים. אחר כך התמונות מחכות בחשבון שלך.`,
+    };
+  }
+  return {
+    subject: "Your photos are ready",
+    body:
+      `Your photos from your shoot with ${i.studioName} are ready. See them and choose the ones you want here:\n${i.url}\n\n` +
+      `This link works for ${i.days} days. After that, your photos are waiting in your account.`,
+  };
+}

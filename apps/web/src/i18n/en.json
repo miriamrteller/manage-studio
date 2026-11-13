@@ -1871,19 +1871,20 @@
           "cancelled": "Cancelled",
           "refunded": "Refunded"
         },
-        "send_link": "Send shop link",
         "send_link_hint": "The client opens their photos straight away, without signing in. The link works for 3 days.",
         "link_ready": "Link for {{email}}, works until {{date}}:",
         "link_copy": "Copy link",
         "link_copied": "Copied",
-        "link_email": "Email",
         "link_whatsapp": "WhatsApp",
         "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
-        "link_subject": "Your photos are ready",
         "link_error": "We couldn't make the link. Please try again.",
         "link_no_email": "Add the client's email first, so the link can sign them in.",
         "paying_cash": "The client will pay in cash.",
-        "record_cash": "Record cash payment"
+        "record_cash": "Record cash payment",
+        "email_link": "Email shop link to client",
+        "link_other_way": "WhatsApp or copy link",
+        "link_emailed": "Emailed to {{email}}. The link works until {{date}}.",
+        "link_not_emailed": "We couldn't email it. Copy the link or send it on WhatsApp:"
       },
       "tabs": {
         "details": "Details",
@@ -1906,7 +1907,8 @@
       "invoiceNote": "A tax invoice-receipt is issued automatically on payment.",
       "payStudioDirectly": "{{studio}} does not take card payments online for this request. Please pay {{studio}} directly, by bank transfer or as agreed.",
       "pageUnavailable": "The card payment page couldn't open just now. Please try again in a few minutes, or contact {{studio}} to pay another way, for example by bank transfer, or as agreed.",
-      "jobDate": "Shoot {{date}}"
+      "jobDate": "Shoot {{date}}",
+      "sign_later": "now or later, whichever suits you"
     },
     "quotes": {
       "title": "Quotes",
@@ -2042,7 +2044,8 @@
         "invalid_request": "Something went wrong. Please refresh and try again.",
         "server_error": "Something went wrong on our side. Please try again in a moment.",
         "generic": "Something went wrong. Please try again."
-      }
+      },
+      "accept_and_pay": "Accept and pay deposit"
     },
     "new_password": {
       "title": "Choose a new password",

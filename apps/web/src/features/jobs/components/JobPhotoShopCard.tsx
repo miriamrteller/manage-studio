@@ -360,20 +360,23 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
   );
 }
 
-/** "Send shop link": a 3-day link that signs the client straight in to their photos. */
+/**
+ * "Email shop link to client" (owner, 13 Nov 2026: one button): OpalSwift makes the
+ * 3-day link and emails it from the studio. WhatsApp or copy stay as a smaller choice.
+ */
 function SendShopLink({ engagementId }: { engagementId: string }) {
   const { t, i18n } = useTranslation();
-  const [link, setLink] = useState<PhotoShopLink | null>(null);
+  const [link, setLink] = useState<(PhotoShopLink & { emailed?: boolean }) | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const make = async () => {
+  const run = async (how: 'email' | 'link') => {
     setBusy(true);
     setError(null);
     setCopied(false);
     try {
-      setLink(await PhotoShopLinkService.create(engagementId));
+      setLink(how === 'email' ? await PhotoShopLinkService.email(engagementId) : await PhotoShopLinkService.create(engagementId));
     } catch (e) {
       setError(e instanceof PhotoShopLinkError && e.code === 'no_email'
         ? t('pages.jobs.photo_shop.link_no_email')
@@ -393,26 +396,34 @@ function SendShopLink({ engagementId }: { engagementId: string }) {
       setCopied(false);
     }
   };
+  const until = link ? formatDueDate(link.expiresAt, i18n.language) : '';
 
   return (
     <div className="space-y-2 text-sm">
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" variant="primary" isLoading={busy} onClick={make}>
-          {t('pages.jobs.photo_shop.send_link')}
+        <Button size="sm" variant="primary" isLoading={busy} onClick={() => void run('email')}>
+          {t('pages.jobs.photo_shop.email_link')}
         </Button>
-        <span className="text-xs text-muted-foreground">{t('pages.jobs.photo_shop.send_link_hint')}</span>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run('link')}>
+          {t('pages.jobs.photo_shop.link_other_way')}
+        </Button>
       </div>
+      <p className="text-xs text-muted-foreground">{t('pages.jobs.photo_shop.send_link_hint')}</p>
       {link && (
-        <div className="space-y-2 rounded-md border p-3">
-          <p>{t('pages.jobs.photo_shop.link_ready', { email: link.email, date: formatDueDate(link.expiresAt, i18n.language) })}</p>
+        <div className="space-y-2 rounded-md border p-3" aria-live="polite">
+          {link.emailed ? (
+            <p>{t('pages.jobs.photo_shop.link_emailed', { email: link.email, date: until })}</p>
+          ) : (
+            <p>
+              {link.emailed === false
+                ? t('pages.jobs.photo_shop.link_not_emailed')
+                : t('pages.jobs.photo_shop.link_ready', { email: link.email, date: until })}
+            </p>
+          )}
           <p dir="ltr" className="break-all font-mono text-xs">{link.url}</p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="secondary" onClick={copy}>
               {copied ? t('pages.jobs.photo_shop.link_copied') : t('pages.jobs.photo_shop.link_copy')}
-            </Button>
-            <Button size="sm" variant="secondary"
-              onClick={() => window.location.assign(`mailto:${encodeURIComponent(link.email)}?subject=${encodeURIComponent(t('pages.jobs.photo_shop.link_subject'))}&body=${encodeURIComponent(message)}`)}>
-              {t('pages.jobs.photo_shop.link_email')}
             </Button>
             <Button size="sm" variant="secondary"
               onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')}>

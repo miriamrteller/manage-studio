@@ -65,7 +65,7 @@ describe('createJobPaymentRequestCharge', () => {
 });
 
 describe('/pay/:token', () => {
-  function renderPage(onlinePaymentAvailable: boolean | undefined) {
+  function renderPage(onlinePaymentAvailable: boolean | undefined, signPath?: string) {
     publicRequest.mockResolvedValue({
       request: {
         id: 'jpr-1', label: 'Deposit', amountMinor: 50000, currency: 'ILS', dueDate: null,
@@ -77,7 +77,9 @@ describe('/pay/:token', () => {
     });
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter><PublicPayRequest token="tok" result={null} /></MemoryRouter>
+        <MemoryRouter initialEntries={[{ pathname: '/pay/tok', state: signPath ? { signPath } : null }]}>
+          <PublicPayRequest token="tok" result={null} />
+        </MemoryRouter>
       </QueryClientProvider>,
     );
   }
@@ -94,5 +96,18 @@ describe('/pay/:token', () => {
     cleanup();
     renderPage(undefined);
     expect(await screen.findByRole('button', { name: 'pages.pay.payNow' })).toBeTruthy();
+  });
+
+  it('straight from accepting a quote: signing the contract is offered here, never before paying', async () => {
+    const signPath = '/enrol/complete?engagementId=e1&wt=abc';
+    renderPage(true, signPath);
+    expect(await screen.findByRole('button', { name: 'pages.pay.payNow' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'pages.public_quote.next_steps.sign_contract' }).getAttribute('href')).toBe(signPath);
+  });
+
+  it('a link that is not one of ours is ignored', async () => {
+    renderPage(true, 'https://evil.test/x');
+    expect(await screen.findByRole('button', { name: 'pages.pay.payNow' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'pages.public_quote.next_steps.sign_contract' })).toBeNull();
   });
 });

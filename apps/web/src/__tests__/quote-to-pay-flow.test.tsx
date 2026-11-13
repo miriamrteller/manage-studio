@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 /**
  * Client booking flow, one page to the next with no waiting for the studio:
- *   /quote/:token  accept → "Continue to pay the deposit" (signing is optional alongside)
+ *   /quote/:token  "Accept and pay deposit" → straight to payment (signing is offered there)
  *   /enrol/complete (job contract) "Pay the deposit now" any time; sign → straight to payment, or the portal
  * plus the admin booking progress strip. Dance waivers keep today's behaviour.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { useLocation } from 'react-router-dom';
 import EnrolCompletePage from '@/pages/EnrolCompletePage';
 import { PublicQuoteView } from '@/features/quotes/components/public/PublicQuoteView';
 import { buildBookingProgress } from '@/features/jobs/lib/bookingProgress';
@@ -130,7 +131,7 @@ describe('safe next-step paths', () => {
 describe('/quote/:token success state', () => {
   beforeEach(() => setTenant('photographer'));
 
-  it('accept → the primary button goes to payment; signing is offered alongside, not before; links were also emailed', async () => {
+  it('Accept and pay deposit: one button, straight to payment; signing is handed on to be offered there', async () => {
     let status: 'sent' | 'accepted' = 'sent';
     rpc.mockImplementation(async () => ({ data: publicQuote(status), error: null }));
     invoke.mockImplementation(async (name: string) => {
@@ -138,48 +139,53 @@ describe('/quote/:token success state', () => {
       status = 'accepted';
       return { data: { ok: true, already_accepted: false, contractSignPath: SIGN_PATH, depositPayPath: PAY_PATH }, error: null };
     });
+    function PayStub() {
+      const state = useLocation().state as { signPath?: string } | null;
+      return <p>PAY PAGE {state?.signPath}</p>;
+    }
     renderInApp(<PublicQuoteView token={QUOTE_TOKEN} />, {
-      path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}`, extraRoutes: { '/enrol/complete': <p>SIGN PAGE</p> },
+      path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}`, extraRoutes: { '/pay/:token': <PayStub /> },
     });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Accept and book' }));
-    expect(await screen.findByText('To finish your booking, pay the deposit. You can sign the contract now or later.')).toBeInTheDocument();
-    expect(screen.getByText('We have also emailed you these links, so you can come back to them later.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue to pay the deposit' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Continue to sign the contract' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Sign the contract' }));
-    expect(await screen.findByText('SIGN PAGE')).toBeInTheDocument();
-    expect(screen.getByTestId('location')).toHaveTextContent('/enrol/complete');
+    expect(screen.queryByRole('button', { name: 'Accept and book' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Accept and pay deposit' }));
+    expect(await screen.findByText(`PAY PAGE ${SIGN_PATH}`)).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent(PAY_PATH);
   });
 
-  it('no contract template → the button goes to the deposit', async () => {
+  it('no contract template → straight to the deposit too', async () => {
     rpc.mockResolvedValue({ data: publicQuote('sent'), error: null });
     invoke.mockResolvedValue({ data: { ok: true, depositPayPath: PAY_PATH }, error: null });
     renderInApp(<PublicQuoteView token={QUOTE_TOKEN} />, {
       path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}`, extraRoutes: { '/pay/:token': <p>PAY PAGE</p> },
     });
-    fireEvent.click(await screen.findByRole('button', { name: 'Accept and book' }));
-    rpc.mockResolvedValue({ data: publicQuote('accepted'), error: null });
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue to pay the deposit' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Accept and pay deposit' }));
     expect(await screen.findByText('PAY PAGE')).toBeInTheDocument();
   });
 
-  it('revisiting an accepted quote replays the (idempotent) accept to get the links again', async () => {
+  it('revisiting an accepted quote replays the (idempotent) accept and goes on to the unpaid deposit', async () => {
     rpc.mockResolvedValue({ data: publicQuote('accepted'), error: null });
     invoke.mockResolvedValue({ data: { ok: true, already_accepted: true, contractSignPath: SIGN_PATH, depositPayPath: PAY_PATH }, error: null });
     renderInApp(<PublicQuoteView token={QUOTE_TOKEN} />, { path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}` });
     fireEvent.click(await screen.findByRole('button', { name: 'Continue your booking' }));
-    expect(await screen.findByRole('button', { name: 'Continue to pay the deposit' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign the contract' })).toBeInTheDocument();
+    // Deposit still unpaid: straight back to paying it.
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(PAY_PATH));
     expect(invoke).toHaveBeenCalledWith('accept-quote', expect.objectContaining({ body: expect.objectContaining({ token: QUOTE_TOKEN }) }));
+  });
+
+  it('deposit already paid: the contract is still offered on the quote', async () => {
+    rpc.mockResolvedValue({ data: publicQuote('accepted'), error: null });
+    invoke.mockResolvedValue({ data: { ok: true, already_accepted: true, contractSignPath: SIGN_PATH }, error: null });
+    renderInApp(<PublicQuoteView token={QUOTE_TOKEN} />, { path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}` });
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue your booking' }));
+    expect(await screen.findByRole('button', { name: 'Continue to sign the contract' })).toBeInTheDocument();
   });
 
   it('ignores a link that is not one of ours', async () => {
     rpc.mockResolvedValue({ data: publicQuote('sent'), error: null });
     invoke.mockResolvedValue({ data: { ok: true, contractSignPath: 'https://evil.test/x' }, error: null });
     renderInApp(<PublicQuoteView token={QUOTE_TOKEN} />, { path: '/quote/:token', initialEntry: `/quote/${QUOTE_TOKEN}` });
-    fireEvent.click(await screen.findByRole('button', { name: 'Accept and book' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Accept and pay deposit' }));
     rpc.mockResolvedValue({ data: publicQuote('accepted'), error: null });
     await waitFor(() => expect(invoke).toHaveBeenCalled());
     expect(screen.queryByRole('button', { name: /Continue to/ })).not.toBeInTheDocument();

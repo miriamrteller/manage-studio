@@ -32,8 +32,8 @@ const CHECK_ORDER: GalleryCheckItem['code'][] = [
 
 /**
  * Shoot page → Photo shop → where the photos come from. A studio with SmugMug connected
- * picks the shoot's gallery (prefilled with the one named like the shoot) and "Check
- * gallery" reads its Photo Protection settings and photos. Otherwise, or if the studio
+ * picks the shoot's gallery (prefilled with the one named like the shoot); picking it
+ * checks it at once (its Photo Protection settings and photos). Otherwise, or if the studio
  * prefers, it uploads watermarked copies here (JobPhotoShopPhotos).
  */
 export function JobPhotoShopSource({ engagementId, shop }: { engagementId: string; shop: JobPhotoShop }) {
@@ -107,6 +107,15 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
   });
 
   const saved = shop.smugmug_check && shop.smugmug_check.album_key === current ? shop.smugmug_check : null;
+
+  // Choosing a gallery checks it straight away (owner, 13 Nov 2026: fewest steps). It only
+  // reads SmugMug. A gallery already checked for this shoot keeps its result until
+  // "Check again"; changing the gallery or the watermark tick resets and checks again.
+  const alreadyChecked = albumKey !== '' && albumKey === current && saved !== null;
+  const { mutate: runCheck, isIdle: checkIdle } = check;
+  useEffect(() => {
+    if (albumKey && !alreadyChecked && checkIdle) runCheck(albumKey);
+  }, [albumKey, alreadyChecked, checkIdle, runCheck]);
   const items = check.data?.items ?? (albumKey === current ? saved?.items : undefined);
   const passed = check.data?.passed ?? (albumKey === current ? saved?.passed : undefined);
   const errorCode = check.error instanceof SmugMugActionError ? check.error.code : check.error ? 'failed' : null;
