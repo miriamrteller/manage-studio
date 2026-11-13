@@ -12,6 +12,8 @@
  *   and the token rides in the URL fragment, which browsers never send to a server.
  * - clientHasBooking: whether an email is a booked client (or the payer of one) at a
  *   studio, so the login page can make their login before sending the sign-in email.
+ * - clientWasImported: whether the studio added this email from a spreadsheet (client
+ *   import, 13 Nov 2026). Imported clients sign in the same way as booked ones.
  *
  * Callers on a booking or payment path must treat every failure here as "no login yet":
  * nothing here may stand in the way of booking or paying.
@@ -197,6 +199,35 @@ export async function clientHasBooking(
     .limit(1)
     .maybeSingle();
   return Boolean(engagement?.id);
+}
+
+/**
+ * Whether the studio imported this email as a client (Clients → Import from a
+ * spreadsheet). Such a client has no booking yet but may sign in like a booked one.
+ */
+export async function clientWasImported(
+  service: SupabaseClient,
+  params: { tenantId: string; email: string },
+): Promise<boolean> {
+  const email = normaliseEmail(params.email);
+  if (!email) return false;
+
+  const { data: people } = await service
+    .from("people")
+    .select("id")
+    .eq("tenant_id", params.tenantId)
+    .ilike("email", escapeLike(email));
+  const ids = ((people ?? []) as Array<{ id: string }>).map((p) => p.id);
+  if (ids.length === 0) return false;
+
+  const { data: imported } = await service
+    .from("client_import_people")
+    .select("person_id")
+    .eq("tenant_id", params.tenantId)
+    .in("person_id", ids)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(imported?.person_id);
 }
 
 /** The studio page that opens a sign-in link. The token is in the fragment. */

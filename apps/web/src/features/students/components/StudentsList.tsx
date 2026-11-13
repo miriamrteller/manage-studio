@@ -233,9 +233,14 @@ export function StudentsList() {
           />
         }
         actions={
-          <Button variant="primary" onClick={openAddAction}>
-            {t('pages.students.enrol_new_button')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => navigate('/admin/students/import')}>
+              {t('clients_import.button')}
+            </Button>
+            <Button variant="primary" onClick={openAddAction}>
+              {t('pages.students.enrol_new_button')}
+            </Button>
+          </div>
         }
       />
 

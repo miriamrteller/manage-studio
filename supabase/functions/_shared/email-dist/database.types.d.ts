@@ -822,6 +822,103 @@ export type Database = {
                     }
                 ];
             };
+            client_import_batches: {
+                Row: {
+                    clients_count: number;
+                    created_at: string;
+                    created_by: string;
+                    file_name: string;
+                    id: string;
+                    mapping: Json;
+                    sheet_name: string | null;
+                    skipped_count: number;
+                    students_count: number;
+                    tenant_id: string;
+                };
+                Insert: {
+                    clients_count?: number;
+                    created_at?: string;
+                    created_by: string;
+                    file_name: string;
+                    id?: string;
+                    mapping?: Json;
+                    sheet_name?: string | null;
+                    skipped_count?: number;
+                    students_count?: number;
+                    tenant_id: string;
+                };
+                Update: {
+                    clients_count?: number;
+                    created_at?: string;
+                    created_by?: string;
+                    file_name?: string;
+                    id?: string;
+                    mapping?: Json;
+                    sheet_name?: string | null;
+                    skipped_count?: number;
+                    students_count?: number;
+                    tenant_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "client_import_batches_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "client_import_batches_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            client_import_people: {
+                Row: {
+                    batch_id: string;
+                    created_at: string;
+                    person_id: string;
+                    tenant_id: string;
+                };
+                Insert: {
+                    batch_id: string;
+                    created_at?: string;
+                    person_id: string;
+                    tenant_id: string;
+                };
+                Update: {
+                    batch_id?: string;
+                    created_at?: string;
+                    person_id?: string;
+                    tenant_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "client_import_people_batch_id_fkey";
+                        columns: ["batch_id"];
+                        isOneToOne: false;
+                        referencedRelation: "client_import_batches";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "client_import_people_person_id_fkey";
+                        columns: ["person_id"];
+                        isOneToOne: true;
+                        referencedRelation: "people";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "client_import_people_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             client_sign_in_links: {
                 Row: {
                     created_at: string;
@@ -6159,6 +6256,34 @@ export type Database = {
                 Args: never;
                 Returns: number;
             };
+            client_import_admin_tenant: {
+                Args: never;
+                Returns: string;
+            };
+            client_import_find_client: {
+                Args: {
+                    p_email: string;
+                    p_phone: string;
+                    p_tenant_id: string;
+                };
+                Returns: {
+                    name: string;
+                    person_id: string;
+                    reason: string;
+                }[];
+            };
+            client_import_matches: {
+                Args: {
+                    p_clients: Json;
+                };
+                Returns: Json;
+            };
+            client_import_phone_key: {
+                Args: {
+                    p_phone: string;
+                };
+                Returns: string;
+            };
             complete_automatic_email: {
                 Args: {
                     p_external_msg_id?: string;
@@ -6990,6 +7115,15 @@ export type Database = {
                     p_season_id: string;
                     p_student_person_id: string;
                     p_subdomain: string;
+                };
+                Returns: Json;
+            };
+            import_clients: {
+                Args: {
+                    p_clients: Json;
+                    p_file_name: string;
+                    p_mapping: Json;
+                    p_sheet_name: string;
                 };
                 Returns: Json;
             };

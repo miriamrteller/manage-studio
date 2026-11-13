@@ -8,8 +8,8 @@
  *       a booking or enrolment confirmation email (valid 3 days).
  *   { action: "prepare", subdomain, email }   (the studio login page, before it sends
  *     the sign-in email)
- *     → { ok: true } always. When the email is a booked client at that studio and has no
- *       login yet, the login is made then (no email sent), so the sign-in email that
+ *     → { ok: true } always. When the email is a booked or imported client at that
+ *       studio and has no login yet, the login is made then (no email sent), so the sign-in email that
  *       follows reaches them. Anyone else gets the same answer and nothing happens.
  *
  * Safety: never a staff, admin, platform-owner or other-studio login (client-login.ts).
@@ -20,6 +20,7 @@ import { withMonitoring } from "../_shared/monitoring.ts";
 import {
   cleanSignInToken,
   clientHasBooking,
+  clientWasImported,
   ensureClientLogin,
   normaliseEmail,
   openClientSignInLink,
@@ -51,7 +52,11 @@ Deno.serve(withMonitoring("client-sign-in", async (req) => {
           .eq("subdomain", subdomain)
           .maybeSingle();
         const tenantId = (tenant?.id as string | null) ?? null;
-        if (tenantId && await clientHasBooking(service, { tenantId, email })) {
+        if (
+          tenantId &&
+          (await clientHasBooking(service, { tenantId, email }) ||
+            await clientWasImported(service, { tenantId, email }))
+        ) {
           await ensureClientLogin(service, { tenantId, email });
         }
       } catch (err) {
