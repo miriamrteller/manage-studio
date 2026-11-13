@@ -76,6 +76,18 @@ const payloadSchema = z.object({
   formSlug: z.string().max(40).nullable().optional(),
   /** Token from an admin's "Send form" link (#invite=…): links the lead to that invite. */
   invite: z.string().max(128).nullable().optional(),
+  /**
+   * Photographer Book page: a shoot request (package + day). Nothing is
+   * charged; it lands as a lead with offering_id + event_date, and the
+   * studio confirms it from the leads list (Convert to shoot, prefilled).
+   */
+  shootRequest: z
+    .object({
+      offeringId: z.string().guid(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    })
+    .nullable()
+    .optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /** Time trap: milliseconds the form was open before sending (absent = not checked). */
@@ -276,12 +288,40 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       return json({ error: "Too many requests. Please try again later." }, 429);
     }
 
+    // Shoot request from the Book page: a day in the past is refused (the
+    // calendar never offers one); a package that is not the studio's own is
+    // dropped, never the request.
+    let shoot: { offeringId: string | null; packageName: string | null; date: string } | null = null;
+    if (payload.shootRequest) {
+      if (payload.shootRequest.date < todayIn(FORM_TIME_ZONE)) {
+        return json({ error: "date_in_past" }, 400);
+      }
+      const { data: pkg } = await service
+        .from("offerings")
+        .select("id, name")
+        .eq("tenant_id", leadTenant.id)
+        .eq("id", payload.shootRequest.offeringId)
+        .eq("status", "active")
+        .maybeSingle();
+      shoot = {
+        offeringId: (pkg?.id as string | undefined) ?? null,
+        packageName: (pkg?.name as string | undefined) ?? null,
+        date: payload.shootRequest.date,
+      };
+    }
+
     const fields = {
       name: payload.name.trim(),
       email,
       phone: nonEmpty(payload.phone),
-      interest: nonEmpty(payload.interest),
+      interest: nonEmpty(payload.interest) ?? shoot?.packageName ?? null,
       lastCommunicationNote: nonEmpty(payload.message),
+    };
+
+    const formColumns = {
+      ...(namedForm?.offering_id && !checked.columns.offering_id ? { offering_id: namedForm.offering_id } : {}),
+      ...checked.columns,
+      ...(shoot ? { event_date: shoot.date, ...(shoot.offeringId ? { offering_id: shoot.offeringId } : {}) } : {}),
     };
 
     const result = await writeInboundLead(service, leadTenant, fields, {
@@ -289,14 +329,10 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       sourceRef: null,
       receivedAt: new Date().toISOString(),
       campaign: normaliseCampaign(payload.campaign),
-      form: questions.length > 0 || namedForm?.offering_id
-        ? {
-          // The form's own class/package applies unless the visitor picked one.
-          columns: namedForm?.offering_id && !checked.columns.offering_id
-            ? { ...checked.columns, offering_id: namedForm.offering_id }
-            : checked.columns,
-          answers: checked.answers,
-        }
+      // The form's own class/package applies unless the visitor picked one;
+      // a shoot request's package and day win over both.
+      form: questions.length > 0 || Object.keys(formColumns).length > 0
+        ? { columns: formColumns, answers: checked.answers }
         : null,
       formId: namedForm?.id ?? null,
     });
@@ -327,7 +363,13 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     }
 
     if (result.outcome !== "duplicate") {
-      await notifyTenantOfLead(service, leadTenant, fields, result.outcome);
+      await notifyTenantOfLead(
+        service,
+        leadTenant,
+        fields,
+        result.outcome,
+        shoot && result.leadId ? { leadId: result.leadId, packageName: shoot.packageName, date: shoot.date } : null,
+      );
     }
 
     return json({ outcome: result.outcome }, result.outcome === "created" ? 201 : 200);

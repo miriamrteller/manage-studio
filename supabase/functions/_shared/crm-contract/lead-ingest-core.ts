@@ -13,6 +13,7 @@
 
 import { sendHtmlEmail } from "../email-client.ts";
 import { resolveTenantSender } from "../notification-from.ts";
+import { tenantBaseUrl } from "../tenant-url.ts";
 
 export interface LeadFields {
   name: string;
@@ -175,33 +176,88 @@ function esc(value: string): string {
  * Reply-To is the lead's own address, so the studio answers the inquirer with
  * one click. Failures are logged and never affect the capture.
  */
+export interface ShootRequestAlert {
+  leadId: string;
+  packageName: string | null;
+  /** YYYY-MM-DD, the day the client asked for. */
+  date: string;
+}
+
+/** "Friday 4 December 2026" / "יום שישי, 4 בדצמבר 2026" for a YYYY-MM-DD day. */
+export function formatRequestDay(date: string, he: boolean): string {
+  const day = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(day.getTime())) return date;
+  return day.toLocaleDateString(he ? "he-IL" : "en-GB", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/** Where the studio's Confirm button goes: the lead, with Convert to shoot open. */
+export function shootRequestConfirmUrl(tenant: Pick<LeadTenant, "subdomain">, leadId: string): string {
+  return `${tenantBaseUrl(tenant.subdomain)}/admin/leads?lead=${encodeURIComponent(leadId)}&confirm=1`;
+}
+
 export async function notifyTenantOfLead(
   service: ServiceClient,
   tenant: LeadTenant,
   fields: LeadFields,
   outcome: "created" | "updated",
+  shootRequest: ShootRequestAlert | null = null,
 ): Promise<void> {
   try {
     const he = tenant.language_default === "he";
-    const subject = outcome === "created"
+    const requestDay = shootRequest ? formatRequestDay(shootRequest.date, he) : null;
+    const subject = shootRequest
+      ? (he ? `בקשה לצילום: ${fields.name}, ${requestDay}` : `Shoot request: ${fields.name}, ${requestDay}`)
+      : outcome === "created"
       ? (he ? `ליד חדש: ${fields.name}` : `New lead: ${fields.name}`)
       : (he ? `הודעה חדשה מליד קיים: ${fields.name}` : `New message from lead: ${fields.name}`);
 
     const rows: Array<[string, string | null]> = [
+      ...(shootRequest
+        ? [
+          [he ? "חבילה" : "Package", shootRequest.packageName] as [string, string | null],
+          [he ? "תאריך מבוקש" : "Date asked for", requestDay] as [string, string | null],
+        ]
+        : []),
       [he ? "שם" : "Name", fields.name],
       [he ? "אימייל" : "Email", fields.email],
       [he ? "טלפון" : "Phone", fields.phone],
-      [he ? "מתעניין/ת ב" : "Interested in", fields.interest],
+      [he ? "מתעניין/ת ב" : "Interested in", shootRequest ? null : fields.interest],
       [he ? "ההודעה" : "Message", fields.lastCommunicationNote],
     ];
+    const intro = shootRequest
+      ? (he
+        ? "התקבלה בקשה לצילום. עדיין לא חויב דבר. אחרי שתאשרו, הצילום ייקבע בתאריך הזה והלקוח יקבל במייל הצעת מחיר לאישור ולתשלום המקדמה."
+        : "You have a new shoot request. Nothing has been charged. Once you confirm, the shoot is booked on this date and the client is emailed the quote to accept and pay the deposit.")
+      : `${he ? "התקבלה פנייה חדשה במערכת הלידים" : "A new inquiry landed in your leads inbox"} (${esc(tenant.name)}).`;
+    // The alert still goes out if the link cannot be built (no root domain set).
+    let confirmUrl: string | null = null;
+    if (shootRequest) {
+      try {
+        confirmUrl = shootRequestConfirmUrl(tenant, shootRequest.leadId);
+      } catch (err) {
+        console.error("lead-ingest-core: no Confirm link for the shoot request", err);
+      }
+    }
+    const confirmButton = confirmUrl
+      ? `<p><a href="${esc(confirmUrl)}" ` +
+        `style="display:inline-block;padding:10px 18px;background:#111827;color:#ffffff;text-decoration:none;border-radius:6px">` +
+        `${he ? "אישור הצילום" : "Confirm"}</a></p>`
+      : "";
     const html = `<!doctype html><html dir="${he ? "rtl" : "ltr"}"><body>` +
-      `<p>${he ? "התקבלה פנייה חדשה במערכת הלידים" : "A new inquiry landed in your leads inbox"} (${esc(tenant.name)}).</p>` +
+      `<p>${intro}</p>` +
       `<table cellpadding="4">` +
       rows
         .filter(([, value]) => value)
         .map(([label, value]) => `<tr><td><b>${label}</b></td><td>${esc(value as string)}</td></tr>`)
         .join("") +
       `</table>` +
+      confirmButton +
       `<p>${he ? "ניתן להשיב ישירות למייל זה כדי לענות לפונה." : "Reply to this email to answer the inquirer directly."}</p>` +
       `</body></html>`;
 
@@ -218,7 +274,7 @@ export async function notifyTenantOfLead(
       tenant_id: tenant.id,
       recipient_email: tenant.contact_email,
       channel: "email",
-      template_name: "crm_new_lead",
+      template_name: shootRequest ? "crm_shoot_request" : "crm_new_lead",
       subject,
       body_preview: fields.lastCommunicationNote,
       external_msg_id: send.id,

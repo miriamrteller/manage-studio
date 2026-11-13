@@ -27,6 +27,23 @@ export interface PrepareBookingResult {
  * which reuses the existing enrolment payment/finalise spine.
  */
 export const BookingService = {
+  /**
+   * Busy times from the studio's Google Calendar, for greying out taken days
+   * on the shoot request calendar. Not connected, or any error: no busy times
+   * (a request is never blocked because the calendar could not be read).
+   */
+  async getCalendarBusy(subdomain: string, timeMin: string, timeMax: string): Promise<Array<{ start: string; end: string }>> {
+    try {
+      const { data, error } = await supabase.functions.invoke('google-calendar-freebusy', {
+        body: { subdomain, time_min: timeMin, time_max: timeMax },
+      });
+      if (error || !data || !Array.isArray((data as { busy?: unknown }).busy)) return [];
+      return (data as { busy: Array<{ start: string; end: string }> }).busy;
+    } catch {
+      return [];
+    }
+  },
+
   async listBookableOfferings(subdomain: string): Promise<BookableOffering[]> {
     const { data, error } = await supabase.rpc('get_bookable_offerings_by_subdomain', {
       p_subdomain: subdomain,

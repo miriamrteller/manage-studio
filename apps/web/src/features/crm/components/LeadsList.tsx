@@ -1,7 +1,7 @@
-﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { followUpState } from '../lib/followUp';
 import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LeadsTabs } from './LeadsTabs';
 import { useNamedForms } from '../hooks/useNamedForms';
 import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
@@ -46,12 +46,20 @@ function formatDate(value: string | null, locale: string): string {
 
 
 interface LeadRowGroupProps {
-  lead: Pick<Lead, 'id' | 'name' | 'offering_id' | 'answers' | 'event_date'>;
+  lead: Pick<Lead, 'id' | 'name' | 'offering_id' | 'answers' | 'event_date' | 'converted_account_id'>;
   converting: boolean;
   canConvert: boolean;
   onConvert: () => void;
   onClose: () => void;
   children: ReactNode;
+}
+
+/**
+ * A shoot request from the Book page (or any enquiry naming a package and a
+ * day): the photographer confirms it, which converts it on that day.
+ */
+export function isShootRequest(lead: Pick<Lead, 'offering_id' | 'event_date' | 'converted_account_id'>): boolean {
+  return !!lead.offering_id && !!lead.event_date && !lead.converted_account_id;
 }
 
 /** A lead row plus, when converting, the inline convert panel beneath it. */
@@ -68,6 +76,7 @@ function LeadRowGroup({ lead, converting, canConvert, onClose, children }: LeadR
               defaultOfferingId={lead.offering_id}
               defaultLocation={answerPlain(lead.answers?.event_location)}
               eventDate={lead.event_date}
+              confirming={isShootRequest(lead)}
               onClose={onClose}
             />
           </td>
@@ -134,6 +143,19 @@ export function LeadsList() {
     isDeleting,
   } = useLeads();
   const navigate = useNavigate();
+  // The Confirm button in a shoot request email: ?lead=<id>&confirm=1 opens
+  // that lead's Confirm panel once the list has loaded.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedLeadId = searchParams.get('lead');
+  useEffect(() => {
+    if (!linkedLeadId || !canConvert || isLoading) return;
+    const linked = allLeads.find((l) => l.id === linkedLeadId);
+    if (linked && !linked.converted_account_id && searchParams.get('confirm') === '1') setConvertingId(linked.id);
+    const next = new URLSearchParams(searchParams);
+    next.delete('lead');
+    next.delete('confirm');
+    setSearchParams(next, { replace: true });
+  }, [linkedLeadId, canConvert, isLoading, allLeads, searchParams, setSearchParams]);
   const [deleted, setDeleted] = useState<string | null>(null);
   const handleDelete = (lead: Lead) => {
     if (isConvertedLead(lead)) return;
@@ -491,6 +513,11 @@ export function LeadsList() {
                         {t('pages.crm.leads.converted')}
                       </span>
                     )}
+                    {canConvert && isShootRequest(lead) && (
+                      <span className="block text-xs font-medium text-amber-800">
+                        {t('pages.crm.leads.shoot_request', { day: formatDate(lead.event_date, i18n.language) })}
+                      </span>
+                    )}
                     {!canConvert && (
                       <LeadEnrolmentLink
                         lead={lead}
@@ -561,8 +588,12 @@ export function LeadsList() {
                         <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setConvertingId(lead.id)}>
-                            {t('pages.crm.leads.convert')}
+                          <Button
+                            variant={isShootRequest(lead) ? 'primary' : 'outline'}
+                            size="sm"
+                            onClick={() => setConvertingId(lead.id)}
+                          >
+                            {isShootRequest(lead) ? t('pages.crm.leads.confirm_shoot') : t('pages.crm.leads.convert')}
                           </Button>
                           {lead.stage !== 'lost' && <CreateQuoteButton leadId={lead.id} />}
                         </div>

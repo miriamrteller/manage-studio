@@ -709,7 +709,10 @@
         "delete_failed": "לא הצלחנו למחוק את הליד. נסו שוב.",
         "delete_blocked_converted": "הליד הזה הפך ללקוח, ולכן אי אפשר למחוק אותו.",
         "delete_blocked_has_quote_or_job": "לליד הזה יש הצעת מחיר או עבודה. יש למחוק אותן קודם.",
-        "delete_blocked_not_deleted": "לא הצלחנו למחוק את הליד. ייתכן שכבר נמחק; רעננו את הדף."
+        "delete_blocked_not_deleted": "לא הצלחנו למחוק את הליד. ייתכן שכבר נמחק; רעננו את הדף.",
+        "shoot_request": "בקשה לצילום: {{day}}",
+        "confirm_shoot": "אישור",
+        "confirm_hint": "קובע את הצילום ביום שביקשו ושולח ללקוח במייל הצעת מחיר במחיר החבילה, לאישור ולתשלום המקדמה."
       },
       "named_forms": {
         "title": "טפסים",
@@ -2763,7 +2766,25 @@
       "duration_mins": "{{count}} דקות",
       "add_to_google_calendar": "הוסף ל-Google Calendar",
       "download_calendar_file": "הורד קובץ יומן (.ics)",
-      "calendar_event_description": "פגישה ב-{{schoolName}}"
+      "calendar_event_description": "פגישה ב-{{schoolName}}",
+      "request_title": "בקשה לצילום",
+      "request_intro": "בחרו חבילה ויום. לא תחויבו עכשיו. {{studio}} יאשרו את התאריך וישלחו לכם במייל את הפרטים ואת הדרך לתשלום.",
+      "request_intro_generic": "בחרו חבילה ויום. לא תחויבו עכשיו. הצלם/ת יאשרו את התאריך וישלחו לכם במייל את הפרטים ואת הדרך לתשלום.",
+      "request_choose_package": "בחירת חבילה",
+      "request_choose_day": "בחירת יום",
+      "request_day_hint": "ימים באפור כבר תפוסים.",
+      "request_prev_month": "החודש הקודם",
+      "request_next_month": "החודש הבא",
+      "request_day_taken": "תפוס",
+      "request_selected_day": "יום: {{day}}",
+      "request_message": "משהו שחשוב שהצלם/ת יידעו (לא חובה)",
+      "request_message_placeholder": "למשל איפה תרצו לצלם, או שעה שנוחה לכם.",
+      "request_send": "שליחת הבקשה",
+      "request_sent_title": "הבקשה נשלחה",
+      "request_sent_message": "תודה! לא חויבתם. {{studio}} יאשרו את {{day}} וישלחו לכם במייל את הפרטים ואת הדרך לתשלום.",
+      "request_sent_message_generic": "תודה! לא חויבתם. הצלם/ת יאשרו את {{day}} וישלחו לכם במייל את הפרטים ואת הדרך לתשלום.",
+      "request_error": "לא הצלחנו לשלוח את הבקשה. נסו שוב.",
+      "request_date_in_past": "היום הזה כבר עבר. בחרו יום אחר."
     },
     "appointments": {
       "title": "פגישות",
