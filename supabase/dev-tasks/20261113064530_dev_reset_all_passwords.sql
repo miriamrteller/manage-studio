@@ -12,8 +12,10 @@
 --   2. Any such login with no email identity gets one (same shape as the seed files make), since
 --      a password sign-in needs it.
 --   3. Check: every login now matches the dev password, else the whole file rolls back.
---   4. One SELECT per seeded test login, to show which ones exist on dev (1 row = it exists),
+--   4. One SELECT per seeded test login (studio + role), to show which ones exist on dev,
 --      then one SELECT listing all logins (only the count is shown).
+-- Note: the base seed (seed.sql) gave its three studio owners 'devpassword' while every other seed
+-- used 'devPassword123'. After this task every dev login uses devPassword123.
 -- Nothing else changes: same user ids, emails, roles and studios.
 
 -- 1. Same password for every login.
@@ -55,15 +57,26 @@ BEGIN
   END IF;
 END $$;
 
--- 4. Which seeded test logins exist on dev (1 row = yes). Order: platform owner, then each studio.
-SELECT 1 FROM auth.users WHERE lower(email) = 'admin@opalswift.com';
-SELECT 1 FROM auth.users WHERE lower(email) = 'parent@ballet.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@ballet.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@photo.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@beauty.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@artclass.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@photographer.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@sofer.test';
-SELECT 1 FROM auth.users WHERE lower(email) = 'owner@therapist.test';
+-- 4. Which seeded test logins exist on dev, with the studio and role the seed files give them
+--    (1 row = that login exists, belongs to that studio and has that role; 0 rows = not on dev).
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'admin@opalswift.com' AND t.subdomain = 'creativeballet' AND 'super_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'parent@ballet.test' AND t.subdomain = 'creativeballet' AND 'account_holder' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@ballet.test' AND t.subdomain = 'belladance' AND 'tenant_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@photo.test' AND t.subdomain = 'lensstudio' AND 'tenant_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@beauty.test' AND t.subdomain = 'velvetbeauty' AND 'tenant_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@artclass.test' AND t.subdomain = 'artclass' AND 'tenant_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@photographer.test' AND t.subdomain = 'photographer' AND 'tenant_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@sofer.test' AND t.subdomain = 'sofer' AND 'tenant_admin' = ANY (p.role);
+SELECT 1 FROM auth.users u JOIN public.user_profiles p ON p.id = u.id JOIN public.tenants t ON t.id = p.tenant_id
+ WHERE lower(u.email) = 'owner@therapist.test' AND t.subdomain = 'therapist' AND 'tenant_admin' = ANY (p.role);
+-- 5. Every login on dev (only the count is shown).
 SELECT u.id FROM auth.users u
  WHERE u.deleted_at IS NULL AND coalesce(u.is_anonymous, false) = false AND u.email IS NOT NULL;
