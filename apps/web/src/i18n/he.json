@@ -1909,7 +1909,9 @@
         "client": "מה הלקוח רואה"
       },
       "create_and_quote": "יצירה ושליחת הצעת מחיר",
-      "create_without_quote": "יצירה בלי הצעת מחיר"
+      "create_without_quote": "יצירה בלי הצעת מחיר",
+      "status_auto_hint": "הסטטוס מתעדכן מעצמו: „צולם” ביום שאחרי הצילום, ו„נמסר” כשהתמונות אצל הלקוח. אפשר תמיד לשנות אותו.",
+      "use_shop_gallery": "שימוש בגלריית SmugMug של חנות התמונות"
     },
     "pay": {
       "notFound": "קישור התשלום אינו תקין.",
@@ -2025,7 +2027,11 @@
         "open_shoot": "לפתיחת הצילום",
         "send_contract": "שליחת חוזה",
         "contract_sent": "הקישור לחוזה נשלח."
-      }
+      },
+      "open": "פתיחת הצעת המחיר",
+      "save_and_email": "שמירה ושליחה במייל",
+      "saved_and_emailed": "ההצעה נשמרה ונשלחה במייל.",
+      "saved_not_emailed": "ההצעה נשמרה, אבל לא נשלחה במייל: {{reason}}"
     },
     "public_quote": {
       "next_steps": {

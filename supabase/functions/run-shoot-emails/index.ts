@@ -7,6 +7,8 @@
  *   gallery_ready   — within 7 days of job_details.gallery_released_at (Thread A)
  *   review_request  — 5–12 days after the gallery is shared, when the studio
  *                     has a review link (tenants.review_url)
+ * First it moves project statuses on (advance_job_statuses: booked → shot the
+ * day after the shoot, → delivered once the gallery or photos reach the client).
  * Windows tolerate missed runs; claim_automatic_email() makes each send happen
  * once and skips tenants that switched an email off.
  *
@@ -32,6 +34,11 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (denied) return denied;
 
   const service = createServiceClient();
+  // Statuses first; a failure here never stops the emails.
+  const { data: moved, error: moveError } = await service.rpc("advance_job_statuses", {});
+  if (moveError) console.error("[run-shoot-emails] advance_job_statuses:", moveError.message);
+  else console.log("[run-shoot-emails] statuses moved", JSON.stringify(moved));
+
   const { data, error } = await service.rpc("list_due_shoot_emails", {});
   if (error) {
     console.error("[run-shoot-emails] list_due_shoot_emails:", error.message);

@@ -1897,7 +1897,9 @@
         "client": "What your client sees"
       },
       "create_and_quote": "Create and send quote",
-      "create_without_quote": "Create without a quote"
+      "create_without_quote": "Create without a quote",
+      "status_auto_hint": "This moves on by itself: Shot the day after the shoot, and Delivered once your client has the photos. You can still change it.",
+      "use_shop_gallery": "Use the photo shop's SmugMug gallery"
     },
     "pay": {
       "notFound": "This payment link is not valid.",
@@ -2013,7 +2015,11 @@
         "open_shoot": "Open the shoot",
         "send_contract": "Send contract",
         "contract_sent": "Contract link sent."
-      }
+      },
+      "open": "Open quote",
+      "save_and_email": "Save and email quote",
+      "saved_and_emailed": "Quote saved and emailed.",
+      "saved_not_emailed": "Quote saved. It was not emailed: {{reason}}"
     },
     "public_quote": {
       "next_steps": {

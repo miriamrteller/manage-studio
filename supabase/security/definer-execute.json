@@ -167,6 +167,7 @@
     "$comment": "service_role (Edge Functions), cron and other definer functions only; triggers.",
     "functions": [
       "accept_quote",
+      "advance_job_statuses",
       "assign_studio_owner",
       "claim_automatic_email",
       "cleanup_expired_otps",

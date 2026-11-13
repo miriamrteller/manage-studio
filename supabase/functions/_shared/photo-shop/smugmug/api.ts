@@ -186,6 +186,8 @@ export interface GalleryCheck {
   passed: boolean;
   albumKey: string;
   albumName: string;
+  /** The gallery's page on SmugMug (Album.WebUri), https only; null when absent. */
+  webUrl: string | null;
   items: GalleryCheckItem[];
   photos: SmugMugPhoto[];
 }
@@ -321,6 +323,8 @@ export async function checkGallery(
   const album = await getAlbum(reader, albumKey);
   const items = checkAlbumSettings(album, watermarkInPhotos);
   const albumName = (str(album.Name) ?? str(album.Title) ?? albumKey).slice(0, 200);
+  const webUri = str(album.WebUri);
+  const webUrl = webUri && /^https:\/\//i.test(webUri) && webUri.length <= 500 ? webUri : null;
 
   // Owner (11 Nov 2026): nothing blocks. The protection settings are tips only
   // (TIP_CODES); a gallery opens once its photos can be read and the Large preview loads.
@@ -332,7 +336,7 @@ export async function checkGallery(
     // Nothing to sell yet, so the client-side checks below can't run: say only why.
     const detail = listed === 0 || listed === hidden ? "empty" : videos === listed ? "videos_only" : "unreadable";
     items.push({ code: "photos", ok: false, value: String(listed), detail });
-    return { passed: false, albumKey, albumName, items, photos: [] };
+    return { passed: false, albumKey, albumName, webUrl, items, photos: [] };
   }
 
   // Every preview must load without signing in, as in a client's browser. A photo that
@@ -365,7 +369,7 @@ export async function checkGallery(
   items.push({ code: "original_hidden", ok: originalHidden, value: watermarkInPhotos && originalHidden ? "in_photos" : undefined });
 
   const passed = items.every((i) => i.ok || TIP_CODES.includes(i.code));
-  return { passed, albumKey, albumName, items, photos: passed ? photos : [] };
+  return { passed, albumKey, albumName, webUrl, items, photos: passed ? photos : [] };
 }
 
 /** A gallery name close to the shoot's, for prefilling the picker. */

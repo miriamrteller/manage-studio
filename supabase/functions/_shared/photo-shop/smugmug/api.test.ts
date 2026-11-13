@@ -31,6 +31,7 @@ function fakeReader(routes: Record<string, Json>): SmugMugReader & { asked: stri
 const safeAlbum = {
   AlbumKey: "abc123",
   Name: "Cohen family shoot",
+  WebUri: "https://studio.smugmug.com/Cohen-family",
   Watermark: true,
   LargestSize: "Large",
   AllowDownloads: false,
@@ -115,6 +116,7 @@ Deno.test("check gallery: passes with watermark, capped size, no downloads, Larg
   const result = await checkGallery(reader, "abc123", probe);
   assert(result.passed);
   assertEquals(result.albumName, "Cohen family shoot");
+  assertEquals(result.webUrl, "https://studio.smugmug.com/Cohen-family", "the gallery's own page (Album.WebUri)");
   assertEquals(result.photos.map((p) => p.key), ["K1", "K2", "K3"]);
   assertEquals(result.photos[0], { key: "K1", fileName: "IMG_0001.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" });
   assertEquals(probed.sort(), [
@@ -261,4 +263,10 @@ Deno.test("suggested gallery: the one named after the client or service", () => 
   assertEquals(suggestAlbum(albums, ["Levi", ""]), "a1");
   assertEquals(suggestAlbum(albums, ["Zz", ""]), null);
   assertEquals(suggestAlbum(albums, []), null);
+});
+
+Deno.test("check gallery: a gallery page that is not https is not offered", async () => {
+  const reader = fakeReader(galleryRoutes({ ...safeAlbum, WebUri: "javascript:alert(1)" }));
+  const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
+  assertEquals(result.webUrl, null);
 });
