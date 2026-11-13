@@ -284,7 +284,7 @@ function pickAnswers(answers: Record<string, unknown>, keys: string[]): Record<s
 }
 
 /** The server's JSON answer when it refused the enquiry (read once: the body is a stream). */
-async function errorBodyFrom(error: unknown, data: unknown): Promise<unknown> {
+export async function errorBodyFrom(error: unknown, data: unknown): Promise<unknown> {
   if (data && typeof data === 'object' && 'error' in data) return data;
   const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
   if (context && typeof context.json === 'function') {
@@ -305,12 +305,12 @@ function invalidFieldsFrom(body: unknown): string[] {
 }
 
 /** The server's spam check refused it (422 looks_like_spam). */
-function refusedAsSpam(body: unknown): boolean {
+export function refusedAsSpam(body: unknown): boolean {
   return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'looks_like_spam';
 }
 
 /** Sent with the studio's own email (422 own_studio_email): someone at the studio trying the form. */
-function refusedAsOwnEmail(body: unknown): boolean {
+export function refusedAsOwnEmail(body: unknown): boolean {
   return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'own_studio_email';
 }
 

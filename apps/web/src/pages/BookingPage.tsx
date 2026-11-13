@@ -12,6 +12,7 @@ import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowView
 import { cn } from '@/lib/utils';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
+import { ShootRequestForm } from '@/features/scheduling/components/ShootRequestForm';
 
 function formatWhen(slot: AvailableSlot): string {
   const start = new Date(slot.starts_at);
@@ -147,6 +148,19 @@ export default function BookingPage() {
           <p className="text-gray-600">{t('scheduling.book.not_enabled')}</p>
         )}
       </div>
+    );
+  }
+
+  // Photographers: the client sends a shoot request (package + day) and the
+  // photographer confirms it. No slots, no booking rules, nothing charged now.
+  if (tenant?.vertical === 'photographer' && offerings.length > 0 && subdomain) {
+    return (
+      <ShootRequestForm
+        subdomain={subdomain}
+        studioName={tenant.name ?? null}
+        offerings={offerings}
+        initialOfferingId={offeringParam ?? null}
+      />
     );
   }
 

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useTenant } from '@/hooks/useTenant';
+import { sendShootRequestQuote } from '@/features/quotes/services/sendShootRequestQuote';
 import { useConvertLead, useJobPackages } from '../hooks/useJobs';
 import { fromDateTimeLocal } from '../lib/jobStatus';
 import { PackageSelect } from './PackageSelect';
@@ -16,6 +18,8 @@ interface ConvertLeadPanelProps {
   defaultLocation?: string | null;
   /** Event date from the enquiry form: prefills the date (10:00, editable) and shows as a hint. */
   eventDate?: string | null;
+  /** A shoot request (package + day from the Book page): worded as Confirm. */
+  confirming?: boolean;
   onClose: () => void;
 }
 
@@ -30,10 +34,20 @@ export function eventDateToLocal(eventDate: string | null | undefined): string {
  * then one RPC (convert_lead_to_job) creates client + engagement + job_details
  * and marks the lead converted. Opens a quote for the new shoot on success.
  */
-export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultLocation, eventDate, onClose }: ConvertLeadPanelProps) {
+export function ConvertLeadPanel({
+  leadId,
+  leadName,
+  defaultOfferingId,
+  defaultLocation,
+  eventDate,
+  confirming = false,
+  onClose,
+}: ConvertLeadPanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { labels } = useEntityLabels();
+  const tenant = useTenant();
+  const [sendingQuote, setSendingQuote] = useState(false);
   const packagesQuery = useJobPackages();
   const convert = useConvertLead();
 
@@ -53,18 +67,44 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
     if (packageLocation) setLocation((current) => current || packageLocation);
   }, [packageLocation]);
   const [error, setError] = useState<string | null>(null);
+  const actionLabel = confirming ? t('pages.crm.leads.confirm_shoot') : t('pages.crm.leads.convert');
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!offeringId) return;
     setError(null);
     try {
+      const bookedStartsAt = fromDateTimeLocal(startsAt);
       const engagementId = await convert.mutateAsync({
         lead_id: leadId,
         offering_id: offeringId,
-        booked_starts_at: fromDateTimeLocal(startsAt),
+        booked_starts_at: bookedStartsAt,
         location: location || null,
       });
+      // A shoot request: the shoot is booked, and the quote goes to the client
+      // straight away to accept and pay the deposit (owner, 13 Nov 2026). If
+      // that cannot be done, the shoot stays booked and the quote opens here.
+      if (confirming && tenant) {
+        setSendingQuote(true);
+        try {
+          const { quoteId } = await sendShootRequestQuote({
+            tenantId: tenant.id,
+            emailLanguage: tenant.language_default ?? 'he',
+            engagementId,
+            offeringId,
+            clientName: leadName,
+            bookedStartsAt,
+          });
+          if (quoteId) {
+            navigate(`/admin/quotes/${quoteId}`);
+            return;
+          }
+        } catch {
+          // Fall through to a new quote for this shoot.
+        } finally {
+          setSendingQuote(false);
+        }
+      }
       // Straight into a quote for the new shoot: the studio checks the price, and
       // sending / accepting it emails the client the details and the pay link.
       navigate(`/admin/quotes/new?engagement=${engagementId}`);
@@ -74,11 +114,13 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card p-4 space-y-3 bg-muted" aria-label={t('pages.crm.leads.convert')}>
+    <form onSubmit={handleSubmit} className="card p-4 space-y-3 bg-muted" aria-label={actionLabel}>
       <h3 className="font-semibold">
-        {t('pages.crm.leads.convert')}: {leadName}
+        {actionLabel}: {leadName}
       </h3>
-      <p className="text-sm text-muted-foreground">{t('pages.crm.leads.convert_hint')}</p>
+      <p className="text-sm text-muted-foreground">
+        {confirming ? t('pages.crm.leads.confirm_hint') : t('pages.crm.leads.convert_hint')}
+      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <PackageSelect
           id={`convert-package-${leadId}`}
@@ -124,8 +166,8 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
         </div>
       )}
       <div className="flex gap-2">
-        <Button type="submit" variant="primary" disabled={!offeringId || convert.isPending}>
-          {convert.isPending ? t('pages.jobs.creating') : t('pages.crm.leads.convert')}
+        <Button type="submit" variant="primary" disabled={!offeringId || convert.isPending || sendingQuote}>
+          {convert.isPending || sendingQuote ? t('pages.jobs.creating') : actionLabel}
         </Button>
         <Button type="button" variant="outline" onClick={onClose}>
           {t('common.cancel')}
