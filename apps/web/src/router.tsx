@@ -78,6 +78,8 @@ const EmbedNamedFormPage = lazy(() => import("./pages/EmbedInquirePage").then((m
 const NamedFormPage = lazy(() => import("./pages/NamedFormPage"));
 const LeadFormsPage = lazy(() => import("./pages/LeadFormsPage"));
 const LeadsHelpPage = lazy(() => import("./pages/LeadsHelpPage"));
+const LeadSettingsPage = lazy(() => import("./pages/LeadSettingsPage"));
+const ClassCardsSettingsPage = lazy(() => import("./pages/ClassCardsSettingsPage"));
 const GetLeadsPage = lazy(() => import("./pages/GetLeadsPage"));
 const AdminQuotesPage = lazy(() => import("./pages/AdminQuotesPage"));
 const AdminQuoteEditorPage = lazy(() => import("./pages/AdminQuoteEditorPage"));
@@ -228,6 +230,7 @@ const router = createBrowserRouter([
           { path: "admin/leads/get", element: <AdminRoute><GetLeadsPage /></AdminRoute> },
           { path: "admin/leads/forms", element: <AdminRoute><LeadFormsPage /></AdminRoute> },
           { path: "admin/leads/help", element: <AdminRoute><LeadsHelpPage /></AdminRoute> },
+          { path: "admin/leads/settings", element: <AdminRoute><LeadSettingsPage /></AdminRoute> },
           { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
           { path: "admin/photo-shop", element: <AdminRoute><PhotoShopPage /></AdminRoute> },
@@ -246,6 +249,7 @@ const router = createBrowserRouter([
           { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
           { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
           { path: "admin/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+          { path: "admin/classes/cards", element: <AdminRoute><ClassCardsSettingsPage /></AdminRoute> },
           { path: "admin/setup/teachers", element: <AdminRoute><TeachersPage /></AdminRoute> },
           { path: "teach", element: <TeacherRoute><MyClassesPage /></TeacherRoute> },
           { path: "admin/setup/classes", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
@@ -253,6 +257,7 @@ const router = createBrowserRouter([
           // client-facing classes calendar on /classes.
           { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
           { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
+          { path: "admin/setup/booking/availability", element: <AdminRoute><BookingSettingsPage view="availability" /></AdminRoute> },
           { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
           // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.

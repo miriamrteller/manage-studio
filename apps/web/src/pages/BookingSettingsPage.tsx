@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
@@ -27,7 +26,12 @@ import { BlockedTimesEditor } from '@/features/scheduling/components/BlockedTime
 const DAY_LABELS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export default function BookingSettingsPage() {
+/**
+ * Bookings → Booking rules (/admin/setup/booking) and Bookings → Availability
+ * (/admin/setup/booking/availability): one page split into two short tabs. Save stores both,
+ * as before.
+ */
+export default function BookingSettingsPage({ view = 'rules' }: { view?: 'rules' | 'availability' }) {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
@@ -116,8 +120,14 @@ export default function BookingSettingsPage() {
   return (
     <div className="max-w-3xl space-y-8 p-2">
       <header className="space-y-1">
-        <h1 className="text-3xl font-bold">{t('scheduling.booking.settings_title')}</h1>
-        <p className="text-gray-600">{t('scheduling.booking.settings_subtitle')}</p>
+        <h1 className="text-3xl font-bold">
+          {view === 'availability' ? t('nav.tab.availability') : t('nav.tab.booking_rules')}
+        </h1>
+        <p className="text-gray-600">
+          {view === 'availability'
+            ? t('scheduling.booking.availability_subtitle')
+            : t('scheduling.booking.settings_subtitle')}
+        </p>
       </header>
 
       {status && (
@@ -133,6 +143,7 @@ export default function BookingSettingsPage() {
         </div>
       )}
 
+      {view === 'rules' && (
       <section className="card border border-gray-200 space-y-4 p-4">
         {!settings.is_booking_enabled && (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
@@ -223,31 +234,22 @@ export default function BookingSettingsPage() {
           )}
         </div>
       </section>
+      )}
 
-      {hoursAreDefault && (
+      {view === 'availability' && hoursAreDefault && (
         <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" role="status">
           {t('scheduling.booking.hours_default_note')}
         </p>
       )}
-      <BookingHoursEditor
-        hours={hours}
-        dayLabels={dayLabels}
-        onAdd={addHours}
-        onUpdate={updateHour}
-        onRemove={removeHour}
-      />
-
-      {tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
-
-      <section className="card border border-gray-200 space-y-2 p-4">
-        <h2 className="text-lg font-semibold">{t('scheduling.booking.manage_services')}</h2>
-        <p className="text-sm text-gray-500">{t('scheduling.booking.manage_services_hint')}</p>
-        <Link to="/admin/packages">
-          <Button variant="outline" size="sm">
-            {t('nav.booking_services')}
-          </Button>
-        </Link>
-      </section>
+      {view === 'availability' && (
+        <BookingHoursEditor
+          hours={hours}
+          dayLabels={dayLabels}
+          onAdd={addHours}
+          onUpdate={updateHour}
+          onRemove={removeHour}
+        />
+      )}
 
       <div>
         <Button variant="primary" isLoading={saving} onClick={handleSave}>
@@ -255,7 +257,9 @@ export default function BookingSettingsPage() {
         </Button>
       </div>
 
-      <GoogleCalendarSettings />
+      {view === 'availability' && tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
+
+      {view === 'availability' && <GoogleCalendarSettings />}
     </div>
   );
 }

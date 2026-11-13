@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * The studio admin's real menu, rendered: working pages at the top level (no Browse or
- * Administration group to open), Leads first, the business's own words, Finance and Setup as
- * groups. Parents, students and clients keep their menu.
+ * The studio admin's real menu, rendered: one flat list of areas (no groups to open), each with
+ * an icon; the pages of an area are tabs along the top of its pages. Full size or icons only.
+ * Parents, students and clients keep their menu.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { renderInApp, setLanguage, setTenant, type FakeTenantKind } from './helpers/verticalHarness';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
@@ -18,15 +18,17 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 vi.mock('@/hooks/useFeatureGate', () => ({ useFeatureGate: () => ({ hasFeature: () => true }) }));
 vi.mock('@/features/scheduling/useBookingEnabled', () => ({ useBookingEnabled: () => true }));
 vi.mock('@/components/ReportProblem', () => ({ useReportProblem: () => ({ canReport: false, openReportProblem: vi.fn() }) }));
+const drawer = vi.hoisted(() => ({ iconsOnly: false, toggleIconsOnly: () => {} }));
 vi.mock('@/components/Navigation/NavDrawerContext', () => ({
   useNavDrawer: () => ({
-    isOpen: true, isPinned: true, isOverlay: false, close: vi.fn(), togglePin: vi.fn(),
-    closeOnNavigate: vi.fn(), menuButtonRef: { current: null },
+    isOpen: true, isPinned: true, isOverlay: false, isIconsOnly: drawer.iconsOnly, close: vi.fn(),
+    toggleIconsOnly: drawer.toggleIconsOnly, closeOnNavigate: vi.fn(), menuButtonRef: { current: null },
   }),
 }));
 vi.mock('@/lib/supabase', () => ({ supabase: { auth: { signOut: vi.fn() }, rpc: vi.fn(), from: vi.fn() } }));
 
 import { NavDrawer } from '@/components/Navigation/NavDrawer';
+import { AreaTabs } from '@/components/Navigation/AreaTabs';
 
 /** The menu list itself (the pinned drawer is also a navigation landmark). */
 function menuNav(): HTMLElement {
@@ -39,7 +41,7 @@ function menuLabels(): string[] {
   const nav = menuNav();
   return within(nav)
     .getAllByRole('button')
-    .map((b) => b.textContent?.trim() ?? '');
+    .map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim() ?? '');
 }
 
 function renderMenu(kind: FakeTenantKind, path = '/admin/students') {
@@ -47,86 +49,123 @@ function renderMenu(kind: FakeTenantKind, path = '/admin/students') {
   return renderInApp(<NavDrawer />, { path });
 }
 
+function renderTabs(kind: FakeTenantKind, path: string) {
+  setTenant(kind);
+  return renderInApp(<AreaTabs />, { path: path.split('?')[0], initialEntry: path });
+}
+
+function tabLabels(): string[] {
+  return within(screen.getByRole('navigation')).getAllByRole('link').map((a) => a.textContent ?? '');
+}
+
 beforeEach(() => {
   auth.roles = ['tenant_admin'];
+  drawer.iconsOnly = false;
 });
 afterEach(async () => {
   await setLanguage('en');
 });
 
 describe('studio admin menu (English)', () => {
-  it('dance: Leads, Students, Families, Classes, Shop, Bookable Services, Appointments, Notifications, then the Finance and Setup groups', async () => {
+  it('dance: Home, Leads, Students, Classes, Bookings, Shop, Finance, Settings, with no groups', async () => {
     await setLanguage('en');
     renderMenu('dance');
-    expect(menuLabels().slice(0, 10)).toEqual([
-      'Leads', 'Students', 'Families', 'Classes', 'Shop', 'Bookable Services', 'Appointments', 'Notifications', 'Finance', 'Setup',
-    ]);
-    expect(screen.queryByRole('button', { name: 'Browse' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Administration' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Book(?!able Services)/ })).toBeNull();
+    expect(menuLabels()).toEqual(['Home', 'Leads', 'Students', 'Classes', 'Bookings', 'Shop', 'Finance', 'Settings']);
+    expect(menuNav().querySelector('[aria-expanded]')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
   });
 
-  it('photographer: Leads first, then the contacts, shoots and quotes words', async () => {
+  it('photographer: Clients and Shoots, no Families or Classes', async () => {
     await setLanguage('en');
     renderMenu('photographer', '/admin/jobs');
-    const labels = menuLabels();
-    expect(labels[0]).toBe('Leads');
-    expect(labels).not.toContain('Families');
-    expect(labels).not.toContain('Browse');
-    expect(labels).toContain('Quotes');
-    expect(labels.indexOf('Quotes')).toBeLessThan(labels.indexOf('Notifications'));
-    // Packages is a top-level item, before Finance and Setup.
-    expect(labels).toContain('Packages');
-    expect(labels.indexOf('Packages')).toBeLessThan(labels.indexOf('Finance'));
-    expect(labels.indexOf('Finance')).toBeGreaterThan(labels.indexOf('Notifications'));
+    expect(menuLabels()).toEqual(['Home', 'Leads', 'Clients', 'Shoots', 'Bookings', 'Photo shop', 'Finance', 'Settings']);
   });
 
   it('beautician: only what fits an appointment business', async () => {
     await setLanguage('en');
     renderMenu('beautician', '/admin/appointments');
     const labels = menuLabels();
-    expect(labels[0]).toBe('Leads');
-    expect(labels).toContain('Appointments');
-    expect(labels).not.toContain('Families');
+    expect(labels).toContain('Bookings');
     expect(labels).not.toContain('Classes');
-    expect(labels).not.toContain('Quotes');
+    expect(labels).not.toContain('Shoots');
   });
 
-  it('generic: same as dance', async () => {
-    await setLanguage('en');
-    renderMenu('generic');
-    expect(menuLabels().slice(0, 8)).toEqual(['Leads', 'Students', 'Families', 'Classes', 'Shop', 'Bookable Services', 'Appointments', 'Notifications']);
-  });
-
-  it('marks the current page with aria-current and opens Setup/Finance with the keyboard-reachable toggle', async () => {
+  it('marks the area of the current page, also on one of its tabs', async () => {
     await setLanguage('en');
     renderMenu('dance', '/admin/families');
     const nav = menuNav();
-    expect(within(nav).getByRole('button', { name: 'Families' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('button', { name: 'Students' })).toHaveAttribute('aria-current', 'page');
     expect(within(nav).getByRole('button', { name: 'Leads' })).not.toHaveAttribute('aria-current');
-    const finance = within(nav).getByRole('button', { name: 'Finance' });
-    expect(finance).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(finance);
-    expect(finance).toHaveAttribute('aria-expanded', 'true');
-    expect(within(nav).getByRole('button', { name: /payments/i })).toBeInTheDocument();
   });
 
-  it('opens the Setup group on a setup page, and the old "Manage classes" is not duplicated there', async () => {
+  it('every line has an icon', async () => {
     await setLanguage('en');
-    renderMenu('dance', '/admin/setup/settings');
-    const nav = menuNav();
-    expect(within(nav).getByRole('button', { name: 'Setup' })).toHaveAttribute('aria-expanded', 'true');
-    expect(within(nav).queryByRole('button', { name: /manage classes/i })).toBeNull();
+    renderMenu('dance');
+    for (const button of within(menuNav()).getAllByRole('button')) {
+      expect(button.querySelector('svg')).not.toBeNull();
+    }
+  });
+
+  it('icons only: names are hidden but still read out and shown on hover', async () => {
+    await setLanguage('en');
+    drawer.iconsOnly = true;
+    renderMenu('dance');
+    const bookings = within(menuNav()).getByRole('button', { name: 'Bookings' });
+    expect(bookings.textContent).toBe('');
+    expect(bookings).toHaveAttribute('title', 'Bookings');
+    expect(screen.getByRole('button', { name: 'Show full menu' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('full size: the switch offers icons only', async () => {
+    await setLanguage('en');
+    renderMenu('dance');
+    expect(screen.getByRole('button', { name: 'Show icons only' })).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('tabs along the top of an area', () => {
+  it('Bookings: Calendar, Packages, Availability, Booking rules', async () => {
+    await setLanguage('en');
+    renderTabs('photographer', '/admin/setup/booking/availability');
+    expect(tabLabels()).toEqual(['Calendar', 'Packages', 'Availability', 'Booking rules']);
+    expect(screen.getByRole('link', { name: 'Availability' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Booking rules' })).toHaveAttribute('href', '/admin/setup/booking');
+  });
+
+  it('Classes: classes, levels, seasons, teachers, class cards', async () => {
+    await setLanguage('en');
+    renderTabs('dance', '/admin/setup/terms');
+    expect(tabLabels()).toHaveLength(5);
+    expect(tabLabels()[0]).toBe('Classes');
+    expect(tabLabels()).toContain('Class cards');
+  });
+
+  it('Settings: each section is a tab with its own address', async () => {
+    await setLanguage('en');
+    renderTabs('dance', '/admin/setup/settings?tab=legal');
+    expect(tabLabels()).toContain('Studio profile');
+    expect(screen.getByRole('link', { name: 'Legal' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Legal' })).toHaveAttribute('href', '/admin/setup/settings?tab=legal');
+  });
+
+  it('no tabs for an area with one page (Home)', async () => {
+    await setLanguage('en');
+    renderTabs('dance', '/admin/setup');
+    expect(screen.queryByRole('navigation')).toBeNull();
+  });
+
+  it('Hebrew tab names', async () => {
+    await setLanguage('he');
+    renderTabs('photographer', '/admin/appointments');
+    expect(tabLabels()).toEqual(expect.arrayContaining(['יומן', 'זמינות', 'כללי הזמנה']));
   });
 });
 
 describe('studio admin menu (Hebrew)', () => {
-  it('dance: the same flat list in Hebrew, Leads first', async () => {
+  it('dance: the same flat list in Hebrew', async () => {
     await setLanguage('he');
     renderMenu('dance');
-    const labels = menuLabels();
-    expect(labels[0]).toBe('לידים');
-    expect(labels).toContain('שיעורים');
+    expect(menuLabels()).toEqual(['בית', 'לידים', 'תלמידים', 'שיעורים', 'הזמנות', 'חנות', 'כספים', 'הגדרות']);
   });
 });
 

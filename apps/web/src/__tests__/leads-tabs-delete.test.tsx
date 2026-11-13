@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 /**
- * Leads page: the Leads tab shows the pipeline first (title, Add lead,
+ * Leads page (its tabs are the menu's AreaTabs): the Leads tab shows the pipeline first (title, Add lead,
  * follow-ups, filters, table); getting leads (checklist, links/embed/QR,
  * forms, help) is the sibling Get leads tab. Admins can delete a lead after
  * confirming, except one that became a client or has a quote or job.
  * Run: pnpm -C apps/web test leads-tabs-delete.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -62,7 +62,7 @@ import i18n from '@/i18n/i18n';
 import { LeadsList } from '@/features/crm/components/LeadsList';
 import GetLeadsPage from '@/pages/GetLeadsPage';
 import { LeadDeleteError, LeadService } from '@/features/crm/services/leadService';
-import { leadsTabFor } from '@/features/crm/components/LeadsTabs';
+import { navigationConfig, resolveActiveTab } from '@/components/Navigation/navigationConfig';
 
 function lead(over: Record<string, unknown> = {}) {
   return {
@@ -124,9 +124,6 @@ afterEach(async () => {
 describe('Leads | Get leads tabs', () => {
   it('the Leads tab starts with the pipeline; nothing about getting leads above it', () => {
     renderAt('/admin/leads');
-    const nav = screen.getByRole('navigation', { name: 'Leads sections' });
-    expect(within(nav).getByRole('link', { name: 'Leads' })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'Get leads' })).toHaveAttribute('href', '/admin/leads/get');
     expect(screen.getByRole('button', { name: 'New lead' })).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.queryByTestId('get-leads-panel')).toBeNull();
@@ -142,26 +139,24 @@ describe('Leads | Get leads tabs', () => {
 
   it('Get leads has the checklist, the links/embed/QR panel, forms and help', () => {
     renderAt('/admin/leads/get');
-    expect(screen.getByRole('link', { name: 'Get leads' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Leads' })).not.toHaveAttribute('aria-current');
     expect(screen.getByTestId('first-leads')).toBeInTheDocument();
     expect(screen.getByTestId('get-leads-panel')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /forms/i })).toHaveAttribute('href', '/admin/leads/forms');
     expect(screen.getByRole('link', { name: /How leads work|help/i })).toHaveAttribute('href', '/admin/leads/help');
   });
 
-  it('forms and help count as Get leads', () => {
-    expect(leadsTabFor('/admin/leads')).toBe('leads');
-    expect(leadsTabFor('/admin/leads/get')).toBe('get');
-    expect(leadsTabFor('/admin/leads/forms')).toBe('get');
-    expect(leadsTabFor('/admin/leads/help')).toBe('get');
+  it('forms and help count as the Get leads tab', () => {
+    const leadsTabs = navigationConfig.filter((item) => item.area === 'leads');
+    const tab = (path: string) => resolveActiveTab(path, '', leadsTabs)?.path;
+    expect(tab('/admin/leads')).toBe('/admin/leads');
+    expect(tab('/admin/leads/get')).toBe('/admin/leads/get');
+    expect(tab('/admin/leads/forms')).toBe('/admin/leads/get');
+    expect(tab('/admin/leads/help')).toBe('/admin/leads/get');
   });
 
   it('works in Hebrew', async () => {
     await i18n.changeLanguage('he');
     renderAt('/admin/leads');
-    expect(screen.getByRole('navigation', { name: 'אזורי הלידים' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'השגת לידים' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'מחיקת Noa Levi' })).toBeInTheDocument();
   });
 });

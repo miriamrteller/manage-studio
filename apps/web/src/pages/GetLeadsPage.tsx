@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LeadsTabs } from '@/features/crm/components/LeadsTabs';
 import { FirstLeadsChecklist } from '@/features/crm/components/FirstLeadsChecklist';
 import { GetLeadsPanel } from '@/features/crm/components/GetLeadsPanel';
 import { useLeads } from '@/features/crm/hooks/useLeads';
@@ -12,7 +11,6 @@ export default function GetLeadsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">{t('pages.crm.get_leads.title')}</h1>
-      <LeadsTabs />
       {!isLoading && <FirstLeadsChecklist leadCount={leads.length} />}
       <section id="get-leads" aria-labelledby="get-leads-links" className="space-y-3">
         <h2 id="get-leads-links" className="sr-only">

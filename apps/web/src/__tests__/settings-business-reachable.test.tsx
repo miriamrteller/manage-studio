@@ -5,7 +5,7 @@
  * Run: pnpm -C apps/web test settings-business-reachable.test.tsx
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import TenantSettingsPage from '@/pages/TenantSettingsPage';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
@@ -19,9 +19,11 @@ beforeEach(async () => {
 
 describe('Settings page', () => {
   it('has a "Your business" tab that shows the payment flow and the three switches', () => {
-    renderInApp(<TenantSettingsPage />);
-    // The tab list is rendered for phone and desktop; either one opens the section.
-    fireEvent.click(screen.getAllByRole('tab', { name: /Your business/ })[0]);
+    // Each section is a tab along the top of Settings, with its own address.
+    renderInApp(<TenantSettingsPage />, {
+      path: '/admin/setup/settings',
+      initialEntry: '/admin/setup/settings?tab=business',
+    });
     expect(screen.getByRole('heading', { name: 'Your business' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Monthly' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /I teach classes/ })).toBeInTheDocument();

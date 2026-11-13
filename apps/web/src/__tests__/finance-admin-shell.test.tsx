@@ -47,7 +47,9 @@ describe('finance-admin shell (F1)', () => {
   it('includes finance nav item for tenant_admin', () => {
     const financeItem = navigationConfig.find((item) => item.path === '/admin/finance');
     expect(financeItem).toBeDefined();
-    expect(financeItem?.labelKey).toBe('finance.hub.title');
+    // The Overview tab of the Finance menu line.
+    expect(financeItem?.area).toBe('finance');
+    expect(financeItem?.labelKey).toBe('nav.tab.overview');
     expect(canAccessRoute(['tenant_admin'], financeItem!.requiredRoles)).toBe(true);
     expect(canAccessRoute(['parent'], financeItem!.requiredRoles)).toBe(false);
   });

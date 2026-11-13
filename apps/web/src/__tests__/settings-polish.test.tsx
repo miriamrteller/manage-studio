@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
  * Settings page polish:
- *  - phone layout: the shell stacks (flex-col) and nothing inline overrides it;
  *  - Branding labels are translated in Hebrew (no English fallbacks leaking);
  *  - "Studio" is the default wording for every tenant (dance included). It is
  *    only an i18n default: a tenant's own entity labels (tenants.labels) still win.
  */
+import { useTranslation } from 'react-i18next';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
@@ -16,25 +16,11 @@ import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
 
-function layoutRoot(): HTMLElement {
-  const root = screen.getByRole('tabpanel').parentElement;
-  if (!root) throw new Error('settings layout root not found');
-  return root;
+/** A Settings tab's name, as the tabs along the top of Settings show it (t(labelKey)). */
+function TabLabelProbe() {
+  const { t } = useTranslation();
+  return <p data-testid="profile-tab">{t('settings.tabs.profile')}</p>;
 }
-
-describe('Settings layout at phone width', () => {
-  beforeEach(() => setTenant('dance'));
-
-  it.each(['en', 'he'] as const)('stacks on mobile and only becomes a row from md up (%s)', async (lng) => {
-    await setLanguage(lng);
-    renderInApp(<TenantSettingsPage />);
-    const root = layoutRoot();
-    expect(root).toHaveClass('flex', 'flex-col', 'md:flex-row');
-    // An inline flex-direction beats the flex-col class and squeezed the phone layout.
-    expect(root.style.flexDirection).toBe('');
-    expect(root.getAttribute('dir')).toBe(lng === 'he' ? 'rtl' : 'ltr');
-  });
-});
 
 describe('Branding labels in Hebrew', () => {
   beforeEach(async () => {
@@ -75,9 +61,13 @@ describe('Studio is the default wording', () => {
   it.each(cases)('%s / %s profile tab shows "%s"', async (kind, lng, label) => {
     setTenant(kind);
     await setLanguage(lng);
-    renderInApp(<TenantSettingsPage />);
-    // Desktop sidebar + mobile strip each render the tab.
-    expect(screen.getAllByRole('tab', { name: label })).toHaveLength(2);
+    renderInApp(
+      <>
+        <TabLabelProbe />
+        <TenantSettingsPage />
+      </>,
+    );
+    expect(screen.getByTestId('profile-tab').textContent).toBe(label);
     expect(screen.queryByText(/school|בית הספר/i)).toBeNull();
   });
 });
@@ -105,11 +95,12 @@ describe('tenant-chosen terms still win over the new default', () => {
     renderInApp(
       <>
         <LabelsProbe />
+        <TabLabelProbe />
         <TenantSettingsPage />
       </>,
     );
     expect(screen.getByTestId('labels').textContent).toBe('Academy pupil|School courses');
-    expect(screen.getAllByRole('tab', { name: 'Studio profile' })).toHaveLength(2);
+    expect(screen.getByTestId('profile-tab').textContent).toBe('Studio profile');
   });
 
   it('a tenant without custom labels gets the preset terms and "Studio"', () => {
@@ -117,10 +108,11 @@ describe('tenant-chosen terms still win over the new default', () => {
     renderInApp(
       <>
         <LabelsProbe />
+        <TabLabelProbe />
         <TenantSettingsPage />
       </>,
     );
     expect(screen.getByTestId('labels').textContent).toBe('Student|Classes');
-    expect(screen.getAllByRole('tab', { name: 'Studio profile' })).toHaveLength(2);
+    expect(screen.getByTestId('profile-tab').textContent).toBe('Studio profile');
   });
 });

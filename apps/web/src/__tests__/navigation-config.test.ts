@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildNavSections,
+  groupNavEntries,
+  resolveActiveTab,
   matchesTenantFilter,
   matchesProfile,
   navigationConfig,
@@ -19,7 +21,8 @@ describe('navigationConfig', () => {
 
     expect(paths).toContain('/admin/students');
     expect(paths).toContain('/admin/families');
-    expect(paths).toContain('/admin/notifications');
+    // Notifications open from the bell in the top bar, not the menu.
+    expect(paths).not.toContain('/admin/notifications');
     expect(paths).toContain('/admin/finance');
     expect(paths).toContain('/admin/finance/payments');
     expect(paths).toContain('/admin/finance/expenses');
@@ -29,7 +32,7 @@ describe('navigationConfig', () => {
   it('shows bundled payments setup for grow slug (generic nav, not grow-only path)', () => {
     const growTenant = { country: 'IL', payment_provider: 'grow' as const };
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, growTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, growTenant) && item.area === 'settings',
     );
     const setupPaths = setupItems.map((item) => item.path);
 
@@ -45,7 +48,7 @@ describe('navigationConfig', () => {
     expect(tenantUsesIcount(icountTenant)).toBe(true);
 
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, icountTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, icountTenant) && item.area === 'settings',
     );
     const setupPaths = setupItems.map((item) => item.path);
 
@@ -57,7 +60,7 @@ describe('navigationConfig', () => {
   it('grow slug tenant uses same bundled nav as icount (I3-T2)', () => {
     const growTenant = { country: 'IL', payment_provider: 'grow' as const };
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, growTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, growTenant) && item.area === 'settings',
     );
     const setupPaths = setupItems.map((item) => item.path);
 
@@ -68,7 +71,7 @@ describe('navigationConfig', () => {
   it('split payment/invoicing nav matches non-bundled tenants but requires stripe feature (dormant)', () => {
     const usTenant = { country: 'US', payment_provider: 'stripe' as const };
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, usTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, usTenant) && item.area === 'settings',
     );
     const payments = setupItems.find((item) => item.path === '/admin/setup/payments');
     const invoicing = setupItems.find((item) => item.path === '/admin/setup/invoicing');
@@ -175,59 +178,59 @@ describe('menu follows the switches, not the skin', () => {
   });
 });
 
-describe('admin menu: working pages at the top level', () => {
+describe('admin menu: one flat list of areas, pages are tabs', () => {
   const adminMenu = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
     buildNavSections(
       navigationConfig.filter((item) => matchesProfile(item, profileForSkin(vertical))),
       ['tenant_admin'],
     );
-  const paths = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
-    adminMenu(vertical).flatMap((section) => section.items.map((item) => item.path));
+  const lines = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
+    adminMenu(vertical).flatMap((s) => groupNavEntries(s.items).map((e) => e.area ?? e.path));
 
-  it('has no Browse or Administration group to open: the working pages are one flat list, Leads first', () => {
+  it('has one section and no groups to open', () => {
     for (const vertical of ['dance-studio', 'generic', 'photographer', 'beautician'] as const) {
-      const sections = adminMenu(vertical);
-      expect(sections.map((s) => s.sectionKey)).toEqual(['main', 'finance', 'setup']);
-      expect(sections[0].items[0].path).toBe('/admin/leads');
+      expect(adminMenu(vertical).map((s) => s.sectionKey)).toEqual(['main']);
     }
   });
 
-  it('dance and generic: Leads, Students, Families, Classes, Shop, Bookable services, Appointments, Notifications', () => {
+  it('dance and generic: Home, Leads, Students, Classes, Bookings, Shop, Finance, Settings', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
-      expect(adminMenu(vertical)[0].items.map((i) => i.path)).toEqual([
-        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop',
-        '/admin/packages', '/admin/appointments', '/admin/notifications',
-      ]);
+      expect(lines(vertical)).toEqual(['home', 'leads', 'people', 'classes', 'bookings', 'shop', 'finance', 'settings']);
     }
   });
 
-  it('photographer: Leads, Clients, Shoots, Quotes, Photo shop, Packages, Appointments, Notifications (no families or classes)', () => {
-    expect(adminMenu('photographer')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
+  it('photographer: Home, Leads, Clients, Shoots, Bookings, Shop, Finance, Settings', () => {
+    expect(lines('photographer')).toEqual(['home', 'leads', 'people', 'projects', 'bookings', 'shop', 'finance', 'settings']);
+  });
+
+  it('beautician: no classes, shoots or shop', () => {
+    expect(lines('beautician')).toEqual(['home', 'leads', 'people', 'bookings', 'finance', 'settings']);
+  });
+
+  it('Bookings holds the calendar, packages, availability and booking rules, in that order', () => {
+    const bookings = groupNavEntries(adminMenu('photographer')[0].items).find((e) => e.area === 'bookings')!;
+    expect(bookings.items.map((i) => i.path)).toEqual([
+      '/admin/appointments', '/admin/packages', '/admin/setup/booking/availability', '/admin/setup/booking',
     ]);
+    expect(bookings.path).toBe('/admin/appointments');
   });
 
-  it('beautician: Leads, Clients, services, Appointments, Notifications (only what fits an appointment business)', () => {
-    expect(adminMenu('beautician')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/packages', '/admin/appointments', '/admin/notifications',
-    ]);
+  it('a menu line opens its first page', () => {
+    const entries = groupNavEntries(adminMenu('dance-studio')[0].items);
+    expect(entries.find((e) => e.area === 'classes')!.path).toBe('/admin/classes');
+    expect(entries.find((e) => e.area === 'settings')!.path).toBe('/admin/setup/settings');
   });
 
-  it('"Manage classes" moved out of Setup (it is Classes at the top now), no duplicate entry', () => {
-    for (const vertical of ['dance-studio', 'generic'] as const) {
-      const all = paths(vertical);
-      expect(all.filter((p) => p === '/admin/classes')).toHaveLength(1);
-      const setup = adminMenu(vertical).find((s) => s.sectionKey === 'setup')!;
-      expect(setup.items.map((i) => i.path)).not.toContain('/admin/classes');
-    }
-  });
-
-  it('Finance and Setup stay as groups', () => {
-    for (const vertical of ['dance-studio', 'photographer']) {
-      const sections = adminMenu(vertical as 'dance-studio' | 'photographer');
-      expect(sections.find((s) => s.sectionKey === 'finance')!.items.length).toBeGreaterThan(1);
-      expect(sections.find((s) => s.sectionKey === 'setup')!.items.length).toBeGreaterThan(1);
-    }
+  it('finds the current tab: most specific page, sub-pages, and Settings ?tab=', () => {
+    const items = adminMenu('dance-studio')[0].items;
+    const area = (key: string) => groupNavEntries(items).find((e) => e.area === key)!.items;
+    expect(resolveActiveTab('/admin/setup/booking/availability', '', area('bookings'))?.path).toBe('/admin/setup/booking/availability');
+    expect(resolveActiveTab('/admin/setup/booking', '', area('bookings'))?.path).toBe('/admin/setup/booking');
+    expect(resolveActiveTab('/admin/leads/forms', '', area('leads'))?.path).toBe('/admin/leads/get');
+    expect(resolveActiveTab('/admin/families/f1', '', area('people'))?.path).toBe('/admin/families');
+    expect(resolveActiveTab('/admin/setup/settings', '?tab=legal', area('settings'))?.path).toBe('/admin/setup/settings?tab=legal');
+    expect(resolveActiveTab('/admin/setup/settings', '', area('settings'))?.path).toBe('/admin/setup/settings');
+    expect(resolveActiveTab('/admin/setup/settings', '?tab=nope', area('settings'))?.path).toBe('/admin/setup/settings');
   });
 
   it('other roles are unchanged: parents and students keep Browse and their own page', () => {

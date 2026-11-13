@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, PanelLeftClose } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenant } from '@/hooks/useTenant';
@@ -36,6 +36,8 @@ export function AppHeader() {
   const { language, setLanguage } = useLanguage();
   const { isOpen, isPinned, toggle, menuButtonRef } = useNavDrawer();
   const soft = tenant?.chrome_style !== 'solid';
+  // Notifications live behind the bell, not in the menu (owner, 10 Nov 2026).
+  const isStudioAdmin = Boolean(tenant) && (user?.role ?? []).includes('tenant_admin');
   const c = soft ? CHROME.soft : CHROME.solid;
 
   const toggleLanguage = async () => {
@@ -51,9 +53,12 @@ export function AppHeader() {
     <header className={`${c.header} sticky top-0 z-30 shrink-0`} role="banner">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <Button ref={menuButtonRef} type="button" variant="ghost" size="sm" onClick={toggle} aria-expanded={isOpen} aria-controls="nav-drawer" aria-label={isOpen ? t('nav.close_menu') : t('nav.open_menu')} className={`${c.icon} shrink-0`}>
-            {isPinned ? <PanelLeftClose size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
-          </Button>
+          {/* Phones only: on a wider screen the menu is always there. */}
+          {!isPinned && (
+            <Button ref={menuButtonRef} type="button" variant="ghost" size="sm" onClick={toggle} aria-expanded={isOpen} aria-controls="nav-drawer" aria-label={isOpen ? t('nav.close_menu') : t('nav.open_menu')} className={`${c.icon} shrink-0`}>
+              <Menu size={20} aria-hidden />
+            </Button>
+          )}
           {tenant ? (
             <Link to="/" className={`flex min-w-0 items-center font-bold text-lg truncate hover:opacity-90 focus-visible:outline-2 ${c.link} outline-offset-2`}>
               <HeaderLogo tenant={tenant} soft={soft} />
@@ -64,6 +69,11 @@ export function AppHeader() {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {isStudioAdmin && (
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/notifications')} aria-label={t('nav.notifications')} title={t('nav.notifications')} className={`${c.icon} shrink-0`}>
+              <Bell size={20} aria-hidden />
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={toggleLanguage} aria-label={t('common.language')} className={c.pill}>
             {language === 'he' && '🇬🇧 English'}
             {language === 'en' && '🇮🇱 עברית'}

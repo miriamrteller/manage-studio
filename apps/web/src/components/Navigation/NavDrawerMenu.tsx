@@ -1,179 +1,72 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { NavItem, NavSection, NavSectionKey } from './navigationConfig';
+import { groupNavEntries, type NavEntry, type NavItem, type NavSection } from './navigationConfig';
+import { navEntryIcon } from './navIcons';
 
 interface NavDrawerMenuProps {
   sections: NavSection[];
   activePath: string | null;
   onNavigate: (path: string) => void;
-  navLabel: (item: NavItem) => string;
+  /** A menu line's name. */
+  entryLabel: (entry: NavEntry) => string;
   /** Grey the item out (visible but not clickable), e.g. booking turned off. */
   isItemDisabled?: (item: NavItem) => boolean;
+  /** Icons only: names are hidden (still read out, and shown on hover). */
+  iconsOnly?: boolean;
+  vertical?: string | null;
 }
 
-function sectionContainsPath(section: NavSection, path: string | null): boolean {
-  if (!path) return false;
-  return section.items.some((item) => item.path === path);
-}
-
+/**
+ * One flat list, no groups to open: each line is an area of the studio (its pages are tabs
+ * along the top of the page) or a page of its own. Sections are only separated by a rule.
+ */
 export function NavDrawerMenu({
   sections,
   activePath,
   onNavigate,
-  navLabel,
+  entryLabel,
   isItemDisabled,
+  iconsOnly = false,
+  vertical,
 }: NavDrawerMenuProps) {
   const { t } = useTranslation();
-  const [expandedSections, setExpandedSections] = useState<Set<NavSectionKey>>(() => {
-    const initial = new Set<NavSectionKey>();
-    for (const section of sections) {
-      if (sectionContainsPath(section, activePath)) {
-        initial.add(section.sectionKey);
-      }
-    }
-    return initial;
-  });
-
-  useEffect(() => {
-    const activeSection = sections.find((section) => sectionContainsPath(section, activePath));
-    if (!activeSection) return;
-
-    setExpandedSections((prev) => {
-      if (prev.has(activeSection.sectionKey)) return prev;
-      const next = new Set(prev);
-      next.add(activeSection.sectionKey);
-      return next;
-    });
-  }, [activePath, sections]);
-
-  const toggleSection = (sectionKey: NavSectionKey) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(sectionKey)) {
-        next.delete(sectionKey);
-      } else {
-        next.add(sectionKey);
-      }
-      return next;
-    });
-  };
 
   return (
-    <nav className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-1" aria-label={t('nav.menu')}>
+    <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain py-1" aria-label={t('nav.menu')}>
       {sections.map((section) => {
-        if (section.sectionKey === 'browse' || section.sectionKey === 'main') {
-          return (
-            <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
-              <ul>
-                {section.items.map((item) => {
-                  const active = activePath === item.path;
-                  const disabled = isItemDisabled?.(item) ?? false;
-                  return (
-                    <li key={item.path}>
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        title={disabled ? t('nav.booking_disabled_hint') : undefined}
-                        onClick={() => onNavigate(item.path)}
-                        aria-current={active ? 'page' : undefined}
-                        className={cn(
-                          'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
-                          'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
-                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
-                          active && 'bg-[var(--nav-active)]',
-                        )}
-                      >
-                        {navLabel(item)}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        }
-
-        if (section.items.length === 1) {
-          const item = section.items[0];
-          const active = activePath === item.path;
-          const disabled = isItemDisabled?.(item) ?? false;
-          return (
-            <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
-              <button
-                type="button"
-                disabled={disabled}
-                title={disabled ? t('nav.booking_disabled_hint') : undefined}
-                onClick={() => onNavigate(item.path)}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'w-full px-4 py-2.5 text-start text-sm font-medium transition-colors',
-                  'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
-                  disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
-                  active && 'bg-[var(--nav-active)]',
-                )}
-              >
-                {navLabel(item)}
-              </button>
-            </div>
-          );
-        }
-
-        const expanded = expandedSections.has(section.sectionKey);
-        const sectionPanelId = `nav-section-${section.sectionKey}`;
-
+        const entries = groupNavEntries(section.items);
         return (
-          <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0">
-            <button
-              type="button"
-              onClick={() => toggleSection(section.sectionKey)}
-              aria-expanded={expanded}
-              aria-controls={sectionPanelId}
-              className={cn(
-                'flex w-full items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                'hover:bg-[var(--nav-hover)] focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
-              )}
-            >
-              <span>{t(section.labelKey)}</span>
-              <ChevronDown
-                size={16}
-                aria-hidden
-                className={cn(
-                  'shrink-0 opacity-80 transition-transform duration-200',
-                  !expanded && 'ltr:-rotate-90 rtl:rotate-90',
-                )}
-              />
-            </button>
-
-            {expanded && (
-              <ul id={sectionPanelId}>
-                {section.items.map((item) => {
-                  const active = activePath === item.path;
-                  const disabled = isItemDisabled?.(item) ?? false;
-                  return (
-                    <li key={item.path}>
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        title={disabled ? t('nav.booking_disabled_hint') : undefined}
-                        onClick={() => onNavigate(item.path)}
-                        aria-current={active ? 'page' : undefined}
-                        className={cn(
-                          'w-full text-start py-2 text-sm transition-colors',
-                          item.indent ? 'ps-8 pe-4' : 'px-4',
-                          'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
-                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
-                          active && 'bg-[var(--nav-active)] font-medium',
-                        )}
-                      >
-                        {navLabel(item)}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+          <div key={section.sectionKey} className="border-b border-[var(--nav-border)] last:border-b-0 py-1">
+            <ul>
+              {entries.map((entry) => {
+                const active = entry.items.some((item) => item.path === activePath);
+                const disabled = entry.items.every((item) => isItemDisabled?.(item) ?? false);
+                const label = entryLabel(entry);
+                const Icon = navEntryIcon(entry, vertical);
+                return (
+                  <li key={entry.key}>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      title={disabled ? t('nav.booking_disabled_hint') : iconsOnly ? label : undefined}
+                      aria-label={iconsOnly ? label : undefined}
+                      onClick={() => onNavigate(entry.path)}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'flex w-full items-center gap-3 py-2.5 text-start text-sm font-medium transition-colors',
+                        iconsOnly ? 'justify-center px-0' : 'px-4',
+                        'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
+                        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--nav-hover)]',
+                        active && 'bg-[var(--nav-active)]',
+                      )}
+                    >
+                      <Icon size={20} aria-hidden className="shrink-0" />
+                      {!iconsOnly && <span className="truncate">{label}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         );
       })}

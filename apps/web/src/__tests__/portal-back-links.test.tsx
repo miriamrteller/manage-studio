@@ -238,22 +238,40 @@ describe('menu per vertical', () => {
       roles,
     ).flatMap((section) => section.items.map((item) => item.path));
 
-  it('dance admin menu: working pages first (Leads, Students, Families, Classes, Shop, Bookable services, Appointments, Notifications), then Finance and Setup', () => {
+  const settingsTabs = [
+    '/admin/setup/settings', '/admin/setup/settings?tab=profile', '/admin/setup/settings?tab=business',
+    '/admin/setup/settings?tab=features', '/admin/setup/settings?tab=locale', '/admin/setup/settings?tab=payment',
+    '/admin/setup/settings?tab=invoicing', '/admin/setup/settings?tab=legal', '/admin/setup/settings?tab=security',
+  ];
+  const finance = [
+    '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
+    '/admin/finance/import', '/admin/setup/billing',
+  ];
+  const bookings = ['/admin/appointments', '/admin/packages', '/admin/setup/booking/availability', '/admin/setup/booking'];
+
+  it('dance admin menu: Home, Leads, Students, Classes, Bookings, Shop, Finance, Settings, each with its pages as tabs', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/families', '/admin/classes', '/admin/shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
-      '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
-      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/bundled-payments', '/admin/setup/billing',
-      '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers',
-      '/admin/setup/booking', '/admin/setup/waivers',
+      '/admin/setup',
+      '/admin/leads', '/admin/leads/get', '/admin/leads/settings',
+      '/admin/students', '/admin/families',
+      '/admin/classes', '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers', '/admin/classes/cards',
+      ...bookings,
+      '/admin/shop',
+      ...finance,
+      ...settingsTabs, '/admin/setup/waivers', '/admin/setup/bundled-payments',
     ]);
   });
 
-  it('photographer admin menu: Leads, Clients, Shoots, Quotes, Photo shop, Packages, Appointments, Notifications; no family accounts or bundled payments', () => {
+  it('photographer admin menu: Home, Leads, Clients, Shoots, Bookings, Photo shop, Finance, Settings; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/packages', '/admin/appointments', '/admin/notifications',
-      '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories', '/admin/finance/import',
-      '/admin/setup', '/admin/setup?guide=open', '/admin/setup/settings', '/admin/setup/billing',
-      '/admin/setup/booking', '/admin/setup/waivers',
+      '/admin/setup',
+      '/admin/leads', '/admin/leads/get', '/admin/leads/settings',
+      '/admin/students',
+      '/admin/jobs', '/admin/quotes',
+      ...bookings,
+      '/admin/photo-shop',
+      ...finance,
+      ...settingsTabs, '/admin/setup/waivers',
     ]);
   });
 

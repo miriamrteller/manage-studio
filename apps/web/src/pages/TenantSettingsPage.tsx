@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck, Users, Ticket } from 'lucide-react';
+import { Paintbrush, Building2, Briefcase, Globe, ToggleRight, CreditCard, FileText, Scale, ShieldCheck } from 'lucide-react';
 
-import { SettingsLayout, type SettingsSection } from '@/features/settings/components/SettingsLayout';
+import type { SettingsSection } from '@/features/settings/components/SettingsLayout';
 import { BrandingSettingsForm } from '@/features/settings/components/BrandingSettingsForm';
 import { SchoolProfileForm } from '@/features/settings/components/SchoolProfileForm';
 import { BusinessSettings } from '@/features/settings/components/BusinessSettings';
@@ -12,12 +12,8 @@ import { LocaleSettingsForm } from '@/features/settings/components/LocaleSetting
 import { PaymentSettingsForm } from '@/features/settings/components/PaymentSettingsForm';
 import { InvoicingSettingsForm } from '@/features/settings/components/InvoicingSettingsForm';
 import { InvoicingToggleForm } from '@/features/settings/components/InvoicingToggleForm';
-import { LeadFormSettings } from '@/features/settings/components/LeadFormSettings';
-import { LeadDigestSetting } from '@/features/settings/components/LeadDigestSetting';
 import { LegalSettingsForm } from '@/features/settings/components/LegalSettingsForm';
 import { SecuritySettingsForm } from '@/features/settings/components/SecuritySettingsForm';
-import { ClassCardSettings } from '@/features/class-cards/components/ClassCardSettings';
-import { useTenant } from '@/hooks/useTenant';
 
 /** Tax documents on/off and the invoicing service first, then that service's credentials. */
 function InvoicingSection() {
@@ -26,17 +22,6 @@ function InvoicingSection() {
       <InvoicingToggleForm />
       <hr className="border-gray-200" />
       <InvoicingSettingsForm />
-    </div>
-  );
-}
-
-/** How enquiries reach the studio: the questions on the enquiry form and the daily follow-up email. */
-function LeadsSection() {
-  return (
-    <div className="space-y-10">
-      <LeadFormSettings />
-      <hr className="border-gray-200" />
-      <LeadDigestSetting />
     </div>
   );
 }
@@ -71,13 +56,6 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     component: StudioFeatureSettings,
   },
   {
-    id: 'class_cards',
-    labelKey: 'settings.tabs.class_cards',
-    label: 'Class cards',
-    icon: Ticket,
-    component: ClassCardSettings,
-  },
-  {
     id: 'locale',
     labelKey: 'settings.tabs.locale',
     label: 'Language & Region',
@@ -99,13 +77,6 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     component: InvoicingSection,
   },
   {
-    id: 'leads',
-    labelKey: 'settings.tabs.leads',
-    label: 'Leads',
-    icon: Users,
-    component: LeadsSection,
-  },
-  {
     id: 'legal',
     labelKey: 'settings.tabs.legal',
     label: 'Legal',
@@ -123,43 +94,41 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 
 const DEFAULT_TAB = 'branding';
 
-/** Tabs that only make sense for studios that teach classes. */
-const CLASS_ONLY_TABS = new Set(['class_cards']);
+/** Sections that moved to their own area's tabs: old links (?tab=…) still land there. */
+const MOVED_TABS: Record<string, string> = {
+  class_cards: '/admin/classes/cards',
+  leads: '/admin/leads/settings',
+};
 
+/**
+ * Settings: each section is a tab along the top of the page (AreaTabs, from the menu config),
+ * so this page shows only the section the address names.
+ */
 export function TenantSettingsPage() {
   const { t } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tenant = useTenant();
-  const teachesClasses = tenant?.profile?.teachesClasses !== false;
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
 
-  const sections = useMemo(
-    () => SETTINGS_SECTIONS.filter((s) => teachesClasses || !CLASS_ONLY_TABS.has(s.id)),
-    [teachesClasses],
+  const active = useMemo(
+    () =>
+      SETTINGS_SECTIONS.find((s) => s.id === tabParam) ??
+      SETTINGS_SECTIONS.find((s) => s.id === DEFAULT_TAB)!,
+    [tabParam],
   );
 
-  const activeSectionId = useMemo(() => {
-    const tabParam = searchParams.get('tab');
-    const validSection = sections.find((s) => s.id === tabParam);
-    return validSection ? tabParam! : DEFAULT_TAB;
-  }, [searchParams, sections]);
+  if (tabParam && MOVED_TABS[tabParam]) {
+    return <Navigate to={MOVED_TABS[tabParam]} replace />;
+  }
 
-  const handleSectionChange = (sectionId: string) => {
-    setSearchParams({ tab: sectionId }, { replace: true });
-  };
-
+  const ActiveComponent = active.component;
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-6 px-6 pt-6">
-        <h1 className="text-2xl font-semibold text-[--text-primary]">
-          {t('settings.title', 'Settings')}
-        </h1>
+      <h1 className="mb-6 text-2xl font-semibold text-[--text-primary]">
+        {t('settings.title', 'Settings')}
+      </h1>
+      <div id={`tabpanel-${active.id}`}>
+        <ActiveComponent />
       </div>
-
-      <SettingsLayout
-        sections={sections}
-        activeSectionId={activeSectionId}
-        onSectionChange={handleSectionChange}
-      />
     </div>
   );
 }
