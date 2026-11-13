@@ -480,7 +480,10 @@
         "cash_ordered": "Ordered, paying in cash",
         "cash_waiting": "Sent in, paying in cash.",
         "pay_online_instead": "Pay by card instead"
-      }
+      },
+      "bookings_heading": "My bookings",
+      "book_again": "Book a time",
+      "no_bookings": "No bookings yet."
     },
     "admin": {
       "setup": {

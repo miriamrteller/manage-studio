@@ -82,7 +82,78 @@ export function sortShoots(shoots: ClientShoot[], now: Date = new Date()): Clien
   });
 }
 
+/** A booked appointment (not a shoot) on the client's own page. */
+export interface ClientBooking {
+  engagementId: string;
+  startsAt: string;
+  status: string;
+  serviceName: string | null;
+}
+
+const ClientBookingRowSchema = z.object({
+  id: z.string(),
+  person_id: z.string(),
+  status: z.string(),
+  booked_starts_at: z.string(),
+  offerings: z
+    .union([z.object({ name: z.string().nullable() }), z.array(z.object({ name: z.string().nullable() }))])
+    .nullable()
+    .optional(),
+  people: z
+    .union([
+      z.object({ account_id: z.string().nullable() }),
+      z.array(z.object({ account_id: z.string().nullable() })),
+    ])
+    .nullable()
+    .optional(),
+});
+
+/** Soonest upcoming first, then past ones, most recent first. */
+export function sortBookings(bookings: ClientBooking[], now: Date = new Date()): ClientBooking[] {
+  const nowMs = now.getTime();
+  const upcoming = bookings.filter((b) => new Date(b.startsAt).getTime() >= nowMs);
+  const past = bookings.filter((b) => new Date(b.startsAt).getTime() < nowMs);
+  upcoming.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  past.sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+  return [...upcoming, ...past];
+}
+
 export class ClientPortalService extends BaseService {
+  /**
+   * The signed-in client's booked appointments (engagements with a booked time that are
+   * not shoots). RLS already limits engagements to the client's own person or account;
+   * `owner` narrows it again for a login that is also a tenant admin.
+   */
+  static async listBookings(
+    tenantId: string,
+    owner: { personId: string; accountId: string | null },
+    shootIds: ReadonlySet<string>,
+  ): Promise<ClientBooking[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('engagements')
+        .select('id, person_id, status, booked_starts_at, offerings(name), people(account_id)')
+        .eq('tenant_id', tenantId)
+        .not('booked_starts_at', 'is', null);
+      if (error) throw new Error(error.message);
+      const bookings: ClientBooking[] = [];
+      for (const raw of data ?? []) {
+        const row = ClientBookingRowSchema.parse(raw);
+        if (shootIds.has(row.id)) continue;
+        const accountId = one(row.people)?.account_id ?? null;
+        const isOwn =
+          row.person_id === owner.personId || (owner.accountId !== null && accountId === owner.accountId);
+        if (!isOwn) continue;
+        bookings.push({
+          engagementId: row.id,
+          startsAt: row.booked_starts_at,
+          status: row.status,
+          serviceName: one(row.offerings)?.name ?? null,
+        });
+      }
+      return sortBookings(bookings);
+    }, 'ClientPortalService.listBookings');
+  }
   /**
    * The signed-in client's shoots. `owner` narrows the result to the client's
    * own person / account, so a login that is also a tenant admin (for whom

@@ -484,7 +484,10 @@
         "cash_ordered": "הוזמנה, תשלום במזומן",
         "cash_waiting": "נשלחה, תשלום במזומן.",
         "pay_online_instead": "לתשלום בכרטיס במקום"
-      }
+      },
+      "bookings_heading": "התורים שלי",
+      "book_again": "לקביעת תור",
+      "no_bookings": "עדיין אין תורים."
     },
     "admin": {
       "setup": {

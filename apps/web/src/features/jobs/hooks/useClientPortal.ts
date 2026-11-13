@@ -4,7 +4,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { TenantDB } from '@/lib/db';
 import { PersonSchema } from '@shared/schemas';
 import { resolveGuardianProfile } from '@/features/enrolment/lib/resolveGuardianProfile';
-import { ClientPortalService, type ClientShoot } from '../services/clientPortalService';
+import { ClientPortalService, type ClientBooking, type ClientShoot } from '../services/clientPortalService';
 import type { JobPaymentRequest } from '../services/jobPaymentService';
 
 export interface ClientSelf {
@@ -19,6 +19,8 @@ export interface ClientPortalData {
   self: ClientSelf | null;
   shoots: ClientShoot[];
   requests: JobPaymentRequest[];
+  /** Booked appointments that are not shoots ("My bookings"). */
+  bookings: ClientBooking[];
 }
 
 /**
@@ -82,10 +84,13 @@ export function useClientPortal() {
         userEmail: user.email,
         userPersonId: user.person_id,
       });
-      if (!self) return { self: null, shoots: [], requests: [] };
+      if (!self) return { self: null, shoots: [], requests: [], bookings: [] };
       const shoots = await ClientPortalService.listShoots(tenant.id, self);
-      const requests = await ClientPortalService.listPaymentRequests(shoots.map((s) => s.engagementId));
-      return { self, shoots, requests };
+      const [requests, bookings] = await Promise.all([
+        ClientPortalService.listPaymentRequests(shoots.map((s) => s.engagementId)),
+        ClientPortalService.listBookings(tenant.id, self, new Set(shoots.map((s) => s.engagementId))),
+      ]);
+      return { self, shoots, requests, bookings };
     },
     enabled: !!tenant?.id && !!user?.id,
   });

@@ -186,6 +186,19 @@ export default function BookingPage() {
 
       {/* Services (capped + scroll) above calendar — pick service, then see its slots */}
       <section className="space-y-4 sm:space-y-5">
+        {/* One service: nothing to choose, so show it as a line and go straight to the times. */}
+        {offerings.length === 1 ? (
+          <p className="text-sm text-gray-700" data-testid="single-service">
+            <span className="font-medium">{offerings[0].name}</span>
+            {offerings[0].duration_mins
+              ? ` · ${t('scheduling.book.duration_mins', { count: offerings[0].duration_mins })}`
+              : ''}
+            {' · '}
+            {formatOfferingPrice(t, offerings[0].price_minor, offerings[0].currency || 'ILS', i18n.language, {
+              billing_mode: 'one_time',
+            })}
+          </p>
+        ) : (
         <div className="space-y-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-semibold sm:text-lg">{t('scheduling.book.choose_service')}</h2>
@@ -234,6 +247,7 @@ export default function BookingPage() {
             })}
           </ul>
         </div>
+        )}
 
         {selectedOffering && subdomain ? (
           <div className="space-y-2 border-t border-gray-200 pt-4 sm:pt-5">
