@@ -69,6 +69,7 @@ const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const ExpenseCategoriesPage = lazy(() => import("./pages/ExpenseCategoriesPage"));
 const FinanceImportPage = lazy(() => import("./pages/FinanceImportPage"));
+const ClientImportPage = lazy(() => import("./pages/ClientImportPage"));
 const LeadsPage = lazy(() => import("./pages/LeadsPage"));
 const JobsPage = lazy(() => import("./pages/JobsPage"));
 const JobDetailPage = lazy(() => import("./pages/JobDetailPage"));
@@ -220,6 +221,7 @@ const router = createBrowserRouter([
 
           // ADMIN ROUTES
           { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },
+          { path: "admin/students/import", element: <AdminRoute><ClientImportPage /></AdminRoute> },
           // Legacy redirects — keep URLs working
           { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
           { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
