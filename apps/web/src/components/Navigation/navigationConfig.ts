@@ -216,6 +216,7 @@ export const navigationConfig: NavItem[] = [
   {
     path: '/admin/setup/levels',
     needs: 'teaches_classes',
+    featureKey: FEATURES.offerings.structure,
     labelKey: 'nav.levels',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -225,6 +226,7 @@ export const navigationConfig: NavItem[] = [
   {
     path: '/admin/setup/terms',
     needs: 'teaches_classes',
+    featureKey: FEATURES.offerings.structure,
     labelKey: 'nav.terms',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -350,6 +352,7 @@ export const navigationConfig: NavItem[] = [
   {
     path: '/admin/setup/billing',
     labelKey: 'nav.billing',
+    featureKey: FEATURES.people.families,
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'finance',
