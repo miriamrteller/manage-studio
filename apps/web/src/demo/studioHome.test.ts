@@ -40,13 +40,13 @@ describe('ballet demo shows no photographer features', () => {
 
 describe('photographer demo still shows its features', () => {
   it('opens on Shoots', () => {
-    expect(photographer.DEMO_HOME.admin).toBe('#/admin/jobs');
+    expect(photographer.DEMO_HOME.admin).toBe('#/admin/projects');
   });
 
   it('the photographer menu has Shoots and quotes', () => {
     const paths = visiblePaths(photographer);
-    expect(paths).toContain('/admin/jobs');
-    expect(paths).toContain('/admin/quotes');
+    expect(paths).toContain('/admin/projects');
+    expect(paths).toContain('/admin/projects/quotes');
   });
 
   it('keeps its shoots and photographer theme', () => {

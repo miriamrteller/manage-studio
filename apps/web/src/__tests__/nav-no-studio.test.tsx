@@ -38,13 +38,13 @@ describe('menu without a studio', () => {
   it('even with studio roles, no studio pages show without a studio', () => {
     const sections = nav({ roles: ['super_admin', 'tenant_admin'], hasStudio: false });
     expect(paths(sections)).not.toContain('/classes');
-    expect(paths(sections)).not.toContain('/admin/students');
+    expect(paths(sections)).not.toContain('/admin/people');
   });
 
   it('on a studio host the platform items are never shown, even to the platform owner', () => {
     const sections = nav({ roles: ['super_admin', 'tenant_admin'], hasStudio: true });
     expect(paths(sections)).not.toContain('/classes'); // a studio admin's menu has no public Browse pages
-    expect(paths(sections)).toContain('/admin/students');
+    expect(paths(sections)).toContain('/admin/people');
     expect(sections.map((s) => s.sectionKey)).not.toContain('platform');
     expect(paths(sections)).not.toContain('/platform/onboard');
     expect(paths(sections)).not.toContain('/platform/features');

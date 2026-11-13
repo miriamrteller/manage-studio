@@ -104,7 +104,7 @@ describe('StudioShopPage', () => {
   });
 
   it('is in the menu for studio admins of class studios with the feature', () => {
-    const item = navigationConfig.find((i) => i.path === '/admin/shop');
+    const item = navigationConfig.find((i) => i.path === '/admin/shop/studio');
     expect(item?.featureKey).toBe('billing:studio_shop');
     expect(item?.needs).toBe('teaches_classes');
     expect(item?.requiredRoles).toEqual(['tenant_admin']);
@@ -112,13 +112,13 @@ describe('StudioShopPage', () => {
 
   it('sends a studio without the feature away', () => {
     state.flag = false;
-    renderInApp(<StudioShopPage />, { path: '/admin/shop', extraRoutes: { '/admin/setup': <p>setup home</p> } });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio', extraRoutes: { '/admin': <p>setup home</p> } });
     expect(screen.getByText('setup home')).toBeTruthy();
   });
 
   it('lists items with price, sizes and stock', async () => {
     state.products = [leotard, { ...leotard, id: 'p9', name: 'Old tights', active: false, image_path: null }];
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     expect(await screen.findByText('Black leotard')).toBeTruthy();
     expect(screen.getAllByText('Age 4-6 (3 left) · Age 7-9 (sold out) · Adult')).toHaveLength(2);
     expect(screen.getByText('Hidden')).toBeTruthy();
@@ -126,7 +126,7 @@ describe('StudioShopPage', () => {
   });
 
   it('adds an item with sizes in order; empty stock is not counted', async () => {
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     fireEvent.click(await screen.findByRole('button', { name: 'Add item' }));
     expect((screen.getByLabelText('Size') as HTMLInputElement).value).toBe('One size');
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ballet shoes' } });
@@ -147,7 +147,7 @@ describe('StudioShopPage', () => {
   });
 
   it('Save stays off until the item has a name and a price', async () => {
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     fireEvent.click(await screen.findByRole('button', { name: 'Add item' }));
     const save = screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
@@ -162,7 +162,7 @@ describe('StudioShopPage', () => {
       order({ id: 'o2', status: 'awaiting_payment', person_name: 'Tom', ordered_by_name: 'Tom' }),
       order({ id: 'o1' }),
     ];
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     const paid = await screen.findByRole('region', { name: 'Paid, to get ready' });
     expect(paid.textContent).toContain('Noa');
     expect(paid.textContent).toContain('ordered by Dana');
@@ -175,7 +175,7 @@ describe('StudioShopPage', () => {
   it('cancels an unpaid order after asking', async () => {
     state.orders = [order({ id: 'o2', status: 'awaiting_payment' })];
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
     await waitFor(() => expect(state.cancel).toHaveBeenCalledWith('o2'));
     expect(screen.queryByRole('button', { name: 'Ready to collect' })).toBeNull();
@@ -185,7 +185,7 @@ describe('StudioShopPage', () => {
     state.products = [leotard];
     state.remove.mockResolvedValue('hidden');
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     fireEvent.click(await screen.findByRole('button', { name: 'Delete Black leotard' }));
     expect(await screen.findByText(/hidden instead of deleted/)).toBeTruthy();
   });
@@ -193,7 +193,7 @@ describe('StudioShopPage', () => {
   it('has Hebrew text', async () => {
     await setLanguage('he');
     state.products = [leotard];
-    renderInApp(<StudioShopPage />, { path: '/admin/shop' });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
     expect(await screen.findByRole('heading', { name: 'חנות' })).toBeTruthy();
     expect(await screen.findByRole('button', { name: 'הוספת פריט' })).toBeTruthy();
     expect(screen.getByText(/Age 7-9 \(אזל\)/)).toBeTruthy();

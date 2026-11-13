@@ -50,7 +50,7 @@ describe('isIntegrationCallbackPath', () => {
     const { isIntegrationCallbackPath } = await import('@/layouts/AppLayout');
     expect(isIntegrationCallbackPath('/admin/setup/integrations/smugmug/callback')).toBe(true);
     expect(isIntegrationCallbackPath('/admin/setup/integrations/google/callback')).toBe(true);
-    expect(isIntegrationCallbackPath('/admin/setup/payments')).toBe(false);
+    expect(isIntegrationCallbackPath('/admin/settings/payments')).toBe(false);
     expect(isIntegrationCallbackPath('/admin/setup/integrations/smugmug/callback/extra')).toBe(false);
   });
 });

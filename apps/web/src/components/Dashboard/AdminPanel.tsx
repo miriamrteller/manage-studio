@@ -111,7 +111,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/settings')}
+              onClick={() => navigate('/admin/settings')}
               aria-label={t('settings.hub.page_title')}
             >
               {t('common.manage')} →
@@ -131,7 +131,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/waivers')}
+              onClick={() => navigate('/admin/settings/waivers')}
               aria-label={t('pages.waivers.title')}
             >
               {t('common.manage')} →
@@ -151,7 +151,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/billing')}
+              onClick={() => navigate('/admin/finance/accounts')}
               aria-label={t('pages.billing.title')}
             >
               {t('common.manage')} →
@@ -172,7 +172,7 @@ export function AdminPanel() {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate('/admin/setup/levels')}
+                onClick={() => navigate('/admin/classes/levels')}
                 aria-label={labels.category.plural}
               >
                 {t('common.manage')} →
@@ -194,7 +194,7 @@ export function AdminPanel() {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate('/admin/setup/terms')}
+                onClick={() => navigate('/admin/classes/seasons')}
                 aria-label={labels.season.plural}
               >
                 {t('common.manage')} →

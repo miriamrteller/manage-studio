@@ -69,13 +69,13 @@ describe('menu', () => {
   it('a teacher gets My classes and no admin pages', () => {
     const p = paths(['account_holder', 'staff']);
     expect(p).toContain('/teach');
-    expect(p).not.toContain('/admin/setup/teachers');
-    expect(p).not.toContain('/admin/students');
+    expect(p).not.toContain('/admin/classes/teachers');
+    expect(p).not.toContain('/admin/people');
   });
 
   it('an admin gets the Teachers page, not My classes', () => {
     const p = paths(['tenant_admin']);
-    expect(p).toContain('/admin/setup/teachers');
+    expect(p).toContain('/admin/classes/teachers');
     expect(p).not.toContain('/teach');
   });
 

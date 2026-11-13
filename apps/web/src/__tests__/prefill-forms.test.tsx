@@ -94,7 +94,7 @@ describe('lead → shoot', () => {
               path="/admin/leads"
               element={<ConvertLeadPanel leadId="l-3" leadName="Noa" onClose={() => {}} />}
             />
-            <Route path="/admin/quotes/new" element={<p>quote editor</p>} />
+            <Route path="/admin/projects/quotes/new" element={<p>quote editor</p>} />
           </Routes>
         </MemoryRouter>
       </I18nextProvider>,

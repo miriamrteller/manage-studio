@@ -60,8 +60,8 @@ function renderPanel() {
               <ConvertLeadPanel leadId="l-1" leadName="Dana" defaultOfferingId="p1" eventDate="2026-12-04" confirming onClose={() => {}} />
             }
           />
-          <Route path="/admin/quotes/:id" element={<p>quote page</p>} />
-          <Route path="/admin/quotes/new" element={<p>quote editor</p>} />
+          <Route path="/admin/projects/quotes/:id" element={<p>quote page</p>} />
+          <Route path="/admin/projects/quotes/new" element={<p>quote editor</p>} />
         </Routes>
       </MemoryRouter>
     </I18nextProvider>,

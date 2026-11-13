@@ -11,7 +11,7 @@ export function CreateQuoteButton({ leadId, engagementId }: { leadId?: string; e
   if (leadId) params.set('lead', leadId);
   if (engagementId) params.set('engagement', engagementId);
   return (
-    <Link to={`/admin/quotes/new?${params.toString()}`} className="text-sm font-medium text-primary underline">
+    <Link to={`/admin/projects/quotes/new?${params.toString()}`} className="text-sm font-medium text-primary underline">
       {t('pages.quotes.create')}
     </Link>
   );

@@ -35,7 +35,7 @@ interface StudentSlideOverProps {
   personId: string;
   highlightEngagementId?: string | null;
   onClose: () => void;
-  /** 'page': the person's own page (/admin/students/:personId), not a panel over the list. */
+  /** 'page': the person's own page (/admin/people/:personId), not a panel over the list. */
   variant?: 'panel' | 'page';
 }
 
@@ -61,7 +61,7 @@ export function StudentSlideOver({
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // Photographers: a client's bookings are shoots (/admin/jobs), and there's
+  // Photographers: a client's bookings are shoots (/admin/projects), and there's
   // no class enrolment, age review or guardian/family record.
   const { vertical, profile } = useEntityLabels();
   const isPhotographer = vertical === 'photographer';
@@ -408,7 +408,7 @@ export function StudentSlideOver({
                       </h3>
                       {family && !isEditingContact && (
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/families/${family.id}`)}>
+                          <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/people/families/${family.id}`)}>
                             {t('pages.people.open_family')}
                           </Button>
                           <Button variant="ghost" size="sm" onClick={startEditContact}>

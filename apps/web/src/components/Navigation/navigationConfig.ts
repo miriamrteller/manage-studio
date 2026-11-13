@@ -57,7 +57,7 @@ export interface NavItem {
   area?: NavAreaKey;
   /** Other pages that count as this tab (e.g. sub-pages reached from it). */
   alsoActiveOn?: string[];
-  /** Only this exact address counts (Home at /admin/setup is not the parent of /admin/setup/…). */
+  /** Only this exact address counts (Home at /admin is not the parent of /admin/setup/…). */
   exact?: boolean;
   /** Hide item when the named module is disabled for this tenant */
   moduleKey?: keyof PresetModules;
@@ -105,7 +105,7 @@ export const SECTION_LABELS: Record<NavSectionKey, string> = {
 };
 
 /** The studio home with the setup checklist forced open. */
-export const SETUP_GUIDE_PATH = '/admin/setup?guide=open';
+export const SETUP_GUIDE_PATH = '/admin?guide=open';
 
 /** The Studio settings page's sections, each a tab of Settings (TenantSettingsPage reads ?tab=). */
 export const SETTINGS_TAB_IDS = [
@@ -120,7 +120,7 @@ export const SETTINGS_TAB_IDS = [
   'security',
 ] as const;
 
-export const SETTINGS_PATH = '/admin/setup/settings';
+export const SETTINGS_PATH = '/admin/settings';
 
 const SETTINGS_TAB_ITEMS: NavItem[] = SETTINGS_TAB_IDS.map((id, index) => ({
   // The first tab is the page's own address, so the menu line opens it without a ?tab=.
@@ -160,7 +160,7 @@ export const navigationConfig: NavItem[] = [
   // line opens the area's first visible page. Order = the order the work flows.
   {
     // The studio home with the setup checklist.
-    path: '/admin/setup',
+    path: '/admin',
     labelKey: 'nav.home',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -192,14 +192,14 @@ export const navigationConfig: NavItem[] = [
     area: 'leads',
   },
   {
-    path: '/admin/students',
+    path: '/admin/people',
     labelKey: 'nav.students',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'people',
   },
   {
-    path: '/admin/families',
+    path: '/admin/people/families',
     labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -216,7 +216,7 @@ export const navigationConfig: NavItem[] = [
     needs: 'teaches_classes',
   },
   {
-    path: '/admin/setup/levels',
+    path: '/admin/classes/levels',
     needs: 'teaches_classes',
     featureKey: FEATURES.offerings.structure,
     labelKey: 'nav.levels',
@@ -226,7 +226,7 @@ export const navigationConfig: NavItem[] = [
     moduleKey: 'categories',
   },
   {
-    path: '/admin/setup/terms',
+    path: '/admin/classes/seasons',
     needs: 'teaches_classes',
     featureKey: FEATURES.offerings.structure,
     labelKey: 'nav.terms',
@@ -236,7 +236,7 @@ export const navigationConfig: NavItem[] = [
     moduleKey: 'scheduling',
   },
   {
-    path: '/admin/setup/teachers',
+    path: '/admin/classes/teachers',
     needs: 'teaches_classes',
     labelKey: 'nav.teachers',
     requiredRoles: ['tenant_admin'],
@@ -253,7 +253,7 @@ export const navigationConfig: NavItem[] = [
     area: 'classes',
   },
   {
-    path: '/admin/jobs',
+    path: '/admin/projects',
     labelKey: 'nav.jobs',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -261,7 +261,7 @@ export const navigationConfig: NavItem[] = [
     needs: 'project',
   },
   {
-    path: '/admin/quotes',
+    path: '/admin/projects/quotes',
     labelKey: 'nav.quotes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -271,7 +271,7 @@ export const navigationConfig: NavItem[] = [
   {
     // Bookings, for every studio (owner, 13 Nov 2026): Packages first, so a package can be added
     // straight away with no settings; Projects (quotes) and Appointments (time slots) sell them.
-    path: '/admin/packages',
+    path: '/admin/bookings/packages',
     labelKey: 'nav.booking_services',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -281,7 +281,7 @@ export const navigationConfig: NavItem[] = [
   {
     // The Diary: booked shoots and appointments, requests to confirm, days off, Google Calendar,
     // and (Appointments only) the booking hours, folded. Replaces Calendar and Availability.
-    path: '/admin/appointments',
+    path: '/admin/bookings/diary',
     labelKey: 'nav.tab.diary',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -290,7 +290,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     // The photo shop: each shoot's photos sold privately to that shoot's client (beta).
-    path: '/admin/photo-shop',
+    path: '/admin/shop/photos',
     labelKey: 'nav.photo_shop',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -300,7 +300,7 @@ export const navigationConfig: NavItem[] = [
   },
   {
     // The studio shop: uniforms and items families buy, collected at the studio (beta).
-    path: '/admin/shop',
+    path: '/admin/shop/studio',
     labelKey: 'nav.tab.studio_shop',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -344,7 +344,7 @@ export const navigationConfig: NavItem[] = [
     area: 'finance',
   },
   {
-    path: '/admin/setup/billing',
+    path: '/admin/finance/accounts',
     labelKey: 'nav.billing',
     featureKey: FEATURES.people.families,
     requiredRoles: ['tenant_admin'],
@@ -353,14 +353,14 @@ export const navigationConfig: NavItem[] = [
   },
   ...SETTINGS_TAB_ITEMS,
   {
-    path: '/admin/setup/waivers',
+    path: '/admin/settings/waivers',
     labelKey: 'nav.waivers',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'settings',
   },
   {
-    path: '/admin/setup/bundled-payments',
+    path: '/admin/settings/bundled-payments',
     labelKey: 'settings.bundled.nav_title',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -370,7 +370,7 @@ export const navigationConfig: NavItem[] = [
     needs: 'teaches_classes',
   },
   {
-    path: '/admin/setup/payments',
+    path: '/admin/settings/payments',
     labelKey: 'settings.payments.title',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
@@ -380,7 +380,7 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.billing.stripe,
   },
   {
-    path: '/admin/setup/invoicing',
+    path: '/admin/settings/invoicing',
     labelKey: 'settings.invoicing.title',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',

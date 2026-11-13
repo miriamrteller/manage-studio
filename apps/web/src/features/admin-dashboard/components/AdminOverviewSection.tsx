@@ -43,7 +43,7 @@ export const AdminOverviewSection = ({
           <Button
             variant="primary"
             className="mt-3"
-            onClick={() => navigate('/admin/setup/terms')}
+            onClick={() => navigate('/admin/classes/seasons')}
           >
             {t('pages.admin.overview.go_to_seasons')}
           </Button>
@@ -95,7 +95,7 @@ export const AdminOverviewSection = ({
         <TodaysClassesTable
           classes={overview?.today_classes ?? []}
           isLoading={isLoading}
-          onClassClick={(classId) => navigate(`/admin/students?class=${classId}`)}
+          onClassClick={(classId) => navigate(`/admin/people?class=${classId}`)}
         />
       </section>
     </div>

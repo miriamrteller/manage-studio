@@ -68,7 +68,7 @@ export function PlanPaymentBanner() {
           ? t('plan_banner.retry_on', { date: retryOn.toLocaleDateString(undefined, { timeZone: 'UTC' }) })
           : t('plan_banner.no_more_retries')}{' '}
         {t('plan_banner.keeps_working')}{' '}
-        <Link to="/admin/setup/payments" className="font-medium underline">{t('plan_banner.update_card')}</Link>
+        <Link to="/admin/settings/payments" className="font-medium underline">{t('plan_banner.update_card')}</Link>
       </p>
     </Alert>
   );

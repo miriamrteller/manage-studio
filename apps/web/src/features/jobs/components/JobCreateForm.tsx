@@ -86,7 +86,7 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
         notes: notes || null,
       });
       onCreated?.(engagementId);
-      navigate(`/admin/jobs/${engagementId}`);
+      navigate(`/admin/projects/${engagementId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }

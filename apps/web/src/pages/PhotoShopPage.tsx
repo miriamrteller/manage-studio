@@ -26,7 +26,7 @@ export default function PhotoShopPage() {
   const tab: Tab = (TABS as readonly string[]).includes(asked ?? '') ? (asked as Tab) : 'overview';
 
   if (isLoading) return null;
-  if (!hasFeature(FEATURES.billing.photoShop)) return <Navigate to="/admin/setup" replace />;
+  if (!hasFeature(FEATURES.billing.photoShop)) return <Navigate to="/admin" replace />;
 
   const go = (next: string) => setParams(next === 'overview' ? {} : { tab: next }, { replace: true });
 
@@ -93,7 +93,7 @@ function Overview({ onGo }: { onGo: (tab: Tab) => void }) {
       </ul>
       <p className="text-sm text-gray-600">
         {t('photo_shop_admin.overview.private')}{' '}
-        <Link to="/admin/jobs" className="font-medium underline">{t('photo_shop_admin.overview.shoots_link')}</Link>
+        <Link to="/admin/projects" className="font-medium underline">{t('photo_shop_admin.overview.shoots_link')}</Link>
       </p>
     </div>
   );

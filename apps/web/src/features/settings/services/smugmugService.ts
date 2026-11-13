@@ -33,7 +33,7 @@ export function smugmugAppUrls(origin: string, rootHostname: string): { appUrl: 
 }
 
 /** Where the callback page sends the photographer back to. */
-export const SMUGMUG_SETTINGS_PATH = '/admin/photo-shop?tab=smugmug';
+export const SMUGMUG_SETTINGS_PATH = '/admin/shop/photos?tab=smugmug';
 
 export interface SmugMugStatus {
   hasKeys: boolean;

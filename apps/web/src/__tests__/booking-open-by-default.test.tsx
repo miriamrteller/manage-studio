@@ -66,7 +66,7 @@ describe('Booking open by default', () => {
   });
 
   it('prefills Sunday to Thursday 09:00-18:00 when no hours are saved', async () => {
-    renderInApp(<Hours />, { path: '/admin/appointments' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByText(/clients can book Sunday to Thursday, 9:00 to 18:00/)).toBeTruthy();
     const starts = screen.getAllByLabelText('From') as HTMLInputElement[];
     expect(starts).toHaveLength(5);
@@ -76,13 +76,13 @@ describe('Booking open by default', () => {
 
   it('shows saved hours as they are, without the note', async () => {
     state.hours = [{ day_of_week: 5, start_time: '08:00', end_time: '12:00', is_active: true }];
-    renderInApp(<Hours />, { path: '/admin/appointments' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     await waitFor(() => expect(screen.getAllByLabelText('From')).toHaveLength(1));
     expect(screen.queryByText(/clients can book Sunday to Thursday/)).toBeNull();
   });
 
   it('blocks a whole day straight away', async () => {
-    renderInApp(<Hours />, { path: '/admin/appointments' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByText('No blocked times yet.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('First day'), { target: { value: '2099-11-15' } });
     fireEvent.change(screen.getByLabelText('Note (optional)'), { target: { value: 'Away' } });
@@ -97,14 +97,14 @@ describe('Booking open by default', () => {
 
   it('lists blocked times', async () => {
     state.blocks = [{ id: 'b1', summary: 'Wedding', start_time: '2099-11-15T08:00:00.000Z', end_time: '2099-11-15T10:00:00.000Z' }];
-    renderInApp(<Hours />, { path: '/admin/appointments' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByText('Sun 15 Nov, 10:00 – 12:00')).toBeTruthy();
     expect(screen.getByText(/Wedding/)).toBeTruthy();
   });
 
   it('has Hebrew text', async () => {
     await setLanguage('he');
-    renderInApp(<Hours />, { path: '/admin/appointments' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByRole('heading', { name: 'זמנים שאתם לא פנויים' })).toBeTruthy();
     expect(await screen.findByText(/ראשון עד חמישי/)).toBeTruthy();
   });
@@ -119,7 +119,7 @@ describe('Diary: booking hours only for Appointments businesses', () => {
 
   it('photographers see no booking hours; days off stay in view', async () => {
     setTenant('photographer');
-    renderInApp(<AdminAppointmentsPage />, { path: '/admin/appointments' });
+    renderInApp(<AdminAppointmentsPage />, { path: '/admin/bookings/diary' });
     expect(await screen.findByRole('heading', { name: 'Diary' })).toBeTruthy();
     expect(await screen.findByText('No blocked times yet.')).toBeTruthy();
     expect(screen.queryByText('Booking hours')).toBeNull();
@@ -128,7 +128,7 @@ describe('Diary: booking hours only for Appointments businesses', () => {
 
   it('appointment businesses get the booking hours folded at the bottom, prefilled', async () => {
     setTenant('beautician');
-    renderInApp(<AdminAppointmentsPage />, { path: '/admin/appointments' });
+    renderInApp(<AdminAppointmentsPage />, { path: '/admin/bookings/diary' });
     const summary = await screen.findByText('Booking hours');
     expect(summary.closest('details')).not.toHaveAttribute('open');
     await waitFor(() => expect(summary.closest('details')).toContainElement(screen.getAllByLabelText('From')[0]));

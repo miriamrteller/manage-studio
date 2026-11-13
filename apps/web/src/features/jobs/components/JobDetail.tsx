@@ -102,7 +102,7 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/admin/jobs" className="text-sm underline">
+        <Link to="/admin/projects" className="text-sm underline">
           ← {t('pages.jobs.back')}
         </Link>
       </div>
