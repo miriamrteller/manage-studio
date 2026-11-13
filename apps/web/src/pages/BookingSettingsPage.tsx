@@ -27,11 +27,10 @@ const DAY_LABELS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמ
 const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /**
- * Bookings → Booking rules (/admin/setup/booking) and Bookings → Availability
- * (/admin/setup/booking/availability): one page split into two short tabs. Save stores both,
- * as before.
+ * Bookings → Availability (/admin/setup/booking): online booking on/off and its rules, opening
+ * hours, blocked times and Google Calendar, on one tab.
  */
-export default function BookingSettingsPage({ view = 'rules' }: { view?: 'rules' | 'availability' }) {
+export default function BookingSettingsPage() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
@@ -120,14 +119,8 @@ export default function BookingSettingsPage({ view = 'rules' }: { view?: 'rules'
   return (
     <div className="max-w-3xl space-y-8 p-2">
       <header className="space-y-1">
-        <h1 className="text-3xl font-bold">
-          {view === 'availability' ? t('nav.tab.availability') : t('nav.tab.booking_rules')}
-        </h1>
-        <p className="text-gray-600">
-          {view === 'availability'
-            ? t('scheduling.booking.availability_subtitle')
-            : t('scheduling.booking.settings_subtitle')}
-        </p>
+        <h1 className="text-3xl font-bold">{t('nav.tab.availability')}</h1>
+        <p className="text-gray-600">{t('scheduling.booking.availability_subtitle')}</p>
       </header>
 
       {status && (
@@ -143,7 +136,6 @@ export default function BookingSettingsPage({ view = 'rules' }: { view?: 'rules'
         </div>
       )}
 
-      {view === 'rules' && (
       <section className="card border border-gray-200 space-y-4 p-4">
         {!settings.is_booking_enabled && (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
@@ -234,22 +226,19 @@ export default function BookingSettingsPage({ view = 'rules' }: { view?: 'rules'
           )}
         </div>
       </section>
-      )}
 
-      {view === 'availability' && hoursAreDefault && (
+      {hoursAreDefault && (
         <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" role="status">
           {t('scheduling.booking.hours_default_note')}
         </p>
       )}
-      {view === 'availability' && (
-        <BookingHoursEditor
-          hours={hours}
-          dayLabels={dayLabels}
-          onAdd={addHours}
-          onUpdate={updateHour}
-          onRemove={removeHour}
-        />
-      )}
+      <BookingHoursEditor
+        hours={hours}
+        dayLabels={dayLabels}
+        onAdd={addHours}
+        onUpdate={updateHour}
+        onRemove={removeHour}
+      />
 
       <div>
         <Button variant="primary" isLoading={saving} onClick={handleSave}>
@@ -257,9 +246,9 @@ export default function BookingSettingsPage({ view = 'rules' }: { view?: 'rules'
         </Button>
       </div>
 
-      {view === 'availability' && tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
+      {tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
 
-      {view === 'availability' && <GoogleCalendarSettings />}
+      <GoogleCalendarSettings />
     </div>
   );
 }

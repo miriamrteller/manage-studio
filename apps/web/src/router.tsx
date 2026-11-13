@@ -257,7 +257,7 @@ const router = createBrowserRouter([
           // client-facing classes calendar on /classes.
           { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
           { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
-          { path: "admin/setup/booking/availability", element: <AdminRoute><BookingSettingsPage view="availability" /></AdminRoute> },
+          { path: "admin/setup/booking/availability", element: <AdminRoute><Navigate to="/admin/setup/booking" replace /></AdminRoute> },
           { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
           { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
           // Not wrapped in AdminRoute here: on app.<root> it first returns to the studio's own address.

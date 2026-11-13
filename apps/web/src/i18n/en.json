@@ -2201,7 +2201,7 @@
     "calendar": "Calendar",
     "booking_settings": "Booking Settings",
     "booking_services": "Bookable Services",
-    "booking_disabled_hint": "Online booking is turned off. Turn it on under Bookings → Booking rules.",
+    "booking_disabled_hint": "Online booking is turned off. Turn it on under Bookings → Availability.",
     "waivers": "Forms",
     "requirements": "Requirements",
     "section": {
@@ -2234,7 +2234,6 @@
     "tab": {
       "calendar": "Calendar",
       "availability": "Availability",
-      "booking_rules": "Booking rules",
       "overview": "Overview",
       "studio_shop": "Studio shop",
       "lead_settings": "Enquiry settings"
@@ -2688,7 +2687,7 @@
       "save": "Save settings",
       "manage_services": "Manage bookable services",
       "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page.",
-      "availability_subtitle": "When clients can book: your opening hours, times you are away, and your Google Calendar."
+      "availability_subtitle": "When clients can book: online booking on or off, the booking rules, your opening hours, times you are away, and your Google Calendar."
     },
     "services": {
       "photographer_note": "Photographers don’t use bookable services. Your clients enquire, you send a quote, and they accept it online.",

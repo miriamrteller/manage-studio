@@ -283,18 +283,10 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.scheduling.adminBooking,
   },
   {
-    // Opening hours, blocked times and Google Calendar.
-    path: '/admin/setup/booking/availability',
-    labelKey: 'nav.tab.availability',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'main',
-    area: 'bookings',
-    featureKey: FEATURES.scheduling.adminBooking,
-  },
-  {
-    // Online booking on/off, slot length, notice, holds, late-cancel charges.
+    // Availability: online booking on/off and its rules, opening hours, blocked times and
+    // Google Calendar, on one tab (owner, 13 Nov 2026: no separate Booking rules).
     path: '/admin/setup/booking',
-    labelKey: 'nav.tab.booking_rules',
+    labelKey: 'nav.tab.availability',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'bookings',
