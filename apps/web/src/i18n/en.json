@@ -2268,7 +2268,8 @@
       "availability": "Availability",
       "overview": "Overview",
       "studio_shop": "Studio shop",
-      "lead_settings": "Enquiry settings"
+      "lead_settings": "Enquiry settings",
+      "diary": "Diary"
     },
     "full_menu": "Show full menu",
     "icons_only_menu": "Show icons only",
@@ -2744,7 +2745,11 @@
       "duration_suffix": "min",
       "settings_hint": "Add and manage your bookable services on this page. When clients can book them — availability hours and booking rules — is set under",
       "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here.",
-      "photos_included": "Photos included in the package"
+      "photos_included": "Photos included in the package",
+      "packages_subtitle": "What clients can book with you, each with its price. These show on your Book page.",
+      "add_named": "Add {{item}}",
+      "edit_named": "Edit {{item}}",
+      "none_named": "Nothing here yet. Press “Add {{item}}” to add your first one."
     },
     "book": {
       "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",
@@ -2837,6 +2842,19 @@
       "not_available": "Google Calendar integration is not available on your current plan.",
       "returning": "Taking you back to your studio…",
       "return_failed": "This Google link has expired. Go back to Booking Settings and press Connect Google Calendar again."
+    },
+    "diary": {
+      "title": "Diary",
+      "subtitle": "Everything with a date: requests to confirm, what’s coming up, and your days off.",
+      "not_used": "Your business doesn’t use this page. You can switch it on in Settings › Business.",
+      "requests_title": "Requests to confirm",
+      "confirm": "Confirm",
+      "upcoming_title": "Coming up",
+      "none_upcoming": "Nothing booked yet.",
+      "past_title_one": "Past ({{count}})",
+      "past_title_other": "Past ({{count}})",
+      "hours_title": "Booking hours",
+      "hours_hint": "When clients can book a time slot online. It’s already filled in, so open it only to change something."
     }
   },
   "billing": {
@@ -3664,7 +3682,7 @@
     },
     "business": {
       "title": "Your business",
-      "intro": "How you charge and which areas you use. Switch an area off and it is hidden: nothing is deleted, and you can switch it back on any time.",
+      "intro": "How clients work with you decides which pages you see. Untick something and it is hidden: nothing is deleted, and you can tick it again any time.",
       "flow_legend": "How do clients pay you?",
       "flow_recurring": "Monthly",
       "flow_project": "Per project",
@@ -3673,7 +3691,7 @@
       "classes_label": "I teach classes",
       "classes_hint": "Classes, levels, seasons and the timetable.",
       "families_label": "Parents pay for children",
-      "families_hint": "Family accounts.",
+      "families_hint": "One parent account pays for several children.",
       "booking_label": "Clients book time slots",
       "booking_hint": "Calendar booking, Google Calendar sync and no-show rules.",
       "classes_off_notice": "You still have active enrolments ({{count}}). They stay as they are and keep billing; only the class pages are hidden.",
@@ -3682,7 +3700,15 @@
       "saved": "Saved.",
       "error": "Could not save. Please try again.",
       "health_label": "Clients sign a health declaration",
-      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts."
+      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts.",
+      "work_legend": "How do clients work with you?",
+      "work_hint": "Tick all that fit.",
+      "work_classes_label": "Classes",
+      "work_classes_hint": "Regular weekly classes. Clients sign up for a season and pay monthly or for the whole season.",
+      "work_projects_label": "Projects",
+      "work_projects_hint": "Each job is tailor-made. The client sends a request and gets a quote, pays a deposit to book, and pays the balance later.",
+      "work_appointments_label": "Appointments",
+      "work_appointments_hint": "Clients pick a free time slot online, and it’s booked as soon as they pay."
     },
     "lead_digest": {
       "title": "Daily follow-up email",

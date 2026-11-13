@@ -54,7 +54,7 @@ function renderAt(path: string) {
     <I18nextProvider i18n={i18n}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/admin/setup" element={<AdminRoute><p>studio admin</p></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><p>studio admin</p></AdminRoute>} />
           <Route path="/dashboard/portal" element={<ParentRoute><p>portal</p></ParentRoute>} />
           <Route path="/dashboard" element={<DashboardRedirectPage />} />
           <Route path="/platform-owner" element={<PlatformOwnerNotice />} />
@@ -87,7 +87,7 @@ describe('the platform owner on a studio address', () => {
   });
 
   it('admin pages show the confirm page, with a way back to app.opalswift.com (not the sign-in page)', () => {
-    renderAt('/admin/setup');
+    renderAt('/admin');
     expect(screen.getByRole('heading', { name: "You're signed in as the OpalSwift platform owner" })).toBeInTheDocument();
     expect(screen.getByTestId('support-access-warning')).toHaveTextContent('Everything is recorded');
     expect(screen.getByRole('link', { name: 'Back to app.opalswift.com' })).toHaveAttribute('href', 'https://app.opalswift.com');
@@ -100,19 +100,19 @@ describe('the platform owner on a studio address', () => {
     h.setSession.mockResolvedValue({ error: null });
     const assign = vi.fn();
     Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign } });
-    renderAt('/admin/setup');
+    renderAt('/admin');
     const enter = screen.getByRole('button', { name: "Enter the studio's admin" });
     expect(enter).toBeDisabled();
     fireEvent.click(screen.getByRole('checkbox', { name: "Yes, I want to enter Creative Ballet's admin" }));
     fireEvent.click(enter);
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/admin/setup'));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/admin'));
     expect(h.invoke).toHaveBeenCalledWith('platform-support-session', { body: { tenantId: 't-1' } });
     expect(h.setSession).toHaveBeenCalledWith({ access_token: 'at', refresh_token: 'rt' });
   });
 
   it('says so when it did not work, and stays on the page', async () => {
     h.invoke.mockResolvedValue({ data: { ok: false, error: 'two_step_required' }, error: null });
-    renderAt('/admin/setup');
+    renderAt('/admin');
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: "Enter the studio's admin" }));
     expect(await screen.findByRole('alert')).toHaveTextContent('two-step code');
@@ -120,7 +120,7 @@ describe('the platform owner on a studio address', () => {
   });
 
   it('can sign out so the studio admin signs in on this device', async () => {
-    renderAt('/admin/setup');
+    renderAt('/admin');
     fireEvent.click(screen.getByRole('button', { name: "Sign out, so the studio's admin can sign in here" }));
     expect(await screen.findByText('login page')).toBeInTheDocument();
     expect(h.signOut).toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe('the platform owner on a studio address', () => {
 
   it('in Hebrew', async () => {
     await i18n.changeLanguage('he');
-    renderAt('/admin/setup');
+    renderAt('/admin');
     expect(screen.getByRole('heading', { name: 'נכנסת כבעלת הפלטפורמה של OpalSwift' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'חזרה ל-app.opalswift.com' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'כניסה לניהול הסטודיו' })).toBeInTheDocument();
@@ -149,11 +149,11 @@ describe('the platform owner on a studio address', () => {
 describe("a studio's own admin is unchanged", () => {
   it('gets the admin pages, and /dashboard opens them', async () => {
     h.user = ADMIN;
-    renderAt('/admin/setup');
+    renderAt('/admin');
     expect(screen.getByText('studio admin')).toBeInTheDocument();
   });
 
-  it('/dashboard → /admin/setup', async () => {
+  it('/dashboard → /admin', async () => {
     h.user = ADMIN;
     renderAt('/dashboard');
     expect(await screen.findByText('studio admin')).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe("the studio's OpalSwift support login", () => {
     h.user = { id: 's', role: ['tenant_admin'], tenant_id: 't-1', is_platform_support: true };
     const assign = vi.fn();
     Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign } });
-    renderAt('/admin/setup');
+    renderAt('/admin');
     expect(screen.getByText('studio admin')).toBeInTheDocument();
     expect(screen.getByTestId('support-access-banner')).toHaveTextContent("You're in Creative Ballet's admin as OpalSwift support");
     fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
@@ -175,7 +175,7 @@ describe("the studio's OpalSwift support login", () => {
 
   it("a studio's own admin sees no banner", () => {
     h.user = ADMIN;
-    renderAt('/admin/setup');
+    renderAt('/admin');
     expect(screen.queryByTestId('support-access-banner')).toBeNull();
   });
 });

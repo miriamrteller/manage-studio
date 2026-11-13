@@ -5,7 +5,13 @@ import { personPagePath } from '@/features/people/lib/personPagePath';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useLeads } from '@/features/crm/hooks/useLeads';
+import { isShootRequest } from '@/features/crm/components/LeadsList';
+import { BlockedTimesEditor } from '@/features/scheduling/components/BlockedTimesEditor';
+import { GoogleCalendarSettings } from '@/features/scheduling/components/GoogleCalendarSettings';
+import { BookingHoursSection } from '@/features/scheduling/components/BookingHoursSection';
 import { AppointmentsService, type AppointmentRow } from '@/features/scheduling/appointmentsService';
 import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
 import { AppointmentRowActions } from '@/features/scheduling/components/AppointmentRowActions';
@@ -39,18 +45,31 @@ function calendarButtonTitle(
   return undefined;
 }
 
+/**
+ * Bookings → Diary (owner, 13 Nov 2026): everything with a date on one page. Requests waiting to
+ * be confirmed, what is coming up (shoots and appointments), days off and Google Calendar, and,
+ * for Appointments businesses only, the booking hours folded at the bottom.
+ */
 export default function AdminAppointmentsPage() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
-  const { hasFeature, isLoading: gateLoading } = useFeatureGate();
+  const { hasFeature, hasAnyFeature, isLoading: gateLoading } = useHasFeature();
+  const { profile, vertical } = useEntityLabels();
+  const { leads } = useLeads();
   const [closingId, setClosingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   // "Record a payment" on a booking waiting for payment (paid directly: cash / transfer / Bit).
   const [recordingId, setRecordingId] = useState<string | null>(null);
 
-  const canView =
-    hasFeature(FEATURES.scheduling.clientBooking) || hasFeature(FEATURES.scheduling.adminBooking);
+  // The same check as the Diary tab in the menu (navigationConfig), so it never dead-ends.
+  const canView = hasAnyFeature([
+    FEATURES.billing.quotes,
+    FEATURES.scheduling.clientBooking,
+    FEATURES.scheduling.adminBooking,
+  ]);
+  // Booking hours only for Appointments businesses (clients pick a time slot).
+  const showHours = profile.clientBooking && vertical !== 'photographer';
   const googleCalendarEnabled = hasFeature(FEATURES.scheduling.googleCalendar);
   const penaltiesEnabled = hasFeature(FEATURES.scheduling.penalties);
 
@@ -59,6 +78,16 @@ export default function AdminAppointmentsPage() {
     queryFn: () => AppointmentsService.list(tenant as never),
     enabled: !!tenant?.id && canView,
   });
+
+  const requests = leads.filter((lead) => isShootRequest(lead) && lead.stage !== 'lost');
+  // Coming up: from today on, soonest first. Past: newest first (as listed), folded.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const isUpcoming = (row: AppointmentRow) => new Date(row.booked_starts_at) >= startOfToday;
+  const upcoming = rows
+    .filter(isUpcoming)
+    .sort((a, b) => a.booked_starts_at.localeCompare(b.booked_starts_at));
+  const past = rows.filter((row) => !isUpcoming(row));
 
   const { data: bookingSettings } = useQuery({
     queryKey: ['bookingSettings', tenant?.id],
@@ -107,38 +136,38 @@ export default function AdminAppointmentsPage() {
   }
 
   if (!gateLoading && !canView) {
+    // Reached only by an old link: the Diary tab is hidden for this studio.
     return (
       <div className="max-w-4xl space-y-2 p-2">
-        <h1 className="text-3xl font-bold">{t('scheduling.appointments.title')}</h1>
-        <p className="text-gray-600">{t('scheduling.booking.not_available')}</p>
+        <h1 className="text-3xl font-bold">{t('scheduling.diary.title')}</h1>
+        <p className="text-gray-600">{t('scheduling.diary.not_used')}</p>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl space-y-6 p-2">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold">{t('scheduling.appointments.title')}</h1>
-        <p className="text-gray-600">{t('scheduling.appointments.subtitle')}</p>
-      </header>
+  const dayFormat = new Intl.DateTimeFormat(i18n.language === 'he' ? 'he-IL' : 'en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Jerusalem',
+  });
 
-      {rows.length === 0 ? (
-        <p className="text-gray-500">{t('scheduling.appointments.none')}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-start text-gray-500">
-                <th className="p-2 text-start">{t('scheduling.appointments.when')}</th>
-                <th className="p-2 text-start">{t('scheduling.appointments.service')}</th>
-                <th className="p-2 text-start">{t('scheduling.appointments.client')}</th>
-                <th className="p-2 text-start">{t('scheduling.appointments.status')}</th>
-                <th className="p-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <Fragment key={row.id}>
+  function renderRows(list: AppointmentRow[]) {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-start text-gray-500">
+              <th className="p-2 text-start">{t('scheduling.appointments.when')}</th>
+              <th className="p-2 text-start">{t('scheduling.appointments.service')}</th>
+              <th className="p-2 text-start">{t('scheduling.appointments.client')}</th>
+              <th className="p-2 text-start">{t('scheduling.appointments.status')}</th>
+              <th className="p-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((row) => (
+              <Fragment key={row.id}>
                 <tr className="border-b border-gray-100">
                   <td className="p-2">
                     {formatAppointmentWhen(row.booked_starts_at, i18n.language)}
@@ -216,11 +245,83 @@ export default function AdminAppointmentsPage() {
                     </td>
                   </tr>
                 )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl space-y-8 p-2">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold">{t('scheduling.diary.title')}</h1>
+        <p className="text-gray-600">{t('scheduling.diary.subtitle')}</p>
+      </header>
+
+      {requests.length > 0 && (
+        <section className="space-y-3" aria-labelledby="diary-requests">
+          <h2 id="diary-requests" className="text-lg font-semibold">
+            {t('scheduling.diary.requests_title')}
+          </h2>
+          <ul className="space-y-2">
+            {requests.map((lead) => (
+              <li
+                key={lead.id}
+                className="card flex flex-wrap items-center justify-between gap-3 border border-amber-200 bg-amber-50 p-3"
+              >
+                <span className="text-sm">
+                  <span className="font-medium">
+                    {lead.event_date ? dayFormat.format(new Date(`${lead.event_date}T12:00:00Z`)) : ''}
+                  </span>
+                  {' · '}
+                  {lead.name}
+                </span>
+                <Link
+                  to={`/admin/leads?lead=${lead.id}&confirm=1`}
+                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                >
+                  {t('scheduling.diary.confirm')}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="space-y-3" aria-labelledby="diary-upcoming">
+        <h2 id="diary-upcoming" className="text-lg font-semibold">
+          {t('scheduling.diary.upcoming_title')}
+        </h2>
+        {upcoming.length === 0 ? (
+          <p className="text-gray-500">{t('scheduling.diary.none_upcoming')}</p>
+        ) : (
+          renderRows(upcoming)
+        )}
+      </section>
+
+      {past.length > 0 && (
+        <details className="rounded-md border border-gray-200 p-4">
+          <summary className="cursor-pointer font-medium">
+            {t('scheduling.diary.past_title', { count: past.length })}
+          </summary>
+          <div className="mt-4">{renderRows(past)}</div>
+        </details>
+      )}
+
+      {tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
+
+      <GoogleCalendarSettings />
+
+      {showHours && (
+        <details className="rounded-md border border-gray-200 p-4">
+          <summary className="cursor-pointer font-medium">{t('scheduling.diary.hours_title')}</summary>
+          <p className="mt-2 text-sm text-gray-500">{t('scheduling.diary.hours_hint')}</p>
+          <div className="mt-4 space-y-8">
+            <BookingHoursSection />
+          </div>
+        </details>
       )}
     </div>
   );

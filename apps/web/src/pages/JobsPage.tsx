@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { FEATURES } from '@shared/index';
 import { JobsList } from '@/features/jobs/components/JobsList';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useTenantQuery } from '@/hooks/useTenant';
 
 /**
@@ -14,9 +14,9 @@ import { useTenantQuery } from '@/hooks/useTenant';
  */
 export default function JobsPage() {
   const { tenant, isLoading } = useTenantQuery();
-  const { hasFeature, isLoading: featuresLoading } = useFeatureGate();
+  const { hasFeature, isLoading: featuresLoading } = useHasFeature();
   if (!isLoading && !featuresLoading && tenant && !hasFeature(FEATURES.billing.quotes)) {
-    return <Navigate to="/admin/students" replace />;
+    return <Navigate to="/admin/people" replace />;
   }
   return <JobsList />;
 }

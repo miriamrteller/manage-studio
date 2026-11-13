@@ -73,7 +73,7 @@ export function useStudentsListColumns({
         ) : (
           <EnrolmentSummaryList
             enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
-            returnTo="/admin/students"
+            returnTo="/admin/people"
             compact
             audience="admin"
             linkContext={{

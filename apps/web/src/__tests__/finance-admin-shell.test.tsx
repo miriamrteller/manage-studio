@@ -24,8 +24,8 @@ vi.mock('react-i18next', () => ({
 
 const features = vi.hoisted(() => ({ on: new Set<string>(['offerings:structure.configure']) }));
 
-vi.mock('@/hooks/useFeatureGate', () => ({
-  useFeatureGate: () => ({ hasFeature: (key: string) => features.on.has(key), isLoading: false }),
+vi.mock('@/hooks/useHasFeature', () => ({
+  useHasFeature: () => ({ hasFeature: (key: string) => features.on.has(key), isLoading: false }),
 }));
 
 vi.mock('@/hooks/useEntityLabels', () => ({

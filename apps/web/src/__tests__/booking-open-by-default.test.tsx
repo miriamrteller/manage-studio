@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
 /**
- * Online booking is open by default: with no hours saved, the booking settings
- * page shows Sunday to Thursday 09:00-18:00 prefilled with a note, and the
- * owner can block off times she can't do (saved straight away). EN + HE.
+ * Bookings → Diary (owner, 13 Nov 2026). Online booking is open by default: with no hours saved,
+ * the booking hours show Sunday to Thursday 09:00-18:00 prefilled with a note, and the owner can
+ * block off times she can't do (saved straight away). The booking hours sit folded at the bottom
+ * of the Diary, for Appointments businesses only. EN + HE.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import BookingSettingsPage from '@/pages/BookingSettingsPage';
+import AdminAppointmentsPage from '@/pages/AdminAppointmentsPage';
+import { BookingHoursSection } from '@/features/scheduling/components/BookingHoursSection';
+import { BlockedTimesEditor } from '@/features/scheduling/components/BlockedTimesEditor';
+import { useTenant } from '@/hooks/useTenant';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
@@ -33,6 +37,8 @@ vi.mock('@/features/scheduling/bookingSettingsService', async (orig) => {
     },
   };
 });
+vi.mock('@/features/scheduling/appointmentsService', () => ({ AppointmentsService: { list: async () => [] } }));
+vi.mock('@/features/crm/hooks/useLeads', () => ({ useLeads: () => ({ leads: [] }) }));
 vi.mock('@/features/scheduling/service', () => ({
   ScheduleService: {
     listUpcomingBlocks: async () => state.blocks,
@@ -40,6 +46,15 @@ vi.mock('@/features/scheduling/service', () => ({
     deleteBlock: vi.fn(),
   },
 }));
+
+function Hours() {
+  return (
+    <>
+      <BookingHoursSection />
+      <BlockedTimesEditor tenant={useTenant() as never} />
+    </>
+  );
+}
 
 describe('Booking open by default', () => {
   beforeEach(async () => {
@@ -51,7 +66,7 @@ describe('Booking open by default', () => {
   });
 
   it('prefills Sunday to Thursday 09:00-18:00 when no hours are saved', async () => {
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByText(/clients can book Sunday to Thursday, 9:00 to 18:00/)).toBeTruthy();
     const starts = screen.getAllByLabelText('From') as HTMLInputElement[];
     expect(starts).toHaveLength(5);
@@ -61,13 +76,13 @@ describe('Booking open by default', () => {
 
   it('shows saved hours as they are, without the note', async () => {
     state.hours = [{ day_of_week: 5, start_time: '08:00', end_time: '12:00', is_active: true }];
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     await waitFor(() => expect(screen.getAllByLabelText('From')).toHaveLength(1));
     expect(screen.queryByText(/clients can book Sunday to Thursday/)).toBeNull();
   });
 
   it('blocks a whole day straight away', async () => {
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByText('No blocked times yet.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('First day'), { target: { value: '2099-11-15' } });
     fireEvent.change(screen.getByLabelText('Note (optional)'), { target: { value: 'Away' } });
@@ -82,41 +97,40 @@ describe('Booking open by default', () => {
 
   it('lists blocked times', async () => {
     state.blocks = [{ id: 'b1', summary: 'Wedding', start_time: '2099-11-15T08:00:00.000Z', end_time: '2099-11-15T10:00:00.000Z' }];
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByText('Sun 15 Nov, 10:00 – 12:00')).toBeTruthy();
     expect(screen.getByText(/Wedding/)).toBeTruthy();
   });
 
   it('has Hebrew text', async () => {
     await setLanguage('he');
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    renderInApp(<Hours />, { path: '/admin/bookings/diary' });
     expect(await screen.findByRole('heading', { name: 'זמנים שאתם לא פנויים' })).toBeTruthy();
     expect(await screen.findByText(/ראשון עד חמישי/)).toBeTruthy();
   });
 });
 
-describe('Availability: photographers book tailor-made shoots', () => {
+describe('Diary: booking hours only for Appointments businesses', () => {
   beforeEach(async () => {
     state.hours = [];
     state.blocks = [];
     await setLanguage('en');
   });
 
-  it('photographers get the booking rules and hours folded under "Details we filled in for you"', async () => {
+  it('photographers see no booking hours; days off stay in view', async () => {
     setTenant('photographer');
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
-    const summary = await screen.findByText('Details we filled in for you');
-    expect(summary.closest('details')).not.toHaveAttribute('open');
-    expect(summary.closest('details')).toContainElement((await screen.findAllByLabelText('From'))[0]);
-    // Days away stay in view.
-    expect(screen.getByText('No blocked times yet.').closest('details')).toBeNull();
+    renderInApp(<AdminAppointmentsPage />, { path: '/admin/bookings/diary' });
+    expect(await screen.findByRole('heading', { name: 'Diary' })).toBeTruthy();
+    expect(await screen.findByText('No blocked times yet.')).toBeTruthy();
+    expect(screen.queryByText('Booking hours')).toBeNull();
+    expect(screen.queryAllByLabelText('From')).toHaveLength(0);
   });
 
-  it('other studios see the rules straight away', async () => {
+  it('appointment businesses get the booking hours folded at the bottom, prefilled', async () => {
     setTenant('beautician');
-    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
-    await waitFor(() => expect(screen.getAllByLabelText('From').length).toBeGreaterThan(0));
-    expect(screen.queryByText('Details we filled in for you')).toBeNull();
+    renderInApp(<AdminAppointmentsPage />, { path: '/admin/bookings/diary' });
+    const summary = await screen.findByText('Booking hours');
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+    await waitFor(() => expect(summary.closest('details')).toContainElement(screen.getAllByLabelText('From')[0]));
   });
 });
-

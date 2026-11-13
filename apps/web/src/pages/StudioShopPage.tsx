@@ -15,7 +15,7 @@ export default function StudioShopPage() {
   const { t } = useTranslation();
   const { hasFeature, isLoading } = useFeatureGate();
   if (isLoading) return null;
-  if (!hasFeature(FEATURES.billing.studioShop)) return <Navigate to="/admin/setup" replace />;
+  if (!hasFeature(FEATURES.billing.studioShop)) return <Navigate to="/admin" replace />;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">

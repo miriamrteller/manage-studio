@@ -112,7 +112,7 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
             bookedStartsAt: fromDateTimeLocal(startsAt),
           });
           if (quoteId) {
-            done(`/admin/quotes/${quoteId}`);
+            done(`/admin/projects/quotes/${quoteId}`);
             return;
           }
         } catch {
@@ -120,10 +120,10 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
         } finally {
           setSendingQuote(false);
         }
-        done(`/admin/quotes/new?engagement=${engagementId}`);
+        done(`/admin/projects/quotes/new?engagement=${engagementId}`);
         return;
       }
-      done(`/admin/jobs/${engagementId}`);
+      done(`/admin/projects/${engagementId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }

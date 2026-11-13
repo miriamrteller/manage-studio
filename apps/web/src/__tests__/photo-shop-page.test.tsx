@@ -91,20 +91,20 @@ describe('Photo shop page', () => {
   });
 
   it('is a menu item only with the photo shop feature', () => {
-    const item = navigationConfig.find((i) => i.path === '/admin/photo-shop');
+    const item = navigationConfig.find((i) => i.path === '/admin/shop/photos');
     expect(item?.featureKey).toBe('billing:photo_shop');
     expect(item?.requiredRoles).toEqual(['tenant_admin']);
   });
 
   it('sends a studio without the feature away', () => {
     state.flag = false;
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', extraRoutes: { '/admin/setup': <p>setup home</p> } });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', extraRoutes: { '/admin': <p>setup home</p> } });
     expect(screen.getByText('setup home')).toBeTruthy();
   });
 
   it('Overview shows what is left, with links to the tabs', async () => {
     state.pricePerPhoto = 3000;
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });
     expect(screen.getByRole('heading', { name: 'Photo shop' })).toBeTruthy();
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Prices', 'SmugMug', 'Preview']);
     expect(screen.getByText('Set your price per photo').parentElement?.textContent).toContain('Done');
@@ -114,7 +114,7 @@ describe('Photo shop page', () => {
 
   it('Preview works like the client page but never places an order', async () => {
     state.preview.mockResolvedValue({ shop: view(), photos, sample: true });
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e1' } });
     expect(await screen.findByText(/this is exactly what your client sees/i)).toBeTruthy();
     expect(screen.getByText(/sample photos until you add this shoot's photos/)).toBeTruthy();
@@ -136,7 +136,7 @@ describe('Photo shop page', () => {
 
   it('Preview opens on the shoot named in the address', async () => {
     state.preview.mockResolvedValue({ shop: view(), photos, sample: false });
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview&shoot=e1' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview&shoot=e1' });
     expect(await screen.findByText('IMG_0002.jpg')).toBeTruthy();
     expect(state.preview).toHaveBeenCalledWith('e1');
     expect((screen.getByLabelText('Shoot') as HTMLSelectElement).value).toBe('e1');
@@ -145,14 +145,14 @@ describe('Photo shop page', () => {
   it('Preview says when a shoot has no shop yet', async () => {
     const { ClientPhotoShopError } = await import('@/features/jobs/services/clientPhotoShopService');
     state.preview.mockRejectedValue(new ClientPhotoShopError('no_shop'));
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e2' } });
     expect(await screen.findByText(/This shoot has no photos yet/)).toBeTruthy();
   });
 
   it('has Hebrew text', async () => {
     await setLanguage('he');
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });
     expect(screen.getByRole('heading', { name: 'חנות תמונות' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'תצוגה מקדימה' })).toBeTruthy();
   });

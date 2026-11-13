@@ -34,7 +34,7 @@ export function AcceptedQuotePanel({ quote }: { quote: QuoteDetail }) {
     <section aria-labelledby="quote-accepted-heading" className="card p-4 space-y-3">
       <h2 id="quote-accepted-heading" className="font-semibold">{t('pages.quotes.accepted.title')}</h2>
       <div className="flex flex-wrap items-center gap-3">
-        <Link to={`/admin/jobs/${engagementId}`} className="text-sm font-medium text-primary underline">
+        <Link to={`/admin/projects/${engagementId}`} className="text-sm font-medium text-primary underline">
           {t('pages.quotes.accepted.open_shoot')}
         </Link>
         {quote.send_contract_on_accept && (

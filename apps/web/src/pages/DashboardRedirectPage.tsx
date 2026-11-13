@@ -23,7 +23,7 @@ import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
  * - If enrolling in a class → return to /enrol (not for photographer tenants:
  *   their clients have no class enrolment / child setup, so the intent is
  *   dropped and they continue to their portal below)
- * - tenant_admin → /admin/setup
+ * - tenant_admin → /admin
  * - teacher (staff) → /teach
  * - parent/guardian/account_holder → /dashboard/portal
  * - student/adult_student → /dashboard/student
@@ -95,9 +95,9 @@ export default function DashboardRedirectPage() {
     if (isPlatformOwnerOnly(user)) {
       // The platform owner on a studio address: the studio's admin, which
       // first asks them to confirm (support access), never /classes.
-      navigate('/admin/setup', { replace: true });
+      navigate('/admin', { replace: true });
     } else if (user.role.includes('tenant_admin')) {
-      navigate('/admin/setup', { replace: true });
+      navigate('/admin', { replace: true });
     } else if (hasTeacherRole(user.role)) {
       navigate('/teach', { replace: true });
     } else if (hasParentRole(user.role)) {

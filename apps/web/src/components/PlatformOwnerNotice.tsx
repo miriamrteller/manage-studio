@@ -34,7 +34,7 @@ export function PlatformOwnerNotice() {
     try {
       await enterStudioAsSupport(tenant.id);
       // A fresh start as the support login: every cached query was the owner's.
-      window.location.assign('/admin/setup');
+      window.location.assign('/admin');
     } catch (err) {
       setError(
         err instanceof Error && err.message === 'two_step_required'

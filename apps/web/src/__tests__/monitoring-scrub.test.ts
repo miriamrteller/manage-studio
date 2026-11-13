@@ -6,8 +6,8 @@ const UUID = '3f6c2a1e-9b0d-4c3e-8f21-7a5b6c4d3e2f';
 
 describe('scrubPath', () => {
   it('keeps static segments and replaces ids', () => {
-    expect(scrubPath('/admin/setup/bundled-payments')).toBe('/admin/setup/bundled-payments');
-    expect(scrubPath(`/admin/jobs/${UUID}`)).toBe('/admin/jobs/:id');
+    expect(scrubPath('/admin/settings/bundled-payments')).toBe('/admin/settings/bundled-payments');
+    expect(scrubPath(`/admin/projects/${UUID}`)).toBe('/admin/projects/:id');
     expect(scrubPath('/book/42')).toBe('/book/:id');
   });
 
@@ -28,7 +28,7 @@ describe('scrubUrl', () => {
   });
 
   it('handles relative URLs', () => {
-    expect(scrubUrl(`/admin/families/${UUID}?tab=billing`)).toBe('/admin/families/:id');
+    expect(scrubUrl(`/admin/people/families/${UUID}?tab=billing`)).toBe('/admin/people/families/:id');
   });
 });
 
@@ -77,7 +77,7 @@ describe('scrubEvent', () => {
       type: undefined,
       user: { id: UUID, email: 'dana@example.com', ip_address: '1.2.3.4', username: 'dana' },
       request: { url: 'https://a.opalswift.com/pay/tok?x=1', headers: { Cookie: 'sb=1' }, data: '{"card":1}' },
-      transaction: `/admin/jobs/${UUID}`,
+      transaction: `/admin/projects/${UUID}`,
       exception: { values: [{ type: 'Error', value: 'cannot email dana@example.com' }] },
       extra: { form: { name: 'Dana' } },
       contexts: { browser: { name: 'Chrome' }, state: { form: 'x' } },
@@ -85,7 +85,7 @@ describe('scrubEvent', () => {
     const out = scrubEvent(event);
     expect(out.user).toEqual({ id: UUID });
     expect(out.request).toEqual({ url: 'https://a.opalswift.com/pay/:token' });
-    expect(out.transaction).toBe('/admin/jobs/:id');
+    expect(out.transaction).toBe('/admin/projects/:id');
     expect(out.exception?.values?.[0].value).toBe('cannot email [email]');
     expect(out.extra).toBeUndefined();
     expect(out.contexts?.state).toBeUndefined();

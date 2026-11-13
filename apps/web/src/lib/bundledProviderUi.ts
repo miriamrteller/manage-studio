@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { BundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
 
-export const BUNDLED_PAYMENTS_SETUP_PATH = '/admin/setup/bundled-payments';
+export const BUNDLED_PAYMENTS_SETUP_PATH = '/admin/settings/bundled-payments';
 
 /** Equal bundled-provider choices — order is display-only, not a default preference. */
 export const BUNDLED_PAYMENT_PROVIDER_OPTIONS: BundledPaymentProviderSlug[] = [

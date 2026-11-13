@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * /admin/students per vertical: photographers get a "Clients" page (Add client,
+ * /admin/people per vertical: photographers get a "Clients" page (Add client,
  * New shoot prefilled with the client, their shoots, no class/guardian UI);
  * dance tenants keep the Students page exactly as before.
  */
@@ -97,10 +97,10 @@ const SHOOT = {
   client_name: PERSON.name,
 } as unknown as JobRow;
 
-const jobsRoute = { '/admin/jobs': <JobsList /> };
+const jobsRoute = { '/admin/projects': <JobsList /> };
 
 function renderList() {
-  return renderInApp(<StudentsList />, { path: '/admin/students', extraRoutes: jobsRoute });
+  return renderInApp(<StudentsList />, { path: '/admin/people', extraRoutes: jobsRoute });
 }
 
 beforeEach(async () => {
@@ -120,7 +120,7 @@ describe('Clients page (photographer)', () => {
     expect(screen.queryByText(/enrol/i)).toBeNull();
     expect(screen.queryByText(baseValue('pages.students.guardian_column'))).toBeNull();
     expect(screen.getByRole('columnheader', { name: 'Shoots' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/jobs/eng-1');
+    expect(screen.getByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/projects/eng-1');
   });
 
   it('has no class, level, family or age filters', async () => {
@@ -135,7 +135,7 @@ describe('Clients page (photographer)', () => {
   it('New shoot opens the create form prefilled with that client (not /enrol)', async () => {
     renderList();
     fireEvent.click(await screen.findByRole('button', { name: 'New shoot' }));
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/jobs');
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/projects');
     const form = await screen.findByRole('form', { name: 'New shoot' });
     expect(within(form).getByRole('radio', { name: 'Existing client' })).toBeChecked();
     expect(within(form).getByText(PERSON.name, { selector: 'strong' })).toBeInTheDocument();
@@ -144,7 +144,7 @@ describe('Clients page (photographer)', () => {
   it('Add client opens the create form on “New client”', async () => {
     renderList();
     fireEvent.click(await screen.findByRole('button', { name: 'Add client' }));
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/jobs');
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/projects');
     const form = await screen.findByRole('form', { name: 'New shoot' });
     expect(within(form).getByRole('radio', { name: 'New client' })).toBeChecked();
   });
@@ -174,13 +174,13 @@ describe('Clients page (photographer)', () => {
 
   it('slide-over: shoots + New shoot, no enrolments or Parent / Guardian section', async () => {
     renderInApp(<StudentSlideOver personId={PERSON.id} onClose={() => {}} />, {
-      path: '/admin/students',
+      path: '/admin/people',
       extraRoutes: jobsRoute,
     });
     expect(await screen.findByRole('heading', { name: 'Shoots' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Client details' })).toBeInTheDocument();
     expect(screen.queryByText(baseValue('pages.people.detail_title'))).toBeNull();
-    expect(screen.getByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/jobs/eng-1');
+    expect(screen.getByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/projects/eng-1');
     expect(screen.queryByText(baseValue('pages.students.contact_section_guardian'))).toBeNull();
     expect(screen.queryByText(baseValue('pages.students.enrolments_section'))).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'New shoot' }));
@@ -195,27 +195,27 @@ describe("A person's own page", () => {
   it('shows everything about the client as a page, with the shoot linked and a way back', async () => {
     const onClose = vi.fn();
     renderInApp(<StudentSlideOver personId={PERSON.id} onClose={onClose} variant="page" />, {
-      path: '/admin/students/:personId',
-      initialEntry: `/admin/students/${PERSON.id}`,
+      path: '/admin/people/:personId',
+      initialEntry: `/admin/people/${PERSON.id}`,
       extraRoutes: jobsRoute,
     });
     expect(await screen.findByRole('heading', { level: 1, name: PERSON.name })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(await screen.findByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/jobs/eng-1');
+    expect(await screen.findByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/projects/eng-1');
     fireEvent.click(screen.getByRole('button', { name: 'Back to the list' }));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('the side panel offers the full page', async () => {
     renderInApp(<StudentSlideOver personId={PERSON.id} onClose={() => {}} />, {
-      path: '/admin/students',
+      path: '/admin/people',
       extraRoutes: jobsRoute,
     });
     expect(await screen.findByRole('button', { name: 'Open full page' })).toBeInTheDocument();
   });
 
-  it('the page address is /admin/students/<person>', () => {
-    expect(personPagePath('p-1')).toBe('/admin/students/p-1');
+  it('the page address is /admin/people/<person>', () => {
+    expect(personPagePath('p-1')).toBe('/admin/people/p-1');
   });
 });
 
@@ -241,7 +241,7 @@ describe('Students page (dance) is unchanged', () => {
     renderList();
     fireEvent.click(await screen.findByRole('button', { name: 'Enrol in class' }));
     expect(screen.getByRole('dialog')).toHaveTextContent(`enrol-modal:${PERSON.name}`);
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/students');
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/people');
   });
 
   it('keeps the class, level and family filters', async () => {
@@ -260,7 +260,7 @@ describe('Students page (dance) is unchanged', () => {
   });
 
   it('slide-over keeps Enrolments and Parent / Guardian', async () => {
-    renderInApp(<StudentSlideOver personId={PERSON.id} onClose={() => {}} />, { path: '/admin/students' });
+    renderInApp(<StudentSlideOver personId={PERSON.id} onClose={() => {}} />, { path: '/admin/people' });
     expect(await screen.findByRole('heading', { name: 'Enrolments' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Parent / Guardian' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enrol in class' })).toBeInTheDocument();

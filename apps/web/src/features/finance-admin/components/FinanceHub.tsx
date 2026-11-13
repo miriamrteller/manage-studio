@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { formatCurrency } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
 import { supabase } from '@/lib/supabase';
 import { useFinanceSummary, useOutstandingEngagements } from '../hooks/useFinanceSummary';
@@ -22,7 +22,7 @@ export function FinanceHub() {
   const tenant = useTenant();
   const period = useFinancePeriodFromUrl();
   // Seasons and class enrolments follow the feature set: no "Levels, terms and sessions", no season notes.
-  const { hasFeature } = useFeatureGate();
+  const { hasFeature } = useHasFeature();
   const usesSeasons = hasFeature(FEATURES.offerings.structure);
 
   const activeSeasonQuery = useQuery({
@@ -155,7 +155,7 @@ export function FinanceHub() {
                     <td className="px-3 py-2">{row.offering?.name ?? '—'}</td>
                     <td className="px-3 py-2 space-x-2">
                       <Link to={`/enrol/pay/${row.id}`}>{t('finance.hub.link_pay')}</Link>
-                      <Link to="/admin/students">{t('finance.hub.link_students')}</Link>
+                      <Link to="/admin/people">{t('finance.hub.link_students')}</Link>
                     </td>
                   </tr>
                 ))}

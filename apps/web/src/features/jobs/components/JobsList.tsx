@@ -109,7 +109,7 @@ export function JobsList() {
               {visible.map((job) => (
                 <tr key={job.engagement_id}>
                   <td className="px-3 py-2 font-medium">
-                    <Link to={`/admin/jobs/${job.engagement_id}`} className="underline">
+                    <Link to={`/admin/projects/${job.engagement_id}`} className="underline">
                       {job.client_name ?? '—'}
                     </Link>
                     {job.client_email && (
@@ -150,7 +150,7 @@ function JobCard({ job }: { job: JobRow }) {
     <li className="card space-y-2 p-4 text-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <Link to={`/admin/jobs/${job.engagement_id}`} className="font-medium underline">
+          <Link to={`/admin/projects/${job.engagement_id}`} className="font-medium underline">
             {job.client_name ?? '—'}
           </Link>
           {job.client_email && (

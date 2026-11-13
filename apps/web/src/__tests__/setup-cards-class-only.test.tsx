@@ -29,8 +29,8 @@ vi.mock('@/hooks/useEntityLabels', () => ({
     },
   }),
 }));
-vi.mock('@/hooks/useFeatureGate', () => ({
-  useFeatureGate: () => ({ hasFeature: (key: string) => state.on.has(key), isLoading: false }),
+vi.mock('@/hooks/useHasFeature', () => ({
+  useHasFeature: () => ({ hasFeature: (key: string) => state.on.has(key), isLoading: false }),
 }));
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1' }) }));
 vi.mock('@/lib/tenantProviderRouting', () => ({ getBundledPaymentProviderSlug: () => null }));

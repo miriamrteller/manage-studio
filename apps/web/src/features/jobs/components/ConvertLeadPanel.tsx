@@ -125,7 +125,7 @@ export function useSendLeadQuote() {
           bookedStartsAt,
         });
         if (quoteId) {
-          navigate(`/admin/quotes/${quoteId}`);
+          navigate(`/admin/projects/quotes/${quoteId}`);
           return;
         }
       } catch {
@@ -134,7 +134,7 @@ export function useSendLeadQuote() {
         setSendingQuote(false);
       }
     }
-    navigate(`/admin/quotes/new?engagement=${engagementId}`);
+    navigate(`/admin/projects/quotes/new?engagement=${engagementId}`);
   };
 
   return { send, busy: convert.isPending || sendingQuote };

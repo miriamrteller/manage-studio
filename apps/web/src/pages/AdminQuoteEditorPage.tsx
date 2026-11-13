@@ -19,12 +19,12 @@ function NewQuoteEditor({ leadId, engagementId, currency }: { leadId: string | n
       initial={newQuoteDraft({ leadId, engagementId }, new Date(), prefill ?? undefined)}
       currency={currency}
       editable
-      onSaved={(savedId) => navigate(`/admin/quotes/${savedId}`, { replace: true })}
+      onSaved={(savedId) => navigate(`/admin/projects/quotes/${savedId}`, { replace: true })}
     />
   );
 }
 
-/** /admin/quotes/new?lead=…|engagement=… and /admin/quotes/:id */
+/** /admin/projects/quotes/new?lead=…|engagement=… and /admin/projects/quotes/:id */
 export default function AdminQuoteEditorPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -34,7 +34,7 @@ export default function AdminQuoteEditorPage() {
   const { data: quote, isLoading, error } = useQuote(quoteId);
   const currency = quote?.currency ?? tenant?.currency ?? 'ILS';
 
-  const back = <Link to="/admin/quotes" className="text-sm underline">{t('pages.quotes.back')}</Link>;
+  const back = <Link to="/admin/projects/quotes" className="text-sm underline">{t('pages.quotes.back')}</Link>;
 
   if (!quoteId) {
     const leadId = searchParams.get('lead');

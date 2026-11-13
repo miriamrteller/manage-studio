@@ -8,7 +8,7 @@ import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 import { useTenant } from '@/hooks/useTenant';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
 import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
 import { CelebrationBanner, SetupGuideCard, useCelebrations, useSetupGuide } from '@/features/setup-guide';
@@ -26,7 +26,7 @@ export function AdminPanel() {
   const tenant = useTenant();
   // Class-only cards follow the studio's feature set (owner, 13 Nov 2026): levels and
   // seasons need "Levels, terms and sessions"; billing accounts need family accounts.
-  const { hasFeature } = useFeatureGate();
+  const { hasFeature } = useHasFeature();
   const showStructure = hasFeature(FEATURES.offerings.structure);
   const showBillingAccounts = hasFeature(FEATURES.people.families);
   const healthProvider = getBundledPaymentProviderSlug(tenant);
@@ -118,7 +118,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/settings')}
+              onClick={() => navigate('/admin/settings')}
               aria-label={t('settings.hub.page_title')}
             >
               {t('common.manage')} →
@@ -138,7 +138,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/waivers')}
+              onClick={() => navigate('/admin/settings/waivers')}
               aria-label={t('pages.waivers.title')}
             >
               {t('common.manage')} →
@@ -159,7 +159,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/billing')}
+              onClick={() => navigate('/admin/finance/accounts')}
               aria-label={t('pages.billing.title')}
             >
               {t('common.manage')} →
@@ -181,7 +181,7 @@ export function AdminPanel() {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate('/admin/setup/levels')}
+                onClick={() => navigate('/admin/classes/levels')}
                 aria-label={labels.category.plural}
               >
                 {t('common.manage')} →
@@ -203,7 +203,7 @@ export function AdminPanel() {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate('/admin/setup/terms')}
+                onClick={() => navigate('/admin/classes/seasons')}
                 aria-label={labels.season.plural}
               >
                 {t('common.manage')} →

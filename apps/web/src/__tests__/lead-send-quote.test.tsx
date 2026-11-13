@@ -44,7 +44,7 @@ describe('Send quote on an enquiry', () => {
         <MemoryRouter initialEntries={['/admin/leads']}>
           <Routes>
             <Route path="/admin/leads" element={<ConvertLeadPanel leadId="l-7" leadName="Noa" onClose={() => {}} />} />
-            <Route path="/admin/quotes/:id" element={<p>quote page</p>} />
+            <Route path="/admin/projects/quotes/:id" element={<p>quote page</p>} />
           </Routes>
         </MemoryRouter>
       </I18nextProvider>,
@@ -68,7 +68,7 @@ describe('Send quote button on a lead row', () => {
               path="/admin/leads"
               element={<SendLeadQuoteButton leadId="l-8" leadName="Dana" offeringId="p1" eventDate="2026-12-04" location={null} onNeedsForm={onNeedsForm} />}
             />
-            <Route path="/admin/quotes/:id" element={<p>quote page</p>} />
+            <Route path="/admin/projects/quotes/:id" element={<p>quote page</p>} />
           </Routes>
         </MemoryRouter>
       </I18nextProvider>,

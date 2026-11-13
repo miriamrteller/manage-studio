@@ -229,7 +229,7 @@ export function SchoolProfileForm() {
             : loginEmail
               ? t('settings.hub.business_email_hint', { login: loginEmail })
               : t('settings.hub.business_email_hint_no_login')}{' '}
-          <Link className="underline" to="/admin/setup/settings?tab=security">
+          <Link className="underline" to="/admin/settings?tab=security">
             {t('settings.hub.change_login_link')}
           </Link>
         </p>

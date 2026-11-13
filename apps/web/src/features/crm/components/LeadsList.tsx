@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel, SendLeadQuoteButton } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
@@ -124,7 +124,7 @@ export function LeadsList() {
   const { t, i18n } = useTranslation();
   const { vertical } = useEntityLabels();
   // Send quote / Confirm wherever Projects (quotes) is on, in any industry (owner, 13 Nov 2026).
-  const { hasFeature } = useFeatureGate();
+  const { hasFeature } = useHasFeature();
   const canConvert = hasFeature(FEATURES.billing.quotes);
   const [convertingId, setConvertingId] = useState<string | null>(null);
 

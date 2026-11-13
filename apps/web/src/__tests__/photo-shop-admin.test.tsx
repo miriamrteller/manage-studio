@@ -331,8 +331,9 @@ describe('JobPhotoShopCard', () => {
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
     const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    // The gallery named like the shoot is checked first; choosing another checks that one at once.
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     fireEvent.change(select, { target: { value: 'a1' } });
-    // Choosing another gallery checks it at once.
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/Settings > Photo Protection > Watermark Photos/)).toBeTruthy();
     expect(screen.getByText(/Lines marked ⚠ are only tips/)).toBeTruthy();
@@ -368,7 +369,7 @@ describe('JobPhotoShopCard', () => {
   it('links to the client view of this shoot', async () => {
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
     const link = await screen.findByRole('link', { name: 'See it as your client' });
-    expect(link.getAttribute('href')).toBe('/admin/jobs/e1?tab=client');
+    expect(link.getAttribute('href')).toBe('/admin/projects/e1?tab=client');
   });
 
   it('a gallery with only videos says so, in one line', async () => {
@@ -386,7 +387,9 @@ describe('JobPhotoShopCard', () => {
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
     const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     fireEvent.change(select, { target: { value: 'a1' } });
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/This gallery only has videos/)).toBeTruthy();
     expect(screen.getAllByText('✗')).toHaveLength(1);
     expect(screen.queryByText(/Clients couldn't open the watermarked photos/)).toBeNull();

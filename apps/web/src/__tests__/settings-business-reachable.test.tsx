@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * "Your business" (payment flow and the three switches) must be reachable from the real Settings
+ * "Your business" ("How do clients work with you?") must be reachable from the real Settings
  * page. It was only rendered by TenantSettingsHub, which nothing imported (issue found on #294).
  * Run: pnpm -C apps/web test settings-business-reachable.test.tsx
  */
@@ -18,24 +18,25 @@ beforeEach(async () => {
 });
 
 describe('Settings page', () => {
-  it('has a "Your business" tab that shows the payment flow and the three switches', () => {
+  it('has a "Your business" tab that asks how clients work with you', () => {
     // Each section is a tab along the top of Settings, with its own address.
     renderInApp(<TenantSettingsPage />, {
-      path: '/admin/setup/settings',
-      initialEntry: '/admin/setup/settings?tab=business',
+      path: '/admin/settings',
+      initialEntry: '/admin/settings?tab=business',
     });
     expect(screen.getByRole('heading', { name: 'Your business' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Monthly' })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /I teach classes/ })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Parents pay for children/ })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Clients book time slots/ })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'How do clients work with you?' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Classes/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Projects/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Appointments/ })).toBeInTheDocument();
+    expect(screen.getByText(/pays a deposit to book, and pays the balance later/)).toBeInTheDocument();
   });
 
   it('opens straight on it with ?tab=business, in Hebrew too', async () => {
     await setLanguage('he');
     renderInApp(<TenantSettingsPage />, {
-      path: '/admin/setup/settings',
-      initialEntry: '/admin/setup/settings?tab=business',
+      path: '/admin/settings',
+      initialEntry: '/admin/settings?tab=business',
     });
     expect(screen.getByRole('heading', { name: 'העסק שלכם' })).toBeInTheDocument();
   });

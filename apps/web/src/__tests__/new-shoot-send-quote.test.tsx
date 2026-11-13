@@ -37,11 +37,11 @@ import { JobCreateForm } from '@/features/jobs/components/JobCreateForm';
 function renderForm() {
   render(
     <I18nextProvider i18n={i18n}>
-      <MemoryRouter initialEntries={['/admin/jobs']}>
+      <MemoryRouter initialEntries={['/admin/projects']}>
         <Routes>
-          <Route path="/admin/jobs" element={<JobCreateForm prefill={{ clientMode: 'new' }} />} />
-          <Route path="/admin/quotes/:id" element={<p>quote page</p>} />
-          <Route path="/admin/jobs/:id" element={<p>shoot page</p>} />
+          <Route path="/admin/projects" element={<JobCreateForm prefill={{ clientMode: 'new' }} />} />
+          <Route path="/admin/projects/quotes/:id" element={<p>quote page</p>} />
+          <Route path="/admin/projects/:id" element={<p>shoot page</p>} />
         </Routes>
       </MemoryRouter>
     </I18nextProvider>,
