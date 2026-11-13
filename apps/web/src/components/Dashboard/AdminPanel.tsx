@@ -8,6 +8,8 @@ import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 import { useTenant } from '@/hooks/useTenant';
+import { useHasFeature } from '@/hooks/useHasFeature';
+import { FEATURES } from '@shared/index';
 import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
 import { CelebrationBanner, SetupGuideCard, useCelebrations, useSetupGuide } from '@/features/setup-guide';
 
@@ -22,6 +24,11 @@ export function AdminPanel() {
   const { overview, isLoading, error, refetch } = useAdminDashboard();
   const { labels, modules, vertical } = useEntityLabels();
   const tenant = useTenant();
+  // Class-only cards follow the studio's feature set (owner, 13 Nov 2026): levels and
+  // seasons need "Levels, terms and sessions"; billing accounts need family accounts.
+  const { hasFeature } = useHasFeature();
+  const showStructure = hasFeature(FEATURES.offerings.structure);
+  const showBillingAccounts = hasFeature(FEATURES.people.families);
   const healthProvider = getBundledPaymentProviderSlug(tenant);
 
   // "Finish setup" checklist: shown until every row is done or skipped, or the owner
@@ -140,6 +147,7 @@ export function AdminPanel() {
         </div>
 
         {/* Billing Accounts Card */}
+        {showBillingAccounts && (
         <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -158,9 +166,10 @@ export function AdminPanel() {
             </Button>
           </div>
         </div>
+        )}
 
         {/* Levels Card */}
-        {modules.categories && (
+        {showStructure && modules.categories && (
           <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -182,7 +191,7 @@ export function AdminPanel() {
         )}
 
         {/* Terms Card */}
-        {modules.scheduling && (
+        {showStructure && modules.scheduling && (
           <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">

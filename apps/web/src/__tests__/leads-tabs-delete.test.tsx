@@ -39,6 +39,7 @@ vi.mock('@/features/crm/hooks/useLeads', () => ({
 }));
 vi.mock('@/features/crm/hooks/useNamedForms', () => ({ useNamedForms: () => ({ forms: [] }) }));
 vi.mock('@/hooks/useEntityLabels', () => ({ useEntityLabels: () => ({ vertical: 'dance-studio' }) }));
+vi.mock('@/hooks/useHasFeature', () => ({ useHasFeature: () => ({ hasFeature: () => false, isLoading: false }) }));
 vi.mock('@/features/crm/components/GetLeadsPanel', () => ({ GetLeadsPanel: () => <div data-testid="get-leads-panel" /> }));
 vi.mock('@/features/crm/components/FirstLeadsChecklist', () => ({
   FirstLeadsChecklist: () => <div data-testid="first-leads" />,

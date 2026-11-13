@@ -1,17 +1,21 @@
 import { Navigate } from 'react-router-dom';
+import { FEATURES } from '@shared/index';
 import { JobsList } from '@/features/jobs/components/JobsList';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useTenantQuery } from '@/hooks/useTenant';
 
 /**
- * Shoots (jobs) are photographer-only. The nav already hides this page for other
- * verticals, but its address still works: a dance or other studio that lands here
- * (a bookmark, an old link, a demo start page) goes to its Students page instead
- * of a photographer jobs list. Decided only once the tenant has loaded, so a
- * photographer is never bounced while it loads.
+ * Projects (jobs, "Shoots" for a photographer) follow the studio's feature set
+ * (owner, 13 Nov 2026: the simpler flows work for every industry): any studio with
+ * quotes / projects on gets this page. The menu already hides it otherwise, but its
+ * address still works: a studio without projects that lands here (a bookmark, an
+ * old link, a demo start page) goes to its Students page instead. Decided only once
+ * the tenant and its features have loaded, so nobody is bounced while it loads.
  */
 export default function JobsPage() {
   const { tenant, isLoading } = useTenantQuery();
-  if (!isLoading && tenant && tenant.vertical !== 'photographer') {
+  const { hasFeature, isLoading: featuresLoading } = useHasFeature();
+  if (!isLoading && !featuresLoading && tenant && !hasFeature(FEATURES.billing.quotes)) {
     return <Navigate to="/admin/people" replace />;
   }
   return <JobsList />;

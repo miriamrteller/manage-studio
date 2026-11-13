@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { buildClientDeliveredEmail, buildStudioOrderEmail } from "./email-copy.ts";
+import { buildClientDeliveredEmail, buildClientShopLinkEmail, buildStudioOrderEmail } from "./email-copy.ts";
 
 Deno.test("studio email lists every photo with its gallery key, and the shoot link", () => {
   const e = buildStudioOrderEmail({
@@ -42,4 +42,15 @@ Deno.test("cash order email says it isn't paid yet and how to record the cash", 
   assert(e.body.includes('"Record cash payment"'));
   const he = buildStudioOrderEmail({ language: "he", clientName: "פט", totalFormatted: "₪30", photos: [], shootUrl: "u", payInCash: true });
   assert(he.subject.startsWith("הזמנת תמונות חדשה, תשלום במזומן"));
+});
+
+Deno.test("shop link email: the link, how long it works, in the studio's language", () => {
+  const en = buildClientShopLinkEmail({ language: "en", studioName: "Light Studio", url: "https://studio.example/shop/abc", days: 3 });
+  assertEquals(en.subject, "Your photos are ready");
+  assert(en.body.includes("Light Studio"));
+  assert(en.body.includes("https://studio.example/shop/abc"));
+  assert(en.body.includes("3 days"));
+  const he = buildClientShopLinkEmail({ language: "he", studioName: "Light Studio", url: "https://studio.example/shop/abc", days: 3 });
+  assertEquals(he.subject, "התמונות מהצילום מוכנות");
+  assert(he.body.includes("https://studio.example/shop/abc"));
 });

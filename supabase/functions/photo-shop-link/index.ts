@@ -5,6 +5,9 @@
  *     → { url, email, expiresAt } — a link to the studio's /shop/<token> page that signs
  *       the shoot's client straight in for 3 days. The studio sends it (email app,
  *       WhatsApp, copy). Only sha256(token) is stored, in photo_shop_links.
+ *   { action: "email", engagementId }   (studio admins)
+ *     → the same, and OpalSwift emails the link to the client from the studio
+ *       (owner, 13 Nov 2026: one button). { ..., emailed: boolean }
  *   { action: "open", token }   (no sign-in: the token is the credential)
  *     → { access_token, refresh_token, engagementId } — a normal session for the client's
  *       own login at this studio (made on first use, like signing in by email).
@@ -20,6 +23,9 @@ import { requireFeature } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { tenantBaseUrlFor } from "../_shared/tenant-url.ts";
 import { ensureClientLogin, sessionForEmail } from "../_shared/client-login.ts";
+import { sendLoggedAnnouncement } from "../_shared/logged-announcement.ts";
+import { TENANT_SENDER_COLUMNS } from "../_shared/notification-from.ts";
+import { buildClientShopLinkEmail } from "../_shared/photo-shop/email-copy.ts";
 
 const FEATURE = "billing:photo_shop";
 export const LINK_DAYS = 3;
@@ -40,7 +46,7 @@ export async function sha256Hex(value: string): Promise<string> {
 async function shootClient(service: Service, engagementId: string) {
   const { data } = await service
     .from("engagements")
-    .select("tenant_id, people:person_id(email), tenants:tenant_id(subdomain)")
+    .select("tenant_id, person_id, people:person_id(email), tenants:tenant_id(subdomain)")
     .eq("id", engagementId)
     .maybeSingle();
   if (!data) return null;
@@ -49,6 +55,7 @@ async function shootClient(service: Service, engagementId: string) {
   const email = typeof row.people?.email === "string" ? row.people.email.trim().toLowerCase() : "";
   return {
     tenantId: row.tenant_id as string,
+    personId: (row.person_id as string | null) ?? null,
     email,
     subdomain: (row.tenants?.subdomain as string | null) ?? null,
   };
@@ -68,7 +75,8 @@ Deno.serve(withMonitoring("photo-shop-link", async (req) => {
     return await openLink(service, token);
   }
 
-  if (body?.action !== "create") return jsonResponse({ error: "bad_request" }, 400);
+  if (body?.action !== "create" && body?.action !== "email") return jsonResponse({ error: "bad_request" }, 400);
+  const emailIt = body.action === "email";
   const engagementId = typeof body.engagementId === "string" ? body.engagementId : "";
   if (!engagementId) return jsonResponse({ error: "bad_request" }, 400);
 
@@ -106,7 +114,36 @@ Deno.serve(withMonitoring("photo-shop-link", async (req) => {
   if (error) return jsonResponse({ ok: false, code: "failed" }, 500);
 
   const base = await tenantBaseUrlFor(service, client.tenantId);
-  return jsonResponse({ ok: true, url: `${base}/shop/${token}`, email: client.email, expiresAt });
+  const url = `${base}/shop/${token}`;
+  if (!emailIt) return jsonResponse({ ok: true, url, email: client.email, expiresAt });
+
+  // Sent from the studio (its sender), logged; a failed email still returns the link.
+  let emailed = false;
+  const { data: tenant } = await service
+    .from("tenants")
+    .select(`id, name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
+    .eq("id", client.tenantId)
+    .maybeSingle();
+  if (tenant) {
+    const t = tenant as Record<string, unknown>;
+    const copy = buildClientShopLinkEmail({
+      language: t.language_default === "en" ? "en" : "he",
+      studioName: t.name as string,
+      url,
+      days: LINK_DAYS,
+    });
+    emailed = await sendLoggedAnnouncement(service, {
+      tenant: t,
+      tenantId: client.tenantId,
+      to: client.email,
+      personId: client.personId,
+      key: `photo_shop_link:${engagementId}:${expiresAt}`,
+      templateName: "photo_shop_link",
+      variables: { engagement_id: engagementId },
+      ...copy,
+    });
+  }
+  return jsonResponse({ ok: true, url, email: client.email, expiresAt, emailed });
 }));
 
 async function openLink(service: Service, token: string): Promise<Response> {

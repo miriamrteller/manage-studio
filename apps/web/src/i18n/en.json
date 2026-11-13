@@ -698,8 +698,6 @@
         "capture_linkedin": "LinkedIn link",
         "empty_title": "No leads yet",
         "empty_message": "Share your capture links, or add a lead manually when someone calls or messages.",
-        "convert": "Convert to shoot",
-        "convert_hint": "Creates the client and a shoot from this lead, then opens a quote so you can check the price and send the details and pay link. Pick a package and an optional date.",
         "open_job": "Open shoot",
         "empty_message_get": "Share your enquiry link or QR code, and new enquiries will appear here.",
         "empty_action": "Get leads",
@@ -714,7 +712,11 @@
         "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page.",
         "shoot_request": "Shoot request: {{day}}",
         "confirm_shoot": "Confirm",
-        "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit."
+        "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit.",
+        "send_quote": "Send quote",
+        "send_quote_hint": "Books it in and emails the client the quote at the package price, to accept and pay the deposit.",
+        "edit_before_sending": "Edit before sending",
+        "next_step": "Next step"
       },
       "named_forms": {
         "title": "Forms",
@@ -1717,7 +1719,6 @@
       "starts_at": "Start",
       "ends_at": "End",
       "ends_hint": "Leave empty to use the package duration.",
-      "create": "Create shoot",
       "creating": "Creating…",
       "save": "Save",
       "saving": "Saving…",
@@ -1875,25 +1876,28 @@
           "cancelled": "Cancelled",
           "refunded": "Refunded"
         },
-        "send_link": "Send shop link",
         "send_link_hint": "The client opens their photos straight away, without signing in. The link works for 3 days.",
         "link_ready": "Link for {{email}}, works until {{date}}:",
         "link_copy": "Copy link",
         "link_copied": "Copied",
-        "link_email": "Email",
         "link_whatsapp": "WhatsApp",
         "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
-        "link_subject": "Your photos are ready",
         "link_error": "We couldn't make the link. Please try again.",
         "link_no_email": "Add the client's email first, so the link can sign them in.",
         "paying_cash": "The client will pay in cash.",
-        "record_cash": "Record cash payment"
+        "record_cash": "Record cash payment",
+        "email_link": "Email shop link to client",
+        "link_other_way": "WhatsApp or copy link",
+        "link_emailed": "Emailed to {{email}}. The link works until {{date}}.",
+        "link_not_emailed": "We couldn't email it. Copy the link or send it on WhatsApp:"
       },
       "tabs": {
         "details": "Details",
         "shop": "Photo shop",
         "client": "What your client sees"
-      }
+      },
+      "create_and_quote": "Create and send quote",
+      "create_without_quote": "Create without a quote"
     },
     "pay": {
       "notFound": "This payment link is not valid.",
@@ -1910,7 +1914,8 @@
       "invoiceNote": "A tax invoice-receipt is issued automatically on payment.",
       "payStudioDirectly": "{{studio}} does not take card payments online for this request. Please pay {{studio}} directly, by bank transfer or as agreed.",
       "pageUnavailable": "The card payment page couldn't open just now. Please try again in a few minutes, or contact {{studio}} to pay another way, for example by bank transfer, or as agreed.",
-      "jobDate": "Shoot {{date}}"
+      "jobDate": "Shoot {{date}}",
+      "sign_later": "now or later, whichever suits you"
     },
     "quotes": {
       "title": "Quotes",
@@ -2046,7 +2051,8 @@
         "invalid_request": "Something went wrong. Please refresh and try again.",
         "server_error": "Something went wrong on our side. Please try again in a moment.",
         "generic": "Something went wrong. Please try again."
-      }
+      },
+      "accept_and_pay": "Accept and pay deposit"
     },
     "new_password": {
       "title": "Choose a new password",

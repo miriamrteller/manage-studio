@@ -3,14 +3,15 @@ import { followUpState } from '../lib/followUp';
 import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNamedForms } from '../hooks/useNamedForms';
-import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
+import { answerText, FEATURES, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useLeads } from '../hooks/useLeads';
-import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
+import { ConvertLeadPanel, SendLeadQuoteButton } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 import {
   LEAD_CHANNELS,
@@ -122,8 +123,11 @@ function LeadAnswers({ lead, lang }: { lead: Lead; lang: 'en' | 'he' }) {
 export function LeadsList() {
   const { t, i18n } = useTranslation();
   const { vertical } = useEntityLabels();
-  const canConvert = vertical === 'photographer';
+  // Send quote / Confirm wherever Projects (quotes) is on, in any industry (owner, 13 Nov 2026).
+  const { hasFeature } = useHasFeature();
+  const canConvert = hasFeature(FEATURES.billing.quotes);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+
   const {
     leads: allLeads,
     isLoading,
@@ -487,7 +491,7 @@ export function LeadsList() {
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.stage')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.last_contacted')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.follow_up')}</th>
-                {canConvert && <th className="px-3 py-2 text-start">{t('pages.crm.leads.convert')}</th>}
+                {canConvert && <th className="px-3 py-2 text-start">{t('pages.crm.leads.next_step')}</th>}
                 <th className="px-3 py-2 text-start">
                   <span className="sr-only">{t('pages.crm.leads.actions')}</span>
                 </th>
@@ -586,14 +590,23 @@ export function LeadsList() {
                         <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            variant={isShootRequest(lead) ? 'primary' : 'outline'}
-                            size="sm"
-                            onClick={() => setConvertingId(lead.id)}
-                          >
-                            {isShootRequest(lead) ? t('pages.crm.leads.confirm_shoot') : t('pages.crm.leads.convert')}
-                          </Button>
-                          {lead.stage !== 'lost' && <CreateQuoteButton leadId={lead.id} />}
+                          {isShootRequest(lead) ? (
+                            <Button variant="primary" size="sm" onClick={() => setConvertingId(lead.id)}>
+                              {t('pages.crm.leads.confirm_shoot')}
+                            </Button>
+                          ) : (
+                            <SendLeadQuoteButton
+                              leadId={lead.id}
+                              leadName={lead.name}
+                              offeringId={lead.offering_id}
+                              eventDate={lead.event_date}
+                              location={answerPlain(lead.answers?.event_location)}
+                              onNeedsForm={() => setConvertingId(lead.id)}
+                            />
+                          )}
+                          {lead.stage !== 'lost' && (
+                            <CreateQuoteButton leadId={lead.id} label={t('pages.crm.leads.edit_before_sending')} />
+                          )}
                         </div>
                       )}
                     </td>

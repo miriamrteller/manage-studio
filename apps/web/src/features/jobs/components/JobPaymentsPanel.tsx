@@ -54,6 +54,28 @@ export function JobPaymentsPanel({ engagementId, packagePriceMinor }: Props) {
     .reduce((sum, r) => sum + r.amount_minor, 0);
   const paid = requests.filter((r) => r.status === 'paid').reduce((sum, r) => sum + r.amount_minor, 0);
 
+  // "Record a payment" (owner, 13 Nov 2026: fewest steps): the next open request,
+  // or, with nothing open, a new one for what is left of the package.
+  const openRequest = requests.find((r) => r.status === 'pending' || r.status === 'sent') ?? null;
+  const startRecordPayment = () =>
+    setManual(
+      openRequest
+        ? { kind: 'mark_paid', request: openRequest }
+        : { kind: 'record_new', amountMinor: defaultRequestTotalMinor(packagePriceMinor, requests), currency },
+    );
+  const recordNewPayment = async (
+    amountMinor: number,
+    method: Parameters<typeof recordManualPayment.mutateAsync>[0]['method'],
+    note?: string,
+    sendConfirmation?: boolean,
+  ) => {
+    const [made] = await create.mutateAsync([
+      { label: t('pages.jobs.payments.form.defaultLabel'), amount_minor: amountMinor, due_date: null, max_installments: 1 },
+    ]);
+    if (!made) throw new Error(t('errors.generic'));
+    await recordManualPayment.mutateAsync({ id: made.id, method, note, sendConfirmation });
+  };
+
   const handleSend = async (r: JobPaymentRequest) => {
     setNotice(null);
     try {
@@ -112,21 +134,27 @@ export function JobPaymentsPanel({ engagementId, packagePriceMinor }: Props) {
             }}
           />
         ) : (
-          <Button size="sm" variant="outline" onClick={() => setShowForm(true)}>
-            {t('pages.jobs.payments.add')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="primary" disabled={busy} onClick={startRecordPayment}>
+              {t('finance.record_payment.title')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(true)}>
+              {t('pages.jobs.payments.add')}
+            </Button>
+          </div>
         )}
         <JobGalleryGate engagementId={engagementId} currency={currency} language={language} />
       </CardContent>
       <ManualPaymentDialog
         action={manual}
         language={language}
-        isSubmitting={recordManualPayment.isPending || recordManualRefund.isPending}
+        isSubmitting={create.isPending || recordManualPayment.isPending || recordManualRefund.isPending}
         onClose={() => setManual(null)}
         onMarkPaid={(id, method, note, sendConfirmation) =>
           recordManualPayment.mutateAsync({ id, method, note, sendConfirmation })
         }
         onRefund={(paymentId, reason, amountMinor) => recordManualRefund.mutateAsync({ paymentId, reason, amountMinor })}
+        onRecordNew={recordNewPayment}
       />
     </Card>
   );
