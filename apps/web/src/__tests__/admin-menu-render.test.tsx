@@ -75,10 +75,21 @@ describe('studio admin menu (English)', () => {
     expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
   });
 
-  it('photographer: Clients and Shoots, no Families or Classes', async () => {
+  it('photographer: Clients and Shoots, no Families, Classes or separate Bookings', async () => {
     await setLanguage('en');
     renderMenu('photographer', '/admin/projects');
-    expect(menuLabels()).toEqual(['Home', 'Leads', 'Clients', 'Shoots', 'Bookings', 'Photo shop', 'Finance', 'Settings']);
+    expect(menuLabels()).toEqual(['Home', 'Leads', 'Clients', 'Shoots', 'Photo shop', 'Finance', 'Settings']);
+  });
+
+  it('another project business says Projects, with a briefcase rather than a camera', async () => {
+    await setLanguage('en');
+    setTenant('generic', {
+      business_preset: 'services',
+      profile: { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: false },
+    });
+    renderInApp(<NavDrawer />, { path: '/admin/projects' });
+    expect(menuLabels()).toContain('Projects');
+    expect(menuLabels()).not.toContain('Shoots');
   });
 
   it('beautician: only what fits an appointment business', async () => {
@@ -124,12 +135,19 @@ describe('studio admin menu (English)', () => {
 });
 
 describe('tabs along the top of an area', () => {
-  it('Bookings: Packages first, then Diary', async () => {
+  it('Shoots: one place for shoots, the diary, packages and quotes, saying what the open tab is for', async () => {
     await setLanguage('en');
     renderTabs('photographer', '/admin/bookings/diary');
-    expect(tabLabels()).toEqual(['Packages', 'Diary']);
+    expect(tabLabels()).toEqual(['Shoots', 'Diary', 'Packages', 'Quotes']);
     expect(screen.getByRole('link', { name: 'Diary' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Packages' })).toHaveAttribute('href', '/admin/bookings/packages');
+    expect(screen.getByText(/Everything with a date/)).toBeInTheDocument();
+  });
+
+  it('Bookings for an appointment business: Services first, then Diary', async () => {
+    await setLanguage('en');
+    renderTabs('beautician', '/admin/bookings/diary');
+    expect(tabLabels()).toEqual(['Services', 'Diary']);
   });
 
   it('Classes: classes, levels, seasons, teachers, class cards', async () => {
@@ -143,9 +161,10 @@ describe('tabs along the top of an area', () => {
   it('Settings: each section is a tab with its own address', async () => {
     await setLanguage('en');
     renderTabs('dance', '/admin/settings?tab=legal');
-    expect(tabLabels()).toContain('Studio profile');
-    expect(screen.getByRole('link', { name: 'Legal' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Legal' })).toHaveAttribute('href', '/admin/settings?tab=legal');
+    expect(tabLabels()).toContain('Name & contact');
+    expect(screen.getByRole('link', { name: 'Legal documents' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Legal documents' })).toHaveAttribute('href', '/admin/settings?tab=legal');
+    expect(screen.getByText(/privacy policy/)).toBeInTheDocument();
   });
 
   it('no tabs for an area with one page (Home)', async () => {
@@ -157,7 +176,7 @@ describe('tabs along the top of an area', () => {
   it('Hebrew tab names', async () => {
     await setLanguage('he');
     renderTabs('photographer', '/admin/bookings/diary');
-    expect(tabLabels()).toEqual(['חבילות', 'יומן']);
+    expect(tabLabels()).toEqual(['צילומים', 'יומן', 'חבילות', 'הצעות מחיר']);
   });
 });
 
@@ -165,7 +184,7 @@ describe('studio admin menu (Hebrew)', () => {
   it('dance: the same flat list in Hebrew', async () => {
     await setLanguage('he');
     renderMenu('dance');
-    expect(menuLabels()).toEqual(['בית', 'לידים', 'תלמידים', 'שיעורים', 'הזמנות', 'חנות', 'כספים', 'הגדרות']);
+    expect(menuLabels()).toEqual(['בית', 'לידים', 'תלמידים', 'שיעורים', 'תורים', 'חנות', 'כספים', 'הגדרות']);
   });
 });
 

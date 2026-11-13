@@ -602,6 +602,74 @@ export interface NavEntry {
 }
 
 /** Turn a section's pages into menu lines, one per area, in the order the areas first appear. */
+/**
+ * One place for project work (owner, 13 Nov 2026): when the studio has a Projects line (e.g. a
+ * photographer's Shoots), its Diary and Packages become tabs of that line, in the order
+ * Shoots, Diary, Packages, Quotes, and there is no separate Bookings line. Appointment businesses
+ * without Projects keep Bookings.
+ */
+const PAGE_HINTS: Record<string, string> = {
+  '/admin/leads': 'leads',
+  '/admin/leads/get': 'lead_forms',
+  '/admin/leads/settings': 'lead_settings',
+  '/admin/people': 'people',
+  '/admin/people/families': 'families',
+  '/admin/classes': 'classes',
+  '/admin/classes/levels': 'levels',
+  '/admin/classes/seasons': 'seasons',
+  '/admin/classes/teachers': 'teachers',
+  '/admin/classes/cards': 'class_cards',
+  '/admin/projects': 'projects',
+  '/admin/bookings/diary': 'diary',
+  '/admin/bookings/packages': 'packages',
+  '/admin/projects/quotes': 'quotes',
+  '/admin/shop/photos': 'photo_shop',
+  '/admin/shop/studio': 'studio_shop',
+  '/admin/finance': 'finance',
+  '/admin/finance/payments': 'payments',
+  '/admin/finance/expenses': 'expenses',
+  '/admin/finance/expenses/categories': 'expense_categories',
+  '/admin/finance/import': 'import',
+  '/admin/finance/accounts': 'payers',
+  '/admin/settings/waivers': 'forms',
+  '/admin/settings/bundled-payments': 'payment_setup',
+  '/admin/settings/payments': 'payment_setup',
+  '/admin/settings/invoicing': 'payment_setup',
+};
+
+/**
+ * The one line under an area's tabs saying what the open page is for (owner, 13 Nov 2026:
+ * "very clear as to what each thing is"). Returns the key under nav.hint, or null.
+ */
+export function navHintKey(item: NavItem, vertical?: string | null): string | null {
+  if (item.path === '/admin/projects' && vertical === 'photographer') return 'nav.hint.shoots';
+  if (item.path.startsWith(`${SETTINGS_PATH}?tab=`)) return `nav.hint.settings_${item.path.split('=')[1]}`;
+  if (item.path === SETTINGS_PATH) return `nav.hint.settings_${SETTINGS_TAB_IDS[0]}`;
+  const id = PAGE_HINTS[item.path];
+  return id ? `nav.hint.${id}` : null;
+}
+
+export function foldBookingsIntoProjects(items: NavItem[]): NavItem[] {
+  const projects = items.filter((item) => item.area === 'projects');
+  const bookings = items.filter((item) => item.area === 'bookings');
+  if (projects.length === 0 || bookings.length === 0) return items;
+  const [first, ...rest] = projects;
+  const diaryFirst = [...bookings].sort(
+    (a, b) => Number(b.path === '/admin/bookings/diary') - Number(a.path === '/admin/bookings/diary'),
+  );
+  const merged = [first, ...diaryFirst.map((item) => ({ ...item, area: 'projects' as const })), ...rest];
+  const out: NavItem[] = [];
+  for (const item of items) {
+    if (item.area === 'bookings') continue;
+    if (item.area === 'projects') {
+      if (item === first) out.push(...merged);
+      continue;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 export function groupNavEntries(items: NavItem[]): NavEntry[] {
   const entries: NavEntry[] = [];
   const byArea = new Map<NavAreaKey, NavEntry>();

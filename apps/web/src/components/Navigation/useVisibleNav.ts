@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
@@ -6,7 +6,7 @@ import { useHasFeature } from '@/hooks/useHasFeature';
 import { useTenantQuery } from '@/hooks/useTenant';
 import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { useNavItems } from './useNavItems';
-import type { NavEntry, NavItem } from './navigationConfig';
+import { foldBookingsIntoProjects, type NavEntry, type NavItem } from './navigationConfig';
 
 /**
  * The menu the signed-in person sees, with the studio's own words. Shared by the sidebar and
@@ -20,7 +20,7 @@ export function useVisibleNav() {
   // The same check the pages use (useHasFeature), so a tab never opens on a dead end.
   const { hasFeature: hasFeatureResolved } = useHasFeature();
 
-  const { sections, isAuthenticated } = useNavItems({
+  const { sections: rawSections, isAuthenticated } = useNavItems({
     userRoles: user?.role ?? null,
     isAuthenticated: Boolean(user),
     modules,
@@ -30,6 +30,10 @@ export function useVisibleNav() {
     // No studio once the lookup is done (app.opalswift.com, or a user without one).
     hasStudio: Boolean(tenant) || tenantLoading,
   });
+  const sections = useMemo(
+    () => rawSections.map((section) => ({ ...section, items: foldBookingsIntoProjects(section.items) })),
+    [rawSections],
+  );
 
   // Grey out booking-dependent items (e.g. /book) only when we positively know
   // the tenant has booking turned off; undefined (guest/loading) leaves them on.
@@ -49,7 +53,8 @@ export function useVisibleNav() {
         case '/classes':
           return classLabels.plural;
         case '/admin/projects':
-          return labels.engagement.plural;
+          // Shoots for photographers; "Projects" for every other project business.
+          return vertical === 'photographer' ? labels.engagement.plural : t('nav.area.projects');
         case '/admin/people':
           // A studio that does not teach classes has Clients, not Students.
           return contactsWord ? labels.contact.plural : t(item.labelKey);
@@ -91,7 +96,7 @@ export function useVisibleNav() {
         case 'classes':
           return classLabels.plural;
         case 'projects':
-          return labels.engagement.plural;
+          return vertical === 'photographer' ? labels.engagement.plural : t('nav.area.projects');
         case 'bookings':
           return t('nav.area.bookings');
         case 'shop':
@@ -106,7 +111,7 @@ export function useVisibleNav() {
           return navLabel(first);
       }
     },
-    [t, navLabel, labels, classLabels, contactsWord],
+    [t, navLabel, labels, classLabels, contactsWord, vertical],
   );
 
   return { sections, isAuthenticated, navLabel, entryLabel, isItemDisabled, vertical, user, tenant };
