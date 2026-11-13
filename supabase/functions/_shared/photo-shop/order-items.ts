@@ -45,3 +45,20 @@ export function resolveOrderItems(
 export function photoOrderLabel(count: number, language: "he" | "en"): string {
   return language === "he" ? `תמונות (${count})` : `Photos (${count})`;
 }
+
+/**
+ * The person an order is placed for: the caller's own record, or else the shoot's client.
+ * Only called after get_client_photo_shop (run as the caller) has allowed this shoot.
+ */
+export async function orderPersonId(
+  // deno-lint-ignore no-explicit-any
+  caller: { rpc: (fn: string) => PromiseLike<{ data: any }> },
+  // deno-lint-ignore no-explicit-any
+  service: { from: (t: string) => any },
+  engagementId: string,
+): Promise<string | null> {
+  const { data: mine } = await caller.rpc("get_my_person_id");
+  if (typeof mine === "string" && mine) return mine;
+  const { data: shoot } = await service.from("engagements").select("person_id").eq("id", engagementId).maybeSingle();
+  return typeof shoot?.person_id === "string" ? shoot.person_id : null;
+}

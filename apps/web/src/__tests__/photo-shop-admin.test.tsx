@@ -313,6 +313,12 @@ describe('JobPhotoShopCard', () => {
     expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
   });
 
+  it('links to the client view of this shoot', async () => {
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const link = await screen.findByRole('link', { name: 'See it as your client' });
+    expect(link.getAttribute('href')).toBe('/admin/jobs/e1?tab=client');
+  });
+
   it('a gallery with only videos says so, in one line', async () => {
     state.smugmugConnected = true;
     state.checkGallery.mockResolvedValue({

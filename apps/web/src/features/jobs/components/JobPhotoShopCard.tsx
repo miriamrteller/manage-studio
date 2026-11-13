@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -144,6 +145,12 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
       </div>
 
       <JobPhotoShopSource engagementId={engagementId} shop={data} />
+
+      <p className="text-sm">
+        <Link to={`/admin/jobs/${engagementId}?tab=client`} className="font-medium underline">
+          {t('photo_shop_admin.preview.open_from_shoot')}
+        </Link>
+      </p>
 
       {data.gallery_key && <SendShopLink engagementId={engagementId} />}
 

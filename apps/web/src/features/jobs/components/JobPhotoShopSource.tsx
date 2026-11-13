@@ -18,7 +18,7 @@ const IN_PHOTOS_KEY = 'os_photo_shop_watermark_in_photos';
 type Source = 'smugmug' | 'upload';
 
 /** Same list as TIP_CODES in supabase/functions/_shared/photo-shop/smugmug/api.ts. */
-const TIP_CODES: GalleryCheckItem['code'][] = ['watermark', 'largest_size', 'downloads', 'original_hidden'];
+const TIP_CODES: GalleryCheckItem['code'][] = ['watermark', 'largest_size', 'downloads', 'original_hidden', 'some_private'];
 
 const CHECK_ORDER: GalleryCheckItem['code'][] = [
   'watermark',
@@ -26,6 +26,7 @@ const CHECK_ORDER: GalleryCheckItem['code'][] = [
   'downloads',
   'photos',
   'preview_public',
+  'some_private',
   'original_hidden',
 ];
 

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
  * Photo shop menu page (beta): only with the photo shop feature; Overview shows what's
- * left to set up; Preview shows a shoot's shop as its client sees it, with buying off
- * and a sample-photos note; a shoot without a saved shop says so. EN + HE.
+ * left to set up; Preview shows a shoot's shop exactly as its client sees it (photos can
+ * be picked and the buttons pressed, but no order is placed), opens on the shoot named
+ * in the address, and has a sample-photos note; a shoot without a saved shop says so. EN + HE.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
@@ -20,6 +21,7 @@ const state = vi.hoisted(() => ({
   connected: false,
   pricePerPhoto: null as number | null,
   preview: vi.fn(),
+  order: vi.fn(),
 }));
 
 vi.mock('@/hooks/useFeatureGate', () => ({
@@ -57,7 +59,7 @@ vi.mock('@/features/settings/services/smugmugService', async (orig) => {
 });
 vi.mock('@/features/jobs/services/clientPhotoShopService', async (orig) => {
   const real = await orig<typeof import('@/features/jobs/services/clientPhotoShopService')>();
-  return { ...real, ClientPhotoShopService: { ...real.ClientPhotoShopService, preview: (id: string) => state.preview(id) } };
+  return { ...real, ClientPhotoShopService: { ...real.ClientPhotoShopService, preview: (id: string) => state.preview(id), order: (...a: unknown[]) => state.order(...a) } };
 });
 
 const view = (): ClientPhotoShopView => ({
@@ -83,6 +85,7 @@ describe('Photo shop page', () => {
     state.connected = false;
     state.pricePerPhoto = null;
     state.preview.mockReset();
+    state.order.mockReset();
     setTenant('photographer');
     await setLanguage('en');
   });
@@ -109,16 +112,34 @@ describe('Photo shop page', () => {
     expect(screen.queryByText('Connect your SmugMug account')).toBeNull();
   });
 
-  it('Preview shows the client view with buying off and sample photos', async () => {
+  it('Preview works like the client page but never places an order', async () => {
     state.preview.mockResolvedValue({ shop: view(), photos, sample: true });
     renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e1' } });
-    expect(await screen.findByText(/this is what your client sees/i)).toBeTruthy();
+    expect(await screen.findByText(/this is exactly what your client sees/i)).toBeTruthy();
     expect(screen.getByText(/sample photos until you add this shoot's photos/)).toBeTruthy();
     expect(state.preview).toHaveBeenCalledWith('e1');
     expect(screen.getByText('IMG_0001.jpg')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Add to cart' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Pay/ })).toBeNull();
+
+    // Card: picking photos and pressing Pay shows what would happen, nothing is ordered.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add to cart' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /^Pay/ }));
+    expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/secure payment page/);
+
+    // Cash: the client's own confirmation is shown, still nothing ordered.
+    fireEvent.click(screen.getByLabelText('In cash to the studio'));
+    expect(screen.queryByText(/nothing was ordered/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Send order/ }));
+    expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/Pay the studio in cash/);
+    expect(state.order).not.toHaveBeenCalled();
+  });
+
+  it('Preview opens on the shoot named in the address', async () => {
+    state.preview.mockResolvedValue({ shop: view(), photos, sample: false });
+    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview&shoot=e1' });
+    expect(await screen.findByText('IMG_0002.jpg')).toBeTruthy();
+    expect(state.preview).toHaveBeenCalledWith('e1');
+    expect((screen.getByLabelText('Shoot') as HTMLSelectElement).value).toBe('e1');
   });
 
   it('Preview says when a shoot has no shop yet', async () => {

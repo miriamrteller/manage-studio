@@ -3,6 +3,7 @@ import {
   cleanSignInToken,
   clientSignInUrl,
   escapeLike,
+  loginIsClientsOwn,
   normaliseEmail,
   pickClientProfile,
 } from "./client-login.ts";
@@ -51,4 +52,11 @@ Deno.test("the sign-in button goes above the closing line, or not at all", () =>
   assertEquals(insertBeforeParagraph(html, "Not there", block), html);
   assertEquals(isHttpLink("javascript:alert(1)"), false);
   assertEquals(isHttpLink("https://s.example/signin"), true);
+});
+
+Deno.test("no families at the studio: the login is the client's own", () => {
+  assertEquals(loginIsClientsOwn({ business_preset: "programs", family_accounts: false }), true);
+  assertEquals(loginIsClientsOwn({ business_preset: "services", family_accounts: true }), true);
+  assertEquals(loginIsClientsOwn({ business_preset: "programs", family_accounts: true }), false);
+  assertEquals(loginIsClientsOwn(null), false);
 });

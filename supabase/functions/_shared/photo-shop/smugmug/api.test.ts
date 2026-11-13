@@ -117,7 +117,12 @@ Deno.test("check gallery: passes with watermark, capped size, no downloads, Larg
   assertEquals(result.albumName, "Cohen family shoot");
   assertEquals(result.photos.map((p) => p.key), ["K1", "K2", "K3"]);
   assertEquals(result.photos[0], { key: "K1", fileName: "IMG_0001.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" });
-  assertEquals(probed, ["https://photos.smugmug.com/K1-L.jpg", "https://photos.smugmug.com/K1-O.jpg"]);
+  assertEquals(probed.sort(), [
+    "https://photos.smugmug.com/K1-L.jpg",
+    "https://photos.smugmug.com/K1-O.jpg",
+    "https://photos.smugmug.com/K2-L.jpg",
+    "https://photos.smugmug.com/K3-L.jpg",
+  ], "every preview is opened, and the first photo's bigger sizes");
   assert(!reader.asked.includes("/api/v2/image/V1!sizedetails"), "videos are skipped");
 });
 
@@ -160,15 +165,28 @@ Deno.test("check gallery: watermark already in the photos", async () => {
   assertEquals(result.items.find((i) => i.code === "watermark"), { code: "watermark", ok: true, value: "in_photos" });
   assertEquals(result.items.find((i) => i.code === "largest_size")?.ok, true);
   assertEquals(result.items.find((i) => i.code === "original_hidden"), { code: "original_hidden", ok: true, value: "in_photos" });
-  assertEquals(probed, ["https://photos.smugmug.com/K1-L.jpg"], "bigger sizes are not probed");
+  assertEquals(probed.filter((u) => !u.endsWith("-L.jpg")), [], "bigger sizes are not probed");
 });
 
-Deno.test("check gallery: a photo with no preview size at all fails the check", async () => {
+Deno.test("check gallery: a photo with no preview size is left out with a tip, the rest open", async () => {
   const routes = galleryRoutes();
   routes["/api/v2/image/K2!sizedetails"] = { ImageSizeDetails: {} };
   const result = await checkGallery(fakeReader(routes), "abc123", () => Promise.resolve(true));
-  assert(!result.passed);
-  assertEquals(result.items.find((i) => i.code === "photos")?.ok, false);
+  assert(result.passed);
+  assertEquals(result.photos.map((p) => p.key), ["K1", "K3"]);
+  assertEquals(result.items.find((i) => i.code === "some_private"), { code: "some_private", ok: false, value: "1" });
+});
+
+Deno.test("check gallery: hidden photos and photos that don't open for visitors are left out", async () => {
+  const routes = galleryRoutes();
+  const page = routes["/api/v2/album/abc123!images"] as { AlbumImage: Json[] };
+  page.AlbumImage[1] = { ...page.AlbumImage[1], Hidden: true };
+  const probe = (url: string) => Promise.resolve(!url.includes("K3"));
+  const result = await checkGallery(fakeReader(routes), "abc123", probe);
+  assert(result.passed);
+  assertEquals(result.photos.map((p) => p.key), ["K1"]);
+  assertEquals(result.items.find((i) => i.code === "some_private"), { code: "some_private", ok: false, value: "2" });
+  assertEquals(result.items.find((i) => i.code === "preview_public")?.ok, true);
 });
 
 Deno.test("check gallery: a small photo with no Large size uses its biggest smaller size", async () => {
