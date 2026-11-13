@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { groupNavEntries, resolveActiveTab } from './navigationConfig';
+import { groupNavEntries, navHintKey, resolveActiveTab } from './navigationConfig';
 import { useVisibleNav } from './useVisibleNav';
 
 /**
@@ -12,7 +12,7 @@ import { useVisibleNav } from './useVisibleNav';
 export function AreaTabs() {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
-  const { sections, navLabel, entryLabel } = useVisibleNav();
+  const { sections, navLabel, entryLabel, vertical } = useVisibleNav();
 
   const entries = sections.flatMap((section) => groupNavEntries(section.items)).filter((e) => e.area);
   let found: { entry: (typeof entries)[number]; activePath: string } | null = null;
@@ -24,11 +24,15 @@ export function AreaTabs() {
   }
   if (!found || found.entry.items.length < 2) return null;
   const { entry, activePath } = found;
+  const activeItem = entry.items.find((item) => item.path === activePath);
+  // One line saying what the open page is for (owner, 13 Nov 2026).
+  const hintKey = activeItem ? navHintKey(activeItem, vertical) : null;
 
   return (
+    <div className="mb-6 -mt-2">
     <nav
       aria-label={t('nav.area_tabs', { area: entryLabel(entry) })}
-      className="mb-6 -mt-2 flex gap-1 overflow-x-auto border-b border-border"
+      className="flex gap-1 overflow-x-auto border-b border-border"
     >
       {entry.items.map((item) => {
         const active = item.path === activePath;
@@ -49,5 +53,7 @@ export function AreaTabs() {
         );
       })}
     </nav>
+    {hintKey && <p className="mt-2 text-sm text-muted-foreground">{t(hintKey)}</p>}
+    </div>
   );
 }
