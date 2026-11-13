@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PersonSearchCombobox } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useTenant } from '@/hooks/useTenant';
+import { sendShootRequestQuote } from '@/features/quotes/services/sendShootRequestQuote';
 import { useJobPackages, useJobs } from '../hooks/useJobs';
 import { addMinutesLocal, fromDateTimeLocal } from '../lib/jobStatus';
 import { PackageSelect } from './PackageSelect';
@@ -45,6 +47,11 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Main button: create and email the quote at once (owner, 13 Nov 2026: fewest steps).
+  // withQuote only picks which button shows "Creating…".
+  const tenant = useTenant();
+  const [withQuote, setWithQuote] = useState(true);
+  const [sendingQuote, setSendingQuote] = useState(false);
 
   // No package picked yet: start from the studio's first one (still editable), so the button is never stuck.
   const firstPackageId = packagesQuery.data?.[0]?.id ?? '';
@@ -73,6 +80,10 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
     event.preventDefault();
     if (!canSubmit) return;
     setError(null);
+    // Which button sent the form: read at once (a state update would land too late).
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const sendQuote = submitter?.getAttribute('data-quote') !== 'no';
+    setWithQuote(sendQuote);
     try {
       const engagementId = await createJob({
         offering_id: offeringId,
@@ -85,8 +96,34 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
         location: location || null,
         notes: notes || null,
       });
-      onCreated?.(engagementId);
-      navigate(`/admin/jobs/${engagementId}`);
+      const done = (path: string) => {
+        onCreated?.(engagementId);
+        navigate(path);
+      };
+      if (sendQuote && tenant) {
+        setSendingQuote(true);
+        try {
+          const { quoteId } = await sendShootRequestQuote({
+            tenantId: tenant.id,
+            emailLanguage: tenant.language_default ?? 'he',
+            engagementId,
+            offeringId,
+            clientName: mode === 'existing' ? personLabel : clientName,
+            bookedStartsAt: fromDateTimeLocal(startsAt),
+          });
+          if (quoteId) {
+            done(`/admin/quotes/${quoteId}`);
+            return;
+          }
+        } catch {
+          // The shoot is made; open a new quote for it instead.
+        } finally {
+          setSendingQuote(false);
+        }
+        done(`/admin/quotes/new?engagement=${engagementId}`);
+        return;
+      }
+      done(`/admin/jobs/${engagementId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }
@@ -193,9 +230,14 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
         </div>
       )}
 
-      <Button type="submit" variant="primary" disabled={!canSubmit || isCreating}>
-        {isCreating ? t('pages.jobs.creating') : t('pages.jobs.create')}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" disabled={!canSubmit || isCreating || sendingQuote} data-quote="yes">
+          {(isCreating || sendingQuote) && withQuote ? t('pages.jobs.creating') : t('pages.jobs.create_and_quote')}
+        </Button>
+        <Button type="submit" variant="outline" disabled={!canSubmit || isCreating || sendingQuote} data-quote="no">
+          {isCreating && !withQuote ? t('pages.jobs.creating') : t('pages.jobs.create_without_quote')}
+        </Button>
+      </div>
     </form>
   );
 }

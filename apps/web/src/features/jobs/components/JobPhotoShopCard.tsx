@@ -242,6 +242,8 @@ function PhotoOrders({
 }) {
   const { t } = useTranslation();
   if (loading) return null;
+  // The download link sent last for this shoot fills in the next order's (owner, 13 Nov 2026).
+  const lastLink = latestDeliveryLink(orders);
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold">{t('pages.jobs.photo_shop.orders')}</h3>
@@ -250,7 +252,7 @@ function PhotoOrders({
       ) : (
         <ul className="space-y-2">
           {orders.map((o) => (
-            <PhotoOrderRow key={o.id} engagementId={engagementId} order={o} thumbs={thumbs} />
+            <PhotoOrderRow key={o.id} engagementId={engagementId} order={o} thumbs={thumbs} lastLink={lastLink} />
           ))}
         </ul>
       )}
@@ -258,11 +260,29 @@ function PhotoOrders({
   );
 }
 
-function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; order: PhotoOrder; thumbs: Map<string, string> }) {
+/** The most recently sent download link among this shoot's orders, if any. */
+export function latestDeliveryLink(orders: PhotoOrder[]): string | null {
+  const sent = orders
+    .filter((o) => o.delivery_url && o.delivered_at)
+    .sort((a, b) => (b.delivered_at as string).localeCompare(a.delivered_at as string));
+  return sent[0]?.delivery_url ?? null;
+}
+
+function PhotoOrderRow({
+  engagementId,
+  order,
+  thumbs,
+  lastLink,
+}: {
+  engagementId: string;
+  order: PhotoOrder;
+  thumbs: Map<string, string>;
+  lastLink: string | null;
+}) {
   const { t, i18n } = useTranslation();
   const { deliver, markSent, recordCash } = useJobPhotoShop(engagementId, false);
   const linkId = useId();
-  const [link, setLink] = useState(order.delivery_url ?? '');
+  const [link, setLink] = useState(order.delivery_url ?? lastLink ?? '');
   const [editing, setEditing] = useState(order.status === 'paid');
   const canDeliver = order.status === 'paid' || order.status === 'delivered';
   const valid = isDeliveryLink(link);

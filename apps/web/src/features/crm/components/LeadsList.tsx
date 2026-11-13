@@ -3,12 +3,13 @@ import { followUpState } from '../lib/followUp';
 import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNamedForms } from '../hooks/useNamedForms';
-import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
+import { answerText, FEATURES, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel, SendLeadQuoteButton } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
@@ -122,7 +123,9 @@ function LeadAnswers({ lead, lang }: { lead: Lead; lang: 'en' | 'he' }) {
 export function LeadsList() {
   const { t, i18n } = useTranslation();
   const { vertical } = useEntityLabels();
-  const canConvert = vertical === 'photographer';
+  // Send quote / Confirm wherever Projects (quotes) is on, in any industry (owner, 13 Nov 2026).
+  const { hasFeature } = useFeatureGate();
+  const canConvert = hasFeature(FEATURES.billing.quotes);
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
   const {

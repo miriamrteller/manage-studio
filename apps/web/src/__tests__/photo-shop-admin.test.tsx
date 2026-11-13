@@ -215,6 +215,19 @@ describe('JobPhotoShopCard', () => {
     await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/Alice-download'));
   });
 
+  it('a new paid order starts from the download link sent last for this shoot', async () => {
+    state.orders = [
+      paidOrder,
+      { ...paidOrder, id: 'o0', status: 'delivered', delivery_url: 'https://studio.smugmug.com/old', delivered_at: '2026-11-03T10:00:00Z' },
+      { ...paidOrder, id: 'o00', status: 'delivered', delivery_url: 'https://studio.smugmug.com/newest', delivered_at: '2026-11-04T09:00:00Z' },
+    ];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('Paid, to deliver')).toBeTruthy();
+    expect(screen.getByLabelText('Download gallery link')).toHaveProperty('value', 'https://studio.smugmug.com/newest');
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/newest'));
+  });
+
   it('a paid order shows each photo\'s thumbnail and file name, and can be marked as sent', async () => {
     state.shop = shop({
       provider: 'smugmug',

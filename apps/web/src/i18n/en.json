@@ -714,7 +714,7 @@
         "confirm_shoot": "Confirm",
         "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit.",
         "send_quote": "Send quote",
-        "send_quote_hint": "Books the shoot and emails the client the quote at the package price, to accept and pay the deposit.",
+        "send_quote_hint": "Books it in and emails the client the quote at the package price, to accept and pay the deposit.",
         "edit_before_sending": "Edit before sending",
         "next_step": "Next step"
       },
@@ -1719,7 +1719,6 @@
       "starts_at": "Start",
       "ends_at": "End",
       "ends_hint": "Leave empty to use the package duration.",
-      "create": "Create shoot",
       "creating": "Creating…",
       "save": "Save",
       "saving": "Saving…",
@@ -1896,7 +1895,9 @@
         "details": "Details",
         "shop": "Photo shop",
         "client": "What your client sees"
-      }
+      },
+      "create_and_quote": "Create and send quote",
+      "create_without_quote": "Create without a quote"
     },
     "pay": {
       "notFound": "This payment link is not valid.",
