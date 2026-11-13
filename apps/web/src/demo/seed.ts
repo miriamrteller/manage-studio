@@ -5,6 +5,8 @@
  */
 import type { Row, Tables } from './fakeSupabase';
 import { demoImages } from './images/manifest';
+import { SHOP_GALLERY_KEY, SHOP_GALLERY_NAME, demoGalleryPhotos } from './photoShop';
+import { EXPENSE_CATALOG, expenseVerticals, seedExpenseCategories } from './expenseCatalog';
 
 export const TENANT_ID = 'd0000000-0000-4000-8000-000000000001';
 export const ADMIN_USER_ID = 'd0000000-0000-4000-8000-00000000a001';
@@ -186,6 +188,9 @@ export function buildSeed(): Tables {
     id: TENANT_ID,
     name: 'Lumen & Light Photography',
     subdomain: TENANT_SUBDOMAIN,
+    // Photo shop: SmugMug keys saved and connected (see smugmug.ts).
+    smugmug_credentials_updated_at: at(-60),
+    smugmug_connected_at: at(-59),
     skin: 'photographer',
     business_preset: 'services',
     // Sells projects (Jobs, Quotes); no classes, no families.
@@ -232,6 +237,8 @@ export function buildSeed(): Tables {
       'finance:expenses.basic',
       'comms:reminders.email',
       'ui:theme.photographer',
+      // Photo shop (opt-in beta): shown on Daniel Avraham's event shoot.
+      'billing:photo_shop',
     ],
     created_at: at(-200),
   };
@@ -530,8 +537,69 @@ export function buildSeed(): Tables {
     status: 'draft', title: 'Bar mitzvah in March', lead_id: id(1101), created_at: at(0, 8),
   }, [['Bar Mitzvah: Full Evening (5 hours)', 4800, PKG.barMitzvah, false, true]]);
 
+  // Photo shop on the demo client's event shoot: 3 photos included, ₪25 each
+  // after that or ₪250 for all, and one order (3 free + 2 paid) delivered.
+  const shopEngagement = engagementId(8);
+  const shopPhotos = demoGalleryPhotos(SHOP_GALLERY_KEY);
+  const shopOrderId = id(3001);
+  const shopOrderItems: Row[] = shopPhotos.slice(0, 5).map((p, i) => ({
+    id: id(3010 + i),
+    order_id: shopOrderId,
+    job_photo_order_id: shopOrderId, // the fake client's embed key for items:job_photo_order_items(...)
+    tenant_id: TENANT_ID,
+    engagement_id: shopEngagement,
+    image_key: p.key,
+    file_name: p.fileName,
+    included: i < 3,
+    price_minor: i < 3 ? 0 : 2500,
+    voided_at: null,
+    created_at: at(-3, 20, i),
+  }));
+  const photoShop = {
+    tenant_photo_shop_settings: [
+      { tenant_id: TENANT_ID, price_per_photo_minor: 2500, all_photos_price_minor: 25000, gallery_open_days: 90 },
+    ],
+    job_photo_shops: [
+      {
+        engagement_id: shopEngagement,
+        tenant_id: TENANT_ID,
+        provider: 'mock',
+        gallery_key: SHOP_GALLERY_KEY,
+        gallery_name: SHOP_GALLERY_NAME,
+        included_photos: 3,
+        price_per_photo_minor: 2500,
+        all_photos_price_minor: 25000,
+        currency: 'ILS',
+        closes_at: at(72, 23, 59),
+        created_at: at(-5),
+        updated_at: at(-5),
+      },
+    ],
+    job_photo_orders: [
+      {
+        id: shopOrderId,
+        tenant_id: TENANT_ID,
+        engagement_id: shopEngagement,
+        person_id: personId(DEMO_CLIENT.n),
+        status: 'delivered',
+        all_photos: false,
+        photo_count: 5,
+        included_count: 3,
+        total_minor: 5000,
+        currency: 'ILS',
+        job_payment_request_id: null,
+        delivery_url: `${DEMO_GALLERY_HOST}/photo-order-${shopOrderId.slice(-4)}`,
+        created_at: at(-3, 20),
+        paid_at: at(-3, 20, 6),
+        delivered_at: at(-2, 11),
+      },
+    ],
+    job_photo_order_items: shopOrderItems,
+  };
+
   return {
     quotes,
+    ...photoShop,
     quote_lines: quoteLines,
     tenant_automatic_emails: [],
     automatic_email_log: [],
@@ -588,5 +656,9 @@ export function buildSeed(): Tables {
     seasons: [],
     categories: [],
     staff: [],
+    expense_category_catalog: EXPENSE_CATALOG.map((c) => ({ ...c })),
+    verticals: expenseVerticals(),
+    expense_categories: seedExpenseCategories(TENANT_ID, 'photographer', at(-200), (n) => id(1500 + n)),
+    expenses: [],
   };
 }

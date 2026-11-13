@@ -8,6 +8,7 @@
  * All people are invented. Prices are ILS in agorot.
  */
 import type { Row, Tables } from '../fakeSupabase';
+import { EXPENSE_CATALOG, expenseVerticals, seedExpenseCategories } from '../expenseCatalog';
 
 export const TENANT_ID = 'd1000000-0000-4000-8000-000000000001';
 export const ADMIN_USER_ID = 'd1000000-0000-4000-8000-00000000a001';
@@ -481,7 +482,9 @@ export function buildSeed(): Tables {
     leads: [],
     waitlist: [],
     expenses: [],
-    expense_categories: [],
+    expense_categories: seedExpenseCategories(TENANT_ID, 'dance-studio', at(-120), (n) => id(1500 + n)),
+    expense_category_catalog: EXPENSE_CATALOG.map((c) => ({ ...c })),
+    verticals: expenseVerticals(),
     audit_log: [],
     notification_log: [],
     tenant_automatic_emails: [],

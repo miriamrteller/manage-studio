@@ -3457,6 +3457,7 @@
         "hostname_missing": "Something went wrong on our side. Remove the address and connect it again.",
         "expired_unactivated": "This address wasn't connected within 30 days. You can connect it again.",
         "opalswift_connects": "We'll connect this address for you.",
+        "turnstile_full": "Your address is ready. We are finishing one last step on our side, and it goes live by itself. Nothing more for you to do.",
         "empty": "Enter an address.",
         "invalid": "That doesn't look like a web address.",
         "too_long": "That address is too long.",

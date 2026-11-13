@@ -12,9 +12,13 @@
  *   never became active.
  * - Removing needs the hostname typed again (checked here, not only in the UI).
  * - The poller calls Cloudflare only for pending rows inside their window.
+ * - A domain goes live only once it is on the Turnstile widget, so sign-in works
+ *   the moment it does. A full widget keeps it waiting ('turnstile_full') and
+ *   alerts the owner once.
  */
 import { checkHostname, type HostnameErrorCode } from "./hostname.ts";
 import type { CfCustomHostname, CloudflareSaas } from "./cloudflare.ts";
+import type { TurnstileHostnames } from "./turnstile.ts";
 
 export const AUTO_CHECK_HOURS = 24;
 export const UNACTIVATED_DELETE_DAYS = 30;
@@ -63,6 +67,10 @@ export interface Deps {
   pollCandidates(): Promise<DomainRow[]>;
   /** Tell the redirect-allowlist sync that the active set changed (step 4). */
   activeDomainsChanged(): Promise<void>;
+  /** The sign-in bot check's hostname list. Null when the app has no Turnstile site key. */
+  turnstile: TurnstileHostnames | null;
+  /** Tell the owner something needs them (Sentry). Never throws. */
+  alert(message: string, tags: Record<string, string>): Promise<void>;
 }
 
 export type ServiceError =
@@ -161,6 +169,34 @@ export async function checkDomain(deps: Deps, row: DomainRow, manual: boolean): 
   }
   const active = cf.status === "active" && cf.ssl?.status === "active";
   const wasActive = row.status === "active";
+  if (active && !wasActive && deps.turnstile) {
+    // Sign-in must work the moment the domain goes live: Turnstile first.
+    let added: Awaited<ReturnType<TurnstileHostnames["add"]>>;
+    try {
+      added = await deps.turnstile.add(row.hostname);
+    } catch {
+      return manual ? { error: "cloudflare_unavailable" } : row;
+    }
+    if (added === "full") {
+      if (row.error_code !== "turnstile_full") {
+        await deps.alert("Turnstile widget is full: a custom domain is waiting to go live", {
+          hostname: row.hostname,
+          tenant_id: row.tenant_id,
+        });
+      }
+      return await deps.updateRow(row.id, {
+        ...windowPatch,
+        ssl_status: cf.ssl?.status ?? null,
+        error_code: "turnstile_full",
+        dns_records: recordsFor(row.hostname, deps.cnameTarget, cf),
+        last_checked_at: now.toISOString(),
+      });
+    }
+  }
+  if (active && wasActive && manual && deps.turnstile) {
+    // "Check now" on a live domain also puts it back on the widget if it went missing.
+    await deps.turnstile.add(row.hostname).catch(() => undefined);
+  }
   if (active) {
     const updated = await deps.updateRow(row.id, {
       status: "active", ssl_status: cf.ssl?.status ?? null, error_code: null,
@@ -200,7 +236,20 @@ export async function removeDomain(deps: Deps, tenantId: string, confirmHostname
   const wasActive = row.status === "active";
   if (wasActive) await deps.setTenantDomain(tenantId, null);
   const updated = await deps.updateRow(row.id, { status: "removed", removed_at: deps.now().toISOString() });
-  if (wasActive) await deps.activeDomainsChanged();
+  if (wasActive) {
+    await deps.activeDomainsChanged();
+    // Free the widget slot. Removal never waits on it; a failure only costs a slot.
+    if (deps.turnstile) {
+      try {
+        await deps.turnstile.remove(row.hostname);
+      } catch {
+        await deps.alert("Could not take a removed custom domain off the Turnstile widget", {
+          hostname: row.hostname,
+          tenant_id: tenantId,
+        });
+      }
+    }
+  }
   return updated;
 }
 

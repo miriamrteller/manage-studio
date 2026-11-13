@@ -19,3 +19,7 @@ All photos are from [Unsplash](https://unsplash.com) and used under the [Unsplas
 | table-setting-gold.webp | [Matt Benson](https://unsplash.com/@mattgyver) | https://unsplash.com/photos/fotUgiCbngk |
 | tlv-aerial.webp | [shraga kopstein](https://unsplash.com/@sfkopstein) | https://unsplash.com/photos/MvwQe5IZDTw |
 | white-flowers.webp | [Jason Leung](https://unsplash.com/@ninjason) | https://unsplash.com/photos/MT0t9xDHXsU |
+
+## Photo shop previews (`shop/`)
+
+`shop/shop-01.webp` … `shop/shop-15.webp` are made from the photos above (same Unsplash License): each one cropped to 480×360, with a "SAMPLE" watermark across it and the line "Demo gallery · in real use, from your SmugMug", saved as small WebP files. In order: sunflowers, white-flowers, flowers-pink, figs, pears, ceramic-mug, table-setting-gold, camera-lens, lenses, jaffa-palm, jaffa-limestone, park, park-path, tlv-aerial, hall-orange. Checked by eye like the originals: no people.
