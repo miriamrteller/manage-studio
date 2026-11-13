@@ -1,5 +1,7 @@
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { personPagePath } from '@/features/people/lib/personPagePath';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
@@ -143,7 +145,15 @@ export default function AdminAppointmentsPage() {
                   </td>
                   <td className="p-2">{row.offering_name ?? '—'}</td>
                   <td className="p-2">
-                    <div>{row.client_name ?? '—'}</div>
+                    <div>
+                      {row.person_id && row.client_name ? (
+                        <Link to={personPagePath(row.person_id)} className="underline">
+                          {row.client_name}
+                        </Link>
+                      ) : (
+                        (row.client_name ?? '—')
+                      )}
+                    </div>
                     <div className="text-gray-500">{row.client_email}</div>
                   </td>
                   <td className="p-2">

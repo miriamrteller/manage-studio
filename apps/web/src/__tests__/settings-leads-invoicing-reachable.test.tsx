@@ -6,8 +6,9 @@
  * Run: pnpm -C apps/web test settings-leads-invoicing-reachable.test.tsx
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import TenantSettingsPage from '@/pages/TenantSettingsPage';
+import LeadSettingsPage from '@/pages/LeadSettingsPage';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
@@ -30,19 +31,18 @@ beforeEach(async () => {
   await setLanguage('en');
 });
 
-const openTab = (name: RegExp) => fireEvent.click(screen.getAllByRole('tab', { name })[0]);
-
 describe('Settings page', () => {
-  it('has a Leads tab with the enquiry form questions and the daily follow-up email', async () => {
-    renderInApp(<TenantSettingsPage />);
-    openTab(/^Leads$/);
+  it('Leads → Enquiry settings has the enquiry form questions and the daily follow-up email', async () => {
+    renderInApp(<LeadSettingsPage />, { path: '/admin/leads/settings' });
     expect(await screen.findByRole('heading', { name: 'Questions on your enquiry form' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Daily follow-up email' })).toBeInTheDocument();
   });
 
   it('the Invoicing tab lets a studio with no tax documents switch them on', () => {
-    renderInApp(<TenantSettingsPage />);
-    openTab(/^Invoicing$/);
+    renderInApp(<TenantSettingsPage />, {
+      path: '/admin/setup/settings',
+      initialEntry: '/admin/setup/settings?tab=invoicing',
+    });
     expect(screen.getByRole('heading', { name: 'Tax documents' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Issue tax documents automatically/ })).not.toBeChecked();
   });

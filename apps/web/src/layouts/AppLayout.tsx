@@ -5,6 +5,7 @@ import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTenant } from '../hooks/useTenant';
 import {
   AppHeader,
+  AreaTabs,
   NavDrawer,
   NavDrawerProvider,
   useNavDrawer,
@@ -58,6 +59,7 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
           className="flex-1 px-4 md:px-8 lg:px-12 xl:px-24 pt-6 md:pt-8 pb-6 md:pb-8"
           role="main"
         >
+          <AreaTabs />
           {children}
         </main>
 

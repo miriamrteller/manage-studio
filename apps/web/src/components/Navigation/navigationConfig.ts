@@ -29,8 +29,6 @@ export {
 export type NavSectionKey =
   | 'browse'
   | 'main'
-  | 'finance'
-  | 'setup'
   | 'platform'
   | 'portal'
   | 'learning'
@@ -38,13 +36,29 @@ export type NavSectionKey =
 
 export type NavTenantFilter = 'bundled' | 'split';
 
+/** One line of the studio admin's menu; its pages are tabs along the top of the page. */
+export type NavAreaKey =
+  | 'home'
+  | 'leads'
+  | 'people'
+  | 'classes'
+  | 'projects'
+  | 'bookings'
+  | 'shop'
+  | 'finance'
+  | 'settings';
+
 export interface NavItem {
   path: string;
   labelKey: string;
   requiredRoles: string[];
   sectionKey: NavSectionKey;
-  /** Indented child item (e.g. setup sub-pages) */
-  indent?: boolean;
+  /** The menu line this page belongs to; pages of one area are its tabs. Omit = its own line. */
+  area?: NavAreaKey;
+  /** Other pages that count as this tab (e.g. sub-pages reached from it). */
+  alsoActiveOn?: string[];
+  /** Only this exact address counts (Home at /admin/setup is not the parent of /admin/setup/…). */
+  exact?: boolean;
   /** Hide item when the named module is disabled for this tenant */
   moduleKey?: keyof PresetModules;
   /** Show only for bundled (grow/icount) vs split (stripe+…) payment setup */
@@ -82,8 +96,6 @@ export interface NavTenantContext {
 export const SECTION_LABELS: Record<NavSectionKey, string> = {
   browse: 'nav.section.browse',
   main: 'nav.section.main',
-  finance: 'nav.section.finance',
-  setup: 'nav.section.setup',
   platform: 'nav.section.platform',
   portal: 'nav.section.portal',
   learning: 'nav.section.learning',
@@ -92,6 +104,30 @@ export const SECTION_LABELS: Record<NavSectionKey, string> = {
 
 /** The studio home with the setup checklist forced open. */
 export const SETUP_GUIDE_PATH = '/admin/setup?guide=open';
+
+/** The Studio settings page's sections, each a tab of Settings (TenantSettingsPage reads ?tab=). */
+export const SETTINGS_TAB_IDS = [
+  'branding',
+  'profile',
+  'business',
+  'features',
+  'locale',
+  'payment',
+  'invoicing',
+  'legal',
+  'security',
+] as const;
+
+export const SETTINGS_PATH = '/admin/setup/settings';
+
+const SETTINGS_TAB_ITEMS: NavItem[] = SETTINGS_TAB_IDS.map((id, index) => ({
+  // The first tab is the page's own address, so the menu line opens it without a ?tab=.
+  path: index === 0 ? SETTINGS_PATH : `${SETTINGS_PATH}?tab=${id}`,
+  labelKey: `settings.tabs.${id}`,
+  requiredRoles: ['tenant_admin'],
+  sectionKey: 'main' as const,
+  area: 'settings' as const,
+}));
 
 /** Authenticated navigation items (flattened; grouped in the drawer) */
 export const navigationConfig: NavItem[] = [
@@ -117,41 +153,109 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.scheduling.clientBooking,
     disableWhenBookingOff: true,
   },
-  // The studio admin's working pages, at the top level (no group to open). Leads first, then the
-  // business's core pages in the order the work flows. Admins do not see the public "Browse" pages.
+  // The studio admin's working pages: one flat menu of areas (no group to open). Each `area` is
+  // one menu line; the pages in it are the tabs along the top of that area (AreaTabs). The menu
+  // line opens the area's first visible page. Order = the order the work flows.
+  {
+    // The studio home with the setup checklist.
+    path: '/admin/setup',
+    labelKey: 'nav.home',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'home',
+    exact: true,
+  },
   {
     path: '/admin/leads',
     labelKey: 'nav.leads',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'leads',
+  },
+  {
+    path: '/admin/leads/get',
+    labelKey: 'pages.crm.tabs.get_leads',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'leads',
+    // The forms and help pages are reached from Get leads.
+    alsoActiveOn: ['/admin/leads/forms', '/admin/leads/help'],
+  },
+  {
+    // The enquiry form questions and the daily email (was Settings > Leads).
+    path: '/admin/leads/settings',
+    labelKey: 'nav.tab.lead_settings',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'leads',
   },
   {
     path: '/admin/students',
     labelKey: 'nav.students',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'people',
   },
   {
     path: '/admin/families',
     labelKey: 'nav.families',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'people',
     // Family accounts (parents pay for children) are a switch; other studios work from Clients.
     needs: 'family_accounts',
   },
   {
-    // The studio's classes (the page that used to sit under Setup as "Manage classes").
     path: '/admin/classes',
     labelKey: 'nav.classes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'classes',
     needs: 'teaches_classes',
+  },
+  {
+    path: '/admin/setup/levels',
+    needs: 'teaches_classes',
+    featureKey: FEATURES.offerings.structure,
+    labelKey: 'nav.levels',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'classes',
+    moduleKey: 'categories',
+  },
+  {
+    path: '/admin/setup/terms',
+    needs: 'teaches_classes',
+    featureKey: FEATURES.offerings.structure,
+    labelKey: 'nav.terms',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'classes',
+    moduleKey: 'scheduling',
+  },
+  {
+    path: '/admin/setup/teachers',
+    needs: 'teaches_classes',
+    labelKey: 'nav.teachers',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'classes',
+  },
+  {
+    // Class cards (was a Settings tab).
+    path: '/admin/classes/cards',
+    needs: 'teaches_classes',
+    labelKey: 'settings.tabs.class_cards',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'classes',
   },
   {
     path: '/admin/jobs',
     labelKey: 'nav.jobs',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'projects',
     needs: 'project',
   },
   {
@@ -159,7 +263,36 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.quotes',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'projects',
     needs: 'project',
+  },
+  {
+    // Bookings: one place for the calendar, packages, hours and booking rules (owner, 13 Nov 2026).
+    path: '/admin/appointments',
+    labelKey: 'nav.tab.calendar',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'bookings',
+    featureKey: FEATURES.scheduling.clientBooking,
+  },
+  {
+    // Packages (photographers and other non-class studios; "Bookable services" otherwise).
+    path: '/admin/packages',
+    labelKey: 'nav.booking_services',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'bookings',
+    featureKey: FEATURES.scheduling.adminBooking,
+  },
+  {
+    // Availability: online booking on/off and its rules, opening hours, blocked times and
+    // Google Calendar, on one tab (owner, 13 Nov 2026: no separate Booking rules).
+    path: '/admin/setup/booking',
+    labelKey: 'nav.tab.availability',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'bookings',
+    featureKey: FEATURES.scheduling.adminBooking,
   },
   {
     // The photo shop: each shoot's photos sold privately to that shoot's client (beta).
@@ -167,101 +300,77 @@ export const navigationConfig: NavItem[] = [
     labelKey: 'nav.photo_shop',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'shop',
     needs: 'project',
     featureKey: FEATURES.billing.photoShop,
   },
   {
     // The studio shop: uniforms and items families buy, collected at the studio (beta).
     path: '/admin/shop',
-    labelKey: 'nav.shop',
+    labelKey: 'nav.tab.studio_shop',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
+    area: 'shop',
     needs: 'teaches_classes',
     featureKey: FEATURES.billing.studioShop,
   },
   {
-    // Packages (photographers and other non-class studios; "Bookable services" otherwise):
-    // a top-level item, not under Setup (owner decision).
-    path: '/admin/packages',
-    labelKey: 'nav.booking_services',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'main',
-    featureKey: FEATURES.scheduling.adminBooking,
-  },
-  {
-    path: '/admin/appointments',
-    labelKey: 'nav.appointments',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'main',
-    featureKey: FEATURES.scheduling.clientBooking,
-  },
-  {
-    path: '/admin/notifications',
-    labelKey: 'nav.notifications',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'main',
-  },
-  {
     path: '/admin/finance',
-    labelKey: 'finance.hub.title',
+    labelKey: 'nav.tab.overview',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'finance',
+    sectionKey: 'main',
+    area: 'finance',
   },
   {
     path: '/admin/finance/payments',
     labelKey: 'finance.payments.title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'finance',
-    indent: true,
+    sectionKey: 'main',
+    area: 'finance',
   },
   {
     path: '/admin/finance/expenses',
     labelKey: 'finance.expenses.title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'finance',
-    indent: true,
+    sectionKey: 'main',
+    area: 'finance',
   },
   {
     path: '/admin/finance/expenses/categories',
     labelKey: 'finance.categories.title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'finance',
-    indent: true,
+    sectionKey: 'main',
+    area: 'finance',
   },
   {
     path: '/admin/finance/import',
     labelKey: 'finance.import.nav_title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'finance',
-    indent: true,
+    sectionKey: 'main',
+    area: 'finance',
   },
   {
-    path: '/admin/setup',
-    labelKey: 'nav.setup_overview',
+    path: '/admin/setup/billing',
+    labelKey: 'nav.billing',
+    featureKey: FEATURES.people.families,
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
+    sectionKey: 'main',
+    area: 'finance',
   },
+  ...SETTINGS_TAB_ITEMS,
   {
-    // Reopens the "Finish setup" checklist on the studio home (see AdminPanel).
-    path: SETUP_GUIDE_PATH,
-    labelKey: 'setup_guide.menu',
+    path: '/admin/setup/waivers',
+    labelKey: 'nav.waivers',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-  },
-  {
-    path: '/admin/setup/settings',
-    labelKey: 'settings.hub.page_title',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
+    sectionKey: 'main',
+    area: 'settings',
   },
   {
     path: '/admin/setup/bundled-payments',
     labelKey: 'settings.bundled.nav_title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
+    sectionKey: 'main',
+    area: 'settings',
     tenantFilter: 'bundled',
     // Class-billing provider setup; still linked from the Settings hub.
     needs: 'teaches_classes',
@@ -270,8 +379,8 @@ export const navigationConfig: NavItem[] = [
     path: '/admin/setup/payments',
     labelKey: 'settings.payments.title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
+    sectionKey: 'main',
+    area: 'settings',
     tenantFilter: 'split',
     /** Stripe dormant — split payment settings only when feature re-enabled (or mock via override). */
     featureKey: FEATURES.billing.stripe,
@@ -280,58 +389,10 @@ export const navigationConfig: NavItem[] = [
     path: '/admin/setup/invoicing',
     labelKey: 'settings.invoicing.title',
     requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
+    sectionKey: 'main',
+    area: 'settings',
     tenantFilter: 'split',
     featureKey: FEATURES.billing.stripe,
-  },
-  {
-    path: '/admin/setup/billing',
-    labelKey: 'nav.billing',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-  },
-  {
-    path: '/admin/setup/levels',
-    needs: 'teaches_classes',
-    labelKey: 'nav.levels',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-    moduleKey: 'categories',
-  },
-  {
-    path: '/admin/setup/terms',
-    needs: 'teaches_classes',
-    labelKey: 'nav.terms',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-    moduleKey: 'scheduling',
-  },
-  {
-    path: '/admin/setup/teachers',
-    needs: 'teaches_classes',
-    labelKey: 'nav.teachers',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-  },
-  {
-    path: '/admin/setup/booking',
-    labelKey: 'nav.booking_settings',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
-    featureKey: FEATURES.scheduling.adminBooking,
-  },
-  {
-    path: '/admin/setup/waivers',
-    labelKey: 'nav.waivers',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'setup',
-    indent: true,
   },
   {
     // The platform home lists the studios; on a studio host "/" is the studio's own home.
@@ -428,8 +489,6 @@ export const publicNavigationConfig: NavItem[] = [
 const SECTION_ORDER: NavSectionKey[] = [
   'browse',
   'main',
-  'finance',
-  'setup',
   'platform',
   'teaching',
   'portal',
@@ -484,15 +543,89 @@ export function resolveActiveNavPath(pathname: string, items: NavItem[]): string
   }
 
   let best: string | null = null;
+  let bestLength = -1;
   for (const item of items) {
-    const { path } = item;
-    if (pathname === path || pathname.startsWith(`${path}/`)) {
-      if (!best || path.length > best.length) {
-        best = path;
+    const base = basePath(item.path);
+    if (pathname === base || (!item.exact && pathname.startsWith(`${base}/`))) {
+      if (base.length > bestLength) {
+        best = item.path;
+        bestLength = base.length;
       }
     }
   }
   return best;
+}
+
+/** The path without its ?query (settings tabs share one page). */
+export function basePath(path: string): string {
+  const q = path.indexOf('?');
+  return q === -1 ? path : path.slice(0, q);
+}
+
+function matchesPath(pathname: string, path: string): number {
+  const base = basePath(path);
+  return pathname === base || pathname.startsWith(`${base}/`) ? base.length : -1;
+}
+
+/**
+ * The tab (page) of an area that the current address belongs to: the longest matching page, its
+ * `alsoActiveOn` pages, and for pages that differ only by ?tab= the one naming the current tab
+ * (or the plain one when the address names none, or a tab not in the list).
+ */
+export function resolveActiveTab(
+  pathname: string,
+  search: string,
+  items: NavItem[],
+): NavItem | null {
+  let best: NavItem[] = [];
+  let bestLength = -1;
+  for (const item of items) {
+    const lengths = [item.path, ...(item.alsoActiveOn ?? [])].map((p) =>
+      item.exact && p === item.path ? (pathname === basePath(p) ? p.length : -1) : matchesPath(pathname, p),
+    );
+    const length = Math.max(...lengths);
+    if (length < 0) continue;
+    if (length > bestLength) {
+      best = [item];
+      bestLength = length;
+    } else if (length === bestLength) {
+      best.push(item);
+    }
+  }
+  if (best.length <= 1) return best[0] ?? null;
+  const tab = new URLSearchParams(search).get('tab');
+  const named = best.find((item) => tab && item.path.endsWith(`?tab=${tab}`));
+  return named ?? best.find((item) => !item.path.includes('?')) ?? best[0];
+}
+
+/** One line of the menu: an area (its pages become tabs) or a single page. */
+export interface NavEntry {
+  key: string;
+  /** Where the line goes: the area's first visible page. */
+  path: string;
+  area?: NavAreaKey;
+  items: NavItem[];
+}
+
+/** Turn a section's pages into menu lines, one per area, in the order the areas first appear. */
+export function groupNavEntries(items: NavItem[]): NavEntry[] {
+  const entries: NavEntry[] = [];
+  const byArea = new Map<NavAreaKey, NavEntry>();
+  for (const item of items) {
+    if (!item.area) {
+      entries.push({ key: item.path, path: item.path, items: [item] });
+      continue;
+    }
+    const existing = byArea.get(item.area);
+    if (existing) {
+      existing.items.push(item);
+    } else {
+      const entry: NavEntry = { key: `area:${item.area}`, path: item.path, area: item.area, items: [item] };
+      byArea.set(item.area, entry);
+      entries.push(entry);
+    }
+  }
+  return entries;
 }
 
 /**
