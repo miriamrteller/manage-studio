@@ -614,7 +614,14 @@
       "no_bookings": "No bookings yet.",
       "projects_section": "Projects",
       "new_project": "New project",
-      "add_client": "Add client"
+      "add_client": "Add client",
+      "no_projects": "No projects yet.",
+      "project_quote": "Quote",
+      "still_to_pay": "Still to pay",
+      "nothing_to_pay": "Nothing",
+      "signed_forms": "Signed forms",
+      "no_signed_forms": "No signed forms yet.",
+      "signed_on": "Signed {{date}}"
     },
     "families": {
       "email_family": "Email this family",

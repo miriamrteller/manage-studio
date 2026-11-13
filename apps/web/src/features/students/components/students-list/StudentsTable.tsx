@@ -70,6 +70,11 @@ export function StudentsTable({
                 {t('pages.students.guardian_column')}
               </th>
             )}
+            {table.getColumn('to_pay')?.getIsVisible() !== false && (
+              <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
+                {t('pages.people.still_to_pay')}
+              </th>
+            )}
             <th className="hidden sm:table-cell px-2 sm:px-3 py-3 text-start font-medium text-gray-700" style={{ width: 120 }}>
               {t('pages.students.notifications_column')}
             </th>

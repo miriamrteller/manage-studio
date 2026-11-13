@@ -1,3 +1,4 @@
+import { formatMinor } from '@/features/jobs/lib/jobPaymentFormat';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -24,6 +25,8 @@ export function useStudentsListColumns({
   familyMap,
   contactPrefsMap,
   jobsByPerson,
+  toPayByPerson,
+  currency,
   openEnrolModal,
   openNewShoot,
   openDetails,
@@ -35,11 +38,14 @@ export function useStudentsListColumns({
   familyMap: Map<string, StudentsListFamily>;
   contactPrefsMap: Map<string, StudentsListContactPrefs>;
   jobsByPerson: Map<string, JobRow[]>;
+  /** Open payment requests on each client's projects (minor units). */
+  toPayByPerson: Map<string, number>;
+  currency: string;
   openEnrolModal: (person: Person) => void;
   openNewShoot: (person?: Person) => void;
   openDetails: (personId: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return useMemo(
     () => [
@@ -119,6 +125,18 @@ export function useStudentsListColumns({
         },
       }),
       columnHelper.accessor('id', {
+        id: 'to_pay',
+        header: t('pages.people.still_to_pay'),
+        cell: ({ row }) => {
+          const open = toPayByPerson.get(row.original.id) ?? 0;
+          return open > 0 ? (
+            <span className="font-medium text-amber-800">{formatMinor(open, currency, i18n.language)}</span>
+          ) : (
+            <span className="text-gray-400 text-xs">—</span>
+          );
+        },
+      }),
+      columnHelper.accessor('id', {
         id: 'notifications',
         header: t('pages.students.notifications_column'),
         cell: ({ row }) => {
@@ -165,6 +183,6 @@ export function useStudentsListColumns({
         size: 160,
       }),
     ],
-    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, withoutClasses, canAdd, jobsByPerson, openNewShoot, openDetails]
+    [t, i18n.language, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, withoutClasses, canAdd, jobsByPerson, toPayByPerson, currency, openNewShoot, openDetails]
   );
 }

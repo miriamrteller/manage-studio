@@ -87,7 +87,8 @@
       "waiver_status_label": "חוזה",
       "detail_title": "פרטי לקוח",
       "projects_section": "צילומים",
-      "new_project": "צילום חדש"
+      "new_project": "צילום חדש",
+      "no_projects": "עדיין אין צילומים."
     },
     "booking_flow": {
       "back_to_portal": "חזרה להזמנות שלי",

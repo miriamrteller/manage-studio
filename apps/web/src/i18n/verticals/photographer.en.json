@@ -87,7 +87,8 @@
       "waiver_status_label": "Contract",
       "detail_title": "Client details",
       "projects_section": "Shoots",
-      "new_project": "New shoot"
+      "new_project": "New shoot",
+      "no_projects": "No shoots yet."
     },
     "booking_flow": {
       "back_to_portal": "Back to my bookings",

@@ -618,7 +618,14 @@
       "no_bookings": "אין עדיין הזמנות.",
       "projects_section": "פרויקטים",
       "new_project": "פרויקט חדש",
-      "add_client": "הוספת לקוח"
+      "add_client": "הוספת לקוח",
+      "no_projects": "עדיין אין פרויקטים.",
+      "project_quote": "הצעת מחיר",
+      "still_to_pay": "נשאר לתשלום",
+      "nothing_to_pay": "אין",
+      "signed_forms": "טפסים חתומים",
+      "no_signed_forms": "עדיין אין טפסים חתומים.",
+      "signed_on": "נחתם ב-{{date}}"
     },
     "families": {
       "email_family": "שליחת מייל למשפחה",
