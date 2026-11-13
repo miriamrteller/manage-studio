@@ -13,10 +13,8 @@ vi.mock('react-i18next', () => ({
 }));
 
 const labelsState = vi.hoisted(() => ({ teachesClasses: true }));
-vi.mock('@/hooks/useEntityLabels', () => ({
-  useEntityLabels: () => ({
-    profile: { paymentFlow: 'recurring', teachesClasses: labelsState.teachesClasses, familyAccounts: true, clientBooking: true },
-  }),
+vi.mock('@/hooks/useWorkModes', () => ({
+  useWorkModes: () => ({ classes: labelsState.teachesClasses, projects: false, appointments: true, families: true }),
 }));
 
 vi.mock('@/features/admin-dashboard/components/OverviewStatsGrid', () => ({

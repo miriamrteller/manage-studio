@@ -1,3 +1,4 @@
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -22,7 +23,8 @@ export function AdminPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { overview, isLoading, error, refetch } = useAdminDashboard();
-  const { labels, modules, vertical } = useEntityLabels();
+  const { labels, modules } = useEntityLabels();
+  const { classes: teachesClasses } = useWorkModes();
   const tenant = useTenant();
   // Class-only cards follow the studio's feature set (owner, 13 Nov 2026): levels and
   // seasons need "Levels, terms and sessions"; billing accounts need family accounts.
@@ -219,14 +221,14 @@ export function AdminPanel() {
               {`${t('common.manage')} ${labels.offering.plural}`}
             </h3>
             <p className="text-sm text-gray-600">
-              {vertical === 'photographer'
+              {!teachesClasses
                 ? t('pages.admin_classes.packages_description')
                 : t('pages.admin_classes.description', { entity: labels.offering.plural })}
             </p>
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate(managePackagesPath(vertical))}
+              onClick={() => navigate(managePackagesPath(teachesClasses))}
               aria-label={t('pages.admin_classes.title')}
             >
               {t('common.manage')} →

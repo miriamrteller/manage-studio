@@ -1,3 +1,4 @@
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProviderLimits } from '@/components/providers/ProviderLimits';
@@ -93,6 +94,8 @@ export function draftOfflineInstructions(
 export function OfflinePaymentsSettingsForm() {
   const { t } = useTranslation();
   const tenant = useTenant();
+  // Projects (Settings › Business), not the business type: the project pay-link note.
+  const { projects } = useWorkModes();
   const hasPayment = useTenantHasPayment(tenant?.id);
   const savedProvider = tenant?.payment_provider ?? 'grow';
   const savedInstructions = tenant?.offline_payment_instructions ?? '';
@@ -274,7 +277,7 @@ export function OfflinePaymentsSettingsForm() {
         </div>
       )}
 
-      {!offline && tenant.vertical === 'photographer' && !jobOnlinePaymentSupported(nextPaymentProvider) && (
+      {!offline && projects && !jobOnlinePaymentSupported(nextPaymentProvider) && (
         <p className="text-sm text-muted-foreground" role="note">
           {t('settings.offline_payments.job_payments_hint')}
         </p>
