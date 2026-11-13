@@ -12,6 +12,7 @@ import { isShootRequest } from '@/features/crm/components/LeadsList';
 import { BlockedTimesEditor } from '@/features/scheduling/components/BlockedTimesEditor';
 import { GoogleCalendarSettings } from '@/features/scheduling/components/GoogleCalendarSettings';
 import { BookingHoursSection } from '@/features/scheduling/components/BookingHoursSection';
+import { BookForClientPanel } from '@/features/scheduling/components/BookForClientPanel';
 import { AppointmentsService, type AppointmentRow } from '@/features/scheduling/appointmentsService';
 import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
 import { AppointmentRowActions } from '@/features/scheduling/components/AppointmentRowActions';
@@ -259,6 +260,10 @@ export default function AdminAppointmentsPage() {
         <h1 className="text-3xl font-bold">{t('scheduling.diary.title')}</h1>
         <p className="text-gray-600">{t('scheduling.diary.subtitle')}</p>
       </header>
+
+      {showHours && (
+        <BookForClientPanel onBooked={() => void queryClient.invalidateQueries({ queryKey: ['appointments'] })} />
+      )}
 
       {requests.length > 0 && (
         <section className="space-y-3" aria-labelledby="diary-requests">

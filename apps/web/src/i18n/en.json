@@ -2917,7 +2917,15 @@
       "past_title_one": "Past ({{count}})",
       "past_title_other": "Past ({{count}})",
       "hours_title": "Booking hours",
-      "hours_hint": "When clients can book a time slot online. It’s already filled in, so open it only to change something."
+      "hours_hint": "When clients can book a time slot online. It’s already filled in, so open it only to change something.",
+      "book_for_client": "Book for a client",
+      "pick_a_time": "Pick a time",
+      "book_at": "Book {{when}}",
+      "booked_for_client": "Booked: {{name}}, {{when}}",
+      "booked_pay_hint": "It is in the Diary below, where you can record a payment. Or send them the pay link.",
+      "copy_pay_link": "Copy pay link",
+      "pay_link_copied": "Pay link copied",
+      "book_another": "Book another"
     }
   },
   "billing": {

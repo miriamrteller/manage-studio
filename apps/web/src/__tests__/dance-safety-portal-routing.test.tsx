@@ -181,6 +181,7 @@ function clientData(): ClientPortalData {
         payment: null,
       },
     ],
+    bookings: [],
   };
 }
 
@@ -288,7 +289,7 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
   });
 
   it('no shoots yet: friendly empty state, still no child setup', () => {
-    portal.client = { self: clientData().self, shoots: [], requests: [] };
+    portal.client = { self: clientData().self, shoots: [], requests: [], bookings: [] };
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
     expect(screen.getByText(baseValue('pages.client_portal.no_shoots'))).toBeInTheDocument();
     expect(screen.queryByText(baseValue('pages.portal.myself_setup_cta'))).toBeNull();
