@@ -21,8 +21,8 @@ describe('Settings page', () => {
   it('has a "Your business" tab that asks how clients work with you', () => {
     // Each section is a tab along the top of Settings, with its own address.
     renderInApp(<TenantSettingsPage />, {
-      path: '/admin/setup/settings',
-      initialEntry: '/admin/setup/settings?tab=business',
+      path: '/admin/settings',
+      initialEntry: '/admin/settings?tab=business',
     });
     expect(screen.getByRole('heading', { name: 'Your business' })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'How do clients work with you?' })).toBeInTheDocument();
@@ -35,8 +35,8 @@ describe('Settings page', () => {
   it('opens straight on it with ?tab=business, in Hebrew too', async () => {
     await setLanguage('he');
     renderInApp(<TenantSettingsPage />, {
-      path: '/admin/setup/settings',
-      initialEntry: '/admin/setup/settings?tab=business',
+      path: '/admin/settings',
+      initialEntry: '/admin/settings?tab=business',
     });
     expect(screen.getByRole('heading', { name: 'העסק שלכם' })).toBeInTheDocument();
   });

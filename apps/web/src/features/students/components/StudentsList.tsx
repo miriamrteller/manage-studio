@@ -40,7 +40,7 @@ import type { Person } from '@shared/schemas';
 export function StudentsList() {
   const { t } = useTranslation();
   const { labels, vertical } = useEntityLabels();
-  // Photographers: this page is "Clients". Bookings are shoots (/admin/jobs),
+  // Photographers: this page is "Clients". Bookings are shoots (/admin/projects),
   // so class/level/family/age/guardian UI and the /enrol flow don't apply.
   const isPhotographer = vertical === 'photographer';
   const navigate = useNavigate();
@@ -142,7 +142,7 @@ export function StudentsList() {
   const openAddAction = () =>
     isPhotographer
       ? openNewShoot()
-      : navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } });
+      : navigate('/enrol', { state: { mode: 'admin', from: '/admin/people' } });
 
   const openEnrolModal = useCallback((person: Person) => {
     const family = person.account_id ? familyMap.get(person.account_id) : undefined;
@@ -236,7 +236,7 @@ export function StudentsList() {
         }
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => navigate('/admin/students/import')}>
+            <Button variant="outline" onClick={() => navigate('/admin/people/import')}>
               {t('clients_import.button')}
             </Button>
             <Button variant="primary" onClick={openAddAction}>

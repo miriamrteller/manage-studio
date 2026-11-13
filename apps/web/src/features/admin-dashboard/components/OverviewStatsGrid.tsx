@@ -52,7 +52,7 @@ export const OverviewStatsGrid = ({
       key: 'term_enrolments' as const,
       label: t('pages.admin.overview.term_enrolments'),
       value: termEnrolments,
-      path: '/admin/students',
+      path: '/admin/people',
     },
     {
       key: 'outstanding_payments' as const,
@@ -64,7 +64,7 @@ export const OverviewStatsGrid = ({
       key: 'admin_review_queue' as const,
       label: t('pages.admin.overview.admin_review_queue'),
       value: adminReviewCount,
-      path: '/admin/students?status=admin_review',
+      path: '/admin/people?status=admin_review',
     },
     {
       key: 'revenue_mtd' as const,

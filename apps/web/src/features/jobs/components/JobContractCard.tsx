@@ -151,7 +151,7 @@ export function JobContractCard({ job }: { job: JobRow }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {t('pages.jobs.contract_merge_hint')}{' '}
-            <Link to="/admin/setup/waivers" className="underline">
+            <Link to="/admin/settings/waivers" className="underline">
               {t('nav.contracts')}
             </Link>
           </p>

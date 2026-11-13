@@ -169,7 +169,7 @@ describe('tags and snippet', () => {
   });
 
   it('Settings shows the snippet and updates it with the campaign', () => {
-    renderAt('/admin/setup/settings', <WebsiteFormSettings />);
+    renderAt('/admin/settings', <WebsiteFormSettings />);
     const code = screen.getByLabelText('settings.website_form.snippet_label') as HTMLTextAreaElement;
     expect(code.value).toContain('/embed/inquire?src=website');
     fireEvent.change(screen.getByLabelText('settings.website_form.campaign_label'), { target: { value: 'flyer' } });

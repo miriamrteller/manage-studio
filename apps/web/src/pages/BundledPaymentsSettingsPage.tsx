@@ -8,7 +8,7 @@ export default function BundledPaymentsSettingsPage() {
   const tenant = useTenant();
 
   if (!tenantUsesBundledPayments(tenant)) {
-    return <Navigate to="/admin/setup/payments" replace />;
+    return <Navigate to="/admin/settings/payments" replace />;
   }
 
   return (

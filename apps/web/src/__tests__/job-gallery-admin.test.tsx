@@ -119,7 +119,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
 
   it('with the photo shop on, the shop and the client view are tabs at the top', () => {
     shop.on = true;
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1?tab=client' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1?tab=client' });
     expect(screen.getAllByRole('tab').map((x) => x.textContent)).toEqual(['Details', 'Photo shop', 'What your client sees']);
     expect(screen.getByText('client view')).toBeTruthy();
     expect(screen.queryByText('payments panel')).toBeNull();
@@ -128,14 +128,14 @@ describe('JobDetail (photographer admin shoot page)', () => {
 
   it('without the photo shop there are no tabs', () => {
     shop.on = false;
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
     expect(screen.getByText('payments panel')).toBeTruthy();
     expect(screen.queryByText('photo shop card')).toBeNull();
   });
 
   it('renders every section heading as a string (Payments heading fixed)', () => {
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     const headings = screen.getAllByRole('heading').map((h) => h.textContent ?? '');
     expect(headings).toContain(baseValue('pages.jobs.payments.title'));
     for (const h of headings) expect(h).not.toMatch(/returned an object|\[object Object\]/);
@@ -145,7 +145,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
   });
 
   it('Open gallery opens the saved link in a new tab, safely, and shows client visibility', () => {
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     const link = screen.getByRole('link', { name: 'Open gallery' });
     expect(link).toHaveAttribute('href', 'https://gallery.example/pat');
     expect(link).toHaveAttribute('target', '_blank');
@@ -155,13 +155,13 @@ describe('JobDetail (photographer admin shoot page)', () => {
 
   it('shows "Visible to the client" once released', () => {
     state.released = true;
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.getByText('Visible to the client')).toBeInTheDocument();
   });
 
   it('is disabled when empty and never links a javascript: URL', () => {
     state.job = job({ gallery_url: null });
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.getByRole('button', { name: 'Open gallery' })).toBeDisabled();
     expect(screen.queryByRole('link', { name: 'Open gallery' })).toBeNull();
 
@@ -175,7 +175,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
 
   it('Hebrew labels', async () => {
     await setLanguage('he');
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.getByRole('link', { name: 'פתיחת הגלריה' })).toBeInTheDocument();
     expect(screen.getAllByRole('heading').map((h) => h.textContent)).toContain('תשלומים');
   });
@@ -189,25 +189,25 @@ describe('JobsList', () => {
   });
 
   it('renders a stacked card per shoot for phones next to the sm+ table', () => {
-    renderInApp(<JobsList />, { path: '/admin/jobs' });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
     const cards = screen.getAllByRole('list').find((l) => l.className.includes('sm:hidden')) as HTMLElement;
     expect(cards).toBeTruthy();
     const card = within(cards).getByRole('listitem');
-    expect(within(card).getByRole('link', { name: 'Pat Client' })).toHaveAttribute('href', '/admin/jobs/e1');
+    expect(within(card).getByRole('link', { name: 'Pat Client' })).toHaveAttribute('href', '/admin/projects/e1');
     expect(within(card).getByText('Wedding Gold')).toBeInTheDocument();
     expect(within(card).getByText('Jaffa Port')).toBeInTheDocument();
     expect(screen.getByRole('table').closest('div')?.className).toContain('hidden sm:block');
   });
 
   it('row gallery link: only for valid links', () => {
-    const first = renderInApp(<JobsList />, { path: '/admin/jobs' });
+    const first = renderInApp(<JobsList />, { path: '/admin/projects' });
     const links = screen.getAllByRole('link', { name: 'Open the gallery for Pat Client' });
     expect(links.length).toBe(2); // card + table row
     for (const l of links) expect(l).toHaveAttribute('rel', 'noopener noreferrer');
     first.unmount();
 
     state.job = job({ gallery_url: 'javascript:alert(1)' });
-    renderInApp(<JobsList />, { path: '/admin/jobs' });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
     expect(screen.queryByRole('link', { name: 'Open the gallery for Pat Client' })).toBeNull();
   });
 });

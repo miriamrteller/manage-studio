@@ -12,7 +12,7 @@ import { useTenantQuery } from '@/hooks/useTenant';
 export default function JobsPage() {
   const { tenant, isLoading } = useTenantQuery();
   if (!isLoading && tenant && tenant.vertical !== 'photographer') {
-    return <Navigate to="/admin/students" replace />;
+    return <Navigate to="/admin/people" replace />;
   }
   return <JobsList />;
 }

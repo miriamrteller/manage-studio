@@ -1,7 +1,7 @@
 import type { JobCreatePrefill } from '../components/JobCreateForm';
 
 /** Where "Add client" / "New shoot" go: the Shoots page with the create form open. */
-export const NEW_SHOOT_PATH = '/admin/jobs';
+export const NEW_SHOOT_PATH = '/admin/projects';
 
 /**
  * Router state for the Shoots page create form. With a client, the form opens

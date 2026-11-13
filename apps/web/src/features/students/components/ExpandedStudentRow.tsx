@@ -121,7 +121,7 @@ export function ExpandedStudentRow({
         ) : !isClient && enrolments.length > 0 ? (
           <EnrolmentSummaryList
             enrolments={enrolments}
-            returnTo="/admin/students"
+            returnTo="/admin/people"
             audience="admin"
             linkContext={{
               studentName: person.name,

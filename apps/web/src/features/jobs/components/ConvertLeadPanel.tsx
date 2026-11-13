@@ -96,7 +96,7 @@ export function ConvertLeadPanel({
             bookedStartsAt,
           });
           if (quoteId) {
-            navigate(`/admin/quotes/${quoteId}`);
+            navigate(`/admin/projects/quotes/${quoteId}`);
             return;
           }
         } catch {
@@ -107,7 +107,7 @@ export function ConvertLeadPanel({
       }
       // Straight into a quote for the new shoot: the studio checks the price, and
       // sending / accepting it emails the client the details and the pay link.
-      navigate(`/admin/quotes/new?engagement=${engagementId}`);
+      navigate(`/admin/projects/quotes/new?engagement=${engagementId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }

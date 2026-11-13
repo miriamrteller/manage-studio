@@ -183,7 +183,7 @@ describe('who is looking', () => {
   it('a studio admin sees the homepage with an "Open your dashboard" link', () => {
     h.roles = ['tenant_admin'];
     renderHome('dance');
-    expect(screen.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute('href', '/admin/setup');
+    expect(screen.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 });

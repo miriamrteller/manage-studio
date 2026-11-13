@@ -48,22 +48,22 @@ export function useVisibleNav() {
       switch (item.path) {
         case '/classes':
           return classLabels.plural;
-        case '/admin/jobs':
+        case '/admin/projects':
           return labels.engagement.plural;
-        case '/admin/students':
+        case '/admin/people':
           // A studio that does not teach classes has Clients, not Students.
           return contactsWord ? labels.contact.plural : t(item.labelKey);
-        case '/admin/packages':
+        case '/admin/bookings/packages':
           return !profile.teachesClasses || vertical === 'photographer'
             ? labels.offering.plural
             : t(item.labelKey);
-        case '/admin/setup/waivers':
+        case '/admin/settings/waivers':
           return vertical === 'photographer' ? t('nav.contracts') : t(item.labelKey);
-        case '/admin/families':
+        case '/admin/people/families':
           return labels.account.plural;
-        case '/admin/setup/levels':
+        case '/admin/classes/levels':
           return labels.category.plural;
-        case '/admin/setup/terms':
+        case '/admin/classes/seasons':
           return labels.season.plural;
         case '/admin/classes':
           // Always class wording (Hebrew: "שיעורים"), never a skin's word such as "Packages".
@@ -95,7 +95,7 @@ export function useVisibleNav() {
         case 'bookings':
           return t('nav.area.bookings');
         case 'shop':
-          return entry.items.length === 1 && first.path === '/admin/photo-shop'
+          return entry.items.length === 1 && first.path === '/admin/shop/photos'
             ? navLabel(first)
             : t('nav.shop');
         case 'finance':

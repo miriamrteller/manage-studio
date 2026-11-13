@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * The Shoots (jobs) page is photographer-only. A dance studio that lands on
- * /admin/jobs (the ballet demo's start page did) gets its Students page, never
+ * /admin/projects (the ballet demo's start page did) gets its Students page, never
  * the photographer jobs list; photographers keep their Shoots page.
  * Run: pnpm -C apps/web test jobs-page-vertical-guard.test.tsx
  */
@@ -20,8 +20,8 @@ vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () =
 
 function renderJobs() {
   return renderInApp(<JobsPage />, {
-    path: '/admin/jobs',
-    extraRoutes: { '/admin/students': <h1>Students page</h1> },
+    path: '/admin/projects',
+    extraRoutes: { '/admin/people': <h1>Students page</h1> },
   });
 }
 
@@ -29,13 +29,13 @@ beforeEach(async () => {
   await setLanguage('en');
 });
 
-describe('/admin/jobs by studio type', () => {
+describe('/admin/projects by studio type', () => {
   it.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])(
     '%s studio goes to its Students page, with no Shoots, quotes or contracts UI',
     (kind) => {
       setTenant(kind);
       renderJobs();
-      expect(screen.getByTestId('location')).toHaveTextContent('/admin/students');
+      expect(screen.getByTestId('location')).toHaveTextContent('/admin/people');
       expect(screen.getByRole('heading', { name: 'Students page' })).toBeInTheDocument();
       expect(document.body).not.toHaveTextContent(/shoot|quote|contract|gallery/i);
     },
@@ -44,7 +44,7 @@ describe('/admin/jobs by studio type', () => {
   it('photographer keeps the Shoots page (unchanged)', () => {
     setTenant('photographer');
     renderJobs();
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/jobs');
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/projects');
     expect(screen.queryByRole('heading', { name: 'Students page' })).not.toBeInTheDocument();
     expect(document.body).toHaveTextContent(/shoot/i);
   });

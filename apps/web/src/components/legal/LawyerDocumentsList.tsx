@@ -123,7 +123,7 @@ export function LawyerDocumentsList({ legal }: { legal: TenantLegalProfile }) {
               {doc === 'signed-forms' ? (
                 <p className="text-sm">
                   {t('legal.lawyer.forms_hint')}{' '}
-                  <Link className="font-medium underline" to="/admin/setup/waivers">
+                  <Link className="font-medium underline" to="/admin/settings/waivers">
                     {t('legal.lawyer.forms_link')}
                   </Link>
                 </p>

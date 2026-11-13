@@ -41,7 +41,7 @@ export function ClassCard({ class: cls, currency }: ClassCardProps) {
     }
 
     if (isAdmin) {
-      navigate(`/admin/students?class=${cls.id}`);
+      navigate(`/admin/people?class=${cls.id}`);
       return;
     }
 

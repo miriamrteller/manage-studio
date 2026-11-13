@@ -239,39 +239,39 @@ describe('menu per vertical', () => {
     ).flatMap((section) => section.items.map((item) => item.path));
 
   const settingsTabs = [
-    '/admin/setup/settings', '/admin/setup/settings?tab=profile', '/admin/setup/settings?tab=business',
-    '/admin/setup/settings?tab=features', '/admin/setup/settings?tab=locale', '/admin/setup/settings?tab=payment',
-    '/admin/setup/settings?tab=invoicing', '/admin/setup/settings?tab=legal', '/admin/setup/settings?tab=security',
+    '/admin/settings', '/admin/settings?tab=profile', '/admin/settings?tab=business',
+    '/admin/settings?tab=features', '/admin/settings?tab=locale', '/admin/settings?tab=payment',
+    '/admin/settings?tab=invoicing', '/admin/settings?tab=legal', '/admin/settings?tab=security',
   ];
   const finance = [
     '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
-    '/admin/finance/import', '/admin/setup/billing',
+    '/admin/finance/import', '/admin/finance/accounts',
   ];
-  const bookings = ['/admin/packages', '/admin/appointments'];
+  const bookings = ['/admin/bookings/packages', '/admin/bookings/diary'];
 
   it('dance admin menu: Home, Leads, Students, Classes, Bookings, Shop, Finance, Settings, each with its pages as tabs', () => {
     expect(paths('dance-studio', ['tenant_admin'])).toEqual([
-      '/admin/setup',
+      '/admin',
       '/admin/leads', '/admin/leads/get', '/admin/leads/settings',
-      '/admin/students', '/admin/families',
-      '/admin/classes', '/admin/setup/levels', '/admin/setup/terms', '/admin/setup/teachers', '/admin/classes/cards',
+      '/admin/people', '/admin/people/families',
+      '/admin/classes', '/admin/classes/levels', '/admin/classes/seasons', '/admin/classes/teachers', '/admin/classes/cards',
       ...bookings,
-      '/admin/shop',
+      '/admin/shop/studio',
       ...finance,
-      ...settingsTabs, '/admin/setup/waivers', '/admin/setup/bundled-payments',
+      ...settingsTabs, '/admin/settings/waivers', '/admin/settings/bundled-payments',
     ]);
   });
 
   it('photographer admin menu: Home, Leads, Clients, Shoots, Bookings, Photo shop, Finance, Settings; no family accounts or bundled payments', () => {
     expect(paths('photographer', ['tenant_admin'])).toEqual([
-      '/admin/setup',
+      '/admin',
       '/admin/leads', '/admin/leads/get', '/admin/leads/settings',
-      '/admin/students',
-      '/admin/jobs', '/admin/quotes',
+      '/admin/people',
+      '/admin/projects', '/admin/projects/quotes',
       ...bookings,
-      '/admin/photo-shop',
+      '/admin/shop/photos',
       ...finance,
-      ...settingsTabs, '/admin/setup/waivers',
+      ...settingsTabs, '/admin/settings/waivers',
     ]);
   });
 

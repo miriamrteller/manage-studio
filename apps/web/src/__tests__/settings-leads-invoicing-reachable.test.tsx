@@ -40,8 +40,8 @@ describe('Settings page', () => {
 
   it('the Invoicing tab lets a studio with no tax documents switch them on', () => {
     renderInApp(<TenantSettingsPage />, {
-      path: '/admin/setup/settings',
-      initialEntry: '/admin/setup/settings?tab=invoicing',
+      path: '/admin/settings',
+      initialEntry: '/admin/settings?tab=invoicing',
     });
     expect(screen.getByRole('heading', { name: 'Tax documents' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Issue tax documents automatically/ })).not.toBeChecked();

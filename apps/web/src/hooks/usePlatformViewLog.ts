@@ -6,7 +6,7 @@ import type { UserProfile } from '@/types/auth';
 const WINDOW_MS = 10 * 60 * 1000;
 const ID_SEGMENT = /^(\d+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
-/** "/admin/students/<uuid>" → "admin-students": the page, never the record. */
+/** "/admin/people/<uuid>" → "admin-students": the page, never the record. */
 export function platformViewArea(pathname: string): string {
   const area = pathname
     .split('/')

@@ -19,7 +19,7 @@ export function PersonBookings({ personId }: { personId: string }) {
     <section className="space-y-2">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold text-gray-700">{t('pages.people.bookings_section')}</h3>
-        <Link to="/admin/appointments" className="text-sm underline">
+        <Link to="/admin/bookings/diary" className="text-sm underline">
           {t('pages.people.open_calendar')}
         </Link>
       </div>

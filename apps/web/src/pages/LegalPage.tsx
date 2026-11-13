@@ -87,7 +87,7 @@ export default function LegalPage() {
           {doc.missing.length > 0 && (
             <p className="mt-1">{t('legal.page.admin_missing_count', { count: doc.missing.length })}</p>
           )}
-          <Link className="underline mt-2 inline-block" to="/admin/setup/settings?tab=legal">
+          <Link className="underline mt-2 inline-block" to="/admin/settings?tab=legal">
             {t('legal.page.admin_edit_link')}
           </Link>
         </div>

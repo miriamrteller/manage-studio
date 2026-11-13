@@ -314,14 +314,14 @@ describe('DashboardRedirectPage', () => {
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/enrol'));
   });
 
-  it('dance: account holder without intent → /dashboard/portal; admin → /admin/setup', async () => {
+  it('dance: account holder without intent → /dashboard/portal; admin → /admin', async () => {
     setTenant('dance');
     const first = run();
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/dashboard/portal'));
     first.unmount();
     auth.user = { ...auth.user, role: ['tenant_admin'] };
     run();
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/admin/setup'));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/admin'));
   });
 
   it('photographer: a class enrolment intent never reaches /enrol — the client goes to the portal', async () => {

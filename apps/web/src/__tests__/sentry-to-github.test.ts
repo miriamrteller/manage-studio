@@ -21,7 +21,7 @@ const issue = {
 const event = {
   tags: [
     { key: 'tenant_id', value: 't-1' },
-    { key: 'route', value: '/admin/jobs/:id' },
+    { key: 'route', value: '/admin/projects/:id' },
     { key: 'release', value: SHA },
   ],
   entries: [
@@ -38,7 +38,7 @@ describe('buildIssue', () => {
     expect(gh.title).toBe('[Sentry] TypeError in src/pages/JobDetailPage.tsx');
     expect(gh.body.startsWith(MARKER('4242'))).toBe(true);
     expect(gh.body).toContain('| Tenant id | t-1 |');
-    expect(gh.body).toContain('| Route | /admin/jobs/:id |');
+    expect(gh.body).toContain('| Route | /admin/projects/:id |');
     expect(gh.body).toContain(`https://github.com/o/r/commit/${SHA}`);
     expect(gh.body).toContain('src/pages/JobDetailPage.tsx:12 in render');
     expect(gh.labels).toEqual(['sentry', 'bug']);
@@ -51,7 +51,7 @@ describe('buildIssue', () => {
       {
         tags: [
           { key: 'tenant', value: 'creativeballet' },
-          { key: 'route', value: '/admin/students/:id?name=Dana' },
+          { key: 'route', value: '/admin/people/:id?name=Dana' },
         ],
         contexts: { feedback: { message: typed, name: 'Ruth Cohen', contact_email: 'ruth@example.com' } },
       },
@@ -63,7 +63,7 @@ describe('buildIssue', () => {
     for (const leak of ['Ruth', 'Dana', 'cannot be saved', 'example.com']) expect(all).not.toContain(leak);
     expect(gh.body).toContain('https://acme.sentry.io/issues/4242/');
     expect(gh.body).toContain('| Studio | creativeballet |');
-    expect(gh.body).toContain('| Route | /admin/students/:id |');
+    expect(gh.body).toContain('| Route | /admin/people/:id |');
   });
 
   it('error issues keep type and culprit but not the event message', () => {

@@ -66,7 +66,7 @@ export const PeopleList = (): React.ReactNode => {
 
         <Button
           variant="primary"
-          onClick={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } })}
+          onClick={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/people' } })}
         >
           {t('pages.people.enrol_button')}
         </Button>
@@ -99,7 +99,7 @@ export const PeopleList = (): React.ReactNode => {
             title={t('pages.people.empty_title')}
             message={t('pages.people.empty_message')}
             actionLabel={t('pages.people.enrol_button')}
-            onAction={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } })}
+            onAction={() => navigate('/enrol', { state: { mode: 'admin', from: '/admin/people' } })}
           />
         ))}
 

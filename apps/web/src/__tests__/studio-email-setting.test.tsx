@@ -79,7 +79,7 @@ describe('studio email', () => {
     await waitFor(() => expect(tick).toBeChecked());
     expect(screen.queryByRole('textbox', { name: 'Business email' })).toBeNull();
     expect(screen.getByText(/If you change your login email, this changes with it/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Change it in Sign-in & security' })).toHaveAttribute('href', '/admin/setup/settings?tab=security');
+    expect(screen.getByRole('link', { name: 'Change it in Sign-in & security' })).toHaveAttribute('href', '/admin/settings?tab=security');
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(h.updates[0]).toEqual({ name: 'Lumen', contact_email: 'owner@login.test' }));
     expect(h.authUpdates).toBe(0);

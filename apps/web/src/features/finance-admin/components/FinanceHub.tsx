@@ -149,7 +149,7 @@ export function FinanceHub() {
                     <td className="px-3 py-2">{row.offering?.name ?? '—'}</td>
                     <td className="px-3 py-2 space-x-2">
                       <Link to={`/enrol/pay/${row.id}`}>{t('finance.hub.link_pay')}</Link>
-                      <Link to="/admin/students">{t('finance.hub.link_students')}</Link>
+                      <Link to="/admin/people">{t('finance.hub.link_students')}</Link>
                     </td>
                   </tr>
                 ))}

@@ -157,7 +157,7 @@ export function ClientImport() {
   return (
     <div className="space-y-8 p-4">
       <section className="space-y-2">
-        <Link to="/admin/students" className="text-sm font-medium text-primary underline">
+        <Link to="/admin/people" className="text-sm font-medium text-primary underline">
           {t('clients_import.back', { noun: labels.contact.plural })}
         </Link>
         <h1 className="text-3xl font-bold">{t('clients_import.title')}</h1>
@@ -375,7 +375,7 @@ export function ClientImport() {
             {result.students > 0 && <li>{t('clients_import.done_students', { count: result.students })}</li>}
             {result.skipped > 0 && <li>{t('clients_import.done_skipped', { count: result.skipped })}</li>}
           </ul>
-          <Link to="/admin/students" className="text-sm font-medium text-primary underline">
+          <Link to="/admin/people" className="text-sm font-medium text-primary underline">
             {t('clients_import.see_clients', { noun: labels.contact.plural })}
           </Link>
         </section>
