@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,7 +52,12 @@ export default function PhotoShopPage() {
           {tab === 'smugmug' && <SmugMugSetting />}
         </TabsContent>
         <TabsContent value="preview" className="pt-4">
-          {tab === 'preview' && <PreviewTab />}
+          {tab === 'preview' && (
+            <PreviewTab
+              shootId={params.get('shoot') ?? ''}
+              onShoot={(id) => setParams(id ? { tab: 'preview', shoot: id } : { tab: 'preview' }, { replace: true })}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -94,10 +99,10 @@ function Overview({ onGo }: { onGo: (tab: Tab) => void }) {
   );
 }
 
-function PreviewTab() {
+/** The shoot comes from the address (?shoot=), so "See it as your client" on a shoot opens it ready. */
+function PreviewTab({ shootId, onShoot }: { shootId: string; onShoot: (id: string) => void }) {
   const { t, i18n } = useTranslation();
   const { jobs } = useJobs();
-  const [shootId, setShootId] = useState('');
   const shoots = jobs.filter((j) => j.job_status !== 'cancelled');
   const date = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-GB') : '';
@@ -113,7 +118,7 @@ function PreviewTab() {
           id="photo-shop-preview-shoot"
           className="w-full rounded-md border border-gray-300 p-2 text-sm sm:w-96"
           value={shootId}
-          onChange={(e) => setShootId(e.target.value)}
+          onChange={(e) => onShoot(e.target.value)}
         >
           <option value="">{t('photo_shop_admin.preview.choose')}</option>
           {shoots.map((j) => (

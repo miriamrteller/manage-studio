@@ -35,8 +35,10 @@ export function ClientPhotoShop({ engagementId, caption }: { engagementId: strin
 }
 
 /**
- * Photo shop → Preview: the studio sees a shoot's shop as its client does, with buying
- * switched off. Sample photos while the shoot's gallery isn't ready.
+ * Photo shop → Preview: the studio sees a shoot's shop exactly as its client does and can
+ * pick photos, see the total and press the buttons. Only placing the order is skipped,
+ * because a real order would land on the client's record and ask them to pay.
+ * Sample photos while the shoot's gallery isn't ready.
  */
 export function PhotoShopPreview({ engagementId }: { engagementId: string }) {
   const { t } = useTranslation();
@@ -79,7 +81,7 @@ function ShopBody({
   engagementId: string;
   data: ClientPhotoGallery;
   caption?: ReactNode;
-  /** The studio's preview: everything the client sees, but nothing can be added or bought. */
+  /** The studio's preview: everything works as for the client, but no order is placed. */
   preview?: boolean;
 }) {
   const { t, i18n } = useTranslation();
@@ -89,6 +91,8 @@ function ShopBody({
   const termsId = useId();
   const [cart, setCart] = useState<Set<string>>(new Set());
   const [doneMessage, setDoneMessage] = useState<'free' | 'cash' | null>(null);
+  // Preview: what would have happened, instead of placing an order.
+  const [tried, setTried] = useState<'card' | 'cash' | 'free' | null>(null);
   // Card is the usual way; cash lets the client send the order in and pay the studio later.
   const [payBy, setPayBy] = useState<PhotoPayBy>('card');
   const payById = useId();
@@ -128,13 +132,24 @@ function ShopBody({
     },
   });
 
-  const toggle = (key: string) =>
+  const place = (allPhotos: boolean) => {
+    if (!preview) {
+      order.mutate(allPhotos);
+      return;
+    }
+    const minor = allPhotos ? allTotal.totalMinor : total.totalMinor;
+    setTried(minor <= 0 ? 'free' : payBy);
+  };
+
+  const toggle = (key: string) => {
+    setTried(null);
     setCart((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
+  };
 
   const orderError = order.error instanceof ClientPhotoShopError ? order.error.code : order.error ? 'server_error' : null;
 
@@ -159,6 +174,17 @@ function ShopBody({
       </div>
 
       <ClientPhotoOrders orders={shop.orders} />
+
+      {tried && (
+        <p role="status" className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          {t('photo_shop_admin.preview.tried')}{' '}
+          {tried === 'card'
+            ? t('photo_shop_admin.preview.tried_card')
+            : t('photo_shop_admin.preview.tried_shows', {
+                message: t(tried === 'cash' ? 'pages.client_portal.photo_shop.ordered_cash' : 'pages.client_portal.photo_shop.ordered_free'),
+              })}
+        </p>
+      )}
 
       {doneMessage && (
         <p role="status" className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
@@ -191,7 +217,7 @@ function ShopBody({
                 ) : isCashOrdered ? (
                   <Badge variant="secondary">{t('pages.client_portal.photo_shop.cash_ordered')}</Badge>
                 ) : (
-                  shop.open && !preview && (
+                  shop.open && (
                     <Button
                       size="sm"
                       variant={inCart ? 'primary' : 'outline'}
@@ -211,7 +237,7 @@ function ShopBody({
         })}
       </ul>
 
-      {shop.open && !preview && available.length > 0 && (
+      {shop.open && available.length > 0 && (
         <div className="space-y-3 rounded-md border bg-gray-50 p-3" aria-live="polite">
           <p className="text-sm">
             {t('pages.client_portal.photo_shop.cart_count', { count: cart.size })}
@@ -230,11 +256,11 @@ function ShopBody({
             <legend className="font-medium" id={payById}>{t('pages.client_portal.photo_shop.pay_how')}</legend>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2">
-                <input type="radio" name={payById} value="card" checked={payBy === 'card'} onChange={() => setPayBy('card')} />
+                <input type="radio" name={payById} value="card" checked={payBy === 'card'} onChange={() => { setPayBy('card'); setTried(null); }} />
                 {t('pages.client_portal.photo_shop.pay_card')}
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name={payById} value="cash" checked={payBy === 'cash'} onChange={() => setPayBy('cash')} />
+                <input type="radio" name={payById} value="cash" checked={payBy === 'cash'} onChange={() => { setPayBy('cash'); setTried(null); }} />
                 {t('pages.client_portal.photo_shop.pay_cash')}
               </label>
             </div>
@@ -246,7 +272,7 @@ function ShopBody({
               disabled={total.problem !== null}
               isLoading={order.isPending && order.variables === false}
               aria-describedby={termsId}
-              onClick={() => order.mutate(false)}
+              onClick={() => place(false)}
             >
               {total.totalMinor <= 0
                 ? t('pages.client_portal.photo_shop.take_free')
@@ -259,7 +285,7 @@ function ShopBody({
                 variant={suggestAll ? 'primary' : 'outline'}
                 isLoading={order.isPending && order.variables === true}
                 aria-describedby={termsId}
-                onClick={() => order.mutate(true)}
+                onClick={() => place(true)}
               >
                 {payBy === 'cash' && allTotal.totalMinor > 0
                   ? t('pages.client_portal.photo_shop.buy_all_cash', { count: available.length, price: money(allTotal.totalMinor) })
