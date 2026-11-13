@@ -41,7 +41,7 @@ function GoogleCalendarCallbackPage() {
     // OAuth codes are single-use. React Strict Mode remounts must share one exchange.
     const successKey = `${STORAGE_PREFIX}${code}`;
     if (sessionStorage.getItem(successKey) === 'ok') {
-      navigate('/admin/setup/booking', { replace: true });
+      navigate('/admin/appointments', { replace: true });
       return;
     }
 
@@ -58,7 +58,7 @@ function GoogleCalendarCallbackPage() {
     }
 
     exchange
-      .then(() => navigate('/admin/setup/booking', { replace: true }))
+      .then(() => navigate('/admin/appointments', { replace: true }))
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, [searchParams, navigate]);
 

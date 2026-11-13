@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Settings "Your business": the payment flow and the three switches save through the audited
- * setter, and switching classes off only informs (never refuses).
+ * Settings "Your business": "How do clients work with you?" (Classes / Projects / Appointments,
+ * with "Parents pay for children" under Classes) saves through the audited setter, and switching
+ * classes off only informs (never refuses).
  * Run: pnpm -C apps/web test business-settings.test.tsx
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -44,8 +45,10 @@ describe('BusinessSettings', () => {
   it('shows the studio\'s current choices and starts with nothing to save', () => {
     tenantState.profile = profile();
     wrap();
-    expect(screen.getByRole('radio', { name: 'settings.business.flow_recurring' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /settings.business.classes_label/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /work_classes_label/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /work_projects_label/ })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /work_appointments_label/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /families_label/ })).toBeChecked();
     expect(screen.getByRole('button', { name: 'settings.business.save' })).toBeDisabled();
   });
 
@@ -53,16 +56,37 @@ describe('BusinessSettings', () => {
     tenantState.profile = profile({ teachesClasses: false, familyAccounts: false });
     rpc.mockResolvedValue({ error: null });
     wrap();
-    fireEvent.click(screen.getByRole('radio', { name: 'settings.business.flow_both' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: /settings.business.families_label/ }));
+    // Families only show under Classes.
+    expect(screen.queryByRole('checkbox', { name: /families_label/ })).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: /work_projects_label/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /work_classes_label/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /families_label/ }));
     fireEvent.click(screen.getByRole('button', { name: 'settings.business.save' }));
     await waitFor(() =>
       expect(rpc).toHaveBeenCalledWith('set_business_profile', {
         p_tenant_id: 'tenant-1',
         p_payment_flow: 'both',
-        p_teaches_classes: false,
+        p_teaches_classes: true,
         p_family_accounts: true,
         p_client_booking: true,
+      }),
+    );
+  });
+
+  it('a photographer: Projects only saves the project flow, no classes, families or slots', async () => {
+    tenantState.profile = profile({ paymentFlow: 'project', teachesClasses: false, familyAccounts: false });
+    rpc.mockResolvedValue({ error: null });
+    wrap();
+    expect(screen.getByRole('checkbox', { name: /work_projects_label/ })).toBeChecked();
+    fireEvent.click(screen.getByRole('checkbox', { name: /work_appointments_label/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'settings.business.save' }));
+    await waitFor(() =>
+      expect(rpc).toHaveBeenCalledWith('set_business_profile', {
+        p_tenant_id: 'tenant-1',
+        p_payment_flow: 'project',
+        p_teaches_classes: false,
+        p_family_accounts: false,
+        p_client_booking: false,
       }),
     );
   });
@@ -72,7 +96,7 @@ describe('BusinessSettings', () => {
     countResult.count = 3;
     rpc.mockResolvedValue({ error: null });
     wrap();
-    fireEvent.click(screen.getByRole('checkbox', { name: /settings.business.classes_label/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /work_classes_label/ }));
     fireEvent.click(screen.getByRole('button', { name: 'settings.business.save' }));
     expect(await screen.findByText('settings.business.classes_off_notice:3')).toBeTruthy();
     expect(rpc).toHaveBeenCalledTimes(1);
@@ -84,7 +108,7 @@ describe('BusinessSettings', () => {
     tenantState.profile = profile();
     rpc.mockResolvedValueOnce({ error: null });
     wrap();
-    fireEvent.click(screen.getByRole('checkbox', { name: /settings.business.classes_label/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /work_classes_label/ }));
     fireEvent.click(screen.getByRole('button', { name: 'settings.business.save' }));
     await waitFor(() => expect(rpc).toHaveBeenCalled());
     expect(screen.queryByRole('status')).toBeNull();
@@ -98,7 +122,7 @@ describe('BusinessSettings', () => {
     const health = screen.getByRole('checkbox', { name: 'settings.business.health_label' });
     expect(health).toBeChecked();
     expect(screen.getByText('studio_setup.filled_for_you')).toBeTruthy();
-    fireEvent.click(screen.getByRole('checkbox', { name: /settings.business.booking_label/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /work_appointments_label/ }));
     fireEvent.click(screen.getByRole('button', { name: 'settings.business.save' }));
     await waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
     expect(rpc.mock.calls[0][1]).not.toHaveProperty('p_health_declaration');

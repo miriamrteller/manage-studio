@@ -65,6 +65,8 @@ export interface NavItem {
   tenantFilter?: NavTenantFilter;
   /** Hide item unless the tenant has this feature flag enabled */
   featureKey?: FeatureKey;
+  /** Hide item unless the tenant has at least one of these features. */
+  anyFeatureKeys?: FeatureKey[];
   /**
    * Grey the item out (still visible, not clickable) while the tenant has
    * online booking turned off in Booking Settings. Only takes effect when the
@@ -267,32 +269,24 @@ export const navigationConfig: NavItem[] = [
     needs: 'project',
   },
   {
-    // Bookings: one place for the calendar, packages, hours and booking rules (owner, 13 Nov 2026).
-    path: '/admin/appointments',
-    labelKey: 'nav.tab.calendar',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'main',
-    area: 'bookings',
-    featureKey: FEATURES.scheduling.clientBooking,
-  },
-  {
-    // Packages (photographers and other non-class studios; "Bookable services" otherwise).
+    // Bookings, for every studio (owner, 13 Nov 2026): Packages first, so a package can be added
+    // straight away with no settings; Projects (quotes) and Appointments (time slots) sell them.
     path: '/admin/packages',
     labelKey: 'nav.booking_services',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'bookings',
-    featureKey: FEATURES.scheduling.adminBooking,
+    anyFeatureKeys: [FEATURES.billing.quotes, FEATURES.scheduling.adminBooking],
   },
   {
-    // Availability: online booking on/off and its rules, opening hours, blocked times and
-    // Google Calendar, on one tab (owner, 13 Nov 2026: no separate Booking rules).
-    path: '/admin/setup/booking',
-    labelKey: 'nav.tab.availability',
+    // The Diary: booked shoots and appointments, requests to confirm, days off, Google Calendar,
+    // and (Appointments only) the booking hours, folded. Replaces Calendar and Availability.
+    path: '/admin/appointments',
+    labelKey: 'nav.tab.diary',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'bookings',
-    featureKey: FEATURES.scheduling.adminBooking,
+    anyFeatureKeys: [FEATURES.billing.quotes, FEATURES.scheduling.clientBooking],
   },
   {
     // The photo shop: each shoot's photos sold privately to that shoot's client (beta).

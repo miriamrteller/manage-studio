@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { FeatureKey } from '@shared/index';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useTenantQuery } from '@/hooks/useTenant';
 import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { useNavItems } from './useNavItems';
@@ -18,13 +17,8 @@ export function useVisibleNav() {
   const { user } = useCurrentUser();
   const { labels, classLabels, modules, vertical, profile } = useEntityLabels();
   const { tenant, isLoading: tenantLoading } = useTenantQuery();
-  const { hasFeature } = useFeatureGate();
-  // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
-  // (enabled_features), so client-facing items like booking show for guests too.
-  const hasFeatureResolved = useCallback(
-    (key: FeatureKey) => hasFeature(key) || (tenant?.enabled_features?.includes(key) ?? false),
-    [hasFeature, tenant],
-  );
+  // The same check the pages use (useHasFeature), so a tab never opens on a dead end.
+  const { hasFeature: hasFeatureResolved } = useHasFeature();
 
   const { sections, isAuthenticated } = useNavItems({
     userRoles: user?.role ?? null,
