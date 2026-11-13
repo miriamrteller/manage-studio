@@ -711,7 +711,10 @@
         "delete_failed": "The lead couldn't be deleted. Please try again.",
         "delete_blocked_converted": "This lead became a client, so it can't be deleted.",
         "delete_blocked_has_quote_or_job": "This lead has a quote or a job. Delete those first.",
-        "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page."
+        "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page.",
+        "shoot_request": "Shoot request: {{day}}",
+        "confirm_shoot": "Confirm",
+        "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit."
       },
       "named_forms": {
         "title": "Forms",
@@ -2774,7 +2777,25 @@
       "duration_mins": "{{count}} minutes",
       "add_to_google_calendar": "Add to Google Calendar",
       "download_calendar_file": "Download calendar file (.ics)",
-      "calendar_event_description": "Appointment at {{schoolName}}"
+      "calendar_event_description": "Appointment at {{schoolName}}",
+      "request_title": "Request a shoot",
+      "request_intro": "Choose a package and a day. Nothing is charged now. {{studio}} will confirm the date and email you the details and how to pay.",
+      "request_intro_generic": "Choose a package and a day. Nothing is charged now. The photographer will confirm the date and email you the details and how to pay.",
+      "request_choose_package": "Choose a package",
+      "request_choose_day": "Choose a day",
+      "request_day_hint": "Greyed-out days are already taken.",
+      "request_prev_month": "Previous month",
+      "request_next_month": "Next month",
+      "request_day_taken": "Taken",
+      "request_selected_day": "Day: {{day}}",
+      "request_message": "Anything the photographer should know (optional)",
+      "request_message_placeholder": "For example where you would like the shoot, or a time that suits you.",
+      "request_send": "Send request",
+      "request_sent_title": "Request sent",
+      "request_sent_message": "Thank you. Nothing has been charged. {{studio}} will confirm {{day}} and email you the details and how to pay.",
+      "request_sent_message_generic": "Thank you. Nothing has been charged. The photographer will confirm {{day}} and email you the details and how to pay.",
+      "request_error": "Your request could not be sent. Please try again.",
+      "request_date_in_past": "That day has passed. Please choose another day."
     },
     "appointments": {
       "title": "Appointments",
