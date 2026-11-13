@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import type { FinancePeriodKey } from '@shared/schemas';
 import { parseFinancePeriodKey } from '../lib/periods';
 
@@ -14,10 +14,9 @@ const PERIOD_OPTIONS: FinancePeriodKey[] = [
 
 export function FinancePeriodSelector() {
   const { t } = useTranslation();
-  const { vertical } = useEntityLabels();
-  // Photographers have no terms/seasons: the season option is hidden.
-  const options =
-    vertical === 'photographer' ? PERIOD_OPTIONS.filter((key) => key !== 'season_active') : PERIOD_OPTIONS;
+  const { classes } = useWorkModes();
+  // Seasons are part of Classes: without Classes the season option is hidden.
+  const options = classes ? PERIOD_OPTIONS : PERIOD_OPTIONS.filter((key) => key !== 'season_active');
   const [searchParams, setSearchParams] = useSearchParams();
   const period = parseFinancePeriodKey(searchParams.get('period'));
 

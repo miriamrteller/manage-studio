@@ -1,3 +1,4 @@
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +37,8 @@ function formatMoney(amountMinor: number, currency: string): string {
 
 export function ParentPortal() {
   const tenant = useTenant();
+  // "Add child" only when parents pay for children (Settings › Business).
+  const { families } = useWorkModes();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -239,9 +242,11 @@ export function ParentPortal() {
               onChange={setSelectedEnrolmentStatuses}
               className="min-w-48"
             />
-            <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
-              {t('pages.portal.add_child')}
-            </Button>
+            {families && (
+              <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
+                {t('pages.portal.add_child')}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -249,9 +254,11 @@ export function ParentPortal() {
           <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
             <p>{t('pages.portal.no_children')}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button variant="outline" onClick={() => setShowAddChild(true)}>
-                {t('pages.portal.add_child')}
-              </Button>
+              {families && (
+                <Button variant="outline" onClick={() => setShowAddChild(true)}>
+                  {t('pages.portal.add_child')}
+                </Button>
+              )}
               <Button variant="primary" onClick={() => navigate('/enrol')}>
                 {t('pages.portal.enrol_new')}
               </Button>

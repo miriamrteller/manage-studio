@@ -15,7 +15,7 @@ import { ExpandedStudentRow } from '../ExpandedStudentRow';
 /** The Students table: sortable headers, rows, and the expanded detail row. */
 export function StudentsTable({
   table,
-  isPhotographer,
+  withoutClasses,
   sortField,
   sortOrder,
   onSort,
@@ -26,7 +26,7 @@ export function StudentsTable({
   onEnrol,
 }: {
   table: Table<Person>;
-  isPhotographer: boolean;
+  withoutClasses: boolean;
   sortField: PersonSortField;
   sortOrder: 'asc' | 'desc';
   onSort: (field: PersonSortField) => void;
@@ -34,7 +34,7 @@ export function StudentsTable({
   familyMap: Map<string, StudentsListFamily>;
   contactPrefsMap: Map<string, StudentsListContactPrefs>;
   jobsByPerson: Map<string, JobRow[]>;
-  onEnrol: (person: Person) => void;
+  onEnrol?: (person: Person) => void;
 }) {
   const { t } = useTranslation();
 
@@ -53,22 +53,22 @@ export function StudentsTable({
               className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
             />
             <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
-              {t('pages.students.classes_column')}
+              {withoutClasses ? t('pages.people.projects_section') : t('pages.students.classes_column')}
             </th>
-            {!isPhotographer && (
-              <>
-                <SortableHeader
-                  label={t('pages.people.age_label')}
-                  sortKey="date_of_birth"
-                  currentField={sortField}
-                  currentOrder={sortOrder}
-                  onSort={onSort}
-                  className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
-                />
-                <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
-                  {t('pages.students.guardian_column')}
-                </th>
-              </>
+            {table.getColumn('date_of_birth')?.getIsVisible() !== false && (
+              <SortableHeader
+                label={t('pages.people.age_label')}
+                sortKey="date_of_birth"
+                currentField={sortField}
+                currentOrder={sortOrder}
+                onSort={onSort}
+                className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
+              />
+            )}
+            {table.getColumn('guardian')?.getIsVisible() !== false && (
+              <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
+                {t('pages.students.guardian_column')}
+              </th>
             )}
             <th className="hidden sm:table-cell px-2 sm:px-3 py-3 text-start font-medium text-gray-700" style={{ width: 120 }}>
               {t('pages.students.notifications_column')}
@@ -103,7 +103,7 @@ export function StudentsTable({
                       familyMap={familyMap}
                       contactPrefsMap={contactPrefsMap}
                       onEnrol={onEnrol}
-                      shoots={isPhotographer ? jobsByPerson.get(row.original.id) ?? [] : undefined}
+                      shoots={withoutClasses ? jobsByPerson.get(row.original.id) ?? [] : undefined}
                     />
                   </td>
                 </tr>

@@ -12,6 +12,7 @@ import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
 import { PlatformOwnerNotice, SupportAccessBanner, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
 import { isSupportLogin } from '@/lib/supportAccess';
 import { SetPasswordPrompt } from '@/features/auth/components/SetPasswordPrompt';
+import { HiddenPageGuard } from './HiddenPageGuard';
 
 /**
  * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
@@ -80,7 +81,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
     return (
       <>
         <SupportAccessBanner />
-        {children}
+        <HiddenPageGuard>{children}</HiddenPageGuard>
       </>
     );
   }
@@ -92,7 +93,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   return (
     <MfaChallengeGate>
       <PlatformTermsGate>
-        {children}
+        <HiddenPageGuard>{children}</HiddenPageGuard>
         <SetPasswordPrompt />
       </PlatformTermsGate>
     </MfaChallengeGate>

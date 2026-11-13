@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
 import { ClientShootList } from '@/features/jobs/components/ClientShootList';
 import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
@@ -61,15 +61,22 @@ export function StudentSlideOver({
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // Photographers: a client's bookings are shoots (/admin/projects), and there's
-  // no class enrolment, age review or guardian/family record.
-  const { vertical, profile } = useEntityLabels();
-  const isPhotographer = vertical === 'photographer';
-  const { jobs } = useJobs({ enabled: isPhotographer });
+  // What the page shows follows "How do clients work with you?" (owner, 13 Nov 2026):
+  // projects with Projects, classes (age, class cards, enrol) with Classes, the family with
+  // Parents pay for children, bookings with Appointments. A studio can have several.
+  const modes = useWorkModes();
+  const { jobs } = useJobs({ enabled: modes.projects });
   const clientShoots = jobs.filter((job) => job.person_id === personId);
+  const shootIds = new Set(clientShoots.map((job) => job.engagement_id));
 
   const { person, family, guardian, members, contactPrefs, enrolments, engagementRecords, offerings, payments, isLoading, error } =
     useStudentDetail(personId);
+  // Class enrolments only: projects and bookings have their own sections.
+  const classEngagements = engagementRecords.filter(
+    (engagement) =>
+      !shootIds.has(engagement.id) &&
+      (offerings.find((item) => item.id === engagement.offering_id)?.offering_type ?? 'class') === 'class',
+  );
 
   const [recordingEngagementId, setRecordingEngagementId] = useState<string | null>(null);
   const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
@@ -167,7 +174,7 @@ export function StudentSlideOver({
             ) : (
               <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
             )}
-            {!isPhotographer && age !== undefined && age !== null && (
+            {modes.classes && age !== undefined && age !== null && (
               <p className="text-sm text-gray-500">
                 {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
                 {dobSuffix}
@@ -272,11 +279,11 @@ export function StudentSlideOver({
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-              {/* ── 2. Enrolments (photographer: shoots) ── */}
-              {isPhotographer ? (
+              {/* ── 2. Projects ── */}
+              {modes.projects && (
                 <section className="space-y-2">
                   <div className="flex flex-wrap justify-between items-center gap-2">
-                    <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
+                    <h3 className="font-semibold text-gray-700">{t('pages.people.projects_section')}</h3>
                     <Button
                       variant="primary"
                       size="sm"
@@ -286,12 +293,15 @@ export function StudentSlideOver({
                         })
                       }
                     >
-                      {t('pages.students.enrol_button')}
+                      {t('pages.people.new_project')}
                     </Button>
                   </div>
                   <ClientShootList jobs={clientShoots} />
                 </section>
-              ) : (
+              )}
+
+              {/* ── 3. Classes ── */}
+              {modes.classes && (
                 <section className="space-y-2">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
@@ -299,11 +309,11 @@ export function StudentSlideOver({
                       {t('pages.students.enrol_button')}
                     </Button>
                   </div>
-                  {enrolments.length === 0 ? (
+                  {classEngagements.length === 0 ? (
                     <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
                   ) : (
                     <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
-                      {engagementRecords.map((engagement) => {
+                      {classEngagements.map((engagement) => {
                         const summary = enrolments.find((entry) => entry.id === engagement.id);
                         const className = summary?.className ?? engagement.offering_id;
                         const offering = offerings.find((item) => item.id === engagement.offering_id);
@@ -394,13 +404,13 @@ export function StudentSlideOver({
                 </section>
               )}
 
-              {!isPhotographer && <PersonClassCards personId={person.id} />}
+              {modes.classes && <PersonClassCards personId={person.id} />}
 
-              {!isPhotographer && (
+              {modes.families && (
                 <>
                   <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-                  {/* ── 3. Guardian / Family ── */}
+                  {/* ── 4. Guardian / Family ── */}
                   <section className="space-y-2">
                     <div className="flex justify-between items-center">
                       <h3 className="font-semibold text-gray-700">
@@ -515,10 +525,10 @@ export function StudentSlideOver({
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-              {/* ── Bookings (appointment businesses; a photographer's bookings are the shoots above) ── */}
-              {profile.clientBooking && !isPhotographer && (
+              {/* ── Bookings (Appointments; projects are listed above, not again here) ── */}
+              {modes.appointments && (
                 <>
-                  <PersonBookings personId={personId} />
+                  <PersonBookings personId={personId} excludeIds={shootIds} />
                   <hr style={{ borderColor: 'var(--color-border-default)' }} />
                 </>
               )}
@@ -666,7 +676,7 @@ export function StudentSlideOver({
         />
       )}
 
-      {person && !isPhotographer && (
+      {person && modes.classes && (
         <AdminEnrolStudentModal
           isOpen={enrolModalOpen}
           personId={personId}

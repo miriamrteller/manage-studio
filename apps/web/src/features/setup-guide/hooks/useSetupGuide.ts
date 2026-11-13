@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/hooks/useTenant';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import {
   buildSetupRows,
   EMPTY_FACTS,
@@ -71,22 +72,21 @@ async function countPaid(tenantId: string): Promise<number> {
 export function useSetupFacts(): { facts: SetupFacts; isLoading: boolean } {
   const tenant = useTenant();
   const tenantId = tenant?.id;
-  const vertical = tenant?.vertical;
+  const { classes, projects } = useWorkModes();
 
   const query = useQuery({
-    queryKey: ['setup-guide-facts', tenantId, vertical],
+    queryKey: ['setup-guide-facts', tenantId, classes, projects],
     enabled: !!tenantId,
     staleTime: 30 * 1000,
     queryFn: async (): Promise<Omit<SetupFacts, 'hasLogo' | 'paymentsReady' | 'onlinePayments' | 'paymentsConnected'> & { legalPublished: boolean }> => {
       const id = tenantId!;
-      const dance = vertical === 'dance-studio';
       const [levels, seasons, offerings, enrolments, leads, quotes, legal, paidClients] = await Promise.all([
-        dance ? count('categories', id) : Promise.resolve(0),
-        dance ? count('seasons', id) : Promise.resolve(0),
+        classes ? count('categories', id) : Promise.resolve(0),
+        classes ? count('seasons', id) : Promise.resolve(0),
         count('offerings', id, true),
-        dance ? count('engagements', id) : Promise.resolve(0),
+        classes ? count('engagements', id) : Promise.resolve(0),
         count('leads', id),
-        vertical === 'photographer' ? count('quotes', id) : Promise.resolve(0),
+        projects ? count('quotes', id) : Promise.resolve(0),
         supabase.rpc('get_tenant_legal_profile', { p_tenant_id: id }),
         countPaid(id),
       ]);
@@ -142,6 +142,7 @@ export function useSetupGuide(): SetupGuide {
   const tenant = useTenant();
   const tenantId = tenant?.id;
   const { facts, isLoading } = useSetupFacts();
+  const modes = useWorkModes();
   const [saved, setSaved] = useState<Saved>(() => load(tenantId));
   // Opened from the menu: stays visible this visit even when everything is done.
   const [pinned, setPinned] = useState(false);
@@ -161,7 +162,7 @@ export function useSetupGuide(): SetupGuide {
     [tenantId],
   );
 
-  const rows = buildSetupRows(tenant?.vertical, facts);
+  const rows = buildSetupRows(tenant?.vertical, facts, modes);
   const progress = setupProgress(rows, saved.skipped);
   const close = useCallback(() => {
     setPinned(false);

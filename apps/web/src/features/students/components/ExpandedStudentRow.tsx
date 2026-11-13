@@ -14,7 +14,7 @@ interface ExpandedStudentRowProps {
   contactPrefsMap: Map<string, { preferred_channel: string; whatsapp_verified: boolean; whatsapp_number: string | null }>;
   onEnrol?: (person: Person) => void;
   /**
-   * Photographer tenants: the client's shoots. When set, the third column
+   * Studios without Classes: the client's projects. When set, the third column
    * lists shoots instead of class enrolments and there's no guardian wording.
    */
   shoots?: JobRow[];
@@ -139,7 +139,7 @@ export function ExpandedStudentRow({
             <p className="text-gray-400">{t('pages.students.no_classes')}</p>
             {onEnrol && (
               <Button variant="primary" size="sm" onClick={() => onEnrol(person)}>
-                {t('pages.students.enrol_button')}
+                {isClient ? t('pages.people.new_project') : t('pages.students.enrol_button')}
               </Button>
             )}
           </div>

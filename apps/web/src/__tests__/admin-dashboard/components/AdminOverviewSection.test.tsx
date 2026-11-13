@@ -12,9 +12,11 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-const labelsState = vi.hoisted(() => ({ vertical: 'dance-studio' as string }));
+const labelsState = vi.hoisted(() => ({ teachesClasses: true }));
 vi.mock('@/hooks/useEntityLabels', () => ({
-  useEntityLabels: () => ({ vertical: labelsState.vertical }),
+  useEntityLabels: () => ({
+    profile: { paymentFlow: 'recurring', teachesClasses: labelsState.teachesClasses, familyAccounts: true, clientBooking: true },
+  }),
 }));
 
 vi.mock('@/features/admin-dashboard/components/OverviewStatsGrid', () => ({
@@ -51,11 +53,11 @@ describe('AdminOverviewSection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    labelsState.vertical = 'dance-studio';
+    labelsState.teachesClasses = true;
   });
 
-  it('photographers: no season box (seasons are a dance concept)', () => {
-    labelsState.vertical = 'photographer';
+  it('Classes off: no season box (seasons are part of Classes)', () => {
+    labelsState.teachesClasses = false;
     const { container } = render(<AdminOverviewSection {...baseProps} error={new NoActiveSeasonError()} />);
     expect(container).toBeEmptyDOMElement();
   });

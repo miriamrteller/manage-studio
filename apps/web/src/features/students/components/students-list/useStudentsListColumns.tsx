@@ -18,7 +18,8 @@ const columnHelper = createColumnHelper<Person>();
 
 /** Column definitions for the Students (or photographer Clients) table. */
 export function useStudentsListColumns({
-  isPhotographer,
+  withoutClasses,
+  canAdd,
   enrolmentsByPerson,
   familyMap,
   contactPrefsMap,
@@ -27,7 +28,9 @@ export function useStudentsListColumns({
   openNewShoot,
   openDetails,
 }: {
-  isPhotographer: boolean;
+  withoutClasses: boolean;
+  /** The studio has classes or projects to add a client to. */
+  canAdd: boolean;
   enrolmentsByPerson: Map<string, StudentEnrolmentSummary[]>;
   familyMap: Map<string, StudentsListFamily>;
   contactPrefsMap: Map<string, StudentsListContactPrefs>;
@@ -67,8 +70,8 @@ export function useStudentsListColumns({
       }),
       columnHelper.accessor('id', {
         id: 'classes',
-        header: t('pages.students.classes_column'),
-        cell: ({ row }) => isPhotographer ? (
+        header: withoutClasses ? t('pages.people.projects_section') : t('pages.students.classes_column'),
+        cell: ({ row }) => withoutClasses ? (
           <ClientShootList jobs={jobsByPerson.get(row.original.id) ?? []} compact />
         ) : (
           <EnrolmentSummaryList
@@ -139,15 +142,17 @@ export function useStudentsListColumns({
         cell: ({ row }) => (
           // Phones: stack the two pills instead of squeezing them.
           <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() =>
-                isPhotographer ? openNewShoot(row.original) : openEnrolModal(row.original)
-              }
-            >
-              {t('pages.students.enrol_button')}
-            </Button>
+            {canAdd && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  withoutClasses ? openNewShoot(row.original) : openEnrolModal(row.original)
+                }
+              >
+                {withoutClasses ? t('pages.people.new_project') : t('pages.students.enrol_button')}
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"
@@ -160,6 +165,6 @@ export function useStudentsListColumns({
         size: 160,
       }),
     ],
-    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, isPhotographer, jobsByPerson, openNewShoot, openDetails]
+    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, withoutClasses, canAdd, jobsByPerson, openNewShoot, openDetails]
   );
 }

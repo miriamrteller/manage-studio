@@ -5,15 +5,19 @@ import { useTenant } from '@/hooks/useTenant';
 import { AppointmentsService } from '@/features/scheduling/appointmentsService';
 import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointmentWhen';
 
-/** A person's bookings (appointments), newest first, each linking to the calendar. */
-export function PersonBookings({ personId }: { personId: string }) {
+/**
+ * A person's bookings (appointments), newest first, each linking to the calendar.
+ * `excludeIds`: engagements shown elsewhere on the page (their projects), so nothing shows twice.
+ */
+export function PersonBookings({ personId, excludeIds }: { personId: string; excludeIds?: ReadonlySet<string> }) {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: allRows = [], isLoading } = useQuery({
     queryKey: ['person-bookings', tenant?.id, personId],
     queryFn: () => AppointmentsService.list(tenant as never, personId),
     enabled: !!tenant?.id,
   });
+  const rows = excludeIds ? allRows.filter((row) => !excludeIds.has(row.id)) : allRows;
 
   return (
     <section className="space-y-2">
