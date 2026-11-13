@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { personPagePath } from '@/features/people/lib/personPagePath';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
@@ -61,7 +62,15 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
         </h2>
         <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-sm">
           <dt className="text-muted-foreground">{t('pages.jobs.client_name')}</dt>
-          <dd>{job.client_name ?? '—'}</dd>
+          <dd>
+            {job.person_id && job.client_name ? (
+              <Link to={personPagePath(job.person_id)} className="underline">
+                {job.client_name}
+              </Link>
+            ) : (
+              (job.client_name ?? '—')
+            )}
+          </dd>
           <dt className="text-muted-foreground">{t('pages.jobs.client_email')}</dt>
           <dd dir="ltr">{job.client_email ?? '—'}</dd>
           <dt className="text-muted-foreground">{t('pages.jobs.client_phone')}</dt>

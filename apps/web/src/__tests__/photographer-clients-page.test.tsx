@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { StudentsList } from '@/features/students/components/StudentsList';
 import { StudentSlideOver } from '@/features/students/components/StudentSlideOver';
+import { personPagePath } from '@/features/people/lib/personPagePath';
 import { JobsList } from '@/features/jobs/components/JobsList';
 import { Button } from '@/components/ui/button';
 import type { JobRow } from '@/features/jobs/services/jobService';
@@ -185,6 +186,36 @@ describe('Clients page (photographer)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New shoot' }));
     const form = await screen.findByRole('form', { name: 'New shoot' });
     expect(within(form).getByText(PERSON.name, { selector: 'strong' })).toBeInTheDocument();
+  });
+});
+
+describe("A person's own page", () => {
+  beforeEach(() => setTenant('photographer'));
+
+  it('shows everything about the client as a page, with the shoot linked and a way back', async () => {
+    const onClose = vi.fn();
+    renderInApp(<StudentSlideOver personId={PERSON.id} onClose={onClose} variant="page" />, {
+      path: '/admin/students/:personId',
+      initialEntry: `/admin/students/${PERSON.id}`,
+      extraRoutes: jobsRoute,
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: PERSON.name })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/jobs/eng-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the list' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('the side panel offers the full page', async () => {
+    renderInApp(<StudentSlideOver personId={PERSON.id} onClose={() => {}} />, {
+      path: '/admin/students',
+      extraRoutes: jobsRoute,
+    });
+    expect(await screen.findByRole('button', { name: 'Open full page' })).toBeInTheDocument();
+  });
+
+  it('the page address is /admin/students/<person>', () => {
+    expect(personPagePath('p-1')).toBe('/admin/students/p-1');
   });
 });
 

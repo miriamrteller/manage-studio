@@ -7,7 +7,7 @@
  * Run: pnpm -C apps/web test leads-onboarding-help
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('react-i18next', () => ({
@@ -111,15 +111,32 @@ describe('Get your first leads', () => {
 });
 
 describe('help', () => {
-  it('ⓘ shows and hides its text, with aria-expanded; Escape closes', () => {
+  it('ⓘ shows and hides its text, with aria-expanded; Escape closes', async () => {
     render(<InfoTip label="Help: Questions">Shorter forms get more enquiries.</InfoTip>);
     const button = screen.getByRole('button', { name: 'Help: Questions' });
     expect(button.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(button);
     expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('note').textContent).toBe('Shorter forms get more enquiries.');
-    fireEvent.keyDown(button, { key: 'Escape' });
-    expect(screen.queryByRole('note')).toBeNull();
+    const popup = await screen.findByRole('dialog');
+    expect(popup.textContent).toBe('Shorter forms get more enquiries.');
+    expect(button.getAttribute('aria-controls')).toBe(popup.id);
+    fireEvent.keyDown(document.activeElement ?? popup, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('ⓘ stays a small round button (not stretched by touch-target rules) and follows RTL', async () => {
+    document.documentElement.dir = 'rtl';
+    try {
+      render(<InfoTip label="עזרה">טקסט</InfoTip>);
+      const button = screen.getByRole('button', { name: 'עזרה' });
+      expect(button.className).toContain('min-h-0');
+      expect(button.className).toContain('h-5');
+      fireEvent.click(button);
+      expect((await screen.findByRole('dialog')).getAttribute('dir')).toBe('rtl');
+    } finally {
+      document.documentElement.dir = '';
+    }
   });
 
   it('"How leads work" has the six sections with their steps', () => {

@@ -605,7 +605,13 @@
       "waiver_pending": "Not accepted",
       "empty_title": "No students yet",
       "empty_message": "Enrol your first student to start managing enrolments and family links.",
-      "delete_note": "To request data removal, please contact support. Hard deletion is not permitted under data retention policy."
+      "delete_note": "To request data removal, please contact support. Hard deletion is not permitted under data retention policy.",
+      "back_to_list": "Back to the list",
+      "open_page": "Open full page",
+      "open_family": "Open family",
+      "bookings_section": "Bookings",
+      "open_calendar": "Calendar",
+      "no_bookings": "No bookings yet."
     },
     "families": {
       "email_family": "Email this family",
@@ -797,11 +803,11 @@
       "help": {
         "link": "How leads work",
         "tip_label": "Help: {{topic}}",
-        "tip_get_leads": "Your enquiry form is a ready web page; you do not need a website. Each link below adds a tag, so every lead shows where it came from.",
+        "tip_get_leads": "Each link below adds a tag, so every lead shows where it came from.",
         "tip_lead_email": "Any email sent to this address becomes a lead on your Leads page. Forward enquiries here, or print it on flyers.",
         "tip_questions": "Extra questions appear on your enquiry form. Ready-made ones fill real fields (for example the class), so the pipeline can use them. Keep the form short.",
         "tip_digest": "Each morning, if any lead is due or overdue for follow-up, you get one email listing them. Set a follow-up date on a lead to use it.",
-        "tip_forms": "Make a separate form for a class, event or campaign, with its own link, QR code and questions. Leads show which form they came from.",
+        "tip_forms": "Every lead shows which form it came from, so you can see which class, event or campaign brought it in. Each form can also ask its own extra questions.",
         "tip_send": "We email this person a link to your form from your studio; replies go to you. It does not sign them up for anything.",
         "tip_website": "Only if you have your own website: paste this code into a page and your form appears there. Enquiries still land on your Leads page.",
         "title": "How leads work",
@@ -2226,7 +2232,7 @@
     "calendar": "Calendar",
     "booking_settings": "Booking Settings",
     "booking_services": "Bookable Services",
-    "booking_disabled_hint": "Online booking is turned off. Enable it under Setup → Booking Settings.",
+    "booking_disabled_hint": "Online booking is turned off. Turn it on under Bookings → Availability.",
     "waivers": "Forms",
     "requirements": "Requirements",
     "section": {
@@ -2251,7 +2257,21 @@
     "platform_skins": "Skins",
     "platform_feedback": "Feedback",
     "teachers": "Teachers",
-    "my_classes": "My classes"
+    "my_classes": "My classes",
+    "area": {
+      "bookings": "Bookings",
+      "settings": "Settings"
+    },
+    "tab": {
+      "calendar": "Calendar",
+      "availability": "Availability",
+      "overview": "Overview",
+      "studio_shop": "Studio shop",
+      "lead_settings": "Enquiry settings"
+    },
+    "full_menu": "Show full menu",
+    "icons_only_menu": "Show icons only",
+    "area_tabs": "{{area}} pages"
   },
   "platform_billing": {
     "dev_only": "This page is on the dev website only.",
@@ -2697,7 +2717,8 @@
       "saved": "Settings saved.",
       "save": "Save settings",
       "manage_services": "Manage bookable services",
-      "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page."
+      "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page.",
+      "availability_subtitle": "When clients can book: online booking on or off, the booking rules, your opening hours, times you are away, and your Google Calendar."
     },
     "services": {
       "photographer_note": "Photographers don’t use bookable services. Your clients enquire, you send a quote, and they accept it online.",

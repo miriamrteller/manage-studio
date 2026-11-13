@@ -2,7 +2,6 @@
 import { followUpState } from '../lib/followUp';
 import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LeadsTabs } from './LeadsTabs';
 import { useNamedForms } from '../hooks/useNamedForms';
 import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
@@ -258,7 +257,6 @@ export function LeadsList() {
           {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
         </Button>
       </div>
-      <LeadsTabs />
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
       {(followUps.overdue > 0 || followUps.dueToday > 0) && (
         <p role="status" className="text-sm font-medium">

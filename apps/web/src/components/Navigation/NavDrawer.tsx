@@ -1,21 +1,15 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, Pin, PinOff, X } from 'lucide-react';
-import type { FeatureKey } from '@shared/index';
+import { LogOut, MessageSquare, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { useTenantQuery } from '@/hooks/useTenant';
-import { useBookingEnabled } from '@/features/scheduling/useBookingEnabled';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useReportProblem } from '@/components/ReportProblem';
 import { useNavDrawer } from './NavDrawerContext';
-import { useNavItems } from './useNavItems';
+import { useVisibleNav } from './useVisibleNav';
 import { NavDrawerMenu } from './NavDrawerMenu';
-import { resolveActiveNavPath, type NavItem } from './navigationConfig';
+import { resolveActiveNavPath } from './navigationConfig';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -46,76 +40,21 @@ export function NavDrawer() {
   const { canReport, openReportProblem } = useReportProblem();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useCurrentUser();
-  const { labels, classLabels, modules, vertical, profile } = useEntityLabels();
-  const { tenant, isLoading: tenantLoading } = useTenantQuery();
-  const { hasFeature } = useFeatureGate();
-  // Resolve feature flags from the authenticated gate OR the anon-safe tenant config
-  // (enabled_features), so client-facing items like booking show for guests too.
-  const hasFeatureResolved = useCallback(
-    (key: FeatureKey) => hasFeature(key) || (tenant?.enabled_features?.includes(key) ?? false),
-    [hasFeature, tenant],
-  );
+  const { sections, isAuthenticated, entryLabel, isItemDisabled, vertical, user, tenant } =
+    useVisibleNav();
   const {
     isOpen,
     isPinned,
     isOverlay,
+    isIconsOnly,
     close,
-    togglePin,
+    toggleIconsOnly,
     closeOnNavigate,
     menuButtonRef,
   } = useNavDrawer();
 
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  const { sections, isAuthenticated } = useNavItems({
-    userRoles: user?.role ?? null,
-    isAuthenticated: Boolean(user),
-    modules,
-    tenant,
-    hasFeature: hasFeatureResolved,
-    profile,
-    // No studio once the lookup is done (app.opalswift.com, or a user without one).
-    hasStudio: Boolean(tenant) || tenantLoading,
-  });
-
-  // Grey out booking-dependent items (e.g. /book) only when we positively know
-  // the tenant has booking turned off; undefined (guest/loading) leaves them on.
-  const bookingEnabled = useBookingEnabled();
-  const isItemDisabled = useCallback(
-    (item: NavItem) => item.disableWhenBookingOff === true && bookingEnabled === false,
-    [bookingEnabled],
-  );
-
-  function navLabel(item: NavItem): string {
-    switch (item.path) {
-      case '/classes':
-        return classLabels.plural;
-      case '/admin/jobs':
-        return labels.engagement.plural;
-      case '/admin/students':
-        // A studio that does not teach classes has Clients, not Students.
-        return !profile.teachesClasses || vertical === 'photographer' || vertical === 'beautician'
-          ? labels.contact.plural
-          : t(item.labelKey);
-      case '/admin/packages':
-        return !profile.teachesClasses || vertical === 'photographer' ? labels.offering.plural : t(item.labelKey);
-      case '/admin/setup/waivers':
-        return vertical === 'photographer' ? t('nav.contracts') : t(item.labelKey);
-      case '/admin/families':
-        return labels.account.plural;
-      case '/admin/setup/levels':
-        return labels.category.plural;
-      case '/admin/setup/terms':
-        return labels.season.plural;
-      case '/admin/classes':
-        // Always class wording (Hebrew: "שיעורים"), never a skin's word such as "Packages".
-        return classLabels.plural;
-      default:
-        return t(item.labelKey);
-    }
-  }
 
   const navItems = sections.flatMap((section) => section.items);
   const activePath = resolveActiveNavPath(location.pathname, navItems);
@@ -166,7 +105,7 @@ export function NavDrawer() {
       className={cn(
         tenant?.chrome_style === 'solid' ? 'nav-drawer-solid' : 'nav-drawer-soft',
         'nav-drawer-panel flex flex-col text-[var(--nav-text)] border-e border-[var(--nav-border)]',
-        'w-[var(--nav-drawer-width)]',
+        isIconsOnly ? 'w-16' : 'w-[var(--nav-drawer-width)]',
         isPinned
           ? 'h-dvh max-h-dvh shrink-0 sticky top-0 overflow-hidden'
           : cn(
@@ -175,33 +114,47 @@ export function NavDrawer() {
             )
       )}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[var(--nav-border)] shrink-0">
-        <h2 className="font-semibold text-base">{t('nav.menu')}</h2>
+      {/* Header: the full size / icons only switch (wide screens), or Close (phone menu). */}
+      <div
+        className={cn(
+          'flex items-center gap-2 py-3 border-b border-[var(--nav-border)] shrink-0',
+          isIconsOnly ? 'justify-center px-2' : 'justify-between px-4',
+        )}
+      >
+        {!isIconsOnly && <h2 className="font-semibold text-base">{t('nav.menu')}</h2>}
         <div className="flex items-center gap-1">
-          {/* Pin: desktop only */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={togglePin}
-            aria-label={isPinned ? t('nav.unpin_menu') : t('nav.pin_menu')}
-            aria-pressed={isPinned}
-            className="hidden md:inline-flex text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
-          >
-            {isPinned ? <PinOff size={18} aria-hidden /> : <Pin size={18} aria-hidden />}
-          </Button>
-          <Button
-            ref={closeButtonRef}
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={close}
-            aria-label={t('nav.close_menu')}
-            className="text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
-          >
-            <X size={18} aria-hidden />
-          </Button>
+          {isPinned && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={toggleIconsOnly}
+              aria-label={isIconsOnly ? t('nav.full_menu') : t('nav.icons_only_menu')}
+              title={isIconsOnly ? t('nav.full_menu') : t('nav.icons_only_menu')}
+              aria-pressed={isIconsOnly}
+              className="text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
+            >
+              {/* Mirrored in Hebrew, where the menu sits on the right. */}
+              {isIconsOnly ? (
+                <PanelLeftOpen size={18} aria-hidden className="rtl:-scale-x-100" />
+              ) : (
+                <PanelLeftClose size={18} aria-hidden className="rtl:-scale-x-100" />
+              )}
+            </Button>
+          )}
+          {isOverlay && (
+            <Button
+              ref={closeButtonRef}
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={close}
+              aria-label={t('nav.close_menu')}
+              className="text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
+            >
+              <X size={18} aria-hidden />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -209,16 +162,20 @@ export function NavDrawer() {
         sections={sections}
         activePath={activePath}
         onNavigate={handleNavigate}
-        navLabel={navLabel}
+        entryLabel={entryLabel}
         isItemDisabled={isItemDisabled}
+        iconsOnly={isIconsOnly}
+        vertical={vertical}
       />
 
       {/* Account footer (authenticated) */}
       {isAuthenticated && user && (
-        <div className="shrink-0 border-t border-[var(--nav-border)] px-4 py-3 space-y-2">
-          <p className="text-sm opacity-90 truncate" title={user.email}>
-            {user.email}
-          </p>
+        <div className={cn('shrink-0 border-t border-[var(--nav-border)] py-3 space-y-2', isIconsOnly ? 'px-2' : 'px-4')}>
+          {!isIconsOnly && (
+            <p className="text-sm opacity-90 truncate" title={user.email}>
+              {user.email}
+            </p>
+          )}
           {canReport && (
             <Button
               type="button"
@@ -228,10 +185,15 @@ export function NavDrawer() {
                 close();
                 openReportProblem();
               }}
-              className="w-full justify-start gap-2 text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]"
+              aria-label={isIconsOnly ? t('report_problem.menu_item') : undefined}
+              title={isIconsOnly ? t('report_problem.menu_item') : undefined}
+              className={cn(
+                'w-full gap-2 text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]',
+                isIconsOnly ? 'justify-center px-0' : 'justify-start',
+              )}
             >
               <MessageSquare size={16} aria-hidden />
-              {t('report_problem.menu_item')}
+              {!isIconsOnly && t('report_problem.menu_item')}
             </Button>
           )}
           <Button
@@ -240,9 +202,10 @@ export function NavDrawer() {
             size="sm"
             onClick={handleLogout}
             aria-label={t('nav.logout')}
-            className="w-full"
+            title={isIconsOnly ? t('nav.logout') : undefined}
+            className={cn('w-full', isIconsOnly && 'px-0')}
           >
-            {t('nav.logout')}
+            {isIconsOnly ? <LogOut size={16} aria-hidden className="rtl:-scale-x-100" /> : t('nav.logout')}
           </Button>
         </div>
       )}

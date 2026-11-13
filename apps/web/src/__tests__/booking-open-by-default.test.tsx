@@ -94,3 +94,29 @@ describe('Booking open by default', () => {
     expect(await screen.findByText(/ראשון עד חמישי/)).toBeTruthy();
   });
 });
+
+describe('Availability: photographers book tailor-made shoots', () => {
+  beforeEach(async () => {
+    state.hours = [];
+    state.blocks = [];
+    await setLanguage('en');
+  });
+
+  it('photographers get the booking rules and hours folded under "Details we filled in for you"', async () => {
+    setTenant('photographer');
+    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    const summary = await screen.findByText('Details we filled in for you');
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+    expect(summary.closest('details')).toContainElement((await screen.findAllByLabelText('From'))[0]);
+    // Days away stay in view.
+    expect(screen.getByText('No blocked times yet.').closest('details')).toBeNull();
+  });
+
+  it('other studios see the rules straight away', async () => {
+    setTenant('beautician');
+    renderInApp(<BookingSettingsPage />, { path: '/admin/setup/booking' });
+    await waitFor(() => expect(screen.getAllByLabelText('From').length).toBeGreaterThan(0));
+    expect(screen.queryByText('Details we filled in for you')).toBeNull();
+  });
+});
+
