@@ -1967,6 +1967,7 @@ export type Database = {
             };
             job_details: {
                 Row: {
+                    auto_status: string | null;
                     contract_pdf_pending: boolean;
                     created_at: string;
                     engagement_id: string;
@@ -1980,6 +1981,7 @@ export type Database = {
                     updated_at: string;
                 };
                 Insert: {
+                    auto_status?: string | null;
                     contract_pdf_pending?: boolean;
                     created_at?: string;
                     engagement_id: string;
@@ -1993,6 +1995,7 @@ export type Database = {
                     updated_at?: string;
                 };
                 Update: {
+                    auto_status?: string | null;
                     contract_pdf_pending?: boolean;
                     created_at?: string;
                     engagement_id?: string;
@@ -2360,6 +2363,7 @@ export type Database = {
                     engagement_id: string;
                     gallery_key: string | null;
                     gallery_name: string | null;
+                    gallery_web_url: string | null;
                     included_photos: number;
                     price_per_photo_minor: number | null;
                     provider: string;
@@ -2377,6 +2381,7 @@ export type Database = {
                     engagement_id: string;
                     gallery_key?: string | null;
                     gallery_name?: string | null;
+                    gallery_web_url?: string | null;
                     included_photos?: number;
                     price_per_photo_minor?: number | null;
                     provider?: string;
@@ -2394,6 +2399,7 @@ export type Database = {
                     engagement_id?: string;
                     gallery_key?: string | null;
                     gallery_name?: string | null;
+                    gallery_web_url?: string | null;
                     included_photos?: number;
                     price_per_photo_minor?: number | null;
                     provider?: string;
@@ -6101,6 +6107,12 @@ export type Database = {
                     retention_expires_at: string;
                     tenant_id: string;
                 }[];
+            };
+            advance_job_statuses: {
+                Args: {
+                    p_now?: string;
+                };
+                Returns: Json;
             };
             approve_age_review_engagement: {
                 Args: {

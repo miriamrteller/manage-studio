@@ -28,6 +28,8 @@ export interface JobPhotoShop {
   provider: 'smugmug' | 'mock' | 'upload';
   gallery_key: string | null;
   gallery_name: string | null;
+  /** The chosen SmugMug gallery's own page, saved by Check gallery. */
+  gallery_web_url?: string | null;
   included_photos: number;
   price_per_photo_minor: number | null;
   all_photos_price_minor: number | null;

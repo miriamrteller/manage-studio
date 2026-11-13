@@ -100,6 +100,22 @@ export class QuoteService extends BaseService {
     }, 'QuoteService.acceptedForEngagement');
   }
 
+  /** The project's live quote (newest that is not declined or expired), for "Open quote". */
+  static async openForEngagement(engagementId: string): Promise<{ id: string; status: QuoteStatus } | null> {
+    return this.withRetry(async () => {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('id, status')
+        .eq('engagement_id', engagementId)
+        .in('status', ['draft', 'sent', 'accepted'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      fail(error);
+      return (data ?? null) as { id: string; status: QuoteStatus } | null;
+    }, 'QuoteService.openForEngagement');
+  }
+
   static async markSent(id: string, via: QuoteSendVia): Promise<void> {
     const { error } = await supabase.rpc('mark_quote_sent', { p_quote_id: id, p_via: via });
     fail(error);

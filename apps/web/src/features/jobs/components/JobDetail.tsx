@@ -16,7 +16,7 @@ import { JobPhotoShopCard } from './JobPhotoShopCard';
 import { PhotoShopPreview } from './ClientPhotoShop';
 import { usePhotoShopEnabled } from '../hooks/usePhotoShop';
 import { CancelShootButton } from './CancelShootButton';
-import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
+import { ProjectQuoteButton } from '@/features/quotes/components/ProjectQuoteButton';
 
 /**
  * Admin job ("Shoot") detail: client, package, date/time, location, status,
@@ -113,7 +113,7 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {job.job_status !== 'cancelled' && <CreateQuoteButton engagementId={job.engagement_id} />}
+          {job.job_status !== 'cancelled' && <ProjectQuoteButton engagementId={job.engagement_id} />}
           <CancelShootButton job={job} />
           <JobStatusBadge status={job.job_status} />
         </div>

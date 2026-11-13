@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useJob } from '../hooks/useJobs';
@@ -6,6 +7,8 @@ import { JOB_STATUSES, type JobRow, type JobStatus } from '../services/jobServic
 import { fromDateTimeLocal, jobStatusKey, toDateTimeLocal } from '../lib/jobStatus';
 import { safeGalleryUrl } from '../lib/galleryUrl';
 import { JobGalleryReleaseBadge } from './JobGalleryLink';
+import { usePhotoShopEnabled } from '../hooks/usePhotoShop';
+import { PhotoShopService } from '../services/photoShopService';
 
 /** Opens the typed gallery link in a new tab; disabled unless it is an http(s) URL. */
 function OpenGalleryButton({ url }: { url: string }) {
@@ -46,6 +49,29 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
 
   const busy = isUpdatingDetails || isUpdatingSchedule;
 
+  // The photo shop's SmugMug gallery, offered as the gallery link (one click, no copy and paste).
+  const shopOn = usePhotoShopEnabled();
+  const { data: shop } = useQuery({
+    queryKey: ['photo-shop', job.engagement_id],
+    queryFn: () => PhotoShopService.getShop(job.engagement_id),
+    enabled: shopOn,
+  });
+  const shopGalleryUrl = safeGalleryUrl(shop?.gallery_web_url ?? '');
+  const offerShopGallery = Boolean(shopGalleryUrl) && !galleryUrl.trim();
+
+  const fillFromShopGallery = async () => {
+    if (!shopGalleryUrl) return;
+    setMessage(null);
+    setError(null);
+    setGalleryUrl(shopGalleryUrl);
+    try {
+      await updateDetails({ job_status: status, location, notes, gallery_url: shopGalleryUrl });
+      setMessage(t('pages.jobs.saved'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
+    }
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setMessage(null);
@@ -78,6 +104,7 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
           </label>
           <select
             id="job-status"
+            aria-describedby="job-status-hint"
             className="w-full border rounded px-3 py-2"
             value={status}
             onChange={(e) => setStatus(e.target.value as JobStatus)}
@@ -89,6 +116,7 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
               </option>
             ))}
           </select>
+          <p id="job-status-hint" className="mt-1 text-xs text-muted-foreground">{t('pages.jobs.status_auto_hint')}</p>
         </div>
         <div>
           <label htmlFor="job-edit-location" className="block text-sm font-medium mb-1">
@@ -124,6 +152,11 @@ export function JobDetailsForm({ job }: { job: JobRow }) {
             />
             <OpenGalleryButton url={galleryUrl} />
           </div>
+          {offerShopGallery && (
+            <Button type="button" variant="outline" size="sm" className="mt-2" disabled={busy} onClick={() => void fillFromShopGallery()}>
+              {t('pages.jobs.use_shop_gallery')}
+            </Button>
+          )}
           <div id="job-gallery-url-status" className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {galleryUrl.trim() && !safeGalleryUrl(galleryUrl) ? (
               <span className="text-error">{t('pages.jobs.gallery_url_invalid')}</span>

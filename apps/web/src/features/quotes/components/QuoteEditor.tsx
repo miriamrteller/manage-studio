@@ -13,10 +13,14 @@ interface QuoteEditorProps {
   currency: string;
   /** False once a quote is accepted/declined/expired: shown read-only. */
   editable: boolean;
-  onSaved: (id: string) => void;
+  onSaved: (id: string, options: { email: boolean }) => void;
+  /** Show "Save and email quote" as the main button (emails are on for quotes). */
+  canEmail?: boolean;
+  /** Set while the page emails the quote after saving. */
+  emailing?: boolean;
 }
 
-export function QuoteEditor({ initial, currency, editable, onSaved }: QuoteEditorProps) {
+export function QuoteEditor({ initial, currency, editable, onSaved, canEmail = false, emailing = false }: QuoteEditorProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<QuoteDraft>(initial);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -31,13 +35,16 @@ export function QuoteEditor({ initial, currency, editable, onSaved }: QuoteEdito
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+    // Which button sent the form: "Save and email quote" or "Save quote".
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
+    const email = canEmail && submitter?.dataset.email === 'yes';
     const parsed = quoteDraftSchema.safeParse(draft);
     if (!parsed.success) {
       setValidationError(t('pages.quotes.errors.invalid'));
       return;
     }
     setValidationError(null);
-    save.mutate(parsed.data, { onSuccess: onSaved });
+    save.mutate(parsed.data, { onSuccess: (id) => onSaved(id, { email }) });
   };
 
   return (
@@ -64,10 +71,15 @@ export function QuoteEditor({ initial, currency, editable, onSaved }: QuoteEdito
         </div>
       )}
       {editable && (
-        <div className="flex justify-end">
-          <Button type="submit" variant="primary" isLoading={save.isPending}>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="submit" data-email="no" variant={canEmail ? 'outline' : 'primary'} disabled={save.isPending || emailing}>
             {t('pages.quotes.save')}
           </Button>
+          {canEmail && (
+            <Button type="submit" data-email="yes" variant="primary" isLoading={save.isPending || emailing}>
+              {t('pages.quotes.save_and_email')}
+            </Button>
+          )}
         </div>
       )}
     </form>

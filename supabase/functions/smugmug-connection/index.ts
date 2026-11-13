@@ -194,6 +194,11 @@ Deno.serve(withMonitoring("smugmug-connection", async (req) => {
           p_photos: result.passed ? result.photos : null,
         });
         if (error) throw new Error("Could not save the gallery check");
+        // The gallery's own page, offered as the project's gallery link (never blocks the check).
+        const { error: webError } = await service.from("job_photo_shops")
+          .update({ gallery_web_url: result.webUrl })
+          .eq("engagement_id", engagementId).eq("tenant_id", tenantId);
+        if (webError) console.warn("[smugmug-connection] gallery_web_url not saved:", webError.message);
         return jsonResponse({
           ok: true,
           passed: result.passed,
