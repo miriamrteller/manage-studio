@@ -4,7 +4,7 @@ import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useTenant } from '@/hooks/useTenant';
 import { Select } from '@/components/ui/select';
 import { FormInput } from '@/components/ui/form';
@@ -67,10 +67,11 @@ interface NotificationBlastFormProps {
 
 export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormProps = {}) {
   const { t } = useTranslation();
-  // Photographers have no levels or classes: audiences are all clients or one account.
-  const { vertical } = useEntityLabels();
-  const scopeOptions =
-    vertical === 'photographer' ? (['all', 'account'] as const) : (['all', 'level', 'class', 'account'] as const);
+  // Levels and classes are part of Classes: without it, audiences are all clients or one account.
+  const { classes: teachesClasses } = useWorkModes();
+  const scopeOptions = teachesClasses
+    ? (['all', 'level', 'class', 'account'] as const)
+    : (['all', 'account'] as const);
   const { explainAccountExclusion, previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
   const { levels, isLoading: levelsLoading } = useLevels({ page: 1 });
   const { classes, isLoading: classesLoading } = useClasses({ page: 1, publicOnly: false });

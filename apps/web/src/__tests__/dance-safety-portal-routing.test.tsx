@@ -193,7 +193,8 @@ beforeEach(async () => {
   sessionStorage.clear();
 });
 
-describe.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])(
+// Studios with Classes ticked (the beautician fixture has Classes off: see the tests below).
+describe.each<FakeTenantKind>(['dance', 'generic', 'none'])(
   'PortalDashboard — %s tenant renders the dance ParentPortal unchanged',
   (kind) => {
     beforeEach(() => setTenant(kind));
@@ -334,15 +335,16 @@ describe('DashboardRedirectPage', () => {
 });
 
 describe('/enrol entry', () => {
-  it.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])('%s: renders the dance enrolment flow', (kind) => {
+  it.each<FakeTenantKind>(['dance', 'generic', 'none'])('%s: renders the dance enrolment flow', (kind) => {
     setTenant(kind);
     renderInApp(<EnrolEntryRoute />, { path: '/enrol' });
     expect(screen.getByText('DANCE ENROL FLOW')).toBeInTheDocument();
     expect(screen.getByTestId('location').textContent).toBe('/enrol');
   });
 
-  it('photographer: redirects to /dashboard (→ client portal) without the guardian / child setup', () => {
-    setTenant('photographer');
+  // Follows the Classes tick, not the business type (owner, 13 Nov 2026).
+  it.each<FakeTenantKind>(['photographer', 'beautician'])('%s (Classes off): redirects to /dashboard (→ client portal) without the guardian / child setup', (kind) => {
+    setTenant(kind);
     renderInApp(<EnrolEntryRoute />, { path: '/enrol' });
     expect(screen.queryByText('DANCE ENROL FLOW')).toBeNull();
     expect(screen.getByTestId('location').textContent).toBe('/dashboard');

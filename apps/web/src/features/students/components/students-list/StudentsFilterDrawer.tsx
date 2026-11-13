@@ -14,7 +14,8 @@ export function StudentsFilterDrawer({
   open,
   onClose,
   filters,
-  isPhotographer,
+  withoutClasses,
+  showFamilies,
   hasClasses,
   levels,
   resetPage,
@@ -22,7 +23,9 @@ export function StudentsFilterDrawer({
   open: boolean;
   onClose: () => void;
   filters: StudentListFilters;
-  isPhotographer: boolean;
+  withoutClasses: boolean;
+  /** "Parents pay for children" is ticked. */
+  showFamilies: boolean;
   hasClasses: boolean;
   levels: { id: string; name: string }[];
   resetPage: () => void;
@@ -94,7 +97,7 @@ export function StudentsFilterDrawer({
         }}
       />
 
-      {!isPhotographer && hasClasses && (
+      {!withoutClasses && hasClasses && (
         <FilterMultiSelect
           id="class-filter"
           label={t('pages.students.filter_by_class')}
@@ -107,15 +110,18 @@ export function StudentsFilterDrawer({
         />
       )}
 
-      {!isPhotographer && (
+      {showFamilies && (
+        <FamilyMultiSelect
+          selected={selectedFamilies}
+          onChange={(next) => {
+            setSelectedFamilies(next);
+            resetPage();
+          }}
+        />
+      )}
+
+      {!withoutClasses && (
         <>
-          <FamilyMultiSelect
-            selected={selectedFamilies}
-            onChange={(next) => {
-              setSelectedFamilies(next);
-              resetPage();
-            }}
-          />
 
           <FilterMultiSelect
             id="level-filter"

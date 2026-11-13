@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenantQuery } from '@/hooks/useTenant';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import {
   clearEnrollmentIntent,
   readEnrollmentIntent,
@@ -39,7 +39,7 @@ export default function DashboardRedirectPage() {
   const { session, isLoading: sessionLoading } = useAuthSession();
   const { user, isLoading: profileLoading } = useCurrentUser();
   const { isLoading: tenantLoading } = useTenantQuery();
-  const { vertical } = useEntityLabels();
+  const { classes } = useWorkModes();
   const isLoading = sessionLoading || profileLoading;
 
   useEffect(() => {
@@ -70,10 +70,10 @@ export default function DashboardRedirectPage() {
 
     const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
     if (intent?.classId) {
-      // The vertical decides where the intent goes; wait for the tenant.
+      // Classes (Settings › Business) decides where the intent goes; wait for the tenant.
       if (tenantLoading) return;
       clearEnrollmentIntent();
-      if (vertical !== 'photographer') {
+      if (classes) {
         navigate('/enrol', { replace: true, state: { ...intent, viaDashboardRedirect: true } });
         return;
       }
@@ -108,7 +108,7 @@ export default function DashboardRedirectPage() {
       // No recognized role - fallback to classes
       navigate('/classes', { replace: true });
     }
-  }, [session, user, isLoading, navigate, location.state, tenantLoading, vertical]);
+  }, [session, user, isLoading, navigate, location.state, tenantLoading, classes]);
 
   if (!isLoading && session && !user) {
     return (

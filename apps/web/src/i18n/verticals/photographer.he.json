@@ -85,7 +85,9 @@
       "title": "לקוחות",
       "waiver_required": "יש לאשר את החוזה כדי להמשיך.",
       "waiver_status_label": "חוזה",
-      "detail_title": "פרטי לקוח"
+      "detail_title": "פרטי לקוח",
+      "projects_section": "צילומים",
+      "new_project": "צילום חדש"
     },
     "booking_flow": {
       "back_to_portal": "חזרה להזמנות שלי",

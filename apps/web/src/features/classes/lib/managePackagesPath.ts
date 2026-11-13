@@ -1,10 +1,8 @@
-import type { VerticalId } from '@shared/index';
-
 /**
- * Where "Manage classes" / "Manage packages" goes. Photographers manage their
- * packages under Setup → Packages (/admin/bookings/packages); the class manager
- * (/admin/classes, with term and level fields) is hidden from them.
+ * Where "Manage classes" / "Manage packages" goes. With Classes ticked (Settings › Business) it is
+ * the class manager (/admin/classes); without it, Bookings › Packages, since the class manager is
+ * hidden (owner, 13 Nov 2026: follows the ticks, not the business type).
  */
-export function managePackagesPath(vertical: VerticalId | null | undefined): string {
-  return vertical === 'photographer' ? '/admin/bookings/packages' : '/admin/classes';
+export function managePackagesPath(teachesClasses: boolean): string {
+  return teachesClasses ? '/admin/classes' : '/admin/bookings/packages';
 }

@@ -611,7 +611,10 @@
       "open_family": "Open family",
       "bookings_section": "Bookings",
       "open_calendar": "Calendar",
-      "no_bookings": "No bookings yet."
+      "no_bookings": "No bookings yet.",
+      "projects_section": "Projects",
+      "new_project": "New project",
+      "add_client": "Add client"
     },
     "families": {
       "email_family": "Email this family",

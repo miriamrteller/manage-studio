@@ -65,10 +65,9 @@ describe('finance period', () => {
 });
 
 describe('manage packages link', () => {
-  it('photographers go to Packages, dance to the class manager', () => {
-    expect(managePackagesPath('photographer')).toBe('/admin/bookings/packages');
-    expect(managePackagesPath('dance-studio')).toBe('/admin/classes');
-    expect(managePackagesPath(null)).toBe('/admin/classes');
+  it('without Classes it goes to Packages, with Classes to the class manager', () => {
+    expect(managePackagesPath(false)).toBe('/admin/bookings/packages');
+    expect(managePackagesPath(true)).toBe('/admin/classes');
   });
 });
 

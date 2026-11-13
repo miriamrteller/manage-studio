@@ -14,7 +14,7 @@ import { GemBadge } from './Celebration';
 export const HELP_EMAIL = 'hello@opalswift.com';
 
 /** Where each row sends the owner. Existing pages only. */
-export function setupRowHref(id: SetupRowId, vertical: string | null | undefined): string {
+export function setupRowHref(id: SetupRowId, _vertical?: string | null): string {
   switch (id) {
     case 'branding':
       return '/admin/settings?tab=branding';
@@ -22,10 +22,12 @@ export function setupRowHref(id: SetupRowId, vertical: string | null | undefined
       return '/admin/classes/levels';
     case 'season':
       return '/admin/classes/seasons';
+    // Rows follow the ticks: the classes row exists only with Classes, the others only for packages.
     case 'classes':
+      return managePackagesPath(true);
     case 'packages':
     case 'offerings':
-      return managePackagesPath(vertical as Parameters<typeof managePackagesPath>[0]);
+      return managePackagesPath(false);
     case 'payments':
     case 'connect_payments':
       return '/admin/settings?tab=payment';

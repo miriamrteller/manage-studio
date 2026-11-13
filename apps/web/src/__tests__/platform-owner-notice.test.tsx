@@ -37,6 +37,7 @@ vi.mock('@/hooks/useTenant', () => {
 });
 vi.mock('@/hooks/useEntityLabels', () => ({ useEntityLabels: () => ({ vertical: 'dance-studio' }) }));
 vi.mock('@/hooks/usePlatformViewLog', () => ({ usePlatformViewLog: () => undefined }));
+vi.mock('@/hooks/useHasFeature', () => ({ useHasFeature: () => ({ hasFeature: () => true, hasAnyFeature: () => true, isLoading: false }) }));
 vi.mock('@/components/legal/MfaChallengeGate', () => ({ MfaChallengeGate: ({ children }: { children: unknown }) => children }));
 vi.mock('@/components/legal/PlatformTermsGate', () => ({ PlatformTermsGate: ({ children }: { children: unknown }) => children }));
 vi.mock('@/features/auth/components/SetPasswordPrompt', () => ({ SetPasswordPrompt: () => null }));

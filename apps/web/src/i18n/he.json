@@ -615,7 +615,10 @@
       "open_family": "פתיחת המשפחה",
       "bookings_section": "הזמנות",
       "open_calendar": "יומן",
-      "no_bookings": "אין עדיין הזמנות."
+      "no_bookings": "אין עדיין הזמנות.",
+      "projects_section": "פרויקטים",
+      "new_project": "פרויקט חדש",
+      "add_client": "הוספת לקוח"
     },
     "families": {
       "email_family": "שליחת מייל למשפחה",
