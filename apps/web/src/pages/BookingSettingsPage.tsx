@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import queryClient from '@/lib/query-client';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,8 @@ export default function BookingSettingsPage() {
   const tenant = useTenant();
   const { hasFeature, isLoading: gateLoading } = useFeatureGate();
   const dayLabels = i18n.language === 'en' ? DAY_LABELS_EN : DAY_LABELS_HE;
+  const { vertical } = useEntityLabels();
+  const foldRules = vertical === 'photographer';
 
   const [settings, setSettings] = useState<BookingSettings>(DEFAULT_BOOKING_SETTINGS);
   const [hours, setHours] = useState<BookingHours[]>([]);
@@ -116,26 +119,8 @@ export default function BookingSettingsPage() {
     );
   }
 
-  return (
-    <div className="max-w-3xl space-y-8 p-2">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold">{t('nav.tab.availability')}</h1>
-        <p className="text-gray-600">{t('scheduling.booking.availability_subtitle')}</p>
-      </header>
-
-      {status && (
-        <div
-          className={`rounded-md border p-3 text-sm ${
-            status.kind === 'ok'
-              ? 'border-green-200 bg-green-50 text-green-700'
-              : 'border-red-200 bg-red-50 text-red-700'
-          }`}
-          role={status.kind === 'error' ? 'alert' : 'status'}
-        >
-          {status.msg}
-        </div>
-      )}
-
+  const rulesAndHours = (
+    <>
       <section className="card border border-gray-200 space-y-4 p-4">
         {!settings.is_booking_enabled && (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
@@ -245,6 +230,39 @@ export default function BookingSettingsPage() {
           {t('scheduling.booking.save')}
         </Button>
       </div>
+    </>
+  );
+
+  return (
+    <div className="max-w-3xl space-y-8 p-2">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold">{t('nav.tab.availability')}</h1>
+        <p className="text-gray-600">{t('scheduling.booking.availability_subtitle')}</p>
+      </header>
+
+      {status && (
+        <div
+          className={`rounded-md border p-3 text-sm ${
+            status.kind === 'ok'
+              ? 'border-green-200 bg-green-50 text-green-700'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+          role={status.kind === 'error' ? 'alert' : 'status'}
+        >
+          {status.msg}
+        </div>
+      )}
+
+      {foldRules ? (
+        // Photographers book tailor-made shoots: the rules keep sensible defaults, out of the way
+        // (owner, 13 Nov 2026). Days away and Google Calendar stay in view below.
+        <details className="rounded-md border border-gray-200 p-4">
+          <summary className="cursor-pointer font-medium">{t('settings.hub.filled_for_you')}</summary>
+          <div className="mt-4 space-y-8">{rulesAndHours}</div>
+        </details>
+      ) : (
+        rulesAndHours
+      )}
 
       {tenant?.id && <BlockedTimesEditor tenant={tenant as never} />}
 
