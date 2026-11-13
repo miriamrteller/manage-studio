@@ -1115,7 +1115,10 @@
       "override_reason": "Reason for using a different email",
       "override_reason_placeholder": "Parent requested alternate email",
       "link_copied": "Link copied to clipboard.",
-      "link_copy_failed": "Could not copy automatically. Select and copy the link manually."
+      "link_copy_failed": "Could not copy automatically. Select and copy the link manually.",
+      "enrol_and_send_link": "Enrol and email the pay link to {{email}}",
+      "other_ways_to_pay": "Other ways to pay",
+      "link_not_emailed": "The pay link was made but the email did not go out. Copy the link below and send it yourself."
     },
     "enrol_pay": {
       "title": "Complete payment",
