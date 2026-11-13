@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Link, useLocation } from 'react-router-dom';
+import { safeSignPath } from '../lib/bookingFlowPaths';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +31,9 @@ export function PublicPayRequest({ token, result }: Props) {
   const [polls, setPolls] = useState(0);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Straight from "Accept and pay deposit": the contract can be signed from here, now or later.
+  const location = useLocation();
+  const signPath = safeSignPath((location.state as { signPath?: unknown } | null)?.signPath);
 
   const query = useQuery({
     queryKey: ['public-pay-request', token],
@@ -132,6 +137,12 @@ export function PublicPayRequest({ token, result }: Props) {
             </>
           )}
           {error && <p role="alert" className="text-sm text-error">{error}</p>}
+          {signPath && (
+            <p className="text-sm">
+              <Link to={signPath} className="underline">{t('pages.public_quote.next_steps.sign_contract')}</Link>
+              <span className="text-muted-foreground"> · {t('pages.pay.sign_later')}</span>
+            </p>
+          )}
           {!awaitingWebhook && (
             <BackToPortalButton variant={request.status === 'paid' ? 'primary' : 'secondary'} />
           )}

@@ -30,10 +30,116 @@ export function eventDateToLocal(eventDate: string | null | undefined): string {
 }
 
 /**
- * Inline "convert lead → job" form: pick the package, optional date/location,
- * then one RPC (convert_lead_to_job) creates client + engagement + job_details
- * and marks the lead converted. Opens a quote for the new shoot on success.
+ * "Send quote" on a lead row: one click when the lead already names a package
+ * (date and place from the enquiry, else the package's place). Without a
+ * package, or if sending fails, the prefilled form opens instead.
  */
+export function SendLeadQuoteButton({
+  leadId,
+  leadName,
+  offeringId,
+  eventDate,
+  location,
+  onNeedsForm,
+}: {
+  leadId: string;
+  leadName: string;
+  offeringId: string | null | undefined;
+  eventDate: string | null | undefined;
+  location: string | null;
+  onNeedsForm: () => void;
+}) {
+  const { t } = useTranslation();
+  const packagesQuery = useJobPackages();
+  const { send, busy } = useSendLeadQuote();
+  const pkg = (packagesQuery.data ?? []).find((p) => p.id === offeringId);
+
+  const onClick = async () => {
+    if (!pkg) {
+      onNeedsForm();
+      return;
+    }
+    try {
+      await send({
+        leadId,
+        leadName,
+        offeringId: pkg.id,
+        startsAt: eventDateToLocal(eventDate),
+        location: location || pkg.location || null,
+      });
+    } catch {
+      onNeedsForm();
+    }
+  };
+
+  return (
+    <Button variant="primary" size="sm" isLoading={busy} disabled={busy} onClick={() => void onClick()}>
+      {t('pages.crm.leads.send_quote')}
+    </Button>
+  );
+}
+
+/**
+ * Inline "Send quote" / "Confirm" form for a lead: package, optional date and
+ * place (all prefilled), then the shoot is booked and the quote is emailed.
+ */
+export interface SendLeadQuoteInput {
+  leadId: string;
+  leadName: string;
+  offeringId: string;
+  /** datetime-local value, or '' for no time yet. */
+  startsAt: string;
+  location: string | null;
+}
+
+/**
+ * Lead → shoot → quote emailed, in one go (owner, 13 Nov 2026: "Send quote" is one
+ * button). The shoot is booked, the quote goes out at the package price with the
+ * deposit, and its page opens. If it cannot be emailed (no address), the saved
+ * quote opens so the studio can send it another way; if no quote could be made,
+ * a new one opens for the shoot.
+ */
+export function useSendLeadQuote() {
+  const navigate = useNavigate();
+  const tenant = useTenant();
+  const convert = useConvertLead();
+  const [sendingQuote, setSendingQuote] = useState(false);
+
+  const send = async ({ leadId, leadName, offeringId, startsAt, location }: SendLeadQuoteInput) => {
+    const bookedStartsAt = fromDateTimeLocal(startsAt);
+    const engagementId = await convert.mutateAsync({
+      lead_id: leadId,
+      offering_id: offeringId,
+      booked_starts_at: bookedStartsAt,
+      location: location || null,
+    });
+    if (tenant) {
+      setSendingQuote(true);
+      try {
+        const { quoteId } = await sendShootRequestQuote({
+          tenantId: tenant.id,
+          emailLanguage: tenant.language_default ?? 'he',
+          engagementId,
+          offeringId,
+          clientName: leadName,
+          bookedStartsAt,
+        });
+        if (quoteId) {
+          navigate(`/admin/projects/quotes/${quoteId}`);
+          return;
+        }
+      } catch {
+        // Fall through to a new quote for this shoot.
+      } finally {
+        setSendingQuote(false);
+      }
+    }
+    navigate(`/admin/projects/quotes/new?engagement=${engagementId}`);
+  };
+
+  return { send, busy: convert.isPending || sendingQuote };
+}
+
 export function ConvertLeadPanel({
   leadId,
   leadName,
@@ -44,12 +150,9 @@ export function ConvertLeadPanel({
   onClose,
 }: ConvertLeadPanelProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { labels } = useEntityLabels();
-  const tenant = useTenant();
-  const [sendingQuote, setSendingQuote] = useState(false);
   const packagesQuery = useJobPackages();
-  const convert = useConvertLead();
+  const { send, busy } = useSendLeadQuote();
 
   const [offeringId, setOfferingId] = useState(defaultOfferingId ?? '');
   const [startsAt, setStartsAt] = useState(() => eventDateToLocal(eventDate));
@@ -67,47 +170,14 @@ export function ConvertLeadPanel({
     if (packageLocation) setLocation((current) => current || packageLocation);
   }, [packageLocation]);
   const [error, setError] = useState<string | null>(null);
-  const actionLabel = confirming ? t('pages.crm.leads.confirm_shoot') : t('pages.crm.leads.convert');
+  const actionLabel = confirming ? t('pages.crm.leads.confirm_shoot') : t('pages.crm.leads.send_quote');
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!offeringId) return;
     setError(null);
     try {
-      const bookedStartsAt = fromDateTimeLocal(startsAt);
-      const engagementId = await convert.mutateAsync({
-        lead_id: leadId,
-        offering_id: offeringId,
-        booked_starts_at: bookedStartsAt,
-        location: location || null,
-      });
-      // A shoot request: the shoot is booked, and the quote goes to the client
-      // straight away to accept and pay the deposit (owner, 13 Nov 2026). If
-      // that cannot be done, the shoot stays booked and the quote opens here.
-      if (confirming && tenant) {
-        setSendingQuote(true);
-        try {
-          const { quoteId } = await sendShootRequestQuote({
-            tenantId: tenant.id,
-            emailLanguage: tenant.language_default ?? 'he',
-            engagementId,
-            offeringId,
-            clientName: leadName,
-            bookedStartsAt,
-          });
-          if (quoteId) {
-            navigate(`/admin/projects/quotes/${quoteId}`);
-            return;
-          }
-        } catch {
-          // Fall through to a new quote for this shoot.
-        } finally {
-          setSendingQuote(false);
-        }
-      }
-      // Straight into a quote for the new shoot: the studio checks the price, and
-      // sending / accepting it emails the client the details and the pay link.
-      navigate(`/admin/projects/quotes/new?engagement=${engagementId}`);
+      await send({ leadId, leadName, offeringId, startsAt, location });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }
@@ -119,7 +189,7 @@ export function ConvertLeadPanel({
         {actionLabel}: {leadName}
       </h3>
       <p className="text-sm text-muted-foreground">
-        {confirming ? t('pages.crm.leads.confirm_hint') : t('pages.crm.leads.convert_hint')}
+        {confirming ? t('pages.crm.leads.confirm_hint') : t('pages.crm.leads.send_quote_hint')}
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <PackageSelect
@@ -166,8 +236,8 @@ export function ConvertLeadPanel({
         </div>
       )}
       <div className="flex gap-2">
-        <Button type="submit" variant="primary" disabled={!offeringId || convert.isPending || sendingQuote}>
-          {convert.isPending || sendingQuote ? t('pages.jobs.creating') : actionLabel}
+        <Button type="submit" variant="primary" disabled={!offeringId || busy}>
+          {busy ? t('pages.jobs.creating') : actionLabel}
         </Button>
         <Button type="button" variant="outline" onClick={onClose}>
           {t('common.cancel')}

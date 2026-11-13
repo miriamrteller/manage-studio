@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 
 interface PublicQuoteActionsProps {
   busy: boolean;
+  /** The quote has a deposit: accepting goes straight on to paying it. */
+  withDeposit?: boolean;
   onAccept: () => void;
   onDecline: (reason: string | null) => void;
 }
 
-export function PublicQuoteActions({ busy, onAccept, onDecline }: PublicQuoteActionsProps) {
+export function PublicQuoteActions({ busy, withDeposit = false, onAccept, onDecline }: PublicQuoteActionsProps) {
   const { t } = useTranslation();
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');
@@ -37,7 +39,7 @@ export function PublicQuoteActions({ busy, onAccept, onDecline }: PublicQuoteAct
     <div className="flex flex-wrap items-center gap-3">
       {/* Disabled while in flight; the server is idempotent if a second click slips through. */}
       <Button variant="primary" size="lg" isLoading={busy} disabled={busy} onClick={onAccept}>
-        {t('pages.public_quote.accept')}
+        {withDeposit ? t('pages.public_quote.accept_and_pay') : t('pages.public_quote.accept')}
       </Button>
       <Button variant="ghost" disabled={busy} onClick={() => setDeclining(true)}>
         {t('pages.public_quote.decline')}

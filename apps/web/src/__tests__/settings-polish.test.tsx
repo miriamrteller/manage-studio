@@ -52,10 +52,10 @@ describe('Branding labels in Hebrew', () => {
 
 describe('Studio is the default wording', () => {
   const cases = [
-    ['dance', 'en', 'Studio profile'],
-    ['dance', 'he', 'פרופיל הסטודיו'],
-    ['photographer', 'en', 'Studio profile'],
-    ['photographer', 'he', 'פרופיל הסטודיו'],
+    ['dance', 'en', 'Name & contact'],
+    ['dance', 'he', 'שם ופרטי קשר'],
+    ['photographer', 'en', 'Name & contact'],
+    ['photographer', 'he', 'שם ופרטי קשר'],
   ] as const;
 
   it.each(cases)('%s / %s profile tab shows "%s"', async (kind, lng, label) => {
@@ -100,7 +100,7 @@ describe('tenant-chosen terms still win over the new default', () => {
       </>,
     );
     expect(screen.getByTestId('labels').textContent).toBe('Academy pupil|School courses');
-    expect(screen.getByTestId('profile-tab').textContent).toBe('Studio profile');
+    expect(screen.getByTestId('profile-tab').textContent).toBe('Name & contact');
   });
 
   it('a tenant without custom labels gets the preset terms and "Studio"', () => {
@@ -113,6 +113,6 @@ describe('tenant-chosen terms still win over the new default', () => {
       </>,
     );
     expect(screen.getByTestId('labels').textContent).toBe('Student|Classes');
-    expect(screen.getByTestId('profile-tab').textContent).toBe('Studio profile');
+    expect(screen.getByTestId('profile-tab').textContent).toBe('Name & contact');
   });
 });

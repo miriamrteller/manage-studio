@@ -5,14 +5,14 @@ import { useTranslation } from 'react-i18next';
  * Entry point into the quote editor from a lead row or a shoot page
  * (Thread A embeds this on the shoot detail with `engagementId`).
  */
-export function CreateQuoteButton({ leadId, engagementId }: { leadId?: string; engagementId?: string }) {
+export function CreateQuoteButton({ leadId, engagementId, label }: { leadId?: string; engagementId?: string; label?: string }) {
   const { t } = useTranslation();
   const params = new URLSearchParams();
   if (leadId) params.set('lead', leadId);
   if (engagementId) params.set('engagement', engagementId);
   return (
     <Link to={`/admin/projects/quotes/new?${params.toString()}`} className="text-sm font-medium text-primary underline">
-      {t('pages.quotes.create')}
+      {label ?? t('pages.quotes.create')}
     </Link>
   );
 }

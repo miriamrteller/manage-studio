@@ -162,7 +162,7 @@ describe('/quote/:token after accepting', () => {
   it('open quote has no back link yet', async () => {
     rpc.mockResolvedValue({ data: quote('sent'), error: null });
     renderQuote();
-    expect(await screen.findByRole('button', { name: 'Accept and book' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Accept and pay deposit' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /my bookings/ })).not.toBeInTheDocument();
   });
 

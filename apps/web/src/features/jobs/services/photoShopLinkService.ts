@@ -34,6 +34,15 @@ export const PhotoShopLinkService = {
     return { url: body.url, email: body.email, expiresAt: body.expiresAt };
   },
 
+  /** Studio admin: make the link and have OpalSwift email it to the client (one button). */
+  async email(engagementId: string): Promise<PhotoShopLink & { emailed: boolean }> {
+    const body = await call({ action: 'email', engagementId });
+    if (typeof body.url !== 'string' || typeof body.email !== 'string' || typeof body.expiresAt !== 'string') {
+      throw new PhotoShopLinkError('failed');
+    }
+    return { url: body.url, email: body.email, expiresAt: body.expiresAt, emailed: body.emailed === true };
+  },
+
   /** The /shop/:token page: swap the link for the client's session and sign in. */
   async open(token: string): Promise<void> {
     const body = await call({ action: 'open', token });

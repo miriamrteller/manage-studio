@@ -52,6 +52,45 @@ describe('manual payment methods', () => {
   });
 });
 
+describe('Record a payment with nothing open (fewest steps, 13 Nov 2026)', () => {
+  it('starts from what is left of the package and records it in one go', async () => {
+    const onRecordNew = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ManualPaymentDialog
+        action={{ kind: 'record_new', amountMinor: 120050, currency: 'ILS' }}
+        language="en"
+        isSubmitting={false}
+        onClose={vi.fn()}
+        onMarkPaid={vi.fn()}
+        onRefund={vi.fn()}
+        onRecordNew={onRecordNew}
+      />,
+    );
+    expect(screen.getByLabelText('finance.record_payment.amount')).toHaveValue('1200.5');
+    fireEvent.click(screen.getByRole('radio', { name: 'pages.jobs.payments.manual.method_cash' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pages.jobs.payments.manual.confirmPaid' }));
+    await waitFor(() => expect(onRecordNew).toHaveBeenCalledWith(120050, 'cash', undefined, true));
+  });
+
+  it('the amount stays editable', async () => {
+    const onRecordNew = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ManualPaymentDialog
+        action={{ kind: 'record_new', amountMinor: null, currency: 'ILS' }}
+        language="en"
+        isSubmitting={false}
+        onClose={vi.fn()}
+        onMarkPaid={vi.fn()}
+        onRefund={vi.fn()}
+        onRecordNew={onRecordNew}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('finance.record_payment.amount'), { target: { value: '300' } });
+    fireEvent.click(screen.getByRole('button', { name: 'pages.jobs.payments.manual.confirmPaid' }));
+    await waitFor(() => expect(onRecordNew).toHaveBeenCalledWith(30000, 'bank_transfer', undefined, true));
+  });
+});
+
 describe('Bit / PayBox only where it can be receipted (owner decision 2026-11-04)', () => {
   it('is shown when the invoicing issues its receipt or the studio issues no documents', async () => {
     const { manualPaymentMethodsFor } = await import('../features/finance/lib/manualPaymentMethods');

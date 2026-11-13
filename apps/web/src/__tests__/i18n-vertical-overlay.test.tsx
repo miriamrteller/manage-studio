@@ -213,7 +213,7 @@ describe('dance overlay: health declaration for dance, neutral form for everyone
   it('the admin template editor is neutral "Forms" for every vertical (not overridden for dance)', () => {
     expect(base.en['pages.waivers.title']).toBe('Forms');
     expect(base.he['pages.waivers.title']).toBe('טפסים');
-    expect(base.en['nav.waivers']).toBe('Forms');
+    expect(base.en['nav.waivers']).toBe('Forms to sign');
     expect(danceFlat.en['pages.waivers.title']).toBeUndefined();
     expect(danceFlat.en['nav.waivers']).toBeUndefined();
   });

@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { formatCurrency } from '@shared/format';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
+import { useHasFeature } from '@/hooks/useHasFeature';
+import { FEATURES } from '@shared/index';
 import { supabase } from '@/lib/supabase';
 import { useFinanceSummary, useOutstandingEngagements } from '../hooks/useFinanceSummary';
 import { computeNetProfitMinor } from '../lib/netProfit';
@@ -19,6 +21,9 @@ export function FinanceHub() {
   const navigate = useNavigate();
   const tenant = useTenant();
   const period = useFinancePeriodFromUrl();
+  // Seasons and class enrolments follow the feature set: no "Levels, terms and sessions", no season notes.
+  const { hasFeature } = useHasFeature();
+  const usesSeasons = hasFeature(FEATURES.offerings.structure);
 
   const activeSeasonQuery = useQuery({
     queryKey: ['active-season-range', tenant?.id],
@@ -61,7 +66,7 @@ export function FinanceHub() {
 
   const netProfit = summary ? computeNetProfitMinor(summary) : 0;
   const currency = tenant?.currency ?? 'ILS';
-  const showNoSeasonMessage = period === 'season_active' && !activeSeasonQuery.data;
+  const showNoSeasonMessage = usesSeasons && period === 'season_active' && !activeSeasonQuery.data;
 
   return (
     <div className="space-y-8">
@@ -123,6 +128,7 @@ export function FinanceHub() {
 
       <FinanceCharts />
 
+      {usesSeasons && (
       <section className="space-y-4">
         <h3 className="text-lg font-semibold">{t('finance.hub.outstanding_title')}</h3>
         {!hasActiveSeason && (
@@ -158,6 +164,7 @@ export function FinanceHub() {
           </div>
         )}
       </section>
+      )}
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card border border-gray-200 p-4 space-y-4">

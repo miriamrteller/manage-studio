@@ -37,7 +37,16 @@ vi.mock('@/features/jobs/hooks/useJobPaymentRequests', () => ({
     error: null,
   }),
 }));
-vi.mock('@/features/jobs/components/JobPaymentsPanel', () => ({ JobPaymentsPanel: () => <p>payments panel</p> }));
+// The panel is its own "Payments" card: the shoot page adds no second heading.
+vi.mock('@/features/jobs/components/JobPaymentsPanel', async () => {
+  const { useTranslation } = await import('react-i18next');
+  return {
+    JobPaymentsPanel: () => {
+      const { t } = useTranslation();
+      return <h3>{t('pages.jobs.payments.title')}</h3>;
+    },
+  };
+});
 vi.mock('@/features/jobs/components/JobContractCard', () => ({ JobContractCard: () => <p>contract card</p> }));
 vi.mock('@/features/jobs/components/JobBookingProgress', () => ({ JobBookingProgress: () => null }));
 vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () => null }));
@@ -122,7 +131,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
     renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1?tab=client' });
     expect(screen.getAllByRole('tab').map((x) => x.textContent)).toEqual(['Details', 'Photo shop', 'What your client sees']);
     expect(screen.getByText('client view')).toBeTruthy();
-    expect(screen.queryByText('payments panel')).toBeNull();
+    expect(screen.queryByRole('heading', { name: baseValue('pages.jobs.payments.title') })).toBeNull();
     shop.on = false;
   });
 
@@ -130,14 +139,14 @@ describe('JobDetail (photographer admin shoot page)', () => {
     shop.on = false;
     renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
-    expect(screen.getByText('payments panel')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: baseValue('pages.jobs.payments.title') })).toBeTruthy();
     expect(screen.queryByText('photo shop card')).toBeNull();
   });
 
   it('renders every section heading as a string (Payments heading fixed)', () => {
     renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     const headings = screen.getAllByRole('heading').map((h) => h.textContent ?? '');
-    expect(headings).toContain(baseValue('pages.jobs.payments.title'));
+    expect(headings.filter((h) => h === baseValue('pages.jobs.payments.title'))).toHaveLength(1);
     for (const h of headings) expect(h).not.toMatch(/returned an object|\[object Object\]/);
     expect(document.body.textContent).not.toMatch(/returned an object/);
     const objectWarnings = warn.mock.calls.filter((c: unknown[]) => String(c[0]).includes('returned an object'));

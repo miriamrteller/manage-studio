@@ -22,6 +22,12 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+const features = vi.hoisted(() => ({ on: new Set<string>(['offerings:structure.configure']) }));
+
+vi.mock('@/hooks/useHasFeature', () => ({
+  useHasFeature: () => ({ hasFeature: (key: string) => features.on.has(key), isLoading: false }),
+}));
+
 vi.mock('@/hooks/useEntityLabels', () => ({
   useEntityLabels: () => ({ vertical: 'dance-studio' }),
 }));
@@ -33,7 +39,10 @@ function renderWithClient(ui: ReactNode) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  features.on = new Set(['offerings:structure.configure']);
+});
 
 describe('finance-admin shell (F1)', () => {
   it('FinanceHub renders title and navigation actions', () => {
@@ -42,6 +51,18 @@ describe('finance-admin shell (F1)', () => {
     expect(screen.getByText('finance.hub.card_payments')).toBeInTheDocument();
     expect(screen.getByText('finance.hub.card_expenses')).toBeInTheDocument();
     expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows outstanding enrolments only when the studio has levels, terms and sessions switched on', () => {
+    renderWithClient(<FinanceHub />);
+    expect(screen.getByText('finance.hub.outstanding_title')).toBeInTheDocument();
+    cleanup();
+
+    features.on = new Set();
+    renderWithClient(<FinanceHub />);
+    expect(screen.queryByText('finance.hub.outstanding_title')).not.toBeInTheDocument();
+    expect(screen.queryByText('finance.hub.no_active_season')).not.toBeInTheDocument();
+    expect(screen.getByText('finance.hub.card_payments')).toBeInTheDocument();
   });
 
   it('includes finance nav item for tenant_admin', () => {

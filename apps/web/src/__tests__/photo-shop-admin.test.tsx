@@ -29,6 +29,8 @@ const state = vi.hoisted(() => ({
   smugmugConnected: false,
   listAlbums: vi.fn(),
   checkGallery: vi.fn(),
+  emailLink: vi.fn(),
+  createLink: vi.fn(),
 }));
 
 vi.mock('@/features/settings/services/smugmugService', async (orig) => {
@@ -63,6 +65,17 @@ vi.mock('@/features/jobs/services/jobPaymentService', async (orig) => {
   return {
     ...real,
     JobPaymentService: { recordManualPayment: (id: string, method: string) => state.recordCash(id, method) },
+  };
+});
+
+vi.mock('@/features/jobs/services/photoShopLinkService', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/services/photoShopLinkService')>();
+  return {
+    ...real,
+    PhotoShopLinkService: {
+      email: (id: string) => state.emailLink(id),
+      create: (id: string) => state.createLink(id),
+    },
   };
 });
 
@@ -153,6 +166,8 @@ describe('JobPhotoShopCard', () => {
       suggested: 'a2',
     });
     state.checkGallery.mockReset();
+    state.emailLink.mockReset();
+    state.createLink.mockReset();
   });
 
   it('is hidden without the photo shop flag', () => {
@@ -198,6 +213,19 @@ describe('JobPhotoShopCard', () => {
     expect(send.disabled).toBe(false);
     fireEvent.click(send);
     await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/Alice-download'));
+  });
+
+  it('a new paid order starts from the download link sent last for this shoot', async () => {
+    state.orders = [
+      paidOrder,
+      { ...paidOrder, id: 'o0', status: 'delivered', delivery_url: 'https://studio.smugmug.com/old', delivered_at: '2026-11-03T10:00:00Z' },
+      { ...paidOrder, id: 'o00', status: 'delivered', delivery_url: 'https://studio.smugmug.com/newest', delivered_at: '2026-11-04T09:00:00Z' },
+    ];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('Paid, to deliver')).toBeTruthy();
+    expect(screen.getByLabelText('Download gallery link')).toHaveProperty('value', 'https://studio.smugmug.com/newest');
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/newest'));
   });
 
   it('a paid order shows each photo\'s thumbnail and file name, and can be marked as sent', async () => {
@@ -279,7 +307,7 @@ describe('JobPhotoShopCard', () => {
     await waitFor(() => expect(select.value).toBe('a2'));
     expect(screen.getByRole('radio', { name: 'In a SmugMug gallery' })).toHaveProperty('checked', true);
     expect(screen.queryByRole('button', { name: 'Add photos' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    // Checked straight away: no button press needed (fewest steps, 13 Nov 2026).
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     expect(await screen.findByText('Watermark on')).toBeTruthy();
     expect(screen.getByText('40 photos read')).toBeTruthy();
@@ -303,14 +331,39 @@ describe('JobPhotoShopCard', () => {
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
     const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    // The gallery named like the shoot is checked first; choosing another checks that one at once.
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     fireEvent.change(select, { target: { value: 'a1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/Settings > Photo Protection > Watermark Photos/)).toBeTruthy();
     expect(screen.getByText(/Lines marked ⚠ are only tips/)).toBeTruthy();
     expect(screen.getAllByText('⚠')).toHaveLength(3);
     fireEvent.click(screen.getByRole('radio', { name: 'Upload them here' }));
     expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
+  });
+
+  it('one button emails the shop link to the client from OpalSwift', async () => {
+    state.shop = shop({ provider: 'upload', gallery_key: 'upload' });
+    state.emailLink.mockResolvedValue({
+      url: 'https://lens.example/shop/tok', email: 'client@example.test', expiresAt: '2026-11-16T10:00:00Z', emailed: true,
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Email shop link to client' }));
+    expect(await screen.findByText(/Emailed to client@example.test/)).toBeTruthy();
+    expect(state.emailLink).toHaveBeenCalledWith('e1');
+    expect(state.createLink).not.toHaveBeenCalled();
+  });
+
+  it('if the email cannot go, the link is shown to copy or send on WhatsApp', async () => {
+    state.shop = shop({ provider: 'upload', gallery_key: 'upload' });
+    state.emailLink.mockResolvedValue({
+      url: 'https://lens.example/shop/tok', email: 'client@example.test', expiresAt: '2026-11-16T10:00:00Z', emailed: false,
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Email shop link to client' }));
+    expect(await screen.findByText(/We couldn't email it/)).toBeTruthy();
+    expect(screen.getByText('https://lens.example/shop/tok')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'WhatsApp' })).toBeTruthy();
   });
 
   it('links to the client view of this shoot', async () => {
@@ -334,8 +387,9 @@ describe('JobPhotoShopCard', () => {
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
     const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     fireEvent.change(select, { target: { value: 'a1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/This gallery only has videos/)).toBeTruthy();
     expect(screen.getAllByText('✗')).toHaveLength(1);
     expect(screen.queryByText(/Clients couldn't open the watermarked photos/)).toBeNull();
