@@ -795,11 +795,11 @@
       "help": {
         "link": "How leads work",
         "tip_label": "Help: {{topic}}",
-        "tip_get_leads": "Your enquiry form is a ready web page; you do not need a website. Each link below adds a tag, so every lead shows where it came from.",
+        "tip_get_leads": "Each link below adds a tag, so every lead shows where it came from.",
         "tip_lead_email": "Any email sent to this address becomes a lead on your Leads page. Forward enquiries here, or print it on flyers.",
         "tip_questions": "Extra questions appear on your enquiry form. Ready-made ones fill real fields (for example the class), so the pipeline can use them. Keep the form short.",
         "tip_digest": "Each morning, if any lead is due or overdue for follow-up, you get one email listing them. Set a follow-up date on a lead to use it.",
-        "tip_forms": "Make a separate form for a class, event or campaign, with its own link, QR code and questions. Leads show which form they came from.",
+        "tip_forms": "Every lead shows which form it came from, so you can see which class, event or campaign brought it in. Each form can also ask its own extra questions.",
         "tip_send": "We email this person a link to your form from your studio; replies go to you. It does not sign them up for anything.",
         "tip_website": "Only if you have your own website: paste this code into a page and your form appears there. Enquiries still land on your Leads page.",
         "title": "How leads work",
