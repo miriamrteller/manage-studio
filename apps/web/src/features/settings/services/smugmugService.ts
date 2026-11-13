@@ -71,7 +71,7 @@ export interface SmugMugAlbum {
 
 /** One line of "Check gallery" (pages.jobs.photo_shop.source.item.*). */
 export interface GalleryCheckItem {
-  code: 'watermark' | 'largest_size' | 'downloads' | 'photos' | 'preview_public' | 'original_hidden';
+  code: 'watermark' | 'largest_size' | 'downloads' | 'photos' | 'preview_public' | 'original_hidden' | 'some_private';
   ok: boolean;
   value?: string;
   /** photos only: why none could be read. */

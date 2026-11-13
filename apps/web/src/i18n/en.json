@@ -1825,6 +1825,11 @@
               "ok": "Full-size photos stay private",
               "fix": "Tip: a full-size photo opens without signing in. Lowering the largest display size keeps full-size photos private.",
               "in_photos": "Bigger sizes carry your watermark too"
+            },
+            "some_private": {
+              "ok": "All photos open for clients",
+              "fix_one": "Tip: {{count}} photo is hidden or private in SmugMug, so clients won't see it. To sell it, unhide it or make it public in SmugMug, then press Check again.",
+              "fix_other": "Tip: {{count}} photos are hidden or private in SmugMug, so clients won't see them. To sell them, unhide them or make them public in SmugMug, then press Check again."
             }
           },
           "error": {
@@ -1874,6 +1879,11 @@
         "link_no_email": "Add the client's email first, so the link can sign them in.",
         "paying_cash": "The client will pay in cash.",
         "record_cash": "Record cash payment"
+      },
+      "tabs": {
+        "details": "Details",
+        "shop": "Photo shop",
+        "client": "What your client sees"
       }
     },
     "pay": {
@@ -2163,13 +2173,17 @@
       "shoots_link": "Go to Shoots"
     },
     "preview": {
-      "intro": "Choose a shoot to see its photo shop as that client sees it. You can't buy anything here.",
+      "intro": "Choose a shoot to see its photo shop exactly as that client sees it. You can pick photos and try the buttons; nothing is ordered or charged.",
       "shoot": "Shoot",
       "choose": "Choose a shoot",
-      "note": "Preview: this is what your client sees. Buying is switched off here.",
+      "note": "Preview: this is exactly what your client sees. You can try everything; nothing is ordered or charged.",
       "sample": "These are sample photos until you add this shoot's photos.",
       "no_shop": "This shoot has no photos yet. Open the shoot and add photos in its Photo shop card.",
-      "failed": "The preview couldn't be loaded. Please try again."
+      "failed": "The preview couldn't be loaded. Please try again.",
+      "tried": "Preview only: nothing was ordered or charged.",
+      "tried_card": "Your client would now go to the secure payment page.",
+      "tried_shows": "Your client would see: “{{message}}”",
+      "open_from_shoot": "See it as your client"
     }
   },
   "nav": {
