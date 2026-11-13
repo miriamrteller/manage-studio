@@ -1,3 +1,4 @@
+import { openAmountMinor, useProjectRequests } from '@/features/jobs/lib/projectSummary';
 import { useWorkModes } from '@/hooks/useWorkModes';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -127,6 +128,19 @@ export function StudentsList() {
   });
 
   const { jobs } = useJobs({ enabled: withoutClasses && projects });
+  // "Still to pay" per client (projects): open payment requests on their projects.
+  const { data: projectRequests = [] } = useProjectRequests(jobs.map((job) => job.engagement_id));
+  const toPayByPerson = useMemo(() => {
+    const personOf = new Map(jobs.map((job) => [job.engagement_id, job.person_id]));
+    const map = new Map<string, number>();
+    for (const request of projectRequests) {
+      const personId = personOf.get(request.engagement_id);
+      if (!personId) continue;
+      map.set(personId, (map.get(personId) ?? 0) + openAmountMinor([request]));
+    }
+    return map;
+  }, [jobs, projectRequests]);
+
   const jobsByPerson = useMemo(() => {
     const map = new Map<string, JobRow[]>();
     for (const job of jobs) {
@@ -172,6 +186,8 @@ export function StudentsList() {
     familyMap,
     contactPrefsMap,
     jobsByPerson,
+    toPayByPerson,
+    currency: tenant?.currency ?? 'ILS',
     openEnrolModal,
     openNewShoot,
     // A name opens the person's own page, with everything about them.
@@ -188,6 +204,7 @@ export function StudentsList() {
       columnVisibility: {
         ...(withoutClasses ? { date_of_birth: false } : {}),
         ...(withoutClasses || !families ? { guardian: false } : {}),
+        ...(withoutClasses && projects ? {} : { to_pay: false }),
       },
     },
     onExpandedChange: setExpanded,

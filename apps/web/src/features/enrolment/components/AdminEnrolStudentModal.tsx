@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { EnrolmentService } from '../service';
-import { buildPaymentLink } from '../lib/adminEnrolmentService';
+import { AdminEnrolmentService, buildPaymentLink } from '../lib/adminEnrolmentService';
 import {
   ageAt,
   formatAgeRange,
@@ -188,6 +188,13 @@ export function AdminEnrolStudentModal({
     return created.id;
   };
 
+  const classNotReady =
+    classPicker.enrolledKeysLoading ||
+    !selectedClass ||
+    selectedClassAlreadyEnrolled ||
+    isSubmitting ||
+    (!selectedClassEligible && !ageOverrideConfirmed);
+
   const handleClassNext = async () => {
     if (!selectedClass || !tenant || selectedClassAlreadyEnrolled) return;
     if (!selectedClassEligible && !ageOverrideConfirmed) return;
@@ -197,6 +204,42 @@ export function AdminEnrolStudentModal({
       const id = await createPendingEnrolment();
       setEnrolmentId(id);
       setStep('payment');
+    } catch (err) {
+      setError(mapEnrolmentFlowError(err, t, 'admin'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // One step (owner, 13 Nov 2026: fewest taps): with the parent's email known, choosing the class
+  // and pressing one button enrols and emails the pay link. Other ways to pay stay one tap away.
+  const quickEmail = guardianEmail?.trim() || null;
+  const handleEnrolAndSendLink = async () => {
+    if (!selectedClass || !tenant || !quickEmail || selectedClassAlreadyEnrolled) return;
+    if (!selectedClassEligible && !ageOverrideConfirmed) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const id = await createPendingEnrolment();
+      setEnrolmentId(id);
+      const pricing = computeClassTotal(selectedClass, tenant);
+      const completion = await AdminEnrolmentService.sendPaymentLinkEmail(tenant, {
+        recipientEmail: quickEmail,
+        recipientName: guardianName ?? personName,
+        studentName: personName,
+        className: selectedClass.name,
+        engagementId: id,
+        totalMinor: pricing.totalMinor,
+        currency: pricing.currency,
+      });
+      await handlePaymentComplete({
+        message: completion.emailSent
+          ? t('pages.admin_enrol.link_sent', { email: quickEmail })
+          : t('pages.admin_enrol.link_not_emailed', { email: quickEmail }),
+        paymentChoice: 'send_link',
+        paymentUrl: completion.paymentUrl,
+        warning: completion.warning,
+      });
     } catch (err) {
       setError(mapEnrolmentFlowError(err, t, 'admin'));
     } finally {
@@ -334,25 +377,45 @@ export function AdminEnrolStudentModal({
             </p>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={onClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="primary"
-              className="flex-1"
-              disabled={
-                classPicker.enrolledKeysLoading ||
-                !selectedClass ||
-                selectedClassAlreadyEnrolled ||
-                isSubmitting ||
-                (!selectedClassEligible && !ageOverrideConfirmed)
-              }
-              onClick={() => void handleClassNext()}
-            >
-              {isSubmitting ? t('common.loading') : t('common.next')}
-            </Button>
-          </div>
+          {quickEmail ? (
+            <div className="space-y-2 pt-2">
+              <Button
+                variant="primary"
+                className="w-full"
+                disabled={classNotReady}
+                onClick={() => void handleEnrolAndSendLink()}
+              >
+                {isSubmitting ? t('common.loading') : t('pages.admin_enrol.enrol_and_send_link', { email: quickEmail })}
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={onClose}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={classNotReady}
+                  onClick={() => void handleClassNext()}
+                >
+                  {t('pages.admin_enrol.other_ways_to_pay')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={onClose}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                disabled={classNotReady}
+                onClick={() => void handleClassNext()}
+              >
+                {isSubmitting ? t('common.loading') : t('common.next')}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

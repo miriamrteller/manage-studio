@@ -11,6 +11,12 @@ import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
 import { JobCreateForm, type JobCreatePrefill } from './JobCreateForm';
 import { JobGalleryRowLink } from './JobGalleryLink';
 import type { JobRow } from '../services/jobService';
+import { latestQuoteByProject, openAmountMinor, useProjectRequests } from '../lib/projectSummary';
+import { formatMinor } from '../lib/jobPaymentFormat';
+import type { JobPaymentRequest } from '../services/jobPaymentService';
+import { useQuoteList } from '@/features/quotes/hooks/useQuotes';
+import { QuoteStatusBadge } from '@/features/quotes/components/QuoteStatusBadge';
+import type { QuoteSummary } from '@/features/quotes/services/quoteService';
 
 export function JobStatusBadge({ status }: { status: JobStatus }) {
   const { t } = useTranslation();
@@ -40,6 +46,14 @@ export function JobsList() {
     () => (statusFilter === 'all' ? jobs : jobs.filter((job) => job.job_status === statusFilter)),
     [jobs, statusFilter],
   );
+  // In the row (owner, 13 Nov 2026: fewer clicks): the quote and what is still to pay.
+  const { data: requests = [] } = useProjectRequests(visible.map((job) => job.engagement_id));
+  const { data: quotes = [] } = useQuoteList();
+  const quoteByProject = latestQuoteByProject(quotes);
+  const summaryOf = (job: JobRow): ProjectRowSummary => ({
+    quote: quoteByProject.get(job.engagement_id),
+    openMinor: openAmountMinor(requests.filter((r: JobPaymentRequest) => r.engagement_id === job.engagement_id)),
+  });
 
   return (
     <div className="space-y-6">
@@ -87,7 +101,7 @@ export function JobsList() {
         // Phones: one stacked card per shoot (no sideways scrolling).
         <ul className="space-y-3 sm:hidden" aria-label={labels.engagement.plural}>
           {visible.map((job) => (
-            <JobCard key={job.engagement_id} job={job} />
+            <JobCard key={job.engagement_id} job={job} summary={summaryOf(job)} />
           ))}
         </ul>
       )}
@@ -103,6 +117,8 @@ export function JobsList() {
                 <th className="px-3 py-2 text-start">{t('pages.jobs.location')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.status')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.contract')}</th>
+                <th className="px-3 py-2 text-start">{t('pages.people.project_quote')}</th>
+                <th className="px-3 py-2 text-start">{t('pages.people.still_to_pay')}</th>
               </tr>
             </thead>
             <tbody>
@@ -134,6 +150,12 @@ export function JobsList() {
                       <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
                     </div>
                   </td>
+                  <td className="px-3 py-2">
+                    <QuoteCell quote={summaryOf(job).quote} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <ToPayCell openMinor={summaryOf(job).openMinor} currency={job.currency} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -144,7 +166,25 @@ export function JobsList() {
   );
 }
 
-function JobCard({ job }: { job: JobRow }) {
+interface ProjectRowSummary {
+  quote: QuoteSummary | undefined;
+  openMinor: number;
+}
+
+function QuoteCell({ quote }: { quote: QuoteSummary | undefined }) {
+  return quote ? <QuoteStatusBadge status={quote.status} /> : <span className="text-muted-foreground">—</span>;
+}
+
+function ToPayCell({ openMinor, currency }: { openMinor: number; currency: string | null }) {
+  const { t, i18n } = useTranslation();
+  return openMinor > 0 ? (
+    <span className="font-medium text-amber-800">{formatMinor(openMinor, currency ?? 'ILS', i18n.language)}</span>
+  ) : (
+    <span className="text-muted-foreground">{t('pages.people.nothing_to_pay')}</span>
+  );
+}
+
+function JobCard({ job, summary }: { job: JobRow; summary: ProjectRowSummary }) {
   const { t, i18n } = useTranslation();
   return (
     <li className="card space-y-2 p-4 text-sm">
@@ -174,6 +214,14 @@ function JobCard({ job }: { job: JobRow }) {
         <dd className="break-words">{job.location ?? '—'}</dd>
         <dt className="text-muted-foreground">{t('pages.jobs.contract')}</dt>
         <dd>{job.waiver_evidence_id ? t('pages.jobs.contract_signed') : t('pages.jobs.contract_unsigned')}</dd>
+        <dt className="text-muted-foreground">{t('pages.people.project_quote')}</dt>
+        <dd>
+          <QuoteCell quote={summary.quote} />
+        </dd>
+        <dt className="text-muted-foreground">{t('pages.people.still_to_pay')}</dt>
+        <dd>
+          <ToPayCell openMinor={summary.openMinor} currency={job.currency} />
+        </dd>
       </dl>
       <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
     </li>

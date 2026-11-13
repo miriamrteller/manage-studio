@@ -170,6 +170,17 @@ export function ClassForm({
     mode: 'onBlur',
   });
 
+  // New class: the end time follows the start time (one hour later) until it is changed by hand.
+  const startTime = form.watch('start_time');
+  useEffect(() => {
+    if (classItem?.id || form.getFieldState('end_time').isDirty) return;
+    const match = /^(\d{2}):(\d{2})/.exec(startTime ?? '');
+    if (!match) return;
+    const minutes = (Number(match[1]) * 60 + Number(match[2]) + 60) % (24 * 60);
+    const end = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    form.setValue('end_time', end);
+  }, [startTime, classItem?.id, form]);
+
   // A new class: prefill the term and teacher once they load (still editable).
   const isNew = !classItem?.id;
   const suggestedTerm = isNew ? defaultTermId(terms) : '';
@@ -254,6 +265,13 @@ export function ClassForm({
   };
 
   const isCreating = !classItem?.id;
+  // A folded field with a problem opens "Details we filled in for you", so nothing is hidden.
+  const errors = form.formState.errors;
+  const foldedHasError = Boolean(
+    errors.season_id || errors.location || errors.category_id || errors.staff_id || errors.max_capacity ||
+      errors.end_time || errors.min_age || errors.max_age || errors.billing_mode || errors.status ||
+      errors.is_public || errors.waiver_required,
+  );
   const dayOptions = [
     { value: '', label: `-- ${t('common.select')} --` },
     ...Array.from({ length: 7 }, (_, day) => ({
@@ -285,143 +303,7 @@ export function ClassForm({
         {...form.register('name')}
       />
 
-      <FormInput
-        htmlFor="location"
-        label={t('form.class.location')}
-        placeholder={t('form.class.location_placeholder')}
-        error={form.formState.errors.location?.message}
-        {...form.register('location')}
-      />
-
-      <div className="space-y-2">
-        <label htmlFor="cover_image" className="block text-sm font-medium text-gray-700">
-          {t('form.class.cover_image')}
-        </label>
-        <input
-          id="cover_image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleFileChange}
-          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-        />
-        <p className="text-xs text-gray-500">{t('form.class.cover_image_hint')}</p>
-        {previewUrl && (
-          <img
-            src={previewUrl}
-            alt={t('form.class.cover_image')}
-            className="h-24 w-40 rounded border border-gray-200 object-cover"
-          />
-        )}
-        {(previewUrl || classItem?.cover_image_path) && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setPendingFile(null);
-              setRemoveCover(true);
-            }}
-          >
-            {t('form.class.remove_cover_image')}
-          </Button>
-        )}
-      </div>
-
-      {hasTerms ? (
-        <FormSelect
-          htmlFor="season_id"
-          label={t('form.class.term')}
-          error={form.formState.errors.season_id?.message}
-          required
-          {...form.register('season_id')}
-        >
-          <option value="">-- {t('common.select')} --</option>
-          {terms.map((term) => (
-            <option key={term.id} value={term.id}>
-              {term.name}
-            </option>
-          ))}
-        </FormSelect>
-      ) : (
-        <p className="text-sm text-muted-foreground" role="note">
-          {t('form.class.ongoing_term_note')}
-        </p>
-      )}
-
-      <FormSelect
-        htmlFor="category_id"
-        label={t('form.class.level')}
-        error={form.formState.errors.category_id?.message}
-        {...form.register('category_id')}
-      >
-        <option value="">-- {t('common.optional')} --</option>
-        {levels.map((level) => (
-          <option key={level.id} value={level.id}>
-            {level.name}
-          </option>
-        ))}
-      </FormSelect>
-
-      <FormSelect
-        htmlFor="staff_id"
-        label={t('form.class.teacher')}
-        error={form.formState.errors.staff_id?.message}
-        {...form.register('staff_id')}
-      >
-        <option value="">-- {t('common.optional')} --</option>
-        {teachers.map((teacher) => (
-          <option key={teacher.id} value={teacher.id}>
-            {teacher.name}
-          </option>
-        ))}
-      </FormSelect>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormInput
-          htmlFor="max_capacity"
-          label={t('form.class.max_capacity')}
-          type="number"
-          min="1"
-          error={form.formState.errors.max_capacity?.message}
-          required
-          {...form.register('max_capacity', { valueAsNumber: true })}
-        />
-
-        <FormInput
-          htmlFor="price_major"
-          label={t('form.class.price_families_pay')}
-          type="number"
-          min="0"
-          step="0.01"
-          helperText={t('form.class.price_families_pay_help')}
-          error={form.formState.errors.price_major?.message}
-          required
-          {...form.register('price_major', { valueAsNumber: true })}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormInput
-          htmlFor="min_age"
-          label={t('form.class.min_age')}
-          type="number"
-          min="0"
-          placeholder={t('form.class.age_placeholder')}
-          error={form.formState.errors.min_age?.message}
-          {...form.register('min_age', { valueAsNumber: true })}
-        />
-
-        <FormInput
-          htmlFor="max_age"
-          label={t('form.class.max_age')}
-          type="number"
-          min="0"
-          placeholder={t('form.class.age_placeholder')}
-          error={form.formState.errors.max_age?.message}
-          {...form.register('max_age', { valueAsNumber: true })}
-        />
-      </div>
-
+      {/* Owner, 13 Nov 2026 (fewest steps): only what we can't know is shown; the rest is filled in. */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <FormSelect
           htmlFor="day_of_week"
@@ -443,59 +325,202 @@ export function ClassForm({
         />
 
         <FormInput
-          htmlFor="end_time"
-          label={t('form.class.end_time')}
-          type="time"
-          error={form.formState.errors.end_time?.message}
+          htmlFor="price_major"
+          label={t('form.class.price_families_pay')}
+          type="number"
+          min="0"
+          step="0.01"
+          helperText={t('form.class.price_families_pay_help')}
+          error={form.formState.errors.price_major?.message}
           required
-          {...form.register('end_time')}
+          {...form.register('price_major', { valueAsNumber: true })}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormSelect
-          htmlFor="billing_mode"
-          label={t('form.class.billing_frequency')}
-          error={form.formState.errors.billing_mode?.message}
-          {...form.register('billing_mode')}
-        >
-          <option value="one_time">{t('billing.one_time', { defaultValue: 'One-time' })}</option>
-          {/* Only offered where the studio's provider can charge monthly; a monthly class stays editable. */}
-          {monthlyAllowed && <option value="recurring">{t('billing.monthly')}</option>}
-        </FormSelect>
+      <details className="rounded-md border border-gray-200 p-3" open={foldedHasError || undefined}>
+        <summary className="cursor-pointer font-medium">{t('studio_setup.filled_for_you')}</summary>
+        <div className="mt-3 space-y-4">
+          {hasTerms ? (
+            <FormSelect
+              htmlFor="season_id"
+              label={t('form.class.term')}
+              error={form.formState.errors.season_id?.message}
+              required
+              {...form.register('season_id')}
+            >
+              <option value="">-- {t('common.select')} --</option>
+              {terms.map((term) => (
+                <option key={term.id} value={term.id}>
+                  {term.name}
+                </option>
+              ))}
+            </FormSelect>
+          ) : (
+            <p className="text-sm text-muted-foreground" role="note">
+              {t('form.class.ongoing_term_note')}
+            </p>
+          )}
+          <FormInput
+            htmlFor="location"
+            label={t('form.class.location')}
+            placeholder={t('form.class.location_placeholder')}
+            error={form.formState.errors.location?.message}
+            {...form.register('location')}
+          />
+          <FormSelect
+            htmlFor="category_id"
+            label={t('form.class.level')}
+            error={form.formState.errors.category_id?.message}
+            {...form.register('category_id')}
+          >
+            <option value="">-- {t('common.optional')} --</option>
+            {levels.map((level) => (
+              <option key={level.id} value={level.id}>
+                {level.name}
+              </option>
+            ))}
+          </FormSelect>
+          <FormSelect
+            htmlFor="staff_id"
+            label={t('form.class.teacher')}
+            error={form.formState.errors.staff_id?.message}
+            {...form.register('staff_id')}
+          >
+            <option value="">-- {t('common.optional')} --</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.name}
+              </option>
+            ))}
+          </FormSelect>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormInput
+              htmlFor="max_capacity"
+              label={t('form.class.max_capacity')}
+              type="number"
+              min="1"
+              error={form.formState.errors.max_capacity?.message}
+              required
+              {...form.register('max_capacity', { valueAsNumber: true })}
+            />
 
-        <FormSelect
-          htmlFor="status"
-          label={t('form.class.status')}
-          error={form.formState.errors.status?.message}
-          {...form.register('status')}
-        >
-          <option value="active">{t('form.class.status_active')}</option>
-          <option value="full">{t('form.class.status_full')}</option>
-          <option value="cancelled">{t('form.class.status_cancelled')}</option>
-        </FormSelect>
-      </div>
+            <FormInput
+              htmlFor="end_time"
+              label={t('form.class.end_time')}
+              type="time"
+              error={form.formState.errors.end_time?.message}
+              required
+              {...form.register('end_time')}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormInput
+              htmlFor="min_age"
+              label={t('form.class.min_age')}
+              type="number"
+              min="0"
+              placeholder={t('form.class.age_placeholder')}
+              error={form.formState.errors.min_age?.message}
+              {...form.register('min_age', { valueAsNumber: true })}
+            />
 
-      <FormSelect
-        htmlFor="is_public"
-        label={t('form.class.is_public')}
-        error={form.formState.errors.is_public?.message}
-        {...form.register('is_public')}
-      >
-        <option value="true">{t('common.yes')}</option>
-        <option value="false">{t('common.no')}</option>
-      </FormSelect>
+            <FormInput
+              htmlFor="max_age"
+              label={t('form.class.max_age')}
+              type="number"
+              min="0"
+              placeholder={t('form.class.age_placeholder')}
+              error={form.formState.errors.max_age?.message}
+              {...form.register('max_age', { valueAsNumber: true })}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormSelect
+              htmlFor="billing_mode"
+              label={t('form.class.billing_frequency')}
+              error={form.formState.errors.billing_mode?.message}
+              {...form.register('billing_mode')}
+            >
+              <option value="one_time">{t('billing.one_time', { defaultValue: 'One-time' })}</option>
+              {/* Only offered where the studio's provider can charge monthly; a monthly class stays editable. */}
+              {monthlyAllowed && <option value="recurring">{t('billing.monthly')}</option>}
+            </FormSelect>
 
-      <FormSelect
-        htmlFor="waiver_required"
-        label={t('form.class.waiver_required')}
-        helperText={t('form.class.waiver_required_help')}
-        error={form.formState.errors.waiver_required?.message}
-        {...form.register('waiver_required')}
-      >
-        <option value="true">{t('common.yes')}</option>
-        <option value="false">{t('common.no')}</option>
-      </FormSelect>
+            <FormSelect
+              htmlFor="status"
+              label={t('form.class.status')}
+              error={form.formState.errors.status?.message}
+              {...form.register('status')}
+            >
+              <option value="active">{t('form.class.status_active')}</option>
+              <option value="full">{t('form.class.status_full')}</option>
+              <option value="cancelled">{t('form.class.status_cancelled')}</option>
+            </FormSelect>
+          </div>
+          <FormSelect
+            htmlFor="is_public"
+            label={t('form.class.is_public')}
+            error={form.formState.errors.is_public?.message}
+            {...form.register('is_public')}
+          >
+            <option value="true">{t('common.yes')}</option>
+            <option value="false">{t('common.no')}</option>
+          </FormSelect>
+          <FormSelect
+            htmlFor="waiver_required"
+            label={t('form.class.waiver_required')}
+            helperText={t('form.class.waiver_required_help')}
+            error={form.formState.errors.waiver_required?.message}
+            {...form.register('waiver_required')}
+          >
+            <option value="true">{t('common.yes')}</option>
+            <option value="false">{t('common.no')}</option>
+          </FormSelect>
+          <div className="space-y-2">
+            <label htmlFor="cover_image" className="block text-sm font-medium text-gray-700">
+              {t('form.class.cover_image')}
+            </label>
+            <input
+              id="cover_image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+            />
+            <p className="text-xs text-gray-500">{t('form.class.cover_image_hint')}</p>
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt={t('form.class.cover_image')}
+                className="h-24 w-40 rounded border border-gray-200 object-cover"
+              />
+            )}
+            {(previewUrl || classItem?.cover_image_path) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPendingFile(null);
+                  setRemoveCover(true);
+                }}
+              >
+                {t('form.class.remove_cover_image')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </details>
+
+
+
+
+
+
+
+
+
+
 
       <div className="flex gap-2 pt-4">
         <Button

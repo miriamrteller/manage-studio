@@ -618,7 +618,14 @@
       "no_bookings": "אין עדיין הזמנות.",
       "projects_section": "פרויקטים",
       "new_project": "פרויקט חדש",
-      "add_client": "הוספת לקוח"
+      "add_client": "הוספת לקוח",
+      "no_projects": "עדיין אין פרויקטים.",
+      "project_quote": "הצעת מחיר",
+      "still_to_pay": "נשאר לתשלום",
+      "nothing_to_pay": "אין",
+      "signed_forms": "טפסים חתומים",
+      "no_signed_forms": "עדיין אין טפסים חתומים.",
+      "signed_on": "נחתם ב-{{date}}"
     },
     "families": {
       "email_family": "שליחת מייל למשפחה",
@@ -1112,7 +1119,10 @@
       "override_reason": "סיבה לשימוש בכתובת אימייל אחרת",
       "override_reason_placeholder": "ההורה ביקש כתובת חלופית",
       "link_copied": "הקישור הועתק ללוח.",
-      "link_copy_failed": "לא ניתן להעתיק אוטומטית. בחרו והעתיקו את הקישור ידנית."
+      "link_copy_failed": "לא ניתן להעתיק אוטומטית. בחרו והעתיקו את הקישור ידנית.",
+      "enrol_and_send_link": "רישום ושליחת קישור לתשלום ל-{{email}}",
+      "other_ways_to_pay": "דרכי תשלום אחרות",
+      "link_not_emailed": "הקישור לתשלום נוצר, אבל המייל לא נשלח. אפשר להעתיק את הקישור למטה ולשלוח אותו בעצמך."
     },
     "enrol_pay": {
       "title": "השלמת תשלום",

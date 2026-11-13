@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWorkModes } from '@/hooks/useWorkModes';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
-import { ClientShootList } from '@/features/jobs/components/ClientShootList';
+import { PersonProjects } from '@/features/people/components/PersonProjects';
+import { openAmountMinor, useProjectRequests } from '@/features/jobs/lib/projectSummary';
+import { PersonSignedForms } from '@/features/people/components/PersonSignedForms';
 import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
 import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
@@ -77,6 +79,13 @@ export function StudentSlideOver({
       !shootIds.has(engagement.id) &&
       (offerings.find((item) => item.id === engagement.offering_id)?.offering_type ?? 'class') === 'class',
   );
+  // "Still to pay" at the top: open payment requests on projects + class places waiting for payment.
+  const { data: projectRequests = [] } = useProjectRequests(clientShoots.map((job) => job.engagement_id));
+  const toPayMinor =
+    openAmountMinor(projectRequests) +
+    classEngagements
+      .filter((engagement) => engagement.status === 'pending_payment')
+      .reduce((sum, engagement) => sum + (offerings.find((item) => item.id === engagement.offering_id)?.price_minor ?? 0), 0);
 
   const [recordingEngagementId, setRecordingEngagementId] = useState<string | null>(null);
   const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
@@ -209,6 +218,14 @@ export function StudentSlideOver({
 
           {person && !isLoading && (
             <>
+              {toPayMinor > 0 && (
+                <p
+                  className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900"
+                  role="status"
+                >
+                  {t('pages.people.still_to_pay')}: {formatCurrency(toPayMinor, tenant?.currency ?? 'ILS', i18n.language)}
+                </p>
+              )}
               {/* ── 1. Student info ── */}
               <section className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -296,7 +313,7 @@ export function StudentSlideOver({
                       {t('pages.people.new_project')}
                     </Button>
                   </div>
-                  <ClientShootList jobs={clientShoots} />
+                  <PersonProjects jobs={clientShoots} />
                 </section>
               )}
 
@@ -533,7 +550,11 @@ export function StudentSlideOver({
                 </>
               )}
 
-              {/* ── 4. Notification preferences ── */}
+              <PersonSignedForms personId={personId} />
+
+              <hr style={{ borderColor: 'var(--color-border-default)' }} />
+
+              {/* ── Notification preferences ── */}
               <section className="space-y-2">
                 <h3 className="font-semibold text-gray-700">{t('pages.students.notifications_section')}</h3>
                 {!contactPrefs ? (
