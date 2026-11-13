@@ -6,11 +6,13 @@
 export const TENANT_HOURLY_LIMIT = 30;
 export const RECIPIENT_COOLDOWN_MINUTES = 10;
 
-export type LeadLinkKind = "form" | "web_instructions";
+export type LeadLinkKind = "form" | "web_instructions" | "class_link" | "booking_link";
 
 export const LEAD_LINK_ACTIONS: Record<LeadLinkKind, string> = {
   form: "leads.form_link_sent",
   web_instructions: "leads.web_instructions_sent",
+  class_link: "leads.class_link_sent",
+  booking_link: "leads.booking_link_sent",
 };
 
 export function leadLinkLimitError(input: {

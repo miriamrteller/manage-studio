@@ -733,7 +733,11 @@
         "send_quote": "שליחת הצעת מחיר",
         "send_quote_hint": "קובע את המועד ושולח ללקוח במייל הצעת מחיר במחיר החבילה, לאישור ולתשלום המקדמה.",
         "edit_before_sending": "עריכה לפני שליחה",
-        "next_step": "השלב הבא"
+        "next_step": "השלב הבא",
+        "send_class_link": "שליחת קישור לחוגים",
+        "send_booking_link": "שליחת קישור לקביעת תור",
+        "link_sent": "נשלח אל {{email}}",
+        "link_needs_email": "יש להוסיף מייל כדי לשלוח את הקישור"
       },
       "named_forms": {
         "title": "טפסים",

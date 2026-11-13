@@ -1,4 +1,6 @@
 ﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useWorkModes } from '@/hooks/useWorkModes';
+import { SendLeadLinkButton } from './SendLeadLinkButton';
 import { followUpState } from '../lib/followUp';
 import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -126,6 +128,15 @@ export function LeadsList() {
   // Send quote / Confirm wherever Projects (quotes) is on, in any industry (owner, 13 Nov 2026).
   const { hasFeature } = useHasFeature();
   const canConvert = hasFeature(FEATURES.billing.quotes);
+  // Without quotes, the next step emails the class list (Classes) or the booking page (Appointments).
+  const { classes, appointments } = useWorkModes();
+  const linkKind: 'class_link' | 'booking_link' | null = canConvert
+    ? null
+    : classes
+      ? 'class_link'
+      : appointments
+        ? 'booking_link'
+        : null;
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
   const {
@@ -491,7 +502,9 @@ export function LeadsList() {
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.stage')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.last_contacted')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.follow_up')}</th>
-                {canConvert && <th className="px-3 py-2 text-start">{t('pages.crm.leads.next_step')}</th>}
+                {(canConvert || linkKind) && (
+                  <th className="px-3 py-2 text-start">{t('pages.crm.leads.next_step')}</th>
+                )}
                 <th className="px-3 py-2 text-start">
                   <span className="sr-only">{t('pages.crm.leads.actions')}</span>
                 </th>
@@ -608,6 +621,19 @@ export function LeadsList() {
                             <CreateQuoteButton leadId={lead.id} label={t('pages.crm.leads.edit_before_sending')} />
                           )}
                         </div>
+                      )}
+                    </td>
+                  )}
+                  {linkKind && (
+                    <td className="px-3 py-2">
+                      {lead.converted_account_id || lead.stage === 'won' || lead.stage === 'lost' ? null : (
+                        <SendLeadLinkButton
+                          kind={linkKind}
+                          lead={lead}
+                          onSent={() => {
+                            if (lead.stage === 'new') updateStage({ id: lead.id, stage: 'contacted' });
+                          }}
+                        />
                       )}
                     </td>
                   )}

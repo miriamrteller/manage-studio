@@ -729,7 +729,11 @@
         "send_quote": "Send quote",
         "send_quote_hint": "Books it in and emails the client the quote at the package price, to accept and pay the deposit.",
         "edit_before_sending": "Edit before sending",
-        "next_step": "Next step"
+        "next_step": "Next step",
+        "send_class_link": "Send class link",
+        "send_booking_link": "Send booking link",
+        "link_sent": "Sent to {{email}}",
+        "link_needs_email": "Add an email to send the link"
       },
       "named_forms": {
         "title": "Forms",
