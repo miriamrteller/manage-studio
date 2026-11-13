@@ -177,10 +177,10 @@ export function NavDrawer() {
             </p>
           )}
           {canReport && (
-            <Button
+            // Styled like a menu line (icon and name on one row), not a Button: Button is not a
+            // flex box, so its icon and label used to stack (owner, 13 Nov 2026).
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               onClick={() => {
                 close();
                 openReportProblem();
@@ -188,13 +188,14 @@ export function NavDrawer() {
               aria-label={isIconsOnly ? t('report_problem.menu_item') : undefined}
               title={isIconsOnly ? t('report_problem.menu_item') : undefined}
               className={cn(
-                'w-full gap-2 text-[var(--nav-text)] hover:bg-[var(--nav-hover)] hover:text-[var(--nav-text)]',
-                isIconsOnly ? 'justify-center px-0' : 'justify-start',
+                'flex w-full items-center gap-3 rounded-md py-2 text-start text-sm font-medium text-[var(--nav-text)] transition-colors hover:bg-[var(--nav-hover)]',
+                'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
+                isIconsOnly ? 'justify-center px-0' : 'px-2',
               )}
             >
-              <MessageSquare size={16} aria-hidden />
-              {!isIconsOnly && t('report_problem.menu_item')}
-            </Button>
+              <MessageSquare size={18} aria-hidden className="shrink-0" />
+              {!isIconsOnly && <span className="truncate">{t('report_problem.menu_item')}</span>}
+            </button>
           )}
           <Button
             type="button"
