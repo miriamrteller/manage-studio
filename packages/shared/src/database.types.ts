@@ -5256,6 +5256,7 @@ export type Database = {
           business_preset: string
           celebrations: Json
           chrome_style: string
+          class_reminders: Json
           client_booking: boolean
           contact_email: string
           country: string
@@ -5285,7 +5286,6 @@ export type Database = {
           invoicing_secret_enc: string | null
           labels: Json
           language_default: string
-          class_reminders: Json
           lead_form: Json
           lead_thank_you: Json
           legal_pack_ack_drafts: string[]
@@ -5355,6 +5355,7 @@ export type Database = {
           business_preset?: string
           celebrations?: Json
           chrome_style?: string
+          class_reminders?: Json
           client_booking?: boolean
           contact_email: string
           country?: string
@@ -5384,7 +5385,6 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
-          class_reminders?: Json
           lead_form?: Json
           lead_thank_you?: Json
           legal_pack_ack_drafts?: string[]
@@ -5454,6 +5454,7 @@ export type Database = {
           business_preset?: string
           celebrations?: Json
           chrome_style?: string
+          class_reminders?: Json
           client_booking?: boolean
           contact_email?: string
           country?: string
@@ -5483,7 +5484,6 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
-          class_reminders?: Json
           lead_form?: Json
           lead_thank_you?: Json
           legal_pack_ack_drafts?: string[]
