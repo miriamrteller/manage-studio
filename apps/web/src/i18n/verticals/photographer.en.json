@@ -147,6 +147,9 @@
     "services": {
       "none": "No services yet. Click “Add service” to create your first one — for example a mini session or a consultation.",
       "subtitle": "The sessions clients can book with you online — for example mini sessions, portrait sessions or consultations."
+    },
+    "book": {
+      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote."
     }
   },
   "settings": {

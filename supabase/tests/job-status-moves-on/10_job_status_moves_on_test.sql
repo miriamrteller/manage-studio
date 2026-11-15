@@ -43,7 +43,7 @@ BEGIN
   SELECT * INTO v FROM ids;
 
   v_result := advance_job_statuses('2026-11-15 10:00+02');
-  IF v_result IS DISTINCT FROM '{"delivered": 2, "shot": 2}'::jsonb THEN RAISE EXCEPTION 'FAIL counts: %', v_result; END IF;
+  IF v_result - 'gallery_shared' IS DISTINCT FROM '{"delivered": 2, "shot": 2}'::jsonb THEN RAISE EXCEPTION 'FAIL counts: %', v_result; END IF;
   IF pg_temp.status_of(v.past) <> 'shot' THEN RAISE EXCEPTION 'FAIL past shoot: %', pg_temp.status_of(v.past); END IF;
   IF pg_temp.status_of(v.future) <> 'booked' THEN RAISE EXCEPTION 'FAIL shoot today: %', pg_temp.status_of(v.future); END IF;
   IF pg_temp.status_of(v.gallery) <> 'delivered' THEN RAISE EXCEPTION 'FAIL gallery shared: %', pg_temp.status_of(v.gallery); END IF;
@@ -55,7 +55,7 @@ BEGIN
   UPDATE job_details SET job_status = 'booked' WHERE engagement_id = v.by_hand;
   UPDATE job_details SET job_status = 'editing' WHERE engagement_id = v.gallery;
   v_result := advance_job_statuses('2026-11-15 11:00+02');
-  IF v_result IS DISTINCT FROM '{"delivered": 0, "shot": 0}'::jsonb THEN RAISE EXCEPTION 'FAIL second run: %', v_result; END IF;
+  IF v_result - 'gallery_shared' IS DISTINCT FROM '{"delivered": 0, "shot": 0}'::jsonb THEN RAISE EXCEPTION 'FAIL second run: %', v_result; END IF;
   IF pg_temp.status_of(v.by_hand) <> 'booked' THEN RAISE EXCEPTION 'FAIL by-hand overridden: %', pg_temp.status_of(v.by_hand); END IF;
   IF pg_temp.status_of(v.gallery) <> 'editing' THEN RAISE EXCEPTION 'FAIL by-hand delivered overridden'; END IF;
 

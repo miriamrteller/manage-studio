@@ -30,9 +30,10 @@ export function eventDateToLocal(eventDate: string | null | undefined): string {
 }
 
 /**
- * "Send quote" on a lead row: one click when the lead already names a package
- * (date and place from the enquiry, else the package's place). Without a
- * package, or if sending fails, the prefilled form opens instead.
+ * "Send quote" (or "Confirm" for a shoot request) on a lead row: one click when
+ * the lead names a package or the studio has only one (owner, 15 Nov 2026), with
+ * the date and place from the enquiry, else the package's place. Otherwise, or
+ * if sending fails, the prefilled form opens instead.
  */
 export function SendLeadQuoteButton({
   leadId,
@@ -41,6 +42,7 @@ export function SendLeadQuoteButton({
   eventDate,
   location,
   onNeedsForm,
+  label,
 }: {
   leadId: string;
   leadName: string;
@@ -48,11 +50,14 @@ export function SendLeadQuoteButton({
   eventDate: string | null | undefined;
   location: string | null;
   onNeedsForm: () => void;
+  /** Button text; "Send quote" by default. */
+  label?: string;
 }) {
   const { t } = useTranslation();
   const packagesQuery = useJobPackages();
   const { send, busy } = useSendLeadQuote();
-  const pkg = (packagesQuery.data ?? []).find((p) => p.id === offeringId);
+  const packages = packagesQuery.data ?? [];
+  const pkg = packages.find((p) => p.id === offeringId) ?? (packages.length === 1 ? packages[0] : undefined);
 
   const onClick = async () => {
     if (!pkg) {
@@ -73,8 +78,8 @@ export function SendLeadQuoteButton({
   };
 
   return (
-    <Button variant="primary" size="sm" isLoading={busy} disabled={busy} onClick={() => void onClick()}>
-      {t('pages.crm.leads.send_quote')}
+    <Button variant="primary" size="sm" isLoading={busy} disabled={busy || packagesQuery.isLoading} onClick={() => void onClick()}>
+      {label ?? t('pages.crm.leads.send_quote')}
     </Button>
   );
 }

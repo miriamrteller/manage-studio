@@ -5,7 +5,7 @@
  * Confirm on a Book page request.
  * Run: pnpm -C apps/web test lead-send-quote
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -13,7 +13,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 const h = vi.hoisted(() => ({
   convert: vi.fn(async (_input: unknown) => 'eng-7'),
   send: vi.fn(async (_input: unknown) => ({ quoteId: 'q-7', sent: true })),
+  packages: [] as Array<Record<string, unknown>>,
 }));
+const FAMILY = { id: 'p1', name: 'Family shoot', duration_mins: 60, price_minor: 90000, currency: 'ILS', location: 'Park', is_public: true };
+const NEWBORN = { id: 'p2', name: 'Newborn shoot', duration_mins: 90, price_minor: 120000, currency: 'ILS', location: null, is_public: true };
 
 vi.mock('@/hooks/useTenant', () => ({
   useTenant: () => ({ id: 't-1', name: 'Lens Studio', currency: 'ILS', language_default: 'en' }),
@@ -22,15 +25,17 @@ vi.mock('@/hooks/useEntityLabels', () => ({
   useEntityLabels: () => ({ labels: { offering: { singular: 'Package', plural: 'Packages' } } }),
 }));
 vi.mock('@/features/jobs/hooks/useJobs', () => ({
-  useJobPackages: () => ({
-    data: [{ id: 'p1', name: 'Family shoot', duration_mins: 60, price_minor: 90000, currency: 'ILS', location: 'Park', is_public: true }],
-  }),
+  useJobPackages: () => ({ data: h.packages, isLoading: false }),
   useConvertLead: () => ({ mutateAsync: h.convert, isPending: false }),
 }));
 vi.mock('@/features/quotes/services/sendShootRequestQuote', () => ({ sendShootRequestQuote: h.send }));
 
 import i18n from '@/i18n/i18n';
 import { ConvertLeadPanel, SendLeadQuoteButton } from '@/features/jobs/components/ConvertLeadPanel';
+
+beforeEach(() => {
+  h.packages = [FAMILY];
+});
 
 afterEach(() => {
   cleanup();
@@ -79,7 +84,8 @@ describe('Send quote button on a lead row', () => {
     expect(onNeedsForm).not.toHaveBeenCalled();
   });
 
-  it('opens the form when the lead names no package', () => {
+  it('opens the form when the lead names no package and the studio has several', () => {
+    h.packages = [FAMILY, NEWBORN];
     const onNeedsForm = vi.fn();
     render(
       <I18nextProvider i18n={i18n}>
@@ -91,5 +97,51 @@ describe('Send quote button on a lead row', () => {
     fireEvent.click(screen.getByRole('button', { name: i18n.t('pages.crm.leads.send_quote') }));
     expect(onNeedsForm).toHaveBeenCalled();
     expect(h.convert).not.toHaveBeenCalled();
+  });
+
+  it('sends in one click with the only package when the lead names none', async () => {
+    const onNeedsForm = vi.fn();
+    render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter initialEntries={['/admin/leads']}>
+          <Routes>
+            <Route
+              path="/admin/leads"
+              element={<SendLeadQuoteButton leadId="l-10" leadName="Dana" offeringId={null} eventDate={null} location={null} onNeedsForm={onNeedsForm} />}
+            />
+            <Route path="/admin/projects/quotes/:id" element={<p>quote page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('pages.crm.leads.send_quote') }));
+    await waitFor(() => expect(screen.getByText('quote page')).toBeInTheDocument());
+    expect(h.convert).toHaveBeenCalledWith(expect.objectContaining({ lead_id: 'l-10', offering_id: 'p1' }));
+    expect(onNeedsForm).not.toHaveBeenCalled();
+  });
+
+  it('a shoot request confirms in one click', async () => {
+    h.packages = [FAMILY, NEWBORN];
+    const onNeedsForm = vi.fn();
+    render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter initialEntries={['/admin/leads']}>
+          <Routes>
+            <Route
+              path="/admin/leads"
+              element={
+                <SendLeadQuoteButton leadId="l-11" leadName="Dana" offeringId="p2" eventDate="2026-12-04" location={null}
+                  onNeedsForm={onNeedsForm} label={i18n.t('pages.crm.leads.confirm_shoot')} />
+              }
+            />
+            <Route path="/admin/projects/quotes/:id" element={<p>quote page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('pages.crm.leads.confirm_shoot') }));
+    await waitFor(() => expect(screen.getByText('quote page')).toBeInTheDocument());
+    expect(h.convert).toHaveBeenCalledWith(expect.objectContaining({ lead_id: 'l-11', offering_id: 'p2' }));
+    expect(onNeedsForm).not.toHaveBeenCalled();
   });
 });

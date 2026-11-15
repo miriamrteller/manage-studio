@@ -14,14 +14,18 @@ import type { StoredAnswer } from '@shared/index';
 export const LEAD_STAGES = ['new', 'contacted', 'qualified', 'proposal', 'trial_booked', 'trial_done', 'won', 'lost'] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 
-/** Photographers: lead → quote → job (unchanged). Won = converted to a job. */
+/** Without classes (projects, appointments): lead → quote → job. Won = converted to a job. */
 export const PHOTOGRAPHER_STAGES: readonly LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'lost'];
-/** Dance and other class studios: trial, then enrolled (won). */
+/** Studios with Classes: trial, then enrolled (won). */
 export const CLASS_STAGES: readonly LeadStage[] = ['new', 'contacted', 'trial_booked', 'trial_done', 'won', 'lost'];
 
-/** The stages a studio picks from; a lead already in another stage keeps it in its list. */
-export function stagesFor(vertical: string | null | undefined, current?: LeadStage): readonly LeadStage[] {
-  const base = vertical === 'photographer' ? PHOTOGRAPHER_STAGES : CLASS_STAGES;
+/**
+ * The stages a studio picks from, by its "How do clients work with you?" ticks (owner,
+ * 13 Nov 2026: the feature set decides, not the business type): trial stages with Classes,
+ * quote stages otherwise. A lead already in another stage keeps it in its list.
+ */
+export function stagesFor(teachesClasses: boolean, current?: LeadStage): readonly LeadStage[] {
+  const base = teachesClasses ? CLASS_STAGES : PHOTOGRAPHER_STAGES;
   return current && !base.includes(current) ? [...base, current] : base;
 }
 

@@ -12,8 +12,8 @@ import type { ReactElement } from 'react';
 
 const h = vi.hoisted(() => ({ vertical: 'photographer', features: [] as string[] }));
 vi.mock('@/hooks/useTenant', () => ({
-  useTenant: () => ({ id: 't1', subdomain: 'lens', vertical: h.vertical }),
-  useTenantQuery: () => ({ tenant: { id: 't1', subdomain: 'lens', vertical: h.vertical }, isLoading: false }),
+  useTenant: () => ({ id: 't1', subdomain: 'lens', vertical: h.vertical, profile: h.vertical === 'photographer' ? { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: true } : { paymentFlow: 'recurring', teachesClasses: false, familyAccounts: false, clientBooking: true } }),
+  useTenantQuery: () => ({ tenant: { id: 't1', subdomain: 'lens', vertical: h.vertical, profile: h.vertical === 'photographer' ? { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: true } : { paymentFlow: 'recurring', teachesClasses: false, familyAccounts: false, clientBooking: true } }, isLoading: false }),
 }));
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => h.features.includes(k), isLoading: false }),
