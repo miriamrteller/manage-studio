@@ -10,7 +10,6 @@ import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useHasFeature } from '@/hooks/useHasFeature';
 import { useLeads } from '../hooks/useLeads';
 import { ConvertLeadPanel, SendLeadQuoteButton } from '@/features/jobs/components/ConvertLeadPanel';
@@ -124,7 +123,6 @@ function LeadAnswers({ lead, lang }: { lead: Lead; lang: 'en' | 'he' }) {
 
 export function LeadsList() {
   const { t, i18n } = useTranslation();
-  const { vertical } = useEntityLabels();
   // Send quote / Confirm wherever Projects (quotes) is on, in any industry (owner, 13 Nov 2026).
   const { hasFeature } = useHasFeature();
   const canConvert = hasFeature(FEATURES.billing.quotes);
@@ -580,7 +578,7 @@ export function LeadsList() {
                         updateStage({ id: lead.id, stage: e.target.value as LeadStage })
                       }
                     >
-                      {stagesFor(vertical, lead.stage).map((stage) => (
+                      {stagesFor(classes, lead.stage).map((stage) => (
                         <option key={stage} value={stage}>
                           {t(`pages.crm.leads.stage_${stage}`)}
                         </option>
@@ -603,20 +601,16 @@ export function LeadsList() {
                         <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          {isShootRequest(lead) ? (
-                            <Button variant="primary" size="sm" onClick={() => setConvertingId(lead.id)}>
-                              {t('pages.crm.leads.confirm_shoot')}
-                            </Button>
-                          ) : (
-                            <SendLeadQuoteButton
-                              leadId={lead.id}
-                              leadName={lead.name}
-                              offeringId={lead.offering_id}
-                              eventDate={lead.event_date}
-                              location={answerPlain(lead.answers?.event_location)}
-                              onNeedsForm={() => setConvertingId(lead.id)}
-                            />
-                          )}
+                          {/* A shoot request names its package and day: Confirm books and quotes in one click. */}
+                          <SendLeadQuoteButton
+                            leadId={lead.id}
+                            leadName={lead.name}
+                            offeringId={lead.offering_id}
+                            eventDate={lead.event_date}
+                            location={answerPlain(lead.answers?.event_location)}
+                            onNeedsForm={() => setConvertingId(lead.id)}
+                            label={isShootRequest(lead) ? t('pages.crm.leads.confirm_shoot') : undefined}
+                          />
                           {lead.stage !== 'lost' && (
                             <CreateQuoteButton leadId={lead.id} label={t('pages.crm.leads.edit_before_sending')} />
                           )}

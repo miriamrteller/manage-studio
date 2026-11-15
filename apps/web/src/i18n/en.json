@@ -2815,7 +2815,7 @@
       "none_named": "Nothing here yet. Press “Add {{item}}” to add your first one."
     },
     "book": {
-      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",
+      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and you’ll get a quote back.",
       "photographer_enquire": "Send an enquiry",
       "title": "Book an appointment",
       "not_enabled": "Appointment booking is not currently available.",
