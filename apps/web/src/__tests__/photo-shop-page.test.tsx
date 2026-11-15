@@ -102,6 +102,15 @@ describe('Photo shop page', () => {
     expect(screen.getByText('setup home')).toBeTruthy();
   });
 
+  it('opens when the menu shows it: the feature is on in the studio list only', () => {
+    // Same check as the menu (owner, 15 Nov 2026: the menu item went to setup instead).
+    state.flag = false;
+    setTenant('photographer', { enabled_features: ['billing:photo_shop'] });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', extraRoutes: { '/admin': <p>setup home</p> } });
+    expect(screen.queryByText('setup home')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Photo shop' })).toBeTruthy();
+  });
+
   it('Overview shows what is left, with links to the tabs', async () => {
     state.pricePerPhoto = 3000;
     renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });

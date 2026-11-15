@@ -116,6 +116,13 @@ describe('StudioShopPage', () => {
     expect(screen.getByText('setup home')).toBeTruthy();
   });
 
+  it('opens when the menu shows it: the feature is on in the studio list only', () => {
+    state.flag = false;
+    setTenant('dance', { enabled_features: ['billing:studio_shop'] });
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio', extraRoutes: { '/admin': <p>setup home</p> } });
+    expect(screen.queryByText('setup home')).toBeNull();
+  });
+
   it('lists items with price, sizes and stock', async () => {
     state.products = [leotard, { ...leotard, id: 'p9', name: 'Old tights', active: false, image_path: null }];
     renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
