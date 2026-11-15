@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
 import { ShopProducts } from '@/features/shop/components/ShopProducts';
 import { ShopOrders } from '@/features/shop/components/ShopOrders';
@@ -13,7 +13,7 @@ import { ShopOrders } from '@/features/shop/components/ShopOrders';
  */
 export default function StudioShopPage() {
   const { t } = useTranslation();
-  const { hasFeature, isLoading } = useFeatureGate();
+  const { hasFeature, isLoading } = useHasFeature();
   if (isLoading) return null;
   if (!hasFeature(FEATURES.billing.studioShop)) return <Navigate to="/admin" replace />;
 

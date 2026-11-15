@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
 import { useStudioPhotoShopDefaults } from '@/features/jobs/hooks/usePhotoShop';
@@ -20,7 +20,7 @@ type Tab = (typeof TABS)[number];
  */
 export default function PhotoShopPage() {
   const { t } = useTranslation();
-  const { hasFeature, isLoading } = useFeatureGate();
+  const { hasFeature, isLoading } = useHasFeature();
   const [params, setParams] = useSearchParams();
   const asked = params.get('tab');
   const tab: Tab = (TABS as readonly string[]).includes(asked ?? '') ? (asked as Tab) : 'overview';
