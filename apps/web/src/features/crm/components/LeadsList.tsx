@@ -267,9 +267,15 @@ export function LeadsList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
-        <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
-          {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* e.g. "Enrolment is open" to everyone waiting to hear when classes start. */}
+          <Button variant="secondary" onClick={() => navigate('/admin/notifications?scope=leads')}>
+            {t('pages.crm.leads.email_all')}
+          </Button>
+          <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
+            {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
       {(followUps.overdue > 0 || followUps.dueToday > 0) && (

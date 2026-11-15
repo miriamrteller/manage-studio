@@ -5285,7 +5285,9 @@ export type Database = {
           invoicing_secret_enc: string | null
           labels: Json
           language_default: string
+          class_reminders: Json
           lead_form: Json
+          lead_thank_you: Json
           legal_pack_ack_drafts: string[]
           legal_pack_acknowledged_at: string | null
           legal_pack_required: boolean
@@ -5382,7 +5384,9 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          class_reminders?: Json
           lead_form?: Json
+          lead_thank_you?: Json
           legal_pack_ack_drafts?: string[]
           legal_pack_acknowledged_at?: string | null
           legal_pack_required?: boolean
@@ -5479,7 +5483,9 @@ export type Database = {
           invoicing_secret_enc?: string | null
           labels?: Json
           language_default?: string
+          class_reminders?: Json
           lead_form?: Json
+          lead_thank_you?: Json
           legal_pack_ack_drafts?: string[]
           legal_pack_acknowledged_at?: string | null
           legal_pack_required?: boolean

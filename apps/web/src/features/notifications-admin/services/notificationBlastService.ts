@@ -67,7 +67,8 @@ export async function sendBlast(
       selectedRecipientEmails,
       subject: values.subject,
       body: values.body,
-      purpose: values.purpose ?? 'service',
+      // Leads get service emails only (no marketing opt-in on record).
+      purpose: values.scope === 'leads' ? 'service' : values.purpose ?? 'service',
     },
   });
 

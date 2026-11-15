@@ -482,6 +482,13 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/run-lead-followup-digest/index.ts"
 
+# Cron: morning-of class reminders and "no class" notices to enrolled families. CRON_SECRET auth.
+[functions.run-class-reminders]
+enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
+verify_jwt = false
+entrypoint = "./functions/run-class-reminders/index.ts"
+
 # --- Photographer beta: job (shoot) deposit/balance payments ---------------
 [functions.photo-shop-link]
 # Photo shop "Send shop link": "open" is public (the link's token is the credential);

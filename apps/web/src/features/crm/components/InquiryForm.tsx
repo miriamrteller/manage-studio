@@ -117,6 +117,7 @@ export function InquiryForm({
           website: honeypot || null,
           elapsedMs: Date.now() - shownAt,
           marketingConsent: marketingPayload(marketing, lang, tenant?.name),
+          lang,
         },
       });
       if (error || (data && typeof data === 'object' && 'error' in data)) {
