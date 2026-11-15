@@ -7,10 +7,21 @@ export interface RegisterStudent {
   enrolled: boolean;
   /** true here, false not here, null not marked yet. */
   attended: boolean | null;
+  /** The teacher's "cash collected" note for this date: waiting for the admin, or paid. */
+  cash?: RegisterCash | null;
+}
+
+export interface RegisterCash {
+  status: 'waiting' | 'paid';
+  amount_minor: number | null;
+  note: string | null;
 }
 
 export interface ClassRegisterData {
   runs: boolean;
+  /** The class price, to prefill a cash amount (null when free or unknown). */
+  price_minor?: number | null;
+  currency?: string | null;
   students: RegisterStudent[];
 }
 
@@ -36,6 +47,38 @@ export async function setClassAttendance(
     p_person_ids: personIds,
     // The generated type says boolean; null clears the mark.
     p_attended: attended as boolean,
+  });
+  if (error) throw error;
+}
+
+/**
+ * "Cash collected": the teacher notes that a pupil paid in cash for this date. It is
+ * not a payment; it waits until the admin records the payment.
+ */
+export async function setCashCollected(
+  offeringId: string,
+  date: string,
+  personId: string,
+  amountMinor: number | null,
+  note: string,
+) {
+  const { error } = await supabase.rpc('set_cash_collected', {
+    p_offering_id: offeringId,
+    p_session_date: date,
+    p_person_id: personId,
+    // The generated types say number / string; null leaves them empty.
+    p_amount_minor: amountMinor as number,
+    p_note: (note.trim() || null) as string,
+  });
+  if (error) throw error;
+}
+
+/** Take back a waiting "cash collected" note (tapped by mistake). */
+export async function clearCashCollected(offeringId: string, date: string, personId: string) {
+  const { error } = await supabase.rpc('clear_cash_collected', {
+    p_offering_id: offeringId,
+    p_session_date: date,
+    p_person_id: personId,
   });
   if (error) throw error;
 }

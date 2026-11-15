@@ -829,6 +829,103 @@ export type Database = {
           },
         ]
       }
+      class_cash_notes: {
+        Row: {
+          amount_minor: number | null
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          offering_id: string
+          payment_id: string | null
+          person_id: string
+          recorded_by: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_date: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          offering_id: string
+          payment_id?: string | null
+          person_id: string
+          recorded_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_date: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          offering_id?: string
+          payment_id?: string | null
+          person_id?: string
+          recorded_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_date?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_cash_notes_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_import_batches: {
         Row: {
           clients_count: number
@@ -6227,6 +6324,14 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      clear_cash_collected: {
+        Args: {
+          p_offering_id: string
+          p_person_id: string
+          p_session_date: string
+        }
+        Returns: boolean
+      }
       client_import_admin_tenant: { Args: never; Returns: string }
       client_import_find_client: {
         Args: { p_email: string; p_phone: string; p_tenant_id: string }
@@ -6441,6 +6546,7 @@ export type Database = {
           price_minor: number
         }[]
       }
+      get_cash_to_confirm: { Args: never; Returns: Json }
       get_class_card_register: {
         Args: { p_offering_id: string; p_session_date: string }
         Returns: Json
@@ -7299,6 +7405,32 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      resolve_cash_note: {
+        Args: { p_note_id: string; p_outcome: string; p_payment_id?: string }
+        Returns: {
+          amount_minor: number | null
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          offering_id: string
+          payment_id: string | null
+          person_id: string
+          recorded_by: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_date: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_cash_notes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolve_engagement_billing_account: {
         Args: { p_student_person_id: string; p_tenant_id: string }
         Returns: string
@@ -7531,6 +7663,16 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: Json
+      }
+      set_cash_collected: {
+        Args: {
+          p_amount_minor?: number
+          p_note?: string
+          p_offering_id: string
+          p_person_id: string
+          p_session_date: string
+        }
+        Returns: string
       }
       set_class_attendance: {
         Args: {
