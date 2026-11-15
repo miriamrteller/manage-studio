@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import queryClient from '@/lib/query-client';
 import { ClassCardRegister } from '@/features/class-cards/components/ClassCardRegister';
 import { useClassCardsEnabled } from '@/features/class-cards/hooks/useClassCardsEnabled';
+import { CashCollected } from './CashCollected';
 import { fetchClassRegister, lastSessionDate, setClassAttendance, type RegisterStudent } from '../service';
 
 /**
  * The register for one class date: mark each enrolled student here or not here
- * (tap the chosen button again to clear it), or everyone at once. When class
+ * (tap the chosen button again to clear it), or everyone at once. A teacher can
+ * also note "cash collected" for a pupil (the office confirms it). When class
  * cards are on, the card holders' register is shown below for the same date.
  */
 export function ClassRegister({
@@ -129,6 +131,15 @@ export function ClassRegister({
                       {t('attendance.register.not_here')}
                     </Button>
                   </div>
+                  {!isAdmin && (
+                    <CashCollected
+                      offeringId={offeringId}
+                      date={date}
+                      student={s}
+                      priceMinor={data.price_minor}
+                      currency={data.currency}
+                    />
+                  )}
                 </li>
               ))}
             </ul>

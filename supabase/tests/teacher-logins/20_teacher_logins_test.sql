@@ -1,4 +1,4 @@
--- Teacher logins (20261111084600_teacher_logins.sql). Builds on client-portal/10_seed.sql:
+-- Teacher logins (20261111084600_teacher_logins.sql, 20261115091000_teacher_cash_collected.sql). Builds on client-portal/10_seed.sql:
 -- dance studio D (…0002) with parent Dina (…0d). Adds an admin, three teacher logins
 -- and two classes. Raises on the first failed expectation.
 \set ON_ERROR_STOP 1
@@ -114,7 +114,15 @@ SELECT pg_temp.expect('calling again changes nothing',
   pg_temp.q(:t1, 'SELECT link_my_teacher_login()::text') || (SELECT array_to_string(role, ',') FROM user_profiles WHERE id = :t1),
   'trueaccount_holder,staff');
 
--- Setting off (default): a teacher sees every class of the studio, own first.
+-- New studios show teachers only their own classes (owner, 15 Nov 2026).
+SELECT pg_temp.expect('setting is on by default',
+  (SELECT teachers_own_classes_only::text FROM tenants WHERE id = :D), 'true');
+BEGIN;
+SELECT pg_temp.expect('the admin turns the setting off',
+  pg_temp.run(:admin, format('UPDATE tenants SET teachers_own_classes_only = false WHERE id = %L', :D)), '1');
+COMMIT;
+
+-- Setting off: a teacher sees every class of the studio, own first.
 BEGIN;
 SELECT pg_temp.expect('setting off: My classes lists all classes, own first',
   pg_temp.q(:t1, $$SELECT string_agg((c->>'name') || ':' || (c->>'mine') || ':' || (c->>'enrolled'), ',') FROM jsonb_array_elements(get_my_teaching()->'classes') c$$),

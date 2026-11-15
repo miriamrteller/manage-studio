@@ -51,9 +51,11 @@ INSERT INTO user_profiles (id, tenant_id, role, email) SELECT teacher_u, studio,
 INSERT INTO staff (tenant_id, name, email, user_profile_id) SELECT studio, 'Teacher', 'teacher@x.test', teacher_u FROM ids;
 SET session_replication_role = DEFAULT;
 
--- Yoga runs on d1's weekday. Alice and Ari are enrolled; Bob is not.
-INSERT INTO offerings (id, tenant_id, name, offering_type, day_of_week, start_time, end_time, max_capacity)
-SELECT yoga, studio, 'Yoga', 'class', EXTRACT(DOW FROM d1)::int, '18:00', '19:00', 10 FROM ids;
+-- Yoga runs on d1's weekday and the teacher teaches it (teachers see only their
+-- own classes by default). Alice and Ari are enrolled; Bob is not.
+INSERT INTO offerings (id, tenant_id, name, offering_type, day_of_week, start_time, end_time, max_capacity, staff_id)
+SELECT yoga, studio, 'Yoga', 'class', EXTRACT(DOW FROM d1)::int, '18:00', '19:00', 10,
+       (SELECT s.id FROM staff s WHERE s.user_profile_id = teacher_u) FROM ids;
 INSERT INTO engagements (tenant_id, person_id, offering_id, status)
 SELECT studio, alice, yoga, 'active' FROM ids UNION ALL
 SELECT studio, ari, yoga, 'active' FROM ids;

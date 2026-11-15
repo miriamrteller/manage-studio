@@ -5,8 +5,8 @@ import type { ManualPaymentMethod } from '../lib/manualPaymentMethods';
 
 /** Something a payment can be for. Picking it records the payment the way its own screen does. */
 export type PayableItem =
-  | { kind: 'first'; key: string; engagementId: string; name: string; amountMinor: number | null }
-  | { kind: 'monthly'; key: string; engagementId: string; name: string; amountMinor: number | null }
+  | { kind: 'first'; key: string; engagementId: string; offeringId?: string; name: string; amountMinor: number | null }
+  | { kind: 'monthly'; key: string; engagementId: string; offeringId?: string; name: string; amountMinor: number | null }
   | { kind: 'job'; key: string; requestId: string; name: string; amountMinor: number }
   | { kind: 'offering'; key: string; offeringId: string; name: string; amountMinor: number | null };
 
@@ -29,10 +29,11 @@ export function openItemsFrom(
   for (const e of engagements) {
     const name = e.offering?.name ?? '';
     const amountMinor = e.offering?.price_minor ?? null;
+    const offeringId = e.offering?.id;
     if (e.status === 'pending_payment') {
-      items.push({ kind: 'first', key: `first:${e.id}`, engagementId: e.id, name, amountMinor });
+      items.push({ kind: 'first', key: `first:${e.id}`, engagementId: e.id, offeringId, name, amountMinor });
     } else if (e.status === 'active' && e.offering?.billing_mode === 'recurring') {
-      items.push({ kind: 'monthly', key: `monthly:${e.id}`, engagementId: e.id, name, amountMinor });
+      items.push({ kind: 'monthly', key: `monthly:${e.id}`, engagementId: e.id, offeringId, name, amountMinor });
     }
   }
   for (const r of requests) {

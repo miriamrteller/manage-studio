@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Applies the FULL migration chain to a throwaway database on a local Postgres 15+ and
 # checks teacher logins: linking by confirmed email, the staff role following the
-# staff row, and a teacher seeing only their own classes, sessions and attendance.
+# staff row, a teacher seeing only their own classes, sessions and attendance, and
+# "cash collected" notes from the register.
 #
 #   PGHOST=/tmp PGPORT=5432 PGUSER=postgres supabase/tests/teacher-logins/run.sh
 set -euo pipefail
@@ -20,5 +21,5 @@ for f in $(ls "$ROOT"/supabase/migrations/*.sql | sort); do
   sed -E '/CREATE EXTENSION IF NOT EXISTS (pg_cron|pg_net)/d' "$f" | "${PSQL[@]}" >/dev/null
 done
 "${PSQL[@]}" -f "$PORTAL/10_seed.sql"
-"${PSQL[@]}" -f "$HERE/20_teacher_logins_test.sql"
+cat "$HERE/20_teacher_logins_test.sql" "$HERE/30_cash_collected_test.sql" | "${PSQL[@]}"
 echo "teacher logins: all checks passed"

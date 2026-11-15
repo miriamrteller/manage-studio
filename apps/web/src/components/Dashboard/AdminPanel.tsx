@@ -12,6 +12,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
 import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
+import { CashToConfirmNotice } from '@/features/finance-admin/components/CashToConfirm';
 import { CelebrationBanner, SetupGuideCard, useCelebrations, useSetupGuide } from '@/features/setup-guide';
 
 /**
@@ -58,6 +59,7 @@ export function AdminPanel() {
       {celebrations.active && (
         <CelebrationBanner moment={celebrations.active} fewer={celebrations.fewer} onDismiss={celebrations.dismiss} />
       )}
+      {teachesClasses && <CashToConfirmNotice onOpen={() => navigate('/admin/finance/payments')} />}
       {showGuide ? (
         guide.isLoading ? (
           <p role="status" className="text-gray-600">{t('common.loading')}</p>

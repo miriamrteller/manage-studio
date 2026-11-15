@@ -39,6 +39,7 @@ vi.mock('@/components/Dashboard/useAdminDashboard', () => ({
 }));
 vi.mock('@/features/admin-dashboard/components/AdminOverviewSection', () => ({ AdminOverviewSection: () => null }));
 vi.mock('@/features/finance/components/FinanceHealthCard', () => ({ FinanceHealthCard: () => null }));
+vi.mock('@/features/finance-admin/components/CashToConfirm', () => ({ CashToConfirmNotice: () => null }));
 vi.mock('@/features/setup-guide', () => ({
   CelebrationBanner: () => null,
   SetupGuideCard: () => null,
