@@ -21,6 +21,7 @@ import {
   type CardOnSale,
   type CardSession,
   type MyClassCard,
+  formatEndDate,
 } from '../service';
 
 const KEY = ['class-cards', 'mine'];
@@ -102,9 +103,11 @@ function BuyCard({ cards }: { cards: CardOnSale[] }) {
                 <p className="text-xs text-muted-foreground">
                   {t('class_cards.portal.classes', { count: c.class_count })}
                   {' · '}
-                  {c.valid_months == null
-                    ? t('settings.class_cards.never_expires')
-                    : t('class_cards.portal.valid_months', { count: c.valid_months })}
+                  {c.ends_on
+                    ? t('settings.class_cards.valid_until', { date: formatEndDate(c.ends_on, locale) })
+                    : c.valid_months == null
+                      ? t('settings.class_cards.never_expires')
+                      : t('class_cards.portal.valid_months', { count: c.valid_months })}
                   {c.shareable ? ` · ${t('settings.class_cards.shared')}` : ''}
                 </p>
               </div>

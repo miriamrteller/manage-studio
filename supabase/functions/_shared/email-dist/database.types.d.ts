@@ -604,6 +604,7 @@ export type Database = {
                     class_count: number;
                     created_at: string;
                     currency: string;
+                    ends_on: string | null;
                     id: string;
                     is_active: boolean;
                     name: string;
@@ -617,6 +618,7 @@ export type Database = {
                     class_count: number;
                     created_at?: string;
                     currency?: string;
+                    ends_on?: string | null;
                     id?: string;
                     is_active?: boolean;
                     name: string;
@@ -630,6 +632,7 @@ export type Database = {
                     class_count?: number;
                     created_at?: string;
                     currency?: string;
+                    ends_on?: string | null;
                     id?: string;
                     is_active?: boolean;
                     name?: string;

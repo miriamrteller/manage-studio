@@ -4398,7 +4398,11 @@
       "no_classes": "Add a class first, then choose it here.",
       "save_card": "Save card",
       "cancel": "Cancel",
-      "error": "Could not save. Please try again."
+      "error": "Could not save. Please try again.",
+      "valid_until": "Valid until {{date}}",
+      "end_date_toggle": "Ends on a set date",
+      "end_date_label": "Last day",
+      "end_date_hint": "Every card of this kind lasts until this day, whenever it's bought (e.g. the end of term)."
     }
   },
   "accessibility": {
