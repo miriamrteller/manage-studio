@@ -84,7 +84,36 @@ export function recordPaymentRequest(input: {
  * prefilled (today, the last method used, the item's amount); nothing here blocks, and someone
  * not in the list is added by name.
  */
-export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void }) {
+/** Known details to start the form with (for example a teacher's "cash collected" note). */
+export interface RecordPaymentPrefill {
+  person: { id: string; name: string };
+  /** The class it was for: its open item when there is one, otherwise the class itself. */
+  offeringId?: string;
+  amountMinor?: number | null;
+  method?: ManualPaymentMethod;
+  note?: string;
+  paidOn?: string;
+}
+
+/** Pure: the item to start with: the open item for the class, else the class, else the first open item. */
+export function prefillItemKey(open: PayableItem[], offeringId: string | undefined): string | null {
+  if (offeringId) {
+    const forClass = open.find((i) => (i.kind === 'first' || i.kind === 'monthly') && i.offeringId === offeringId);
+    if (forClass) return forClass.key;
+    return `offering:${offeringId}`;
+  }
+  return null;
+}
+
+export function RecordAnyPaymentForm({
+  onRecorded,
+  prefill,
+  title,
+}: {
+  onRecorded: (paymentId?: string) => void;
+  prefill?: RecordPaymentPrefill;
+  title?: string;
+}) {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const id = useId();
@@ -92,7 +121,7 @@ export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void })
   const methods = useManualPaymentMethods();
   const lastMethod = useLastManualMethod();
 
-  const [person, setPerson] = useState<{ id: string; name: string } | null>(null);
+  const [person, setPerson] = useState<{ id: string; name: string } | null>(prefill?.person ?? null);
   const [notInList, setNotInList] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -100,17 +129,19 @@ export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void })
   const offerings = useStudioOfferings();
 
   const [itemKey, setItemKey] = useState<string | null>(null);
-  const [amountText, setAmountText] = useState<string | null>(null);
-  const [methodChoice, setMethodChoice] = useState<ManualPaymentMethod | null>(null);
-  const [paidOn, setPaidOn] = useState(today);
-  const [note, setNote] = useState('');
+  const [amountText, setAmountText] = useState<string | null>(
+    prefill?.amountMinor ? minorToText(prefill.amountMinor) : null,
+  );
+  const [methodChoice, setMethodChoice] = useState<ManualPaymentMethod | null>(prefill?.method ?? null);
+  const [paidOn, setPaidOn] = useState(prefill?.paidOn && prefill.paidOn <= today ? prefill.paidOn : today);
+  const [note, setNote] = useState(prefill?.note ?? '');
   const [sendConfirmation, setSendConfirmation] = useState(true);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   const open = openItems.data ?? [];
   const sells = offerings.data ?? [];
-  // Prefill: the client's first open item, otherwise "Other".
-  const chosenKey = itemKey ?? open[0]?.key ?? OTHER;
+  // Prefill: the class's open item (or the class), else the client's first open item, else "Other".
+  const chosenKey = itemKey ?? prefillItemKey(open, prefill?.offeringId) ?? open[0]?.key ?? OTHER;
   const item = [...open, ...sells].find((i) => i.key === chosenKey) ?? null;
   // Prefilled from the item, always editable (a partial payment, a discount).
   const shownAmount = amountText ?? minorToText(item?.amountMinor);
@@ -152,10 +183,11 @@ export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void })
       const { data, error } = await supabase.functions.invoke(fn, { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error as string);
+      return (data?.paymentId as string | undefined) ?? undefined;
     },
-    onSuccess: () => {
+    onSuccess: (paymentId) => {
       setMessage({ kind: 'ok', text: t('finance.record_payment.success') });
-      onRecorded();
+      onRecorded(paymentId);
     },
     onError: (err: Error) => setMessage({ kind: 'error', text: err.message }),
   });
@@ -168,7 +200,7 @@ export function RecordAnyPaymentForm({ onRecorded }: { onRecorded: () => void })
   return (
     <section className="space-y-4 rounded-lg border border-border p-4" aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`} className="text-lg font-semibold">
-        {t('finance.record_payment.title')}
+        {title ?? t('finance.record_payment.title')}
       </h2>
 
       <div className="space-y-2">

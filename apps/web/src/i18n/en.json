@@ -2835,7 +2835,7 @@
       "none_named": "Nothing here yet. Press “Add {{item}}” to add your first one."
     },
     "book": {
-      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",
+      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and you’ll get a quote back.",
       "photographer_enquire": "Send an enquiry",
       "title": "Book an appointment",
       "not_enabled": "Appointment booking is not currently available.",
@@ -3434,6 +3434,21 @@
       "pending": "Pending",
       "failed": "Failed",
       "disputed": "Disputed"
+    },
+    "cash_notes": {
+      "title_one": "Cash collected by a teacher: 1 to confirm",
+      "title_other": "Cash collected by teachers: {{count}} to confirm",
+      "description": "Teachers noted these on the register. They don't count as paid until you record them.",
+      "line": "{{class}}, {{date}} · noted by {{teacher}}",
+      "a_teacher": "a teacher",
+      "mark_paid": "Mark as paid",
+      "not_received": "Not received",
+      "record_title": "Record {{name}}'s cash payment",
+      "collected_by": "Cash collected by {{teacher}}",
+      "cancel": "Cancel",
+      "notice_one": "A teacher noted 1 cash payment for you to confirm.",
+      "notice_other": "Teachers noted {{count}} cash payments for you to confirm.",
+      "notice_open": "Confirm cash"
     }
   },
   "enrolment": {
@@ -4958,6 +4973,20 @@
       "left_class": "No longer in this class",
       "load_error": "Could not load the register. Please try again.",
       "error": "Could not save. Please try again."
+    },
+    "cash": {
+      "open": "Paid in cash",
+      "open_for": "{{name}} paid in cash",
+      "title": "{{name}} paid in cash",
+      "hint": "The office sees this and marks the payment. Until then it does not count as paid.",
+      "amount": "Amount ({{currency}})",
+      "note": "Note (optional)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "noted": "Cash noted, waiting for the office.",
+      "noted_amount": "Cash noted ({{amount}}), waiting for the office.",
+      "undo": "Undo",
+      "paid": "Paid"
     }
   },
   "class_cards": {
@@ -5069,7 +5098,7 @@
     "empty_title": "No teachers yet",
     "empty_message": "Add a teacher, then choose them on a class.",
     "own_only_label": "Teachers see only their own classes",
-    "own_only_help": "Off: every teacher sees all the studio's classes and can take any register, which helps with cover. On: each teacher sees only the classes they teach.",
+    "own_only_help": "On (the default): each teacher sees only the classes they teach. Off: every teacher sees all the studio's classes and can take any register, which helps with cover.",
     "saved": "Saved",
     "error": "Something went wrong. Please try again."
   },

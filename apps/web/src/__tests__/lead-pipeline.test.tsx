@@ -34,20 +34,20 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('stages per kind of studio', () => {
-  it('photographers keep their pipeline exactly', () => {
-    expect(stagesFor('photographer')).toEqual(['new', 'contacted', 'qualified', 'proposal', 'lost']);
-    expect(stagesFor('photographer')).toBe(PHOTOGRAPHER_STAGES);
+describe('stages follow the Classes tick, not the business type', () => {
+  it('without Classes (projects, appointments): the quote pipeline', () => {
+    expect(stagesFor(false)).toEqual(['new', 'contacted', 'qualified', 'proposal', 'lost']);
+    expect(stagesFor(false)).toBe(PHOTOGRAPHER_STAGES);
   });
 
-  it('class studios get trial booked → trial done → won', () => {
-    for (const v of ['dance-studio', 'generic', 'beautician', null]) expect(stagesFor(v)).toBe(CLASS_STAGES);
+  it('with Classes: trial booked → trial done → won', () => {
+    expect(stagesFor(true)).toBe(CLASS_STAGES);
     expect(CLASS_STAGES).toEqual(['new', 'contacted', 'trial_booked', 'trial_done', 'won', 'lost']);
   });
 
   it('a lead already in another stage keeps it in its list', () => {
-    expect(stagesFor('dance-studio', 'qualified')).toEqual([...CLASS_STAGES, 'qualified']);
-    expect(stagesFor('dance-studio', 'won')).toBe(CLASS_STAGES);
+    expect(stagesFor(true, 'qualified')).toEqual([...CLASS_STAGES, 'qualified']);
+    expect(stagesFor(true, 'won')).toBe(CLASS_STAGES);
   });
 });
 

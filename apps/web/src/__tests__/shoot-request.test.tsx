@@ -23,7 +23,7 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock('@/hooks/useTenant', () => ({
-  useTenant: () => ({ id: 't1', name: 'Lens Studio', subdomain: 'lens', vertical: h.vertical }),
+  useTenant: () => ({ id: 't1', name: 'Lens Studio', subdomain: 'lens', vertical: h.vertical, profile: h.vertical === 'photographer' ? { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: true } : { paymentFlow: 'recurring', teachesClasses: false, familyAccounts: false, clientBooking: true } }),
 }));
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: null, isLoading: false, isProfileChecked: true }),
@@ -145,7 +145,7 @@ describe('photographer Book page', () => {
     expect(pkg).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('appointment businesses keep instant booking', async () => {
+  it('without Projects (appointments only), clients book a time straight away', async () => {
     h.vertical = 'dance-studio';
     renderAt(<BookingPage />);
     expect(await screen.findByText('Choose a service')).toBeInTheDocument();
