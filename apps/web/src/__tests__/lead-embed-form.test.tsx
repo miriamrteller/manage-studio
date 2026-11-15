@@ -89,6 +89,24 @@ describe('InquiryForm without Turnstile', () => {
     });
   });
 
+  it('embedded: once sent, tells the host page so it can scroll the thank-you into view', async () => {
+    const postMessage = vi.fn();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const parent = Object.getOwnPropertyDescriptor(window, 'parent');
+    Object.defineProperty(window, 'parent', { value: { postMessage }, configurable: true });
+    try {
+      renderAt('/embed/inquire', <InquiryForm embedded />);
+      fillName();
+      fireEvent.click(screen.getByRole('button', { name: 'pages.crm.inquire.submit' }));
+      await screen.findByRole('status');
+      await waitFor(() => expect(postMessage).toHaveBeenCalledWith({ type: 'opalswift:form-sent' }, '*'));
+      expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    } finally {
+      if (parent) Object.defineProperty(window, 'parent', parent);
+      scrollTo.mockRestore();
+    }
+  });
+
   it('accepts UTM names for the tags', async () => {
     renderAt('/inquire?utm_source=instagram&utm_campaign=spring', <InquiryForm />);
     fillName();

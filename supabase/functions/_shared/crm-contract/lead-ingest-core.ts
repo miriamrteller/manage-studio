@@ -6,7 +6,7 @@
  *
  * Idempotency & dedupe, in order:
  *   1. same (tenant, source_ref), when a sourceRef exists → duplicate, no-op
- *   2. open lead with the same email (not converted, stage != lost)
+ *   2. open lead with the same email (not converted, stage not won/lost)
  *        → touchpoint: update last_contacted_at + last_communication_note
  *   3. otherwise → new lead (marketing_consent false — consent is opt-in)
  */
@@ -109,7 +109,10 @@ export async function writeInboundLead(
       .select("id, answers")
       .eq("tenant_id", tenant.id)
       .eq("email", fields.email)
-      .neq("stage", "lost")
+      // Only an open lead takes the repeat enquiry. A closed one (enrolled or
+      // lost) stays as it was, and the new enquiry starts a fresh lead, so a
+      // new sign-up never shows as "Enrolled".
+      .not("stage", "in", "(won,lost)")
       .is("converted_account_id", null)
       .order("created_at", { ascending: false })
       .limit(1)

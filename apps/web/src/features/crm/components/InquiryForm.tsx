@@ -66,6 +66,17 @@ export function InquiryForm({
   // The class example only for studios that teach classes; a general one for everyone else.
   const teachesClasses = (tenant?.profile?.teachesClasses ?? true) && tenant?.vertical !== 'photographer';
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam' | 'own_email'>('idle');
+
+  // Embedded on a studio's own website: once sent, show the thank-you at the
+  // top and tell the host page, so it can scroll the form back into view
+  // (otherwise the visitor is left looking at blank space below it).
+  useEffect(() => {
+    if (status !== 'sent' || !embedded) return;
+    window.scrollTo(0, 0);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'opalswift:form-sent' }, '*');
+    }
+  }, [status, embedded]);
   // Time trap: when the form first showed (the server ignores enquiries sent within seconds).
   const [shownAt] = useState(() => Date.now());
   const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
