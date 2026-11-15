@@ -2076,6 +2076,7 @@ export type Database = {
           created_at: string
           engagement_id: string
           gallery_released_at: string | null
+          gallery_shared_at: string | null
           gallery_url: string | null
           job_status: string
           lead_id: string | null
@@ -2090,6 +2091,7 @@ export type Database = {
           created_at?: string
           engagement_id: string
           gallery_released_at?: string | null
+          gallery_shared_at?: string | null
           gallery_url?: string | null
           job_status?: string
           lead_id?: string | null
@@ -2104,6 +2106,7 @@ export type Database = {
           created_at?: string
           engagement_id?: string
           gallery_released_at?: string | null
+          gallery_shared_at?: string | null
           gallery_url?: string | null
           job_status?: string
           lead_id?: string | null

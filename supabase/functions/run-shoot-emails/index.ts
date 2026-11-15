@@ -4,7 +4,8 @@
  * Sends the time-based photographer emails returned by list_due_shoot_emails():
  *   shoot_reminder  — 1–2 days before a booked shoot
  *   shoot_thank_you — 1–3 days after the shoot
- *   gallery_ready   — within 7 days of job_details.gallery_released_at (Thread A)
+ *   gallery_ready   — within 7 days of the client first seeing the gallery
+ *                     (released by hand, or everything paid: gallery_shared_at)
  *   review_request  — 5–12 days after the gallery is shared, when the studio
  *                     has a review link (tenants.review_url)
  * First it moves project statuses on (advance_job_statuses: booked → shot the
