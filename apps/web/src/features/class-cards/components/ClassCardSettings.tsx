@@ -16,6 +16,7 @@ import {
   type ClassCardType,
   type ClassCardTypeInput,
   type StudioClass,
+  formatEndDate,
 } from '../service';
 
 const KEY = ['class-cards'];
@@ -171,9 +172,11 @@ function CardTypes({ tenantId, currency }: { tenantId: string; currency: string 
     [
       t('settings.class_cards.classes_count', { count: c.class_count }),
       formatCurrency(c.price_minor, c.currency, locale),
-      c.valid_months == null
-        ? t('settings.class_cards.never_expires')
-        : t('settings.class_cards.valid_months', { count: c.valid_months }),
+      c.ends_on
+        ? t('settings.class_cards.valid_until', { date: formatEndDate(c.ends_on, locale) })
+        : c.valid_months == null
+          ? t('settings.class_cards.never_expires')
+          : t('settings.class_cards.valid_months', { count: c.valid_months }),
       c.shareable ? t('settings.class_cards.shared') : t('settings.class_cards.personal'),
       ...(c.is_active ? [] : [t('settings.class_cards.not_on_sale')]),
     ].join(' · ');
@@ -247,6 +250,8 @@ function CardTypeForm({
   const [price, setPrice] = useState(existing ? String(existing.price_minor / 100) : '');
   const [neverExpires, setNeverExpires] = useState(existing ? existing.valid_months == null : false);
   const [months, setMonths] = useState(String(existing?.valid_months ?? 3));
+  const [useEndDate, setUseEndDate] = useState(Boolean(existing?.ends_on));
+  const [endsOn, setEndsOn] = useState(existing?.ends_on ?? '');
   const [shareable, setShareable] = useState(existing?.shareable ?? false);
   const [onSale, setOnSale] = useState(existing?.is_active ?? true);
   const [covered, setCovered] = useState<string[]>(existing?.offering_ids ?? defaultCoveredClasses(classes));
@@ -259,7 +264,9 @@ function CardTypeForm({
     shownName.trim().length > 0 &&
     Number.isInteger(countNum) && countNum >= 1 && countNum <= 500 &&
     price.trim() !== '' && Number.isFinite(priceMinor) && priceMinor >= 0 &&
-    (neverExpires || (Number.isInteger(monthsNum) && monthsNum >= 1 && monthsNum <= 60)) &&
+    (useEndDate
+      ? /^\d{4}-\d{2}-\d{2}$/.test(endsOn)
+      : neverExpires || (Number.isInteger(monthsNum) && monthsNum >= 1 && monthsNum <= 60)) &&
     covered.length > 0;
 
   const save = useMutation({
@@ -275,7 +282,8 @@ function CardTypeForm({
       name: shownName.trim(),
       class_count: countNum,
       price_minor: priceMinor,
-      valid_months: neverExpires ? null : monthsNum,
+      valid_months: useEndDate ? (existing?.valid_months ?? null) : neverExpires ? null : monthsNum,
+      ends_on: useEndDate ? endsOn : null,
       shareable,
       is_active: onSale,
       offering_ids: covered,
@@ -320,11 +328,28 @@ function CardTypeForm({
             {t('settings.class_cards.months_label')}
           </label>
           <Input id={`${id}-months`} type="number" inputMode="numeric" min={1} max={60} value={months}
-            disabled={neverExpires} onChange={(e) => setMonths(e.target.value)} />
+            disabled={neverExpires || useEndDate} onChange={(e) => setMonths(e.target.value)} />
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={neverExpires} onChange={(e) => setNeverExpires(e.target.checked)} />
+            <input type="checkbox" checked={neverExpires} disabled={useEndDate}
+              onChange={(e) => setNeverExpires(e.target.checked)} />
             <span>{t('settings.class_cards.never_expires')}</span>
           </label>
+        </div>
+        <div className="space-y-1">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={useEndDate} onChange={(e) => setUseEndDate(e.target.checked)}
+              aria-describedby={`${id}-ends-hint`} />
+            <span>{t('settings.class_cards.end_date_toggle')}</span>
+          </label>
+          {useEndDate && (
+            <>
+              <label htmlFor={`${id}-ends`} className="sr-only">{t('settings.class_cards.end_date_label')}</label>
+              <Input id={`${id}-ends`} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} />
+            </>
+          )}
+          <p id={`${id}-ends-hint`} className="text-xs text-muted-foreground">
+            {t('settings.class_cards.end_date_hint')}
+          </p>
         </div>
       </div>
 

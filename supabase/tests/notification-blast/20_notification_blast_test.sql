@@ -89,6 +89,34 @@ BEGIN
   RAISE NOTICE 'ok  scope "class" unchanged';
 END $$;
 
+-- 10. Scope "leads": open leads with an email, one row per email; enrolled
+--     (won), lost and converted leads, leads with no email and other studios'
+--     leads are left out.
+SET session_replication_role = replica;
+INSERT INTO leads (id, tenant_id, name, email, stage, created_at) VALUES
+  ('f0000000-0000-4000-8000-0000000000a1','a0000000-0000-4000-8000-000000000001','Lea New','lea@example.test','new', now() - interval '2 days'),
+  ('f0000000-0000-4000-8000-0000000000a2','a0000000-0000-4000-8000-000000000001','Lea Again','LEA@example.test ','contacted', now()),
+  ('f0000000-0000-4000-8000-0000000000a3','a0000000-0000-4000-8000-000000000001','Mia Trial','mia@example.test','trial_booked', now()),
+  ('f0000000-0000-4000-8000-0000000000a4','a0000000-0000-4000-8000-000000000001','Won Family','won@example.test','won', now()),
+  ('f0000000-0000-4000-8000-0000000000a5','a0000000-0000-4000-8000-000000000001','Lost Family','lost@example.test','lost', now()),
+  ('f0000000-0000-4000-8000-0000000000a6','a0000000-0000-4000-8000-000000000001','No Email',NULL,'new', now()),
+  ('f0000000-0000-4000-8000-0000000000a7','a0000000-0000-4000-8000-000000000002','Other Studio','other@example.test','new', now());
+SET session_replication_role = origin;
+DO $$
+DECLARE names TEXT[];
+BEGIN
+  SELECT array_agg(recipient_name ORDER BY recipient_name) INTO names FROM resolve_notification_blast_recipients(
+    'a0000000-0000-4000-8000-000000000001', 'leads', NULL, NULL, NULL, NULL);
+  IF names IS DISTINCT FROM ARRAY['Lea Again','Mia Trial'] THEN
+    RAISE EXCEPTION 'FAIL scope leads: got %, expected {Lea Again,Mia Trial}', names;
+  END IF;
+  IF EXISTS (SELECT 1 FROM resolve_notification_blast_recipients(
+    'a0000000-0000-4000-8000-000000000001', 'leads', NULL, NULL, NULL, NULL) WHERE person_id IS NOT NULL) THEN
+    RAISE EXCEPTION 'FAIL scope leads returned a person_id';
+  END IF;
+  RAISE NOTICE 'ok  scope "leads" = open leads with an email, newest per email, this studio only';
+END $$;
+
 -- 8. The admin-facing preview RPC (what the form calls) returns Carol...
 SELECT set_config('request.jwt.claim.sub', 'b0000000-0000-4000-8000-00000000000e', false);
 DO $$

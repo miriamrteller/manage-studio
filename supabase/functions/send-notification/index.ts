@@ -1,3 +1,4 @@
+import { applyBlastSelection } from "./blast-selection.ts";
 import { buildMarketingFooter, loadMarketingFooterContext, withAdvertisementPrefix } from "./marketing.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
@@ -31,12 +32,15 @@ interface NotificationPayload {
 interface AdminBlastPayload {
   mode: "admin_blast";
   tenantId: string;
-  scope: "all" | "level" | "class" | "account";
+  /** 'leads' = the studio's open leads (people who asked to hear from it). */
+  scope: "all" | "level" | "class" | "account" | "leads";
   categoryId?: string;
   offeringId?: string;
   accountId?: string;
   recipientQuery?: string;
   selectedPersonIds?: string[];
+  /** The emails the admin left ticked in the recipient list. */
+  selectedRecipientEmails?: string[];
   subject: string;
   body: string;
   /**
@@ -51,7 +55,8 @@ interface AdminBlastPayload {
 interface BlastRecipientRow {
   recipient_email: string;
   recipient_name: string | null;
-  person_id: string;
+  /** Null for a lead (no person record). */
+  person_id: string | null;
   account_member_id: string | null;
 }
 
@@ -646,6 +651,12 @@ async function handleAdminAnnouncementBlast(
     return jsonResponse({ error: "accountId required for account scope" }, 400);
   }
 
+  if (payload.scope === "leads" && payload.purpose === "marketing") {
+    // Leads asked to hear about the studio's classes (a service message); an
+    // advertisement needs a recorded marketing opt-in per person.
+    return jsonResponse({ error: "Leads can be sent service emails only" }, 400);
+  }
+
   const recipientQuery = payload.recipientQuery?.trim() ?? "";
 
   const { data: recipients, error: resolveError } = await service.rpc(
@@ -666,43 +677,24 @@ async function handleAdminAnnouncementBlast(
 
   let rows = (recipients ?? []) as BlastRecipientRow[];
 
-  if (payload.selectedPersonIds !== undefined) {
-    if (!Array.isArray(payload.selectedPersonIds)) {
-      return jsonResponse({ error: "selectedPersonIds must be an array" }, 400);
-    }
-
-    const selectedSet = new Set(
-      payload.selectedPersonIds.filter(
-        (id): id is string => typeof id === "string" && id.length > 0,
-      ),
-    );
-
-    if (selectedSet.size === 0) {
-      return jsonResponse({ error: "No recipients selected" }, 400);
-    }
-
-    const resolvedIds = new Set(rows.map((row) => row.person_id));
-    for (const id of selectedSet) {
-      if (!resolvedIds.has(id)) {
-        return jsonResponse({ error: "Invalid recipient selection" }, 400);
-      }
-    }
-
-    rows = rows.filter((row) => selectedSet.has(row.person_id));
+  const selected = applyBlastSelection(rows, payload);
+  if ("error" in selected) {
+    return jsonResponse({ error: selected.error }, 400);
   }
+  rows = selected.rows;
 
   const marketing = payload.purpose === "marketing";
   if (marketing && rows.length > 0) {
     const { data: optedIn, error: optError } = await service.rpc("marketing_optins", {
       p_tenant_id: payload.tenantId,
-      p_person_ids: rows.map((row) => row.person_id),
+      p_person_ids: rows.map((row) => row.person_id).filter((id): id is string => id !== null),
       p_kind: "marketing_email",
     });
     if (optError) {
       return jsonResponse({ error: optError.message }, 400);
     }
     const allowed = new Set((optedIn ?? []) as string[]);
-    rows = rows.filter((row) => allowed.has(row.person_id));
+    rows = rows.filter((row) => row.person_id !== null && allowed.has(row.person_id));
     if (rows.length === 0) {
       return jsonResponse({ error: "No recipients have opted in to marketing email" }, 400);
     }
@@ -743,7 +735,7 @@ async function handleAdminAnnouncementBlast(
       const rowBody = marketingFooter
         ? body + (await buildMarketingFooter(service, marketingFooter, {
           tenantId: payload.tenantId,
-          personId: row.person_id,
+          personId: row.person_id as string, // marketing rows are filtered to opted-in people above
           language,
           studioName: tenant.name,
         }))

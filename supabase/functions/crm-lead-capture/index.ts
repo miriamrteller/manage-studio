@@ -10,6 +10,10 @@ import {
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { buildLeadThankYou, parseLeadThankYou } from "../_shared/crm-contract/lead-thank-you.ts";
+import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../_shared/email-send.ts";
+import { getTenantEmailConfig } from "../_shared/tenant-email.ts";
+import { resolveTenantSender } from "../_shared/notification-from.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { cleanInviteToken, inviteTokenHash } from "../_shared/lead-form-invite.ts";
 import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
@@ -88,6 +92,8 @@ const payloadSchema = z.object({
     })
     .nullable()
     .optional(),
+  /** The language the visitor used the form in (for the thank-you email). */
+  lang: z.enum(["en", "he"]).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /** Time trap: milliseconds the form was open before sending (absent = not checked). */
@@ -213,7 +219,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
 
     const { data: tenant, error: tenantError } = await service
       .from("tenants")
-      .select(`${LEAD_TENANT_COLUMNS}, skin, business_preset, lead_form`)
+      .select(`${LEAD_TENANT_COLUMNS}, skin, business_preset, lead_form, lead_thank_you`)
       .eq("subdomain", payload.tenantSubdomain.toLowerCase())
       .single();
     if (tenantError || !tenant) {
@@ -223,6 +229,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       skin: string | null;
       business_preset: string | null;
       lead_form: unknown;
+      lead_thank_you: unknown;
     };
 
     if (await enquiryUsesStudioEmail(service, leadTenant.id, payload.email)) {
@@ -372,9 +379,61 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       );
     }
 
+    // A new sign-up gets the studio's own thank-you email, when it is on.
+    // A repeat sign-up (same email) does not get it again.
+    if (result.outcome === "created" && fields.email && !shoot) {
+      await sendLeadThankYou(service, leadTenant, fields.email, fields.name, payload.lang ?? null);
+    }
+
     return json({ outcome: result.outcome }, result.outcome === "created" ? 201 : 200);
   } catch (err) {
     console.error("crm-lead-capture: unhandled error", err);
     return json({ error: "Internal error" }, 500);
   }
 }));
+
+/** Never fails the capture: the lead is already saved. */
+async function sendLeadThankYou(
+  service: ReturnType<typeof createServiceClient>,
+  tenant: LeadTenant & { lead_thank_you: unknown },
+  email: string,
+  name: string,
+  lang: "en" | "he" | null,
+): Promise<void> {
+  try {
+    const email_ = buildLeadThankYou(
+      parseLeadThankYou(tenant.lead_thank_you),
+      lang ?? (tenant.language_default === "he" ? "he" : "en"),
+      { name, studio: tenant.name },
+    );
+    if (!email_) return;
+    const config = await getTenantEmailConfig(service, tenant.id);
+    const sender = resolveTenantSender(tenant);
+    const sent = await sendRenderedEmail({
+      to: email,
+      from: sender.from,
+      replyTo: sender.replyTo,
+      subject: email_.subject,
+      renderInput: {
+        templateName: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+        language: email_.language,
+        schoolName: tenant.name,
+        tenantColors: { primary_color: config.primary_color, accent_color: config.accent_color },
+        variables: { subject: email_.subject, body: email_.body },
+      },
+    });
+    await service.from("notification_log").insert({
+      tenant_id: tenant.id,
+      recipient_email: email,
+      channel: "email",
+      template_name: "crm_lead_thank_you",
+      subject: email_.subject,
+      body_preview: email_.body.slice(0, 200),
+      external_msg_id: sent.id,
+      status: "sent",
+      sent_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("crm-lead-capture: thank-you email failed (lead saved)", err);
+  }
+}

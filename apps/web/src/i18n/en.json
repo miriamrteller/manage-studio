@@ -648,6 +648,7 @@
         "title": "Leads",
         "description": "Inquiries that are not enrolled yet — parties, trial classes, anything in the pipeline. Enrolled families live under Families.",
         "add": "New lead",
+        "email_all": "Email everyone on this list",
         "save": "Save lead",
         "name": "Name",
         "email": "Email",
@@ -954,6 +955,23 @@
       "title": "Notifications",
       "description": "Send email announcements and review delivery history for your studio.",
       "tab_compose": "Compose",
+      "tab_reminders": "Automatic emails",
+      "reminders": {
+        "title": "Automatic class emails",
+        "description": "Sent to enrolled families every morning, to the family's main contact, in their language.",
+        "morning_label": "Morning-of reminder",
+        "morning_hint": "On each class day: the time, where (the class's location) and what to wear.",
+        "wear_en": "What to wear (English)",
+        "wear_he": "What to wear (Hebrew)",
+        "no_class_label": "\"No class\" notice, a week ahead",
+        "no_class_hint": "When a class day falls on a holiday (skipped automatically, as on your timetable) or on one of your closed dates below.",
+        "closed_legend": "Your own closed dates",
+        "closed_hint": "Days with no class besides the holidays, for example Shushan Purim in Jerusalem or a day off.",
+        "add_date": "Add a date",
+        "remove_date": "Remove {{date}}",
+        "saved": "Saved.",
+        "error": "Could not save. Please try again."
+      },
       "tab_history": "History",
       "log_heading": "Delivery history",
       "log_channel": "Channel",
@@ -995,6 +1013,8 @@
       "scope_level": "By level",
       "scope_class": "By class",
       "scope_account": "By account",
+      "scope_leads": "Leads (not enrolled yet)",
+      "scope_leads_hint": "Everyone on your Leads list who hasn't enrolled yet, such as families waiting to hear when classes start. Untick anyone you'd rather leave out.",
       "level_label": "Level",
       "class_label": "Class",
       "account_label": "Account",
@@ -3800,6 +3820,19 @@
       "work_appointments_label": "Appointments",
       "work_appointments_hint": "Clients pick a free time slot online, and it’s booked as soon as they pay."
     },
+    "lead_thank_you": {
+      "title": "Thank-you email to new sign-ups",
+      "label": "Email each new sign-up from my website form straight away",
+      "hint": "Sent once, in the language they used on the form. {name} becomes their first name and {studio} your studio's name. Someone who signs up again with the same email doesn't get it twice.",
+      "subject_en": "Subject (English)",
+      "body_en": "Message (English)",
+      "subject_he": "Subject (Hebrew)",
+      "body_he": "Message (Hebrew)",
+      "saved": "Saved.",
+      "error": "Could not save. Please try again.",
+      "default_subject": "Thank you for your interest in {studio}",
+      "default_body": "Hi {name},\n\nThank you for getting in touch with {studio}! We've received your details and will be in touch soon with everything you need to know.\n\nIf you have any questions in the meantime, just reply to this email.\n\n{studio}"
+    },
     "lead_digest": {
       "title": "Daily follow-up email",
       "label": "Email me each morning with the leads to follow up that day",
@@ -4365,7 +4398,11 @@
       "no_classes": "Add a class first, then choose it here.",
       "save_card": "Save card",
       "cancel": "Cancel",
-      "error": "Could not save. Please try again."
+      "error": "Could not save. Please try again.",
+      "valid_until": "Valid until {{date}}",
+      "end_date_toggle": "Ends on a set date",
+      "end_date_label": "Last day",
+      "end_date_hint": "Every card of this kind lasts until this day, whenever it's bought (e.g. the end of term)."
     }
   },
   "accessibility": {

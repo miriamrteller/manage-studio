@@ -433,3 +433,18 @@ UPDATE engagements SET status = 'active' WHERE id = 'f0000000-0000-4000-8000-000
 SELECT pg_temp.expect_fail((SELECT bob_u FROM ids),
   format('SELECT start_class_card_purchase(%L, %L)', (SELECT id FROM t WHERE k = 'ten'), (SELECT alice FROM ids)),
   'access denied', 'cannot buy a card for someone outside the family');
+
+-- Cards with a set end date ("valid until 14 May"), whenever they are bought.
+RESET ROLE;
+DO $$
+DECLARE v UUID; c class_cards; e DATE := (now() AT TIME ZONE 'Asia/Jerusalem')::date + 60;
+BEGIN
+  INSERT INTO class_card_types (tenant_id, name, class_count, price_minor, valid_months, ends_on)
+  SELECT studio, 'Term card', 17, 95000, 5, e FROM ids RETURNING id INTO v;
+  INSERT INTO class_card_type_offerings (card_type_id, tenant_id, offering_id) SELECT v, studio, yoga FROM ids;
+  PERFORM pg_temp.as_user((SELECT admin FROM ids));
+  c := issue_class_card(v, (SELECT bob FROM ids));
+  IF c.valid_until <> e THEN RAISE EXCEPTION 'FAIL end-date card valid until %, expected %', c.valid_until, e; END IF;
+  RAISE NOTICE 'ok  a card type with an end date: the card is valid until that day, not 5 months';
+END $$;
+SELECT 'class cards end date: ok' AS result;

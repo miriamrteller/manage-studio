@@ -604,6 +604,7 @@ export type Database = {
                     class_count: number;
                     created_at: string;
                     currency: string;
+                    ends_on: string | null;
                     id: string;
                     is_active: boolean;
                     name: string;
@@ -617,6 +618,7 @@ export type Database = {
                     class_count: number;
                     created_at?: string;
                     currency?: string;
+                    ends_on?: string | null;
                     id?: string;
                     is_active?: boolean;
                     name: string;
@@ -630,6 +632,7 @@ export type Database = {
                     class_count?: number;
                     created_at?: string;
                     currency?: string;
+                    ends_on?: string | null;
                     id?: string;
                     is_active?: boolean;
                     name?: string;
@@ -5349,6 +5352,7 @@ export type Database = {
                     business_preset: string;
                     celebrations: Json;
                     chrome_style: string;
+                    class_reminders: Json;
                     client_booking: boolean;
                     contact_email: string;
                     country: string;
@@ -5379,6 +5383,7 @@ export type Database = {
                     labels: Json;
                     language_default: string;
                     lead_form: Json;
+                    lead_thank_you: Json;
                     legal_pack_ack_drafts: string[];
                     legal_pack_acknowledged_at: string | null;
                     legal_pack_required: boolean;
@@ -5446,6 +5451,7 @@ export type Database = {
                     business_preset?: string;
                     celebrations?: Json;
                     chrome_style?: string;
+                    class_reminders?: Json;
                     client_booking?: boolean;
                     contact_email: string;
                     country?: string;
@@ -5476,6 +5482,7 @@ export type Database = {
                     labels?: Json;
                     language_default?: string;
                     lead_form?: Json;
+                    lead_thank_you?: Json;
                     legal_pack_ack_drafts?: string[];
                     legal_pack_acknowledged_at?: string | null;
                     legal_pack_required?: boolean;
@@ -5543,6 +5550,7 @@ export type Database = {
                     business_preset?: string;
                     celebrations?: Json;
                     chrome_style?: string;
+                    class_reminders?: Json;
                     client_booking?: boolean;
                     contact_email?: string;
                     country?: string;
@@ -5573,6 +5581,7 @@ export type Database = {
                     labels?: Json;
                     language_default?: string;
                     lead_form?: Json;
+                    lead_thank_you?: Json;
                     legal_pack_ack_drafts?: string[];
                     legal_pack_acknowledged_at?: string | null;
                     legal_pack_required?: boolean;

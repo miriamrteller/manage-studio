@@ -77,6 +77,8 @@ export interface ClassCardTypeInput {
   class_count: number;
   price_minor: number;
   valid_months: number | null;
+  /** Set = every card is valid until this day, whenever bought (overrides valid_months). */
+  ends_on: string | null;
   shareable: boolean;
   is_active: boolean;
   offering_ids: string[];
@@ -278,6 +280,7 @@ export interface CardOnSale {
   price_minor: number;
   currency: string;
   valid_months: number | null;
+  ends_on: string | null;
   shareable: boolean;
 }
 
@@ -285,7 +288,7 @@ export interface CardOnSale {
 export async function fetchCardsOnSale(tenantId: string): Promise<CardOnSale[]> {
   const { data, error } = await supabase
     .from('class_card_types')
-    .select('id, name, class_count, price_minor, currency, valid_months, shareable')
+    .select('id, name, class_count, price_minor, currency, valid_months, ends_on, shareable')
     .eq('tenant_id', tenantId)
     .eq('is_active', true)
     .order('class_count');
@@ -366,4 +369,11 @@ export function classCardErrorCode(err: unknown): string | null {
   const message = err instanceof Error ? err.message : typeof err === 'object' && err && 'message' in err ? String((err as { message: unknown }).message) : '';
   const m = /class_card: ([a-z_]+)/.exec(message);
   return m ? m[1] : null;
+}
+
+/** "2027-05-14" -> "14 May 2027" in the viewer's language. */
+export function formatEndDate(isoDate: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${isoDate}T12:00:00Z`),
+  );
 }

@@ -13,9 +13,14 @@ type Row = Record<string, unknown>;
 function fakeService(open: Row | null) {
   const inserts: Row[] = [];
   const updates: Row[] = [];
+  const filters: unknown[][] = [];
   const chain = (result: unknown): Record<string, unknown> => {
     const c: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'neq', 'is', 'order', 'limit']) c[m] = () => c;
+    for (const m of ['select', 'eq', 'neq', 'not', 'is', 'order', 'limit'])
+      c[m] = (...args: unknown[]) => {
+        filters.push([m, ...args]);
+        return c;
+      };
     c.maybeSingle = async () => ({ data: result, error: null });
     c.single = async () => ({ data: result, error: null });
     c.then = (resolve: (v: unknown) => void) => resolve({ error: null });
@@ -34,7 +39,7 @@ function fakeService(open: Row | null) {
       },
     })),
   };
-  return { service: service as never, inserts, updates };
+  return { service: service as never, inserts, updates, filters };
 }
 
 const tenant = {
@@ -77,6 +82,13 @@ describe('writeInboundLead with form answers', () => {
     expect(result).toEqual({ outcome: 'updated', leadId: 'open-1' });
     expect(f.updates[0]).toMatchObject({ child_name: 'Noa', offering_id: 'off-1' });
     expect(f.updates[0].answers).toEqual({ ...earlier, ...form.answers });
+  });
+
+  it('only an open lead takes a repeat enquiry: enrolled (won) and lost leads are left alone', async () => {
+    const f = fakeService(null);
+    await writeInboundLead(f.service, tenant, fields, { ...opts, form });
+    expect(f.filters).toContainEqual(['not', 'stage', 'in', '(won,lost)']);
+    expect(f.filters).toContainEqual(['is', 'converted_account_id', null]);
   });
 
   it('a repeat enquiry with no answers does not touch them', async () => {
