@@ -2224,6 +2224,7 @@
     "intro": "Each shoot's photos are sold privately to that shoot's own client, under \"My shoots\". Nobody else can see them.",
     "tabs": {
       "overview": "Overview",
+      "orders": "Orders",
       "prices": "Prices",
       "smugmug": "SmugMug",
       "preview": "Preview"
@@ -2234,6 +2235,14 @@
       "prices": "Set your price per photo",
       "private": "Add each shoot's photos on its shoot page. Its own prices and orders are there too.",
       "shoots_link": "Go to Shoots"
+    },
+    "orders": {
+      "intro": "Every photo order from all your shoots, newest first. Open the shoot to send the photos or record a cash payment.",
+      "none": "No photo orders yet.",
+      "failed": "The orders couldn't be loaded. Please try again.",
+      "open": "Open shoot",
+      "shoot_unknown": "Shoot",
+      "cash": "Paying in cash"
     },
     "preview": {
       "intro": "Choose a shoot to see its photo shop exactly as that client sees it. You can pick photos and try the buttons; nothing is ordered or charged.",

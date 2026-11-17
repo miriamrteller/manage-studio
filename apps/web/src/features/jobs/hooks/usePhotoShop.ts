@@ -74,6 +74,16 @@ export function useJobPhotoShopPhotos(engagementId: string) {
   return { photos, remove, refresh };
 }
 
+/** Every shoot's photo orders in one list (Photo shop > Orders). */
+export function useStudioPhotoOrders() {
+  const tenant = useTenant();
+  return useQuery({
+    queryKey: ['photo-shop-studio-orders', tenant?.id],
+    queryFn: () => PhotoShopService.listStudioOrders(tenant!.id),
+    enabled: Boolean(tenant?.id),
+  });
+}
+
 export function useStudioPhotoShopDefaults() {
   const tenant = useTenant();
   const queryClient = useQueryClient();

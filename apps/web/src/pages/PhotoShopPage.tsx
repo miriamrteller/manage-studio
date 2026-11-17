@@ -5,18 +5,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
-import { useStudioPhotoShopDefaults } from '@/features/jobs/hooks/usePhotoShop';
+import { useStudioPhotoOrders, useStudioPhotoShopDefaults } from '@/features/jobs/hooks/usePhotoShop';
+import { Badge } from '@/components/ui/badge';
+import { formatDueDate, formatMinor } from '@/features/jobs/lib/jobPaymentFormat';
+import type { PhotoOrderStatus } from '@/features/jobs/services/photoShopService';
 import { PhotoShopPreview } from '@/features/jobs/components/ClientPhotoShop';
 import { PhotoShopDefaultsSetting } from '@/features/settings/components/PhotoShopDefaultsSetting';
 import { SmugMugSetting } from '@/features/settings/components/SmugMugSetting';
 
-const TABS = ['overview', 'prices', 'smugmug', 'preview'] as const;
+const TABS = ['overview', 'orders', 'prices', 'smugmug', 'preview'] as const;
 type Tab = (typeof TABS)[number];
 
 /**
  * The studio's photo shop (beta, feature billing:photo_shop). Each shoot's photos are sold
  * privately to that shoot's own client; this page holds the studio-wide parts: what's left
- * to set up, default prices, the SmugMug connection (optional) and a preview of a shoot's shop.
+ * to set up, every shoot's orders in one list, default prices, the SmugMug connection (optional) and a preview of a shoot's shop.
  */
 export default function PhotoShopPage() {
   const { t } = useTranslation();
@@ -44,6 +47,9 @@ export default function PhotoShopPage() {
         </TabsList>
         <TabsContent value="overview" className="pt-4">
           {tab === 'overview' && <Overview onGo={go} />}
+        </TabsContent>
+        <TabsContent value="orders" className="pt-4">
+          {tab === 'orders' && <OrdersTab />}
         </TabsContent>
         <TabsContent value="prices" className="pt-4">
           {tab === 'prices' && <PhotoShopDefaultsSetting />}
@@ -95,6 +101,64 @@ function Overview({ onGo }: { onGo: (tab: Tab) => void }) {
         {t('photo_shop_admin.overview.private')}{' '}
         <Link to="/admin/projects" className="font-medium underline">{t('photo_shop_admin.overview.shoots_link')}</Link>
       </p>
+    </div>
+  );
+}
+
+const ORDER_BADGE: Record<PhotoOrderStatus, 'default' | 'secondary' | 'success' | 'destructive'> = {
+  awaiting_payment: 'secondary',
+  paid: 'default',
+  delivered: 'success',
+  cancelled: 'destructive',
+  refunded: 'destructive',
+};
+
+/**
+ * Every shoot's photo orders in one list, newest first. Sending the photos and recording
+ * cash stay on the shoot's own Photo shop tab, which each row opens.
+ */
+function OrdersTab() {
+  const { t, i18n } = useTranslation();
+  const orders = useStudioPhotoOrders();
+  const { jobs } = useJobs();
+  const shoots = new Map(jobs.map((j) => [j.engagement_id, j]));
+
+  if (orders.isLoading) return null;
+  if (orders.isError) return <p role="alert" className="text-sm text-red-700">{t('photo_shop_admin.orders.failed')}</p>;
+  const list = orders.data ?? [];
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600">{t('photo_shop_admin.orders.intro')}</p>
+      {list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('photo_shop_admin.orders.none')}</p>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((o) => {
+            const shoot = shoots.get(o.engagement_id);
+            const name = [shoot?.client_name, shoot?.package_name].filter(Boolean).join(' · ') || t('photo_shop_admin.orders.shoot_unknown');
+            return (
+              <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
+                <div className="space-y-1">
+                  <p className="font-medium">{name}</p>
+                  <p className="text-muted-foreground">
+                    {formatDueDate(o.created_at, i18n.language)} ·{' '}
+                    {t('pages.jobs.photo_shop.order_photos', { count: o.photo_count })} ·{' '}
+                    {formatMinor(o.total_minor, o.currency, i18n.language)}
+                    {o.status === 'awaiting_payment' && o.pay_by_cash && <> · {t('photo_shop_admin.orders.cash')}</>}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant={ORDER_BADGE[o.status]}>{t(`pages.jobs.photo_shop.status.${o.status}`)}</Badge>
+                  <Link to={`/admin/projects/${o.engagement_id}?tab=shop`} className="font-medium underline">
+                    {t('photo_shop_admin.orders.open')}
+                  </Link>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

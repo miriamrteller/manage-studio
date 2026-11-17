@@ -83,6 +83,11 @@ export interface PhotoOrder {
   items: PhotoOrderItem[];
 }
 
+/** An order with the shoot it belongs to, for the studio-wide list. */
+export interface StudioPhotoOrder extends PhotoOrder {
+  engagement_id: string;
+}
+
 export interface StudioPhotoShopDefaults {
   price_per_photo_minor: number | null;
   all_photos_price_minor: number | null;
@@ -119,6 +124,21 @@ export class PhotoShopService {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data ?? []) as unknown as PhotoOrder[];
+  }
+
+  /** Every shoot's orders for the studio, newest first (Photo shop > Orders). Cancelled ones are left out. */
+  static async listStudioOrders(tenantId: string): Promise<StudioPhotoOrder[]> {
+    const { data, error } = await supabase
+      .from('job_photo_orders')
+      .select(
+        'id, engagement_id, status, photo_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(image_key, file_name, included, price_minor)',
+      )
+      .eq('tenant_id', tenantId)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return (data ?? []) as unknown as StudioPhotoOrder[];
   }
 
   /** Saves the download link and emails the client (deliver-photo-order). */
