@@ -1,12 +1,14 @@
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { Combobox } from '@base-ui/react/combobox';
+import { DirectionProvider } from '@base-ui/react/direction-provider';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
 import {
   SmugMugActionError,
   SmugMugService,
   type GalleryCheckItem,
+  type SmugMugAlbum,
 } from '@/features/settings/services/smugmugService';
 import { formatDueDate } from '../lib/jobPaymentFormat';
 import type { JobPhotoShop } from '../services/photoShopService';
@@ -131,15 +133,8 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
         <div className="space-y-1">
           <label htmlFor={selectId} className="block font-medium">{t('pages.jobs.photo_shop.source.gallery')}</label>
           <div className="flex flex-wrap gap-2">
-            <Select id={selectId} className="min-w-0 flex-1" value={albumKey}
-              onChange={(e) => { check.reset(); setAlbumKey(e.target.value); }}>
-              <option value="">{t('pages.jobs.photo_shop.source.choose')}</option>
-              {albums.data.albums.map((a) => (
-                <option key={a.key} value={a.key}>
-                  {a.imageCount != null ? t('pages.jobs.photo_shop.source.album', { name: a.name, count: a.imageCount }) : a.name}
-                </option>
-              ))}
-            </Select>
+            <GalleryPicker id={selectId} albums={albums.data.albums} value={albumKey}
+              onChange={(key) => { check.reset(); setAlbumKey(key); }} />
             <Button size="sm" variant="primary" disabled={!albumKey} isLoading={check.isPending}
               onClick={() => check.mutate(albumKey)}>
               {albumKey === current && saved ? t('pages.jobs.photo_shop.source.check_again') : t('pages.jobs.photo_shop.source.check')}
@@ -195,6 +190,62 @@ function SmugMugGallery({ engagementId, shop }: { engagementId: string; shop: Jo
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Type-to-search gallery picker (owner, 17 Nov 2026: "the galleries need an autosearch").
+ * Base UI Combobox: typing filters the galleries by name, arrow keys and Enter pick one,
+ * Escape closes the list, and screen readers hear it as a combobox with a listbox.
+ */
+function GalleryPicker({ id, albums, value, onChange }: {
+  id: string;
+  albums: SmugMugAlbum[];
+  value: string;
+  onChange: (key: string) => void;
+}) {
+  const { t } = useTranslation();
+  const label = useCallback(
+    (a: SmugMugAlbum) =>
+      a.imageCount != null ? t('pages.jobs.photo_shop.source.album', { name: a.name, count: a.imageCount }) : a.name,
+    [t],
+  );
+  const items = useMemo(() => Combobox.createItems(albums, { getValue: (a) => a.key, getLabel: label }), [albums, label]);
+  const direction =
+    typeof document !== 'undefined' && document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr';
+  return (
+    <DirectionProvider direction={direction}>
+      <Combobox.Root items={items} value={value || null} autoHighlight
+        onValueChange={(key) => { if (typeof key === 'string' && key !== value) onChange(key); }}>
+        <Combobox.InputGroup className="relative min-w-0 flex-1">
+          <Combobox.Input id={id} placeholder={t('pages.jobs.photo_shop.source.search')}
+            className="w-full rounded-md border border-gray-300 py-2 pe-9 ps-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" />
+          <Combobox.Trigger aria-label={t('pages.jobs.photo_shop.source.show_all')}
+            className="absolute inset-y-0 end-0 flex !min-h-0 w-9 items-center justify-center text-muted-foreground">
+            <span aria-hidden="true">▾</span>
+          </Combobox.Trigger>
+        </Combobox.InputGroup>
+        <Combobox.Portal>
+          <Combobox.Positioner sideOffset={4} collisionPadding={8} className="z-[var(--z-tooltip)] outline-none">
+            <Combobox.Popup dir={direction}
+              className="w-[var(--anchor-width)] max-w-[var(--available-width)] rounded-md border bg-[var(--surface-base)] text-sm shadow-md">
+              <Combobox.Empty className="px-3 py-2 text-muted-foreground empty:hidden">
+                {t('pages.jobs.photo_shop.source.no_match')}
+              </Combobox.Empty>
+              <Combobox.List className="max-h-[min(20rem,var(--available-height))] overflow-y-auto overscroll-contain py-1 outline-none data-[empty]:p-0">
+                {(a: SmugMugAlbum) => (
+                  <Combobox.Item key={a.key} value={a.key}
+                    className="flex cursor-default items-center gap-2 px-3 py-2 outline-none select-none data-[highlighted]:bg-[var(--surface-sunken)]">
+                    <Combobox.ItemIndicator className="w-4 shrink-0"><span aria-hidden="true">✓</span></Combobox.ItemIndicator>
+                    <span className="min-w-0 break-words">{label(a)}</span>
+                  </Combobox.Item>
+                )}
+              </Combobox.List>
+            </Combobox.Popup>
+          </Combobox.Positioner>
+        </Combobox.Portal>
+      </Combobox.Root>
+    </DirectionProvider>
   );
 }
 

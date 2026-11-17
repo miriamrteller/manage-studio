@@ -4,6 +4,7 @@
  * prices behind "Details we filled in for you"; saving sends the edits; a paid
  * order is delivered with an https link only. EN + HE text present.
  */
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { JobPhotoShopCard } from '@/features/jobs/components/JobPhotoShopCard';
@@ -303,8 +304,8 @@ describe('JobPhotoShopCard', () => {
       ],
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
-    await waitFor(() => expect(select.value).toBe('a2'));
+    const picker = (await screen.findByRole('combobox', { name: 'SmugMug gallery' })) as HTMLInputElement;
+    await waitFor(() => expect(picker.value).toBe('Cohen family (40 photos)'));
     expect(screen.getByRole('radio', { name: 'In a SmugMug gallery' })).toHaveProperty('checked', true);
     expect(screen.queryByRole('button', { name: 'Add photos' })).toBeNull();
     // Checked straight away: no button press needed (fewest steps, 13 Nov 2026).
@@ -330,10 +331,10 @@ describe('JobPhotoShopCard', () => {
       ],
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    await screen.findByRole('combobox', { name: 'SmugMug gallery' });
     // The gallery named like the shoot is checked first; choosing another checks that one at once.
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
-    fireEvent.change(select, { target: { value: 'a1' } });
+    await pickGallery('Levi', 'Levi bar mitzvah (12 photos)');
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/Settings > Photo Protection > Watermark Photos/)).toBeTruthy();
     expect(screen.getByText(/Lines marked ⚠ are only tips/)).toBeTruthy();
@@ -372,6 +373,22 @@ describe('JobPhotoShopCard', () => {
     expect(link.getAttribute('href')).toBe('/admin/projects/e1?tab=client');
   });
 
+  it('typing filters the galleries by name; no match says so', async () => {
+    state.smugmugConnected = true;
+    state.checkGallery.mockResolvedValue({ passed: true, albumName: 'Cohen family', photoCount: 40, items: [] });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const picker = await screen.findByRole('combobox', { name: 'SmugMug gallery' });
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
+    const user = userEvent.setup();
+    await user.clear(picker);
+    await user.type(picker, 'mitz');
+    expect(await screen.findByRole('option', { name: 'Levi bar mitzvah (12 photos)' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Cohen family (40 photos)' })).toBeNull();
+    await user.clear(picker);
+    await user.type(picker, 'zzz');
+    expect(await screen.findByText('No gallery matches that name')).toBeTruthy();
+  });
+
   it('a gallery with only videos says so, in one line', async () => {
     state.smugmugConnected = true;
     state.checkGallery.mockResolvedValue({
@@ -386,9 +403,9 @@ describe('JobPhotoShopCard', () => {
       ],
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
+    await screen.findByRole('combobox', { name: 'SmugMug gallery' });
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
-    fireEvent.change(select, { target: { value: 'a1' } });
+    await pickGallery('levi', 'Levi bar mitzvah (12 photos)');
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/This gallery only has videos/)).toBeTruthy();
     expect(screen.getAllByText('✗')).toHaveLength(1);
@@ -409,11 +426,21 @@ describe('JobPhotoShopCard', () => {
     await setLanguage('he');
     state.smugmugConnected = true;
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    expect(await screen.findByLabelText('גלריה ב-SmugMug')).toBeTruthy();
+    expect(await screen.findByRole('combobox', { name: 'גלריה ב-SmugMug' })).toBeTruthy();
+    expect(screen.getByPlaceholderText('אפשר להקליד שם גלריה לחיפוש')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'בדיקת הגלריה' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'להעלות אותן כאן' })).toBeTruthy();
   });
 });
+
+/** Types into the gallery picker and picks the matching gallery from the list. */
+async function pickGallery(query: string, option: string) {
+  const user = userEvent.setup();
+  const picker = screen.getByRole('combobox', { name: 'SmugMug gallery' });
+  await user.clear(picker);
+  await user.type(picker, query);
+  await user.click(await screen.findByRole('option', { name: option }));
+}
 
 describe('photo previews', () => {
   it('shrinks to at most 1200px on the longest edge, never enlarges, and names the studio', async () => {
