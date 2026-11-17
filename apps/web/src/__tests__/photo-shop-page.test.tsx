@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
   pricePerPhoto: null as number | null,
   preview: vi.fn(),
   order: vi.fn(),
+  orders: [] as unknown[],
 }));
 
 vi.mock('@/hooks/useFeatureGate', () => ({
@@ -41,6 +42,7 @@ vi.mock('@/features/jobs/hooks/usePhotoShop', async (orig) => {
   return {
     ...real,
     usePhotoShopEnabled: () => state.flag,
+    useStudioPhotoOrders: () => ({ data: state.orders, isLoading: false, isError: false }),
     useStudioPhotoShopDefaults: () => ({
       defaults: { data: { price_per_photo_minor: state.pricePerPhoto, all_photos_price_minor: null, gallery_open_days: 90 }, isLoading: false },
       save: { mutate: vi.fn(), isPending: false, error: null },
@@ -86,6 +88,7 @@ describe('Photo shop page', () => {
     state.pricePerPhoto = null;
     state.preview.mockReset();
     state.order.mockReset();
+    state.orders = [];
     setTenant('photographer');
     await setLanguage('en');
   });
@@ -115,7 +118,7 @@ describe('Photo shop page', () => {
     state.pricePerPhoto = 3000;
     renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });
     expect(screen.getByRole('heading', { name: 'Photo shop' })).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Prices', 'SmugMug', 'Preview']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Orders', 'Prices', 'SmugMug', 'Preview']);
     expect(screen.getByText('Set your price per photo').parentElement?.textContent).toContain('Done');
     expect(screen.getByText(/Add each shoot's photos on its shoot page/)).toBeTruthy();
     expect(screen.queryByText('Connect your SmugMug account')).toBeNull();
@@ -159,10 +162,34 @@ describe('Photo shop page', () => {
     expect(await screen.findByText(/This shoot has no photos yet/)).toBeTruthy();
   });
 
+  it('Orders lists every shoot\'s orders, each opening its shoot', () => {
+    const order = (id: string, engagement_id: string, status: string, extra = {}) => ({
+      id, engagement_id, status, photo_count: 2, included_count: 0, total_minor: 6000, currency: 'ILS', all_photos: false,
+      delivery_url: null, created_at: '2026-11-16T10:00:00Z', paid_at: null, delivered_at: null, items: [], ...extra,
+    });
+    state.orders = [order('o1', 'e1', 'paid'), order('o2', 'e2', 'awaiting_payment', { pay_by_cash: true })];
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=orders' });
+    const rows = screen.getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('Client A · Family');
+    expect(rows[0].textContent).toContain('Paid, to deliver');
+    expect(rows[1].textContent).toContain('Client B · Newborn');
+    expect(rows[1].textContent).toContain('Paying in cash');
+    const links = screen.getAllByRole('link', { name: 'Open shoot' });
+    expect(links[0].getAttribute('href')).toBe('/admin/projects/e1?tab=shop');
+    expect(links[1].getAttribute('href')).toBe('/admin/projects/e2?tab=shop');
+  });
+
+  it('Orders says when there are none', () => {
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=orders' });
+    expect(screen.getByText('No photo orders yet.')).toBeTruthy();
+  });
+
   it('has Hebrew text', async () => {
     await setLanguage('he');
     renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });
     expect(screen.getByRole('heading', { name: 'חנות תמונות' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'תצוגה מקדימה' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'הזמנות' })).toBeTruthy();
   });
 });
