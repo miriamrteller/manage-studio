@@ -109,3 +109,99 @@ describe('client import: building clients', () => {
     expect(built.problems).toEqual([{ rowNumber: 3, code: 'bad_dob' }]);
   });
 });
+
+describe('client import: past shoots', () => {
+  const cols = (fields: ClientColumn['field'][]): ClientColumn[] =>
+    fields.map((field, index) => ({ index, header: field, field }));
+
+  it('Shoot and Shoot date columns are found only with Projects', () => {
+    const headers = ['Name', 'Email', 'Shoot', 'Shoot date'];
+    expect(guessClientColumns(headers, false, true).map((c) => c.field)).toEqual([
+      'name',
+      'email',
+      'shoot_name',
+      'shoot_date',
+    ]);
+    expect(guessClientColumns(headers, false, false).map((c) => c.field)).toEqual(['name', 'email', 'skip', 'skip']);
+    expect(guessClientColumns(['Shoot name', 'Date'], false, true).map((c) => c.field)).toEqual([
+      'shoot_name',
+      'shoot_date',
+    ]);
+    expect(guessClientColumns(['שם', 'שם הצילום', 'תאריך הצילום'], false, true).map((c) => c.field)).toEqual([
+      'name',
+      'shoot_name',
+      'shoot_date',
+    ]);
+    expect(clientFieldKeys(false, true)).toContain('shoot_name');
+    expect(clientFieldKeys(false)).not.toContain('shoot_name');
+  });
+
+  it('each client gets one shoot with the same name; bad or future dates are left out', () => {
+    const rows: Cell[][] = [
+      ['Name', 'Email', 'Shoot', 'Shoot date'],
+      ['Dana', 'dana@example.test', 'Family shoot', '03/04/2025'],
+      ['Avi', 'avi@example.test', 'Family shoot', ''],
+      ['Rina', 'rina@example.test', 'Family shoot', '01/01/2999'],
+      ['Dana', 'dana@example.test', 'family  shoot', ''],
+      ['Noa', 'noa@example.test', '', ''],
+    ];
+    const built = buildClients(rows, 0, {
+      columns: cols(['name', 'email', 'shoot_name', 'shoot_date']),
+      families: false,
+      dayFirst: true,
+      familyName,
+      projects: true,
+      defaultShootName: 'Shoot',
+      today: '2026-11-17',
+    });
+    expect(built.clients.map((c) => [c.name, c.shoots])).toEqual([
+      ['Dana', [{ name: 'Family shoot', date: '2025-04-03' }]],
+      ['Avi', [{ name: 'Family shoot', date: null }]],
+      ['Rina', [{ name: 'Family shoot', date: null }]],
+      ['Noa', undefined],
+    ]);
+    expect(built.shoots).toBe(3);
+    expect(built.problems).toEqual([
+      { rowNumber: 4, code: 'bad_shoot_date' },
+      { rowNumber: 5, code: 'repeat' },
+    ]);
+  });
+
+  it('a date with no shoot name uses the default name; without Projects nothing is added', () => {
+    const rows: Cell[][] = [
+      ['Name', 'Date'],
+      ['Dana', '2025-06-01'],
+    ];
+    const opts = {
+      columns: cols(['name', 'shoot_date']),
+      families: false,
+      dayFirst: true,
+      familyName,
+      defaultShootName: 'Shoot',
+      today: '2026-11-17',
+    };
+    expect(buildClients(rows, 0, { ...opts, projects: true }).clients[0]?.shoots).toEqual([
+      { name: 'Shoot', date: '2025-06-01' },
+    ]);
+    expect(buildClients(rows, 0, opts).clients[0]?.shoots).toBeUndefined();
+  });
+
+  it('a second, different shoot for the same client on another row is kept', () => {
+    const rows: Cell[][] = [
+      ['Name', 'Email', 'Shoot'],
+      ['Dana', 'dana@example.test', 'Family shoot'],
+      ['Dana', 'dana@example.test', 'Newborn'],
+    ];
+    const built = buildClients(rows, 0, {
+      columns: cols(['name', 'email', 'shoot_name']),
+      families: false,
+      dayFirst: true,
+      familyName,
+      projects: true,
+    });
+    expect(built.clients).toHaveLength(1);
+    expect(built.clients[0]?.shoots?.map((s) => s.name)).toEqual(['Family shoot', 'Newborn']);
+    expect(built.clients[0]?.rowNumbers).toEqual([2, 3]);
+    expect(built.problems).toEqual([]);
+  });
+});

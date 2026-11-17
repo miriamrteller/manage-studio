@@ -57,19 +57,29 @@ echo "definer EXECUTE policy: ${#seen[@]} functions checked"
 # *_enc ones must be readable by authenticated, or a select naming it fails
 # with "permission denied for table tenants". A new column needs
 # GRANT SELECT (col) ON TABLE public.tenants TO authenticated in its migration.
+# The column list is read first (MATERIALIZED): Postgres may otherwise check the
+# privilege on another schema's "tenants" row (the local stack's _realtime.tenants
+# has external_id) before the schema filter, and fail on a column public lacks.
 missing=$("${PSQL[@]}" -c "
+  WITH cols AS MATERIALIZED (
+    SELECT column_name::text AS column_name, ordinal_position FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tenants'
+  )
   SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
-  FROM information_schema.columns
-  WHERE table_schema = 'public' AND table_name = 'tenants'
-    AND column_name NOT LIKE '%\\_enc'
+  FROM cols
+  WHERE column_name NOT LIKE '%\\_enc'
     AND NOT has_column_privilege('authenticated', 'public.tenants', column_name, 'SELECT')")
 if [[ -n "$missing" ]]; then
   echo "FAIL tenants columns not readable by authenticated (grant them in the migration that adds them): $missing"; fail=1
 fi
 leaked=$("${PSQL[@]}" -c "
+  WITH cols AS MATERIALIZED (
+    SELECT column_name::text AS column_name, ordinal_position FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tenants'
+  )
   SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
-  FROM information_schema.columns
-  WHERE table_schema = 'public' AND table_name = 'tenants' AND column_name LIKE '%\\_enc'
+  FROM cols
+  WHERE column_name LIKE '%\\_enc'
     AND (has_column_privilege('authenticated', 'public.tenants', column_name, 'SELECT')
          OR has_column_privilege('anon', 'public.tenants', column_name, 'SELECT'))")
 if [[ -n "$leaked" ]]; then

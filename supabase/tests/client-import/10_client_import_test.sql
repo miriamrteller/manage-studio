@@ -177,3 +177,97 @@ BEGIN
 END;
 $$;
 RESET ROLE;
+
+-- 8. Past shoots: one finished shoot per client, existing clients included,
+--    package found or added hidden, never twice, no shoot emails.
+DO $$
+DECLARE
+  v ids%ROWTYPE;
+  v_res jsonb;
+  v_rows jsonb;
+  v_existing uuid;
+  v_dana uuid;
+  v_pkg uuid;
+  v_count int;
+  v_recent date := (now() AT TIME ZONE 'Asia/Jerusalem')::date - 2;
+BEGIN
+  SELECT * INTO v FROM ids;
+  PERFORM pg_temp.act_as(v.lens_admin);
+  SELECT id INTO v_existing FROM people WHERE tenant_id = v.lens AND email = 'existing@example.test';
+  SELECT id INTO v_dana FROM people WHERE tenant_id = v.lens AND email = 'dana@example.test';
+
+  v_rows := jsonb_build_array(
+    -- matched by the screen (person_id), dated two days ago
+    jsonb_build_object('name', 'Existing Client', 'person_id', v_existing,
+      'shoots', jsonb_build_array(jsonb_build_object('name', 'Family shoot', 'date', v_recent::text))),
+    -- matched by email in the database, no date
+    jsonb_build_object('name', 'Dana Client', 'email', 'dana@example.test',
+      'shoots', jsonb_build_array(jsonb_build_object('name', '  family   SHOOT ', 'date', NULL))),
+    -- a new client, date in the future is left out
+    jsonb_build_object('name', 'New Shoot Client', 'email', 'newshoot@example.test',
+      'shoots', jsonb_build_array(jsonb_build_object('name', 'Family shoot', 'date', '2999-01-01')))
+  );
+  v_res := import_clients('clients.csv', NULL, '{}', v_rows);
+  IF (v_res->>'shoots')::int <> 3 OR (v_res->>'clients')::int <> 1 OR (v_res->>'skipped')::int <> 2 THEN
+    RAISE EXCEPTION 'FAIL past shoots import: %', v_res;
+  END IF;
+
+  SELECT count(*), min(o.id::text)::uuid INTO v_count, v_pkg FROM offerings o
+  WHERE o.tenant_id = v.lens AND lower(o.name) = 'family shoot';
+  IF v_count <> 1 OR (SELECT is_public FROM offerings WHERE id = v_pkg) THEN
+    RAISE EXCEPTION 'FAIL one hidden package expected (% found)', v_count;
+  END IF;
+
+  SELECT count(*) INTO v_count FROM engagements e
+  JOIN job_details jd ON jd.engagement_id = e.id
+  JOIN client_import_shoots cis ON cis.engagement_id = e.id
+  WHERE e.offering_id = v_pkg AND jd.job_status = 'delivered' AND e.season_id IS NULL;
+  IF v_count <> 3 THEN RAISE EXCEPTION 'FAIL expected 3 delivered shoots, got %', v_count; END IF;
+  IF (SELECT (e.booked_starts_at AT TIME ZONE 'Asia/Jerusalem')::date FROM engagements e
+      WHERE e.person_id = v_existing AND e.offering_id = v_pkg) <> v_recent THEN
+    RAISE EXCEPTION 'FAIL shoot date';
+  END IF;
+  IF EXISTS (SELECT 1 FROM engagements e JOIN people p ON p.id = e.person_id
+             WHERE p.email = 'newshoot@example.test' AND e.booked_starts_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'FAIL a future date should be left out';
+  END IF;
+  IF (SELECT account_id FROM people WHERE id = v_existing) IS NULL THEN
+    RAISE EXCEPTION 'FAIL an existing client gets an account for the shoot';
+  END IF;
+  RAISE NOTICE 'ok  each client gets one finished shoot on one hidden package';
+
+  -- The same sheet again: nothing new.
+  v_res := import_clients('clients.csv', NULL, '{}', v_rows);
+  IF (v_res->>'shoots')::int <> 0 OR (v_res->>'clients')::int <> 0 THEN
+    RAISE EXCEPTION 'FAIL re-import added shoots: %', v_res;
+  END IF;
+  RAISE NOTICE 'ok  importing the sheet again adds no second shoot';
+
+  -- An existing package with the name is used.
+  INSERT INTO offerings (tenant_id, name, offering_type, duration_mins, price_minor)
+  VALUES (v.lens, 'Newborn', 'appointment', 90, 50000) RETURNING id INTO v_pkg;
+  v_res := import_clients('more.csv', NULL, '{}', jsonb_build_array(
+    jsonb_build_object('name', 'Dana Client', 'person_id', v_dana,
+      'shoots', jsonb_build_array(jsonb_build_object('name', 'newborn')))));
+  IF (v_res->>'shoots')::int <> 1
+     OR NOT EXISTS (SELECT 1 FROM engagements WHERE person_id = v_dana AND offering_id = v_pkg) THEN
+    RAISE EXCEPTION 'FAIL existing package: %', v_res;
+  END IF;
+  RAISE NOTICE 'ok  a package with the same name is used';
+
+  -- No shoot emails for imported shoots (the dated one is in the thank-you window).
+  IF EXISTS (SELECT 1 FROM list_due_shoot_emails(now()) d
+             JOIN client_import_shoots cis ON cis.engagement_id = d.engagement_id) THEN
+    RAISE EXCEPTION 'FAIL imported shoots must not be emailed';
+  END IF;
+  RAISE NOTICE 'ok  imported shoots send no emails';
+
+  -- A person_id from another studio is refused.
+  PERFORM pg_temp.act_as(v.other_admin);
+  IF pg_temp.error_of(format($q$SELECT import_clients('x.csv', NULL, '{}', '[{"name":"X","person_id":"%s"}]')$q$, v_dana))
+     NOT LIKE '%client not found%' THEN
+    RAISE EXCEPTION 'FAIL foreign person_id accepted';
+  END IF;
+  RAISE NOTICE 'ok  a client from another studio is refused';
+END;
+$$;

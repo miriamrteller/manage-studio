@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Applies the FULL migration chain to a throwaway database on a local Postgres 15+ and
 # checks the client import: photographer clients, families with students, adults,
-# duplicates by email and phone skipped, matches for the screen, studio privacy.
+# duplicates by email and phone skipped, matches for the screen, studio privacy,
+# past shoots (one per client, never twice, no emails).
 #
 #   PGHOST=/tmp PGPORT=5432 PGUSER=postgres supabase/tests/client-import/run.sh
 set -euo pipefail
