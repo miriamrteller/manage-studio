@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FEATURES } from '@shared/index';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/hooks/useTenant';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { cellText, findHeaderRow, headerNames } from '@/features/finance-admin/import/importRows';
 import { readSpreadsheet, SpreadsheetError, type SheetData } from '@/features/finance-admin/import/readSpreadsheet';
@@ -30,7 +32,11 @@ export function ClientImport() {
   const { labels, vertical, profile } = useEntityLabels();
   // Photographers never have families; other studios do when family accounts are on.
   const families = vertical !== 'photographer' && profile.familyAccounts;
-  const fieldKeys = clientFieldKeys(families);
+  // Past shoots (owner, 17 Nov 2026): a "Shoot" column gives each client a finished shoot.
+  // Follows the feature set, like the Shoots page.
+  const { hasFeature } = useHasFeature();
+  const projects = hasFeature(FEATURES.billing.quotes);
+  const fieldKeys = clientFieldKeys(families, projects);
 
   const [loaded, setLoaded] = useState<LoadedFile | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
@@ -49,13 +55,14 @@ export function ClientImport() {
 
   const sheet = loaded?.sheets[sheetIndex] ?? null;
   const headerRow = sheet ? findHeaderRow(sheet.rows) : 0;
+  const example = useMemo(() => (sheet ? exampleRow(sheet.rows, headerRow) : []), [sheet, headerRow]);
 
   const chooseSheet = (data: LoadedFile, index: number) => {
     const rows = data.sheets[index]?.rows ?? [];
     const hRow = findHeaderRow(rows);
     const width = rows.reduce((w, r) => Math.max(w, r.length), 0);
     setSheetIndex(index);
-    setColumns(guessClientColumns(headerNames(rows[hRow] ?? [], width), families));
+    setColumns(guessClientColumns(headerNames(rows[hRow] ?? [], width), families, projects));
     setDayFirst(true);
     setAddAnyway({});
     setResult(null);
@@ -82,8 +89,8 @@ export function ClientImport() {
     }
   };
 
-  const dobCol = columns.find((c) => c.field === 'student_dob')?.index;
-  const showDateOrder = !!sheet && dobCol !== undefined && hasAmbiguousDates(sheet.rows, headerRow, dobCol);
+  const dateCols = columns.filter((c) => c.field === 'student_dob' || c.field === 'shoot_date').map((c) => c.index);
+  const showDateOrder = !!sheet && dateCols.some((col) => hasAmbiguousDates(sheet.rows, headerRow, col));
   const hasName = columns.some((c) => c.field === 'name' || c.field === 'first_name' || c.field === 'last_name');
 
   const built = useMemo(() => {
@@ -93,8 +100,10 @@ export function ClientImport() {
       families,
       dayFirst,
       familyName: (name) => t('clients_import.family_name', { name }),
+      projects,
+      defaultShootName: t('clients_import.default_shoot_name'),
     });
-  }, [sheet, headerRow, columns, families, dayFirst, hasName, t]);
+  }, [sheet, headerRow, columns, families, dayFirst, hasName, projects, t]);
 
   // The duplicate check: which rows are already clients.
   const matchesQuery = useQuery({
@@ -110,16 +119,19 @@ export function ClientImport() {
     return byIndex;
   }, [matchesQuery.data]);
 
+  // New clients, plus clients already here who have a past shoot to add (sent with their
+  // person_id, so they are not added twice).
   const toImport = useMemo(() => {
     if (!built) return [];
-    return built.clients.filter((_, i) => {
+    return built.clients.flatMap((c, i) => {
       const m = matches.get(i);
-      if (!m) return true;
-      if (m.reason === 'name') return !!addAnyway[i];
-      return false;
+      if (!m || (m.reason === 'name' && addAnyway[i])) return [c];
+      return c.shoots?.length ? [{ ...c, person_id: m.person_id }] : [];
     });
   }, [built, matches, addAnyway]);
-  const studentsToImport = toImport.reduce((n, c) => n + (c.students?.length ?? 0), 0);
+  const newClients = toImport.filter((c) => !c.person_id);
+  const studentsToImport = newClients.reduce((n, c) => n + (c.students?.length ?? 0), 0);
+  const shootsToImport = toImport.reduce((n, c) => n + (c.shoots?.length ?? 0), 0);
   const alreadyClients = [...matches.values()].filter((m) => m.reason !== 'name');
   const sameName = [...matches.values()].filter((m) => m.reason === 'name');
 
@@ -137,6 +149,8 @@ export function ClientImport() {
       void queryClient.invalidateQueries({ queryKey: ['people'] });
       void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['families'] });
+      void queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      void queryClient.invalidateQueries({ queryKey: ['job-packages'] });
     },
   });
 
@@ -162,6 +176,7 @@ export function ClientImport() {
         </Link>
         <h1 className="text-3xl font-bold">{t('clients_import.title')}</h1>
         <p className="text-gray-600">{families ? t('clients_import.intro_families') : t('clients_import.intro')}</p>
+        {projects && <p className="text-gray-600">{t('clients_import.shoots_hint')}</p>}
         <p className="text-sm text-gray-600">{t('finance.import.google_sheets_hint')}</p>
       </section>
 
@@ -223,7 +238,7 @@ export function ClientImport() {
                         {c.header}
                       </td>
                       <td className="px-3 py-2 text-gray-600" dir="auto">
-                        {exampleValue(sheet.rows, headerRow, c.index)}
+                        {exampleValue(example, c.index)}
                       </td>
                       <td className="px-3 py-2">
                         <select
@@ -284,7 +299,9 @@ export function ClientImport() {
               {alreadyClients.length > 0 && (
                 <details className="rounded border border-blue-200 bg-blue-50 p-3 text-sm">
                   <summary className="cursor-pointer">
-                    {t('clients_import.already_clients', { count: alreadyClients.length })}
+                    {shootsToImport > 0
+                      ? t('clients_import.already_clients_shoots', { count: alreadyClients.length })
+                      : t('clients_import.already_clients', { count: alreadyClients.length })}
                   </summary>
                   <ul className="mt-2 space-y-0.5">
                     {alreadyClients.slice(0, 100).map((m) => (
@@ -302,7 +319,11 @@ export function ClientImport() {
 
               {sameName.length > 0 && (
                 <div className="space-y-2 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                  <p>{t('clients_import.same_name_hint', { count: sameName.length })}</p>
+                  <p>
+                    {shootsToImport > 0
+                      ? t('clients_import.same_name_hint_shoots', { count: sameName.length })
+                      : t('clients_import.same_name_hint', { count: sameName.length })}
+                  </p>
                   <ul className="space-y-1">
                     {sameName.map((m) => (
                       <li key={m.index}>
@@ -324,9 +345,12 @@ export function ClientImport() {
               )}
 
               <ul className="space-y-1 text-sm">
-                <li>{t('clients_import.preview_clients', { count: toImport.length })}</li>
+                <li>{t('clients_import.preview_clients', { count: newClients.length })}</li>
                 {families && studentsToImport > 0 && (
                   <li>{t('clients_import.preview_students', { count: studentsToImport })}</li>
+                )}
+                {shootsToImport > 0 && (
+                  <li>{t('clients_import.preview_shoots', { count: shootsToImport })}</li>
                 )}
               </ul>
 
@@ -360,7 +384,9 @@ export function ClientImport() {
                 isLoading={importMutation.isPending}
                 onClick={() => importMutation.mutate()}
               >
-                {t('clients_import.import_button', { count: toImport.length })}
+                {newClients.length === 0 && shootsToImport > 0
+                  ? t('clients_import.import_button_shoots', { count: shootsToImport })
+                  : t('clients_import.import_button', { count: newClients.length })}
               </Button>
             </section>
           )}
@@ -373,7 +399,14 @@ export function ClientImport() {
           <ul className="space-y-1 text-sm">
             <li>{t('clients_import.done_clients', { count: result.clients })}</li>
             {result.students > 0 && <li>{t('clients_import.done_students', { count: result.students })}</li>}
-            {result.skipped > 0 && <li>{t('clients_import.done_skipped', { count: result.skipped })}</li>}
+            {(result.shoots ?? 0) > 0 && <li>{t('clients_import.done_shoots', { count: result.shoots })}</li>}
+            {result.skipped > 0 && (
+              <li>
+                {(result.shoots ?? 0) > 0
+                  ? t('clients_import.done_already', { count: result.skipped })
+                  : t('clients_import.done_skipped', { count: result.skipped })}
+              </li>
+            )}
           </ul>
           <Link to="/admin/people" className="text-sm font-medium text-primary underline">
             {t('clients_import.see_clients', { noun: labels.contact.plural })}
@@ -400,6 +433,7 @@ export function ClientImport() {
                     skipped: b.skipped_count,
                   })}
                   {b.students_count > 0 && ` · ${t('clients_import.done_students', { count: b.students_count })}`}
+                  {b.shoots_count > 0 && ` · ${t('clients_import.done_shoots', { count: b.shoots_count })}`}
                 </p>
               </li>
             ))}
@@ -410,10 +444,25 @@ export function ClientImport() {
   );
 }
 
-function exampleValue(rows: SheetData['rows'], headerRow: number, col: number): string {
+/**
+ * The sheet row the "Example" column shows: one real row, so every example belongs to the same
+ * person (the first row with the most filled cells). Taking each column's first filled cell put
+ * one row's email next to another row's name.
+ */
+function exampleRow(rows: SheetData['rows'], headerRow: number): SheetData['rows'][number] {
+  let best: SheetData['rows'][number] = [];
+  let bestFilled = 0;
   for (const row of rows.slice(headerRow + 1)) {
-    const v = cellText(row[col]);
-    if (v) return v.length > 40 ? `${v.slice(0, 40)}…` : v;
+    const filled = row.filter((c) => cellText(c) !== '').length;
+    if (filled > bestFilled) {
+      best = row;
+      bestFilled = filled;
+    }
   }
-  return '';
+  return best;
+}
+
+function exampleValue(row: SheetData['rows'][number], col: number): string {
+  const v = cellText(row[col]);
+  return v.length > 40 ? `${v.slice(0, 40)}…` : v;
 }

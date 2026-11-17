@@ -938,6 +938,7 @@ export type Database = {
           id: string
           mapping: Json
           sheet_name: string | null
+          shoots_count: number
           skipped_count: number
           students_count: number
           tenant_id: string
@@ -950,6 +951,7 @@ export type Database = {
           id?: string
           mapping?: Json
           sheet_name?: string | null
+          shoots_count?: number
           skipped_count?: number
           students_count?: number
           tenant_id: string
@@ -962,6 +964,7 @@ export type Database = {
           id?: string
           mapping?: Json
           sheet_name?: string | null
+          shoots_count?: number
           skipped_count?: number
           students_count?: number
           tenant_id?: string
@@ -1019,6 +1022,49 @@ export type Database = {
           },
           {
             foreignKeyName: "client_import_people_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_import_shoots: {
+        Row: {
+          batch_id: string
+          created_at: string
+          engagement_id: string
+          tenant_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          engagement_id: string
+          tenant_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          engagement_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_import_shoots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "client_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_shoots_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_shoots_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -6341,6 +6387,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      client_import_add_shoots: {
+        Args: {
+          p_batch_id: string
+          p_person_id: string
+          p_shoots: Json
+          p_tenant_id: string
+        }
+        Returns: number
+      }
       client_import_admin_tenant: { Args: never; Returns: string }
       client_import_find_client: {
         Args: { p_email: string; p_phone: string; p_tenant_id: string }
@@ -6352,6 +6407,10 @@ export type Database = {
       }
       client_import_matches: { Args: { p_clients: Json }; Returns: Json }
       client_import_phone_key: { Args: { p_phone: string }; Returns: string }
+      client_import_shoot_package: {
+        Args: { p_name: string; p_tenant_id: string }
+        Returns: string
+      }
       complete_automatic_email: {
         Args: {
           p_external_msg_id?: string

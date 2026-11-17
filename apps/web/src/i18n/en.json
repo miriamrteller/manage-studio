@@ -5171,6 +5171,8 @@
       "phone": "Phone",
       "student_name": "Student's name",
       "student_dob": "Student's date of birth",
+      "shoot_name": "Shoot name",
+      "shoot_date": "Shoot date",
       "skip": "Leave out"
     },
     "check_title": "Check and import",
@@ -5195,7 +5197,8 @@
       "no_name": "no name, so it is left out",
       "bad_email": "the email doesn't look right, so the client is added without it",
       "repeat": "the same person as an earlier row, so it is left out",
-      "bad_dob": "the date of birth couldn't be read, so the student is added without it"
+      "bad_dob": "the date of birth couldn't be read, so the student is added without it",
+      "bad_shoot_date": "the shoot date couldn't be read or is in the future, so the shoot is added without it"
     },
     "done_clients_one": "{{count}} client added",
     "done_clients_other": "{{count}} clients added",
@@ -5207,6 +5210,21 @@
     "history_line": "{{date}}: {{clients}} added, {{skipped}} already here",
     "error_empty": "This file has no rows to import.",
     "problems_one": "{{count}} row needs a look",
-    "problems_other": "{{count}} rows need a look"
+    "problems_other": "{{count}} rows need a look",
+    "button_shoots": "Import past shoots",
+    "shoots_hint": "To add past shoots, add a \"Shoot\" column with the shoot name on each row, and a \"Shoot date\" column if you have the dates. Each client gets one finished shoot, on your package with that name. Clients already here are not added again. Nothing is emailed.",
+    "default_shoot_name": "Shoot",
+    "already_clients_shoots_one": "{{count}} is already a client: not added again, but their shoot is",
+    "already_clients_shoots_other": "{{count}} are already clients: not added again, but their shoots are",
+    "same_name_hint_shoots_one": "{{count}} has the same name as a client you already have. The shoot goes on that client, unless you tick it to add a new client.",
+    "same_name_hint_shoots_other": "{{count}} have the same name as clients you already have. Their shoots go on those clients, unless you tick them to add new clients.",
+    "preview_shoots_one": "{{count}} past shoot will be added. A client who already has it won't get it twice.",
+    "preview_shoots_other": "{{count}} past shoots will be added. A client who already has one won't get it twice.",
+    "import_button_shoots_one": "Add {{count}} past shoot",
+    "import_button_shoots_other": "Add {{count}} past shoots",
+    "done_shoots_one": "{{count}} past shoot added",
+    "done_shoots_other": "{{count}} past shoots added",
+    "done_already_one": "{{count}} was already a client, not added again",
+    "done_already_other": "{{count}} were already clients, not added again"
   }
 }

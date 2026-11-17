@@ -17,6 +17,8 @@ export interface ClientImportResult {
   clients: number;
   students: number;
   skipped: number;
+  /** Past shoots added (absent before the past-shoots migration). */
+  shoots?: number;
 }
 
 export interface ClientImportBatch {
@@ -26,6 +28,7 @@ export interface ClientImportBatch {
   clients_count: number;
   students_count: number;
   skipped_count: number;
+  shoots_count: number;
   created_at: string;
 }
 
@@ -64,7 +67,7 @@ export const ClientImportService = {
   async listBatches(tenantId: string): Promise<ClientImportBatch[]> {
     const { data, error } = await supabase
       .from('client_import_batches')
-      .select('id, file_name, sheet_name, clients_count, students_count, skipped_count, created_at')
+      .select('id, file_name, sheet_name, clients_count, students_count, skipped_count, shoots_count, created_at')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(50);

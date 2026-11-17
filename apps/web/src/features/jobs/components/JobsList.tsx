@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
@@ -38,6 +38,7 @@ export function JobsList() {
   // "Add client" / "New shoot" on the Clients page land here with the form
   // open (and the client preselected) via router state.
   const location = useLocation();
+  const navigate = useNavigate();
   const prefill = (location.state as { newShoot?: JobCreatePrefill } | null)?.newShoot ?? null;
   const [showForm, setShowForm] = useState(prefill !== null);
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
@@ -59,9 +60,15 @@ export function JobsList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{labels.engagement.plural}</h1>
-        <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
-          {showForm ? t('common.cancel') : t('pages.jobs.new')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* Past shoots come in with the client sheet (owner, 17 Nov 2026). */}
+          <Button variant="outline" onClick={() => navigate('/admin/people/import')}>
+            {t('clients_import.button_shoots')}
+          </Button>
+          <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
+            {showForm ? t('common.cancel') : t('pages.jobs.new')}
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">{t('pages.jobs.subtitle')}</p>
 
