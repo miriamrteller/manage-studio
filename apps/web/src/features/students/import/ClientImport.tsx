@@ -32,7 +32,7 @@ export function ClientImport() {
   const { labels, vertical, profile } = useEntityLabels();
   // Photographers never have families; other studios do when family accounts are on.
   const families = vertical !== 'photographer' && profile.familyAccounts;
-  // Past shoots (owner, 17 Nov 2026): a "Shoot" column gives each client a finished shoot.
+  // Past shoots (owner, 17 Nov 2026): a "Shoot" column gives each client a shoot marked Shot.
   // Follows the feature set, like the Shoots page.
   const { hasFeature } = useHasFeature();
   const projects = hasFeature(FEATURES.billing.quotes);

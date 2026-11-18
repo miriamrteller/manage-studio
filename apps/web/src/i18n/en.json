@@ -5223,7 +5223,7 @@
     "problems_one": "{{count}} row needs a look",
     "problems_other": "{{count}} rows need a look",
     "button_shoots": "Import past shoots",
-    "shoots_hint": "To add past shoots, add a \"Shoot\" column with the shoot name on each row, and a \"Shoot date\" column if you have the dates. Each client gets one finished shoot, on your package with that name. Clients already here are not added again. Nothing is emailed.",
+    "shoots_hint": "To add past shoots, add a \"Shoot\" column with the shoot name on each row, and a \"Shoot date\" column if you have the dates. Each client gets one shoot, marked Shot, on your package with that name. It moves to Delivered once you share the gallery. Clients already here are not added again. Nothing is emailed.",
     "default_shoot_name": "Shoot",
     "already_clients_shoots_one": "{{count}} is already a client: not added again, but their shoot is",
     "already_clients_shoots_other": "{{count}} are already clients: not added again, but their shoots are",

@@ -37,7 +37,7 @@ export interface ImportStudent {
   date_of_birth: string | null;
 }
 
-/** A past shoot for the client: finished, on the package with this name. */
+/** A past shoot for the client: marked Shot, on the package with this name. */
 export interface ImportShoot {
   name: string;
   date: string | null;
