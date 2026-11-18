@@ -10,6 +10,8 @@ import { JOB_STATUSES, type JobStatus } from '../services/jobService';
 import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
 import { JobCreateForm, type JobCreatePrefill } from './JobCreateForm';
 import { JobGalleryRowLink } from './JobGalleryLink';
+import { SendGalleryBulkBar, SendGalleryButton } from './SendGallery';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { JobRow } from '../services/jobService';
 import { latestQuoteByProject, openAmountMinor, useProjectRequests } from '../lib/projectSummary';
 import { formatMinor } from '../lib/jobPaymentFormat';
@@ -51,6 +53,20 @@ export function JobsList() {
   const { data: requests = [] } = useProjectRequests(visible.map((job) => job.engagement_id));
   const { data: quotes = [] } = useQuoteList();
   const quoteByProject = latestQuoteByProject(quotes);
+  // Tick several shoots, then one action for all (owner, 18 Nov 2026: send every gallery).
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const selectable = visible.filter((job) => job.job_status !== 'cancelled');
+  const selectedIds = selectable.filter((job) => selected.has(job.engagement_id)).map((job) => job.engagement_id);
+  const allSelected = selectable.length > 0 && selectedIds.length === selectable.length;
+  const toggle = (id: string, on: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const toggleAll = (on: boolean) =>
+    setSelected(on ? new Set(selectable.map((job) => job.engagement_id)) : new Set());
   const summaryOf = (job: JobRow): ProjectRowSummary => ({
     quote: quoteByProject.get(job.engagement_id),
     openMinor: openAmountMinor(requests.filter((r: JobPaymentRequest) => r.engagement_id === job.engagement_id)),
@@ -104,11 +120,25 @@ export function JobsList() {
         <EmptyState title={t('pages.jobs.empty_title')} message={t('pages.jobs.empty_message')} />
       )}
 
+      {selectedIds.length > 0 && (
+        <SendGalleryBulkBar
+          engagementIds={selectedIds}
+          owingCount={selectable.filter((job) => selected.has(job.engagement_id) && summaryOf(job).openMinor > 0).length}
+          onClear={() => setSelected(new Set())}
+        />
+      )}
+
       {visible.length > 0 && (
         // Phones: one stacked card per shoot (no sideways scrolling).
         <ul className="space-y-3 sm:hidden" aria-label={labels.engagement.plural}>
           {visible.map((job) => (
-            <JobCard key={job.engagement_id} job={job} summary={summaryOf(job)} />
+            <JobCard
+              key={job.engagement_id}
+              job={job}
+              summary={summaryOf(job)}
+              selected={selected.has(job.engagement_id)}
+              onSelect={(on) => toggle(job.engagement_id, on)}
+            />
           ))}
         </ul>
       )}
@@ -118,6 +148,14 @@ export function JobsList() {
           <table className="w-full text-sm">
             <thead>
               <tr>
+                <th className="w-8 px-3 py-2 text-start">
+                  <Checkbox
+                    aria-label={t('pages.jobs.send_gallery.select_all')}
+                    checked={allSelected}
+                    disabled={selectable.length === 0}
+                    onCheckedChange={toggleAll}
+                  />
+                </th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.client')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.package')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.when')}</th>
@@ -131,6 +169,15 @@ export function JobsList() {
             <tbody>
               {visible.map((job) => (
                 <tr key={job.engagement_id}>
+                  <td className="px-3 py-2">
+                    {job.job_status !== 'cancelled' && (
+                      <Checkbox
+                        aria-label={t('pages.jobs.send_gallery.select_row', { name: job.client_name ?? '—' })}
+                        checked={selected.has(job.engagement_id)}
+                        onCheckedChange={(on) => toggle(job.engagement_id, on)}
+                      />
+                    )}
+                  </td>
                   <td className="px-3 py-2 font-medium">
                     <Link to={`/admin/projects/${job.engagement_id}`} className="underline">
                       {job.client_name ?? '—'}
@@ -156,6 +203,11 @@ export function JobsList() {
                     <div>
                       <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
                     </div>
+                    {job.job_status !== 'cancelled' && (
+                      <div className="mt-1">
+                        <SendGalleryButton engagementId={job.engagement_id} />
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <QuoteCell quote={summaryOf(job).quote} />
@@ -191,12 +243,31 @@ function ToPayCell({ openMinor, currency }: { openMinor: number; currency: strin
   );
 }
 
-function JobCard({ job, summary }: { job: JobRow; summary: ProjectRowSummary }) {
+function JobCard({
+  job,
+  summary,
+  selected,
+  onSelect,
+}: {
+  job: JobRow;
+  summary: ProjectRowSummary;
+  selected: boolean;
+  onSelect: (on: boolean) => void;
+}) {
   const { t, i18n } = useTranslation();
+  const cancelled = job.job_status === 'cancelled';
   return (
     <li className="card space-y-2 p-4 text-sm">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        {!cancelled && (
+          <Checkbox
+            className="mt-1"
+            aria-label={t('pages.jobs.send_gallery.select_row', { name: job.client_name ?? '—' })}
+            checked={selected}
+            onCheckedChange={onSelect}
+          />
+        )}
+        <div className="min-w-0 flex-1">
           <Link to={`/admin/projects/${job.engagement_id}`} className="font-medium underline">
             {job.client_name ?? '—'}
           </Link>
@@ -231,6 +302,7 @@ function JobCard({ job, summary }: { job: JobRow; summary: ProjectRowSummary }) 
         </dd>
       </dl>
       <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
+      {!cancelled && <SendGalleryButton engagementId={job.engagement_id} />}
     </li>
   );
 }

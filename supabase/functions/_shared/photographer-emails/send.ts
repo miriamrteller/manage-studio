@@ -39,6 +39,12 @@ export async function sendAutomaticEmail(
     variables: Record<string, string>;
     /** Delivered on transports that take attachments (see email-client.ts). */
     attachments?: EmailAttachment[];
+    /**
+     * The studio pressed a button to send it (e.g. "Send gallery"): send even when it was
+     * sent before or the automatic email is switched off. The claim still runs, so the
+     * hourly job never sends it a second time.
+     */
+    force?: boolean;
   },
   /** Transport override for tests; production uses sendHtmlEmail. */
   send: typeof sendHtmlEmail = sendHtmlEmail,
@@ -51,7 +57,7 @@ export async function sendAutomaticEmail(
     p_recipient_email: input.to,
   });
   if (claimError) throw new Error(`claim_automatic_email: ${claimError.message}`);
-  if (typeof logId !== "string") return "skipped";
+  if (typeof logId !== "string" && !input.force) return "skipped";
 
   try {
     const sender = resolveTenantSender(input.tenant);
@@ -71,15 +77,21 @@ export async function sendAutomaticEmail(
       html,
       attachments: input.attachments,
     });
-    await client.rpc("complete_automatic_email", {
-      p_log_id: logId, p_status: "sent", p_failure_reason: null, p_external_msg_id: result.id,
-    });
+    if (typeof logId === "string") {
+      await client.rpc("complete_automatic_email", {
+        p_log_id: logId, p_status: "sent", p_failure_reason: null, p_external_msg_id: result.id,
+      });
+    }
     return "sent";
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Unknown error";
-    await client.rpc("complete_automatic_email", {
-      p_log_id: logId, p_status: "failed", p_failure_reason: reason, p_external_msg_id: null,
-    });
+    if (typeof logId === "string") {
+      await client.rpc("complete_automatic_email", {
+        p_log_id: logId, p_status: "failed", p_failure_reason: reason, p_external_msg_id: null,
+      });
+    } else {
+      console.error("[photographer-emails] forced send failed:", reason);
+    }
     return "failed";
   }
 }

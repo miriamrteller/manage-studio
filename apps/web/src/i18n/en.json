@@ -1941,7 +1941,34 @@
       "create_and_quote": "Create and send quote",
       "create_without_quote": "Create without a quote",
       "status_auto_hint": "This moves on by itself: Shot the day after the shoot, and Delivered once your client has the photos. You can still change it.",
-      "use_shop_gallery": "Use the photo shop's SmugMug gallery"
+      "use_shop_gallery": "Use the photo shop's SmugMug gallery",
+      "send_gallery": {
+        "button": "Send gallery",
+        "button_selected": "Send gallery to selected",
+        "hint": "Each client gets an email with their gallery and, when there is a photo shop, a button to order photos.",
+        "select": "Select",
+        "select_all": "Select all",
+        "select_row": "Select {{name}}",
+        "selected_one": "{{count}} selected",
+        "selected_other": "{{count}} selected",
+        "clear": "Clear selection",
+        "owing_one": "{{count}} of them still owes money. Sending opens the gallery for them too.",
+        "owing_other": "{{count}} of them still owe money. Sending opens the gallery for them too.",
+        "sent_one": "Sent to {{count}} client.",
+        "sent_other": "Sent to {{count}} clients.",
+        "sent_single": "Sent. The client has the gallery email.",
+        "skipped_one": "{{count}} not sent:",
+        "skipped_other": "{{count}} not sent:",
+        "error": "Could not send. Please try again.",
+        "reason": {
+          "no_email": "no client email",
+          "not_checked": "the SmugMug gallery has not passed Check gallery yet",
+          "no_gallery": "no gallery or photo shop yet",
+          "cancelled": "cancelled",
+          "not_found": "not found",
+          "failed": "the email did not go, please try again"
+        }
+      }
     },
     "pay": {
       "notFound": "This payment link is not valid.",

@@ -11,8 +11,8 @@ import {
 import { applyEmailBrand } from "../email-brand.ts";
 import { insertBeforeParagraph, isHttpLink, signInBlockHtml } from "../sign-in-email-block.ts";
 
-/** Emails that carry the "Go to my page" sign-in button when signInUrl is set. */
-const SIGN_IN_EMAILS: readonly PhotographerEmailKey[] = ["booking_confirmed"];
+/** Emails that carry a sign-in button when signInUrl is set ("Go to my page"; gallery_ready: the photo shop). */
+const SIGN_IN_EMAILS: readonly PhotographerEmailKey[] = ["booking_confirmed", "gallery_ready"];
 
 /**
  * Puts the sign-in button above the email's closing line (the shells are pre-rendered).

@@ -1,0 +1,189 @@
+/**
+ * send-shoot-gallery: "Send gallery" on the shoots list and a shoot's page
+ * (owner, 18 Nov 2026), for one shoot or several selected at once.
+ *
+ * Authorization: Bearer <supabase session> (studio admin)
+ * Body: { engagementIds: string[] } (1 to 100 shoots of the admin's studio)
+ * Response: { sent, skipped, failed, results: [{ engagementId, outcome }] }
+ *
+ * For each shoot it sends the client the gallery-ready email now, with the gallery
+ * button and, when the shoot has a photo shop ready, a 3-day photo shop sign-in button
+ * (the same link as "Email shop link to client"). Then it opens the gallery to the
+ * client (as "release anyway" does) and moves the shoot to Delivered, as the hourly
+ * job would once the client has the gallery.
+ *
+ * Skipped (never sent): cancelled shoots, no client email, a SmugMug gallery whose
+ * "Check gallery" has not passed, and shoots with no gallery and no photo shop
+ * (_shared/photo-shop/send-gallery.ts).
+ */
+import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
+import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
+import { requireFeature } from "../_shared/feature-gate.ts";
+import { withMonitoring } from "../_shared/monitoring.ts";
+import { EMAIL_TEMPLATE_NAMES, getEmailStrings } from "../_shared/email-dist/i18n/email.js";
+import {
+  AUTOMATIC_EMAIL_TENANT_COLUMNS,
+  type AutomaticEmailTenant,
+  sendAutomaticEmail,
+} from "../_shared/photographer-emails/send.ts";
+import { createShopLink, LINK_DAYS } from "../_shared/photo-shop/shop-link.ts";
+import { planGallerySend, type SendGallerySkip } from "../_shared/photo-shop/send-gallery.ts";
+
+const MAX_SHOOTS = 100;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type Outcome = "sent" | "failed" | SendGallerySkip;
+
+/** The photo shop button's wording; it goes above the email's closing line. */
+function shopWording(language: "en" | "he", url: string) {
+  const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY);
+  const text = (key: string) => (typeof strings[key] === "string" ? strings[key] as string : "");
+  return {
+    signInUrl: url,
+    signInBody: text("shop_body").split("{days}").join(String(LINK_DAYS)),
+    signInCta: text("shop_cta"),
+    signInBefore: text("closing"),
+  };
+}
+
+Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
+  const options = handleOptions(req);
+  if (options) return options;
+  if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+
+  const auth = await requireAuthUser(req);
+  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+
+  const body = (await req.json().catch(() => null)) as { engagementIds?: unknown } | null;
+  const raw = Array.isArray(body?.engagementIds) ? body.engagementIds : [];
+  const ids = [...new Set(raw.filter((id): id is string => typeof id === "string" && UUID.test(id)))];
+  if (ids.length === 0 || ids.length !== raw.length || ids.length > MAX_SHOOTS) {
+    return jsonResponse({ error: "bad_request" }, 400);
+  }
+
+  const service = createServiceClient();
+  const { data: profile } = await service
+    .from("user_profiles")
+    .select("tenant_id, role")
+    .eq("id", auth.user.id)
+    .single();
+  const roles = (profile?.role as string[] | null) ?? [];
+  const tenantId = profile?.tenant_id as string | undefined;
+  if (!tenantId || !roles.includes("tenant_admin")) return jsonResponse({ error: "forbidden" }, 403);
+
+  // Everything for the selected shoots, limited to this studio.
+  const [engagements, details, shops, photos, tenantRow] = await Promise.all([
+    service.from("engagements").select("id, status, people:person_id(name, email)")
+      .eq("tenant_id", tenantId).in("id", ids),
+    service.from("job_details").select("engagement_id, job_status, auto_status, gallery_url, gallery_released_at, gallery_shared_at")
+      .eq("tenant_id", tenantId).in("engagement_id", ids),
+    service.from("job_photo_shops")
+      .select("engagement_id, provider, gallery_key, gallery_web_url, smugmug_check, smugmug_photos, smugmug_checked_at")
+      .eq("tenant_id", tenantId).in("engagement_id", ids),
+    service.from("job_photo_shop_photos").select("engagement_id")
+      .eq("tenant_id", tenantId).in("engagement_id", ids),
+    service.from("tenants").select(AUTOMATIC_EMAIL_TENANT_COLUMNS).eq("id", tenantId).single(),
+  ]);
+  const loadError = engagements.error ?? details.error ?? shops.error ?? photos.error ?? tenantRow.error;
+  if (loadError) {
+    console.error("[send-shoot-gallery] load:", loadError.message);
+    return jsonResponse({ error: "server_error" }, 500);
+  }
+  const tenant = tenantRow.data as unknown as AutomaticEmailTenant;
+  const language = tenant.language_default === "he" ? "he" : "en";
+
+  let shopFeature = true;
+  try {
+    await requireFeature(tenantId, "billing:photo_shop", service);
+  } catch (res) {
+    if (!(res instanceof Response)) throw res;
+    shopFeature = false;
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const engagementById = new Map((engagements.data ?? []).map((e: any) => [e.id as string, e]));
+  // deno-lint-ignore no-explicit-any
+  const detailById = new Map((details.data ?? []).map((d: any) => [d.engagement_id as string, d]));
+  // deno-lint-ignore no-explicit-any
+  const shopById = new Map((shops.data ?? []).map((s: any) => [s.engagement_id as string, s]));
+  // deno-lint-ignore no-explicit-any
+  const withUploads = new Set((photos.data ?? []).map((p: any) => p.engagement_id as string));
+
+  const results: Array<{ engagementId: string; outcome: Outcome }> = [];
+  for (const engagementId of ids) {
+    const engagement = engagementById.get(engagementId);
+    const detail = detailById.get(engagementId);
+    if (!engagement || !detail) {
+      results.push({ engagementId, outcome: "not_found" });
+      continue;
+    }
+    const email = typeof engagement.people?.email === "string" ? engagement.people.email.trim() : "";
+    const plan = planGallerySend({
+      cancelled: engagement.status === "cancelled" || detail.job_status === "cancelled",
+      clientEmail: email,
+      galleryUrl: detail.gallery_url ?? null,
+      shop: shopById.get(engagementId) ?? null,
+      hasUploads: withUploads.has(engagementId),
+      shopFeature,
+    });
+    if (!plan.send) {
+      results.push({ engagementId, outcome: plan.reason });
+      continue;
+    }
+
+    try {
+      const shopLink = plan.withShop
+        ? await createShopLink(service, { tenantId, engagementId, createdBy: auth.user.id })
+        : null;
+      // Photo shop only (uploaded photos): the shop is the gallery.
+      const galleryUrl = plan.galleryUrl ?? shopLink?.url ?? null;
+      if (!galleryUrl) {
+        results.push({ engagementId, outcome: "failed" });
+        continue;
+      }
+      const name = typeof engagement.people?.name === "string" ? engagement.people.name.trim() : "";
+      const outcome = await sendAutomaticEmail(service, {
+        tenant,
+        key: "gallery_ready",
+        engagementId,
+        to: email,
+        force: true,
+        variables: {
+          recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
+          galleryUrl,
+          ...(shopLink && plan.galleryUrl ? shopWording(language, shopLink.url) : {}),
+        },
+      });
+      if (outcome !== "sent") {
+        results.push({ engagementId, outcome: "failed" });
+        continue;
+      }
+
+      // The client has the gallery now: open it on their page and move the shoot on.
+      const now = new Date().toISOString();
+      const patch: Record<string, unknown> = {};
+      if (plan.galleryUrl) {
+        if (!detail.gallery_url) patch.gallery_url = plan.galleryUrl;
+        if (!detail.gallery_released_at) patch.gallery_released_at = now;
+        if (!detail.gallery_shared_at) patch.gallery_shared_at = now;
+      }
+      if (["booked", "shot", "editing"].includes(detail.job_status) && detail.auto_status !== "delivered") {
+        patch.job_status = "delivered";
+        patch.auto_status = "delivered";
+      }
+      if (Object.keys(patch).length > 0) {
+        const { error } = await service.from("job_details").update(patch)
+          .eq("engagement_id", engagementId).eq("tenant_id", tenantId);
+        if (error) console.error(`[send-shoot-gallery] update ${engagementId}:`, error.message);
+      }
+      results.push({ engagementId, outcome: "sent" });
+    } catch (error) {
+      console.error(`[send-shoot-gallery] ${engagementId}:`, error);
+      results.push({ engagementId, outcome: "failed" });
+    }
+  }
+
+  const sent = results.filter((r) => r.outcome === "sent").length;
+  const failed = results.filter((r) => r.outcome === "failed").length;
+  return jsonResponse({ sent, failed, skipped: results.length - sent - failed, results });
+}));
