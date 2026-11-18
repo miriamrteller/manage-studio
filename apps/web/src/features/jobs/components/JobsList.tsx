@@ -11,6 +11,7 @@ import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
 import { JobCreateForm, type JobCreatePrefill } from './JobCreateForm';
 import { JobGalleryRowLink } from './JobGalleryLink';
 import { SendGalleryBulkBar, SendGalleryButton } from './SendGallery';
+import { useGalleryLastSent } from '../hooks/useSendShootGallery';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { JobRow } from '../services/jobService';
 import { latestQuoteByProject, openAmountMinor, useProjectRequests } from '../lib/projectSummary';
@@ -67,7 +68,9 @@ export function JobsList() {
     });
   const toggleAll = (on: boolean) =>
     setSelected(on ? new Set(selectable.map((job) => job.engagement_id)) : new Set());
+  const lastSent = useGalleryLastSent(selectable.map((job) => job.engagement_id));
   const summaryOf = (job: JobRow): ProjectRowSummary => ({
+    lastSentAt: lastSent.get(job.engagement_id) ?? null,
     quote: quoteByProject.get(job.engagement_id),
     openMinor: openAmountMinor(requests.filter((r: JobPaymentRequest) => r.engagement_id === job.engagement_id)),
   });
@@ -205,7 +208,7 @@ export function JobsList() {
                     </div>
                     {job.job_status !== 'cancelled' && (
                       <div className="mt-1">
-                        <SendGalleryButton engagementId={job.engagement_id} />
+                        <SendGalleryButton engagementId={job.engagement_id} lastSentAt={summaryOf(job).lastSentAt} />
                       </div>
                     )}
                   </td>
@@ -226,6 +229,7 @@ export function JobsList() {
 }
 
 interface ProjectRowSummary {
+  lastSentAt: string | null;
   quote: QuoteSummary | undefined;
   openMinor: number;
 }
@@ -302,7 +306,7 @@ function JobCard({
         </dd>
       </dl>
       <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
-      {!cancelled && <SendGalleryButton engagementId={job.engagement_id} />}
+      {!cancelled && <SendGalleryButton engagementId={job.engagement_id} lastSentAt={summary.lastSentAt} />}
     </li>
   );
 }

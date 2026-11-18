@@ -8,20 +8,44 @@ import type { SendGalleryOutcome, SendGalleryResult } from '../services/shootGal
  * email with the gallery and, when there is a photo shop, a 3-day shop link.
  * Shoots that cannot go yet are skipped and counted, never blocked.
  */
-export function SendGalleryButton({ engagementId, size = 'sm' }: { engagementId: string; size?: 'sm' | 'md' }) {
-  const { t } = useTranslation();
-  const send = useSendShootGallery();
+export function SendGalleryButton({
+  engagementId,
+  lastSentAt,
+  size = 'sm',
+}: {
+  engagementId: string;
+  /** When the gallery email last went: shown first, so a press is a knowing resend. */
+  lastSentAt?: string | null;
+  size?: 'sm' | 'md';
+}) {
+  const { t, i18n } = useTranslation();
+  const send = useSendShootGallery({ resend: true });
   return (
     <span className="inline-flex flex-col items-start gap-1">
       <Button size={size} variant="outline" isLoading={send.isPending} onClick={() => send.mutate([engagementId])}>
-        {t('pages.jobs.send_gallery.button')}
+        {lastSentAt ? t('pages.jobs.send_gallery.button_again') : t('pages.jobs.send_gallery.button')}
       </Button>
+      {lastSentAt && !send.data && (
+        <span className="text-xs text-muted-foreground">
+          {t('pages.jobs.send_gallery.last_sent', { when: formatSentAt(lastSentAt, i18n.language) })}
+        </span>
+      )}
       <SendGalleryOutcomeText result={send.data} error={send.error} single />
     </span>
   );
 }
 
-const SKIP_ORDER: SendGalleryOutcome[] = ['not_checked', 'no_gallery', 'no_email', 'cancelled', 'not_found', 'failed'];
+function formatSentAt(iso: string, language: string): string {
+  return new Date(iso).toLocaleString(language === 'he' ? 'he-IL' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jerusalem',
+  });
+}
+
+const SKIP_ORDER: SendGalleryOutcome[] = ['already_sent', 'not_checked', 'no_gallery', 'no_email', 'cancelled', 'not_found', 'failed'];
 
 export function SendGalleryOutcomeText({
   result,

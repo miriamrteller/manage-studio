@@ -12,7 +12,15 @@ import en from '../../../../packages/shared/src/i18n/email-templates-en.json';
 import he from '../../../../packages/shared/src/i18n/email-templates-he.json';
 
 const invoke = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke } } }));
+const logRows = vi.hoisted(() => ({ rows: [] as Array<{ engagement_id: string; updated_at: string }> }));
+vi.mock('@/lib/supabase', () => {
+  const chain = {
+    select: () => chain,
+    eq: () => chain,
+    in: async () => ({ data: logRows.rows, error: null }),
+  };
+  return { supabase: { functions: { invoke }, from: () => chain } };
+});
 
 import { SEND_GALLERY_MAX, ShootGalleryService } from '@/features/jobs/services/shootGalleryService';
 
@@ -139,6 +147,20 @@ describe('ShootGalleryService.send', () => {
     expect(result.sent).toBe(SEND_GALLERY_MAX + 2 - 2);
     expect(result.skipped).toBe(2);
     expect(result.results).toHaveLength(SEND_GALLERY_MAX + 2);
+  });
+
+  it('passes resend on, off by default', async () => {
+    invoke.mockResolvedValue({ data: { sent: 1, skipped: 0, failed: 0, results: [] }, error: null });
+    await ShootGalleryService.send(['e1']);
+    await ShootGalleryService.send(['e1'], { resend: true });
+    expect(invoke.mock.calls.map((call) => call[1].body.resend)).toEqual([false, true]);
+  });
+
+  it('lastSent: when each gallery email last went', async () => {
+    logRows.rows = [{ engagement_id: 'e1', updated_at: '2026-11-18T17:40:00Z' }];
+    const map = await ShootGalleryService.lastSent(['e1', 'e2']);
+    expect(map.get('e1')).toBe('2026-11-18T17:40:00Z');
+    expect(map.has('e2')).toBe(false);
   });
 
   it('throws when the function fails', async () => {

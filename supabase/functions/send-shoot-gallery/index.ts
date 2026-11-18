@@ -3,7 +3,10 @@
  * (owner, 18 Nov 2026), for one shoot or several selected at once.
  *
  * Authorization: Bearer <supabase session> (studio admin)
- * Body: { engagementIds: string[] } (1 to 100 shoots of the admin's studio)
+ * Body: { engagementIds: string[], resend?: boolean } (1 to 100 shoots of the admin's studio)
+ *   resend false (the default, sending several): a client who already got the
+ *   gallery email is skipped as "already_sent". resend true (one shoot's button,
+ *   which shows when it was last sent): it goes again.
  * Response: { sent, skipped, failed, results: [{ engagementId, outcome }] }
  *
  * For each shoot it sends the client the gallery-ready email now, with the gallery
@@ -32,7 +35,7 @@ import { planGallerySend, type SendGallerySkip } from "../_shared/photo-shop/sen
 const MAX_SHOOTS = 100;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type Outcome = "sent" | "failed" | SendGallerySkip;
+type Outcome = "sent" | "failed" | "already_sent" | SendGallerySkip;
 
 /** The photo shop button's wording; it goes above the email's closing line. */
 function shopWording(language: "en" | "he", url: string) {
@@ -54,7 +57,8 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const auth = await requireAuthUser(req);
   if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
 
-  const body = (await req.json().catch(() => null)) as { engagementIds?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { engagementIds?: unknown; resend?: unknown } | null;
+  const resend = body?.resend === true;
   const raw = Array.isArray(body?.engagementIds) ? body.engagementIds : [];
   const ids = [...new Set(raw.filter((id): id is string => typeof id === "string" && UUID.test(id)))];
   if (ids.length === 0 || ids.length !== raw.length || ids.length > MAX_SHOOTS) {
@@ -72,7 +76,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   if (!tenantId || !roles.includes("tenant_admin")) return jsonResponse({ error: "forbidden" }, 403);
 
   // Everything for the selected shoots, limited to this studio.
-  const [engagements, details, shops, photos, tenantRow] = await Promise.all([
+  const [engagements, details, shops, photos, tenantRow, sentLog] = await Promise.all([
     service.from("engagements").select("id, status, people:person_id(name, email)")
       .eq("tenant_id", tenantId).in("id", ids),
     service.from("job_details").select("engagement_id, job_status, auto_status, gallery_url, gallery_released_at, gallery_shared_at")
@@ -83,8 +87,11 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
     service.from("job_photo_shop_photos").select("engagement_id")
       .eq("tenant_id", tenantId).in("engagement_id", ids),
     service.from("tenants").select(AUTOMATIC_EMAIL_TENANT_COLUMNS).eq("id", tenantId).single(),
+    service.from("automatic_email_log").select("engagement_id")
+      .eq("tenant_id", tenantId).eq("email_key", "gallery_ready").eq("status", "sent").in("engagement_id", ids),
   ]);
-  const loadError = engagements.error ?? details.error ?? shops.error ?? photos.error ?? tenantRow.error;
+  const loadError = engagements.error ?? details.error ?? shops.error ?? photos.error ?? tenantRow.error ??
+    sentLog.error;
   if (loadError) {
     console.error("[send-shoot-gallery] load:", loadError.message);
     return jsonResponse({ error: "server_error" }, 500);
@@ -108,6 +115,8 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const shopById = new Map((shops.data ?? []).map((s: any) => [s.engagement_id as string, s]));
   // deno-lint-ignore no-explicit-any
   const withUploads = new Set((photos.data ?? []).map((p: any) => p.engagement_id as string));
+  // deno-lint-ignore no-explicit-any
+  const alreadySent = new Set((sentLog.data ?? []).map((l: any) => l.engagement_id as string));
 
   const results: Array<{ engagementId: string; outcome: Outcome }> = [];
   for (const engagementId of ids) {
@@ -128,6 +137,10 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
     });
     if (!plan.send) {
       results.push({ engagementId, outcome: plan.reason });
+      continue;
+    }
+    if (!resend && alreadySent.has(engagementId)) {
+      results.push({ engagementId, outcome: "already_sent" });
       continue;
     }
 
@@ -161,6 +174,10 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
 
       // The client has the gallery now: open it on their page and move the shoot on.
       const now = new Date().toISOString();
+      // A resend keeps the one log row per shoot; its time is "last sent" on the button.
+      await service.from("automatic_email_log")
+        .update({ status: "sent", recipient_email: email, updated_at: now })
+        .eq("email_key", "gallery_ready").eq("engagement_id", engagementId).eq("tenant_id", tenantId);
       const patch: Record<string, unknown> = {};
       if (plan.galleryUrl) {
         if (!detail.gallery_url) patch.gallery_url = plan.galleryUrl;
