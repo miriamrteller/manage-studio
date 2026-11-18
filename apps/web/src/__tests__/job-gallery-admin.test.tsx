@@ -14,7 +14,8 @@ import { baseValue, renderInApp, setLanguage, setTenant } from './helpers/vertic
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
-vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), functions: { invoke: vi.fn() } } }));
+const invoke = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), functions: { invoke } } }));
 
 const state = vi.hoisted(() => ({ job: null as JobRow | null, released: false }));
 vi.mock('@/features/jobs/hooks/useJobs', () => ({
@@ -218,5 +219,43 @@ describe('JobsList', () => {
     state.job = job({ gallery_url: 'javascript:alert(1)' });
     renderInApp(<JobsList />, { path: '/admin/projects' });
     expect(screen.queryByRole('link', { name: 'Open the gallery for Pat Client' })).toBeNull();
+  });
+
+  it('Send gallery: tick shoots, one press sends them all and says what was skipped', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 0, skipped: 1, failed: 0, results: [{ engagementId: 'e1', outcome: 'not_checked' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.queryByRole('button', { name: 'Send gallery to selected' })).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+    expect(screen.getAllByText('1 selected').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Send gallery to selected' }));
+    expect(await screen.findByText('Sent to 0 clients.')).toBeInTheDocument();
+    expect(screen.getByText('1 not sent:')).toBeInTheDocument();
+    expect(screen.getByText(/has not passed Check gallery yet \(1\)/)).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: false } });
+  });
+
+  it('several at once: clients who already got it are counted as already sent', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 0, skipped: 1, failed: 0, results: [{ engagementId: 'e1', outcome: 'already_sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send gallery to selected' }));
+    expect(await screen.findByText('already had the gallery email (1)')).toBeInTheDocument();
+  });
+
+  it('Send gallery on a row sends that shoot', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: true } });
   });
 });

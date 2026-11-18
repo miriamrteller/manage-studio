@@ -16,6 +16,8 @@ import { JobPhotoShopCard } from './JobPhotoShopCard';
 import { PhotoShopPreview } from './ClientPhotoShop';
 import { usePhotoShopEnabled } from '../hooks/usePhotoShop';
 import { CancelShootButton } from './CancelShootButton';
+import { SendGalleryButton } from './SendGallery';
+import { useGalleryLastSent } from '../hooks/useSendShootGallery';
 import { ProjectQuoteButton } from '@/features/quotes/components/ProjectQuoteButton';
 
 /**
@@ -35,6 +37,7 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
   const tenant = useTenant();
   const { job, isLoading, error } = useJob(engagementId);
   const shopOn = usePhotoShopEnabled();
+  const lastSent = useGalleryLastSent([engagementId]);
   const [params, setParams] = useSearchParams();
   const asked = params.get('tab');
   const tab: ShootTab = (SHOOT_TABS as readonly string[]).includes(asked ?? '') ? (asked as ShootTab) : 'details';
@@ -114,6 +117,9 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {job.job_status !== 'cancelled' && <ProjectQuoteButton engagementId={job.engagement_id} />}
+          {job.job_status !== 'cancelled' && (
+            <SendGalleryButton engagementId={job.engagement_id} lastSentAt={lastSent.get(job.engagement_id)} />
+          )}
           <CancelShootButton job={job} />
           <JobStatusBadge status={job.job_status} />
         </div>

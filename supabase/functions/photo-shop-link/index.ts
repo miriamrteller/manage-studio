@@ -21,26 +21,16 @@ import { handleOptions, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { requireFeature } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
-import { tenantBaseUrlFor } from "../_shared/tenant-url.ts";
 import { ensureClientLogin, sessionForEmail } from "../_shared/client-login.ts";
 import { sendLoggedAnnouncement } from "../_shared/logged-announcement.ts";
 import { TENANT_SENDER_COLUMNS } from "../_shared/notification-from.ts";
 import { buildClientShopLinkEmail } from "../_shared/photo-shop/email-copy.ts";
+import { createShopLink, LINK_DAYS, sha256Hex } from "../_shared/photo-shop/shop-link.ts";
 
 const FEATURE = "billing:photo_shop";
-export const LINK_DAYS = 3;
+export { LINK_DAYS, sha256Hex };
 
 type Service = ReturnType<typeof createServiceClient>;
-
-function randomToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-export async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 /** The shoot's client: tenant, email (normalised) and the studio's subdomain. */
 async function shootClient(service: Service, engagementId: string) {
@@ -102,19 +92,9 @@ Deno.serve(withMonitoring("photo-shop-link", async (req) => {
   }
   if (!client.email) return jsonResponse({ ok: false, code: "no_email" }, 400);
 
-  const token = randomToken();
-  const expiresAt = new Date(Date.now() + LINK_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { error } = await service.from("photo_shop_links").insert({
-    tenant_id: client.tenantId,
-    engagement_id: engagementId,
-    token_hash: await sha256Hex(token),
-    created_by: auth.user.id,
-    expires_at: expiresAt,
-  });
-  if (error) return jsonResponse({ ok: false, code: "failed" }, 500);
-
-  const base = await tenantBaseUrlFor(service, client.tenantId);
-  const url = `${base}/shop/${token}`;
+  const link = await createShopLink(service, { tenantId: client.tenantId, engagementId, createdBy: auth.user.id });
+  if (!link) return jsonResponse({ ok: false, code: "failed" }, 500);
+  const { url, expiresAt } = link;
   if (!emailIt) return jsonResponse({ ok: true, url, email: client.email, expiresAt });
 
   // Sent from the studio (its sender), logged; a failed email still returns the link.
