@@ -234,6 +234,7 @@
       "client_import_add_shoots",
       "client_import_admin_tenant",
       "client_import_find_client",
+      "client_import_shoot_links",
       "client_import_shoot_package",
       "get_app_encryption_key",
       "get_cron_secret",

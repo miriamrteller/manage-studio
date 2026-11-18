@@ -5184,6 +5184,7 @@
       "student_dob": "Student's date of birth",
       "shoot_name": "Shoot name",
       "shoot_date": "Shoot date",
+      "shoot_gallery": "SmugMug gallery",
       "skip": "Leave out"
     },
     "check_title": "Check and import",
@@ -5236,6 +5237,25 @@
     "done_shoots_one": "{{count}} past shoot added",
     "done_shoots_other": "{{count}} past shoots added",
     "done_already_one": "{{count}} was already a client, not added again",
-    "done_already_other": "{{count}} were already clients, not added again"
+    "done_already_other": "{{count}} were already clients, not added again",
+    "preview_galleries_one": "{{found}} of {{count}} gallery name found in SmugMug. Each shoot gets its gallery straight after the import.",
+    "preview_galleries_other": "{{found}} of {{count}} gallery names found in SmugMug. Each shoot gets its gallery straight after the import.",
+    "galleries_not_connected": "SmugMug isn't connected, so the galleries can't be linked yet. The clients and shoots are still imported. Connect SmugMug in Settings, then import the same sheet again to link them.",
+    "galleries_unreadable": "We couldn't read your SmugMug galleries just now. The clients and shoots are still imported, and you can import the same sheet again later to link the galleries.",
+    "galleries_missing_one": "{{count}} gallery name wasn't matched",
+    "galleries_missing_other": "{{count}} gallery names weren't matched",
+    "gallery_not_found": "\"{{name}}\": no SmugMug gallery has this name",
+    "gallery_several": "\"{{name}}\": more than one SmugMug gallery has this name, so pick it on the shoot",
+    "import_button_galleries_one": "Link {{count}} gallery",
+    "import_button_galleries_other": "Link {{count}} galleries",
+    "galleries_linking": "Linking galleries: {{done}} of {{total}}…",
+    "done_galleries_one": "{{count}} SmugMug gallery linked and checked",
+    "done_galleries_other": "{{count}} SmugMug galleries linked and checked",
+    "done_galleries_already_one": "{{count}} shoot already had a gallery, left as it is",
+    "done_galleries_already_other": "{{count}} shoots already had a gallery, left as they are",
+    "done_galleries_not_found_one": "{{count}} gallery wasn't found: choose it on the shoot",
+    "done_galleries_not_found_other": "{{count}} galleries weren't found: choose them on the shoot",
+    "done_galleries_failed_one": "{{count}} gallery couldn't be linked: choose it on the shoot",
+    "done_galleries_failed_other": "{{count}} galleries couldn't be linked: choose them on the shoot"
   }
 }

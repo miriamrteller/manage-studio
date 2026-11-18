@@ -18,6 +18,17 @@ import {
   type ClientFieldKey,
 } from './clientImportRows';
 import { ClientImportService, type ClientImportResult, type ClientMatch } from './clientImportService';
+import { SmugMugService } from '@/features/settings/services/smugmugService';
+import { planGalleryLinks, previewGalleries, type GalleryLinkPlan } from './galleryLinks';
+
+/** Same key as the shoot page's "already watermarked" tick (JobPhotoShopSource). */
+const IN_PHOTOS_KEY = 'os_photo_shop_watermark_in_photos';
+
+interface GalleryLinkResult {
+  linked: number;
+  failed: number;
+  plan: GalleryLinkPlan;
+}
 
 interface LoadedFile {
   file: File;
@@ -36,7 +47,15 @@ export function ClientImport() {
   // Follows the feature set, like the Shoots page.
   const { hasFeature } = useHasFeature();
   const projects = hasFeature(FEATURES.billing.quotes);
-  const fieldKeys = clientFieldKeys(families, projects);
+  // SmugMug gallery column (owner, 18 Nov 2026): links each imported shoot to its gallery.
+  const photoShop = projects && hasFeature(FEATURES.billing.photoShop);
+  const smugmugStatus = useQuery({
+    queryKey: ['smugmug-status'],
+    queryFn: () => SmugMugService.getStatus(),
+    enabled: photoShop,
+  });
+  const smugmugConnected = smugmugStatus.data?.connected === true;
+  const fieldKeys = clientFieldKeys(families, projects, photoShop);
 
   const [loaded, setLoaded] = useState<LoadedFile | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
@@ -46,6 +65,8 @@ export function ClientImport() {
   // Same-name matches are left out unless the studio says otherwise (index → add anyway).
   const [addAnyway, setAddAnyway] = useState<Record<number, boolean>>({});
   const [result, setResult] = useState<ClientImportResult | null>(null);
+  const [galleryResult, setGalleryResult] = useState<GalleryLinkResult | null>(null);
+  const [galleryProgress, setGalleryProgress] = useState<{ done: number; total: number } | null>(null);
 
   const batchesQuery = useQuery({
     queryKey: ['client-import-batches', tenant?.id],
@@ -62,7 +83,8 @@ export function ClientImport() {
     const hRow = findHeaderRow(rows);
     const width = rows.reduce((w, r) => Math.max(w, r.length), 0);
     setSheetIndex(index);
-    setColumns(guessClientColumns(headerNames(rows[hRow] ?? [], width), families, projects));
+    setColumns(guessClientColumns(headerNames(rows[hRow] ?? [], width), families, projects, photoShop));
+    setGalleryResult(null);
     setDayFirst(true);
     setAddAnyway({});
     setResult(null);
@@ -135,16 +157,60 @@ export function ClientImport() {
   const alreadyClients = [...matches.values()].filter((m) => m.reason !== 'name');
   const sameName = [...matches.values()].filter((m) => m.reason === 'name');
 
+  // The studio's SmugMug galleries, read once when the sheet has a gallery column.
+  const hasGalleryColumn = photoShop && columns.some((c) => c.field === 'shoot_gallery');
+  const galleriesQuery = useQuery({
+    queryKey: ['smugmug-albums', 'import'],
+    queryFn: async () => (await SmugMugService.listAlbums('')).albums,
+    enabled: hasGalleryColumn && smugmugConnected && !result,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const galleryPreview = useMemo(
+    () => (galleriesQuery.data ? previewGalleries(toImport, galleriesQuery.data) : null),
+    [galleriesQuery.data, toImport],
+  );
+  const galleriesOnSheet = toImport.some((c) => c.shoots?.some((sh) => sh.gallery));
+
+  /** After import: link each shoot to its gallery with the shoot page's "Check gallery". */
+  const linkGalleries = async (sent: typeof toImport, res: ClientImportResult) => {
+    const galleries = galleriesQuery.data;
+    if (!galleries || !res.shoot_links?.length) return;
+    const plan = planGalleryLinks(sent, res.shoot_links, galleries);
+    if (plan.link.length === 0 && plan.alreadyLinked === 0 && plan.notFound.length === 0) return;
+    const inPhotos = typeof localStorage !== 'undefined' && localStorage.getItem(IN_PHOTOS_KEY) === '1';
+    let linked = 0;
+    let failed = 0;
+    setGalleryProgress({ done: 0, total: plan.link.length });
+    // One at a time: SmugMug is read once per gallery, like choosing it on the shoot page.
+    for (const item of plan.link) {
+      try {
+        await SmugMugService.checkGallery(item.engagementId, item.albumKey, inPhotos);
+        linked++;
+      } catch {
+        failed++;
+      }
+      setGalleryProgress({ done: linked + failed, total: plan.link.length });
+    }
+    setGalleryProgress(null);
+    setGalleryResult({ linked, failed, plan });
+    void queryClient.invalidateQueries({ queryKey: ['photo-shop'] });
+  };
+
   const importMutation = useMutation({
-    mutationFn: () =>
-      ClientImportService.importClients({
+    mutationFn: async () => {
+      const sent = toImport;
+      const res = await ClientImportService.importClients({
         fileName: loaded!.file.name,
         sheetName: loaded!.sheets.length > 1 ? sheet!.name : null,
         mapping: Object.fromEntries(columns.map((c) => [c.header, c.field])),
-        clients: toImport,
-      }),
-    onSuccess: (res) => {
+        clients: sent,
+      });
+      return { res, sent };
+    },
+    onSuccess: ({ res, sent }) => {
       setResult(res);
+      if (hasGalleryColumn && smugmugConnected) void linkGalleries(sent, res);
       void queryClient.invalidateQueries({ queryKey: ['client-import-batches', tenant?.id] });
       void queryClient.invalidateQueries({ queryKey: ['people'] });
       void queryClient.invalidateQueries({ queryKey: ['students'] });
@@ -352,7 +418,42 @@ export function ClientImport() {
                 {shootsToImport > 0 && (
                   <li>{t('clients_import.preview_shoots', { count: shootsToImport })}</li>
                 )}
+                {galleryPreview && galleryPreview.total > 0 && (
+                  <li>
+                    {t('clients_import.preview_galleries', {
+                      count: galleryPreview.total,
+                      found: galleryPreview.found,
+                    })}
+                  </li>
+                )}
               </ul>
+              {hasGalleryColumn && galleriesOnSheet && !smugmugConnected && !smugmugStatus.isLoading && (
+                <p className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+                  {t('clients_import.galleries_not_connected')}
+                </p>
+              )}
+              {galleriesQuery.isError && (
+                <p className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+                  {t('clients_import.galleries_unreadable')}
+                </p>
+              )}
+              {galleryPreview && (galleryPreview.missing.length > 0 || galleryPreview.several.length > 0) && (
+                <details className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <summary className="cursor-pointer">
+                    {t('clients_import.galleries_missing', {
+                      count: galleryPreview.missing.length + galleryPreview.several.length,
+                    })}
+                  </summary>
+                  <ul className="mt-2 space-y-0.5">
+                    {galleryPreview.missing.slice(0, 100).map((g) => (
+                      <li key={`m-${g}`} dir="auto">{t('clients_import.gallery_not_found', { name: g })}</li>
+                    ))}
+                    {galleryPreview.several.slice(0, 100).map((g) => (
+                      <li key={`s-${g}`} dir="auto">{t('clients_import.gallery_several', { name: g })}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
 
               {built.problems.length > 0 && (
                 <details className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -384,9 +485,11 @@ export function ClientImport() {
                 isLoading={importMutation.isPending}
                 onClick={() => importMutation.mutate()}
               >
-                {newClients.length === 0 && shootsToImport > 0
-                  ? t('clients_import.import_button_shoots', { count: shootsToImport })
-                  : t('clients_import.import_button', { count: newClients.length })}
+                {newClients.length === 0 && galleryPreview && galleryPreview.found > 0
+                  ? t('clients_import.import_button_galleries', { count: galleryPreview.found })
+                  : newClients.length === 0 && shootsToImport > 0
+                    ? t('clients_import.import_button_shoots', { count: shootsToImport })
+                    : t('clients_import.import_button', { count: newClients.length })}
               </Button>
             </section>
           )}
@@ -408,6 +511,27 @@ export function ClientImport() {
               </li>
             )}
           </ul>
+          {galleryProgress && (
+            <p className="text-sm">
+              {t('clients_import.galleries_linking', { done: galleryProgress.done, total: galleryProgress.total })}
+            </p>
+          )}
+          {galleryResult && (
+            <ul className="space-y-1 text-sm">
+              {galleryResult.linked > 0 && (
+                <li>{t('clients_import.done_galleries', { count: galleryResult.linked })}</li>
+              )}
+              {galleryResult.plan.alreadyLinked > 0 && (
+                <li>{t('clients_import.done_galleries_already', { count: galleryResult.plan.alreadyLinked })}</li>
+              )}
+              {galleryResult.plan.notFound.length > 0 && (
+                <li>{t('clients_import.done_galleries_not_found', { count: galleryResult.plan.notFound.length })}</li>
+              )}
+              {galleryResult.failed > 0 && (
+                <li>{t('clients_import.done_galleries_failed', { count: galleryResult.failed })}</li>
+              )}
+            </ul>
+          )}
           <Link to="/admin/people" className="text-sm font-medium text-primary underline">
             {t('clients_import.see_clients', { noun: labels.contact.plural })}
           </Link>

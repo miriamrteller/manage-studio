@@ -286,3 +286,48 @@ BEGIN
   RAISE NOTICE 'ok  a client from another studio is refused';
 END;
 $$;
+
+-- 9. Shoot links for the SmugMug gallery column: new and already-imported shoots,
+--    and whether a shoot already has a gallery.
+DO $$
+DECLARE
+  v ids%ROWTYPE;
+  v_res jsonb;
+  v_existing uuid;
+  v_eng uuid;
+BEGIN
+  SELECT * INTO v FROM ids;
+  PERFORM pg_temp.act_as(v.lens_admin);
+  SELECT id INTO v_existing FROM people WHERE tenant_id = v.lens AND email = 'existing@example.test';
+
+  -- The same client and shoot again: no new shoot, but the link to the one already there.
+  v_res := import_clients('again.csv', NULL, '{}', jsonb_build_array(
+    jsonb_build_object('name', 'Someone new', 'email', 'links-new@example.test',
+      'shoots', jsonb_build_array(jsonb_build_object('name', 'Family shoot'))),
+    jsonb_build_object('name', 'Existing Client', 'person_id', v_existing,
+      'shoots', jsonb_build_array(jsonb_build_object('name', 'FAMILY shoot')))));
+  IF (v_res->>'shoots')::int <> 1 OR jsonb_array_length(v_res->'shoot_links') <> 2 THEN
+    RAISE EXCEPTION 'FAIL shoot links: %', v_res;
+  END IF;
+  SELECT e.id INTO v_eng FROM engagements e JOIN offerings o ON o.id = e.offering_id
+  WHERE e.person_id = v_existing AND lower(o.name) = 'family shoot';
+  IF (v_res->'shoot_links'->1->>'client')::int <> 1
+     OR (v_res->'shoot_links'->1->>'shoot')::int <> 0
+     OR (v_res->'shoot_links'->1->>'engagement_id')::uuid <> v_eng
+     OR (v_res->'shoot_links'->1->>'has_gallery')::boolean THEN
+    RAISE EXCEPTION 'FAIL link to the existing shoot: %', v_res->'shoot_links';
+  END IF;
+  RAISE NOTICE 'ok  the import returns each row''s shoot, new or already there';
+
+  -- A shoot with a SmugMug gallery says so.
+  INSERT INTO job_photo_shops (engagement_id, tenant_id, provider, gallery_key, closes_at)
+  VALUES (v_eng, v.lens, 'smugmug', 'AbC123', now() + interval '30 days');
+  v_res := import_clients('again2.csv', NULL, '{}', jsonb_build_array(
+    jsonb_build_object('name', 'Existing Client', 'person_id', v_existing,
+      'shoots', jsonb_build_array(jsonb_build_object('name', 'Family shoot')))));
+  IF NOT (v_res->'shoot_links'->0->>'has_gallery')::boolean THEN
+    RAISE EXCEPTION 'FAIL has_gallery: %', v_res->'shoot_links';
+  END IF;
+  RAISE NOTICE 'ok  a shoot that already has a gallery is marked';
+END;
+$$;

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Json } from '@shared/database.types';
 import type { ImportClient } from './clientImportRows';
+import type { ShootLink } from './galleryLinks';
 
 export type MatchReason = 'email' | 'phone' | 'name';
 
@@ -19,6 +20,8 @@ export interface ClientImportResult {
   skipped: number;
   /** Past shoots added (absent before the past-shoots migration). */
   shoots?: number;
+  /** Each row's shoot, new or already there (for linking SmugMug galleries). */
+  shoot_links?: ShootLink[];
 }
 
 export interface ClientImportBatch {
