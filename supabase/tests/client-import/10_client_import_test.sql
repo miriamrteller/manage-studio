@@ -221,8 +221,8 @@ BEGIN
   SELECT count(*) INTO v_count FROM engagements e
   JOIN job_details jd ON jd.engagement_id = e.id
   JOIN client_import_shoots cis ON cis.engagement_id = e.id
-  WHERE e.offering_id = v_pkg AND jd.job_status = 'delivered' AND e.season_id IS NULL;
-  IF v_count <> 3 THEN RAISE EXCEPTION 'FAIL expected 3 delivered shoots, got %', v_count; END IF;
+  WHERE e.offering_id = v_pkg AND jd.job_status = 'shot' AND jd.auto_status = 'shot' AND e.season_id IS NULL;
+  IF v_count <> 3 THEN RAISE EXCEPTION 'FAIL expected 3 shot shoots, got %', v_count; END IF;
   IF (SELECT (e.booked_starts_at AT TIME ZONE 'Asia/Jerusalem')::date FROM engagements e
       WHERE e.person_id = v_existing AND e.offering_id = v_pkg) <> v_recent THEN
     RAISE EXCEPTION 'FAIL shoot date';
@@ -234,7 +234,7 @@ BEGIN
   IF (SELECT account_id FROM people WHERE id = v_existing) IS NULL THEN
     RAISE EXCEPTION 'FAIL an existing client gets an account for the shoot';
   END IF;
-  RAISE NOTICE 'ok  each client gets one finished shoot on one hidden package';
+  RAISE NOTICE 'ok  each client gets one shoot, marked Shot, on one hidden package';
 
   -- The same sheet again: nothing new.
   v_res := import_clients('clients.csv', NULL, '{}', v_rows);
@@ -255,12 +255,27 @@ BEGIN
   END IF;
   RAISE NOTICE 'ok  a package with the same name is used';
 
-  -- No shoot emails for imported shoots (the dated one is in the thank-you window).
+  -- No thank-you for imported shoots (the dated one is in the thank-you window).
   IF EXISTS (SELECT 1 FROM list_due_shoot_emails(now()) d
              JOIN client_import_shoots cis ON cis.engagement_id = d.engagement_id) THEN
-    RAISE EXCEPTION 'FAIL imported shoots must not be emailed';
+    RAISE EXCEPTION 'FAIL imported shoots must not get a thank-you';
   END IF;
-  RAISE NOTICE 'ok  imported shoots send no emails';
+  RAISE NOTICE 'ok  imported shoots get no thank-you or reminder';
+
+  -- Sharing a gallery works as for any shoot: Delivered, and the gallery-ready email is due.
+  UPDATE job_details jd SET gallery_url = 'https://example.test/gallery', gallery_released_at = now()
+  FROM engagements e WHERE e.id = jd.engagement_id AND e.person_id = v_existing;
+  PERFORM advance_job_statuses(now());
+  IF (SELECT jd.job_status FROM job_details jd JOIN engagements e ON e.id = jd.engagement_id
+      WHERE e.person_id = v_existing AND e.offering_id IN (SELECT id FROM offerings WHERE lower(name) = 'family shoot')) <> 'delivered' THEN
+    RAISE EXCEPTION 'FAIL an imported shoot should move to delivered when the gallery is shared';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM list_due_shoot_emails(now()) d
+                 JOIN engagements e ON e.id = d.engagement_id
+                 WHERE d.email_key = 'gallery_ready' AND e.person_id = v_existing) THEN
+    RAISE EXCEPTION 'FAIL the gallery-ready email should be due for an imported shoot';
+  END IF;
+  RAISE NOTICE 'ok  an imported shoot moves to Delivered and gets the gallery email when shared';
 
   -- A person_id from another studio is refused.
   PERFORM pg_temp.act_as(v.other_admin);
