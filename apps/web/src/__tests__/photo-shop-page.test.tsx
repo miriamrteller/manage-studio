@@ -139,10 +139,10 @@ describe('Photo shop page', () => {
     expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/secure payment page/);
 
     // Cash: the client's own confirmation is shown, still nothing ordered.
-    fireEvent.click(screen.getByLabelText('In cash to the studio'));
+    fireEvent.click(screen.getByLabelText('Pay the studio directly (cash, bank transfer or other)'));
     expect(screen.queryByText(/nothing was ordered/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Send order/ }));
-    expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/Pay the studio in cash/);
+    expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/Pay the studio directly/);
     expect(state.order).not.toHaveBeenCalled();
   });
 
@@ -174,7 +174,7 @@ describe('Photo shop page', () => {
     expect(rows[0].textContent).toContain('Client A · Family');
     expect(rows[0].textContent).toContain('Paid, to deliver');
     expect(rows[1].textContent).toContain('Client B · Newborn');
-    expect(rows[1].textContent).toContain('Paying in cash');
+    expect(rows[1].textContent).toContain('Paying you directly');
     const links = screen.getAllByRole('link', { name: 'Open shoot' });
     expect(links[0].getAttribute('href')).toBe('/admin/projects/e1?tab=shop');
     expect(links[1].getAttribute('href')).toBe('/admin/projects/e2?tab=shop');

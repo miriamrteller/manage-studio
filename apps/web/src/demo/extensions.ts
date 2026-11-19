@@ -101,7 +101,7 @@ function maybeGalleryReadyEmail(ctx: DemoContext, engagementId: string) {
   sendToOutbox({
     to: c.email,
     subject: 'Your gallery is ready',
-    body: `Hi ${c.name}, your photos are ready to view and download.`,
+    body: `Hi ${c.name}, your photos are ready. Open the gallery to choose your photos.`,
     link: { label: 'Open the gallery', href: String(state.gallery_url) },
   });
 }
