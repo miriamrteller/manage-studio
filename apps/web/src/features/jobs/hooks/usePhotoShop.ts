@@ -19,6 +19,19 @@ const shopKey = (id: string) => ['photo-shop', id] as const;
 const ordersKey = (id: string) => ['photo-shop-orders', id] as const;
 const photosKey = (id: string) => ['photo-shop-photos', id] as const;
 const defaultsKey = (tenantId: string | undefined) => ['photo-shop-defaults', tenantId] as const;
+const galleryNamesKey = ['photo-shop-gallery-names'] as const;
+
+/** engagement id -> its SmugMug gallery's name, for the Shoots list. Empty while the shop is off. */
+export function useShootGalleryNames(): Map<string, string> {
+  const tenant = useTenant();
+  const enabled = usePhotoShopEnabled();
+  const query = useQuery({
+    queryKey: [...galleryNamesKey, tenant?.id],
+    queryFn: () => PhotoShopService.smugmugGalleryNames(tenant!.id),
+    enabled: enabled && !!tenant?.id,
+  });
+  return query.data ?? new Map<string, string>();
+}
 
 export function useJobPhotoShop(engagementId: string, enabled = true) {
   const queryClient = useQueryClient();
@@ -34,7 +47,10 @@ export function useJobPhotoShop(engagementId: string, enabled = true) {
   });
   const save = useMutation({
     mutationFn: (patch: JobPhotoShopPatch) => PhotoShopService.saveShop(engagementId, patch),
-    onSuccess: (data) => queryClient.setQueryData(shopKey(engagementId), data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(shopKey(engagementId), data);
+      void queryClient.invalidateQueries({ queryKey: galleryNamesKey });
+    },
   });
   const deliver = useMutation({
     mutationFn: (params: { orderId: string; url: string }) => PhotoShopService.deliver(params.orderId, params.url),

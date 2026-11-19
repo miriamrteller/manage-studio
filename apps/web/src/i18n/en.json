@@ -1646,6 +1646,7 @@
       "package": "Package",
       "when": "Date & time",
       "location": "Location",
+      "smugmug_gallery": "SmugMug gallery",
       "status": "Status",
       "notes": "Notes",
       "contract": "Contract",
