@@ -134,7 +134,7 @@ describe('Photo shop page', () => {
     expect(screen.getByText('IMG_0001.jpg')).toBeTruthy();
 
     // Card: picking photos and pressing Pay shows what would happen, nothing is ordered.
-    fireEvent.click(screen.getAllByRole('button', { name: 'Add to cart' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Choose' })[0]);
     fireEvent.click(screen.getByLabelText('By card now'));
     fireEvent.click(screen.getByRole('button', { name: /^Pay/ }));
     expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/secure payment page/);

@@ -69,7 +69,7 @@ function view(over: Partial<ClientPhotoShopView> = {}): ClientPhotoShopView {
 const cartLine = (re: RegExp) =>
   screen.getByText((_, el) => el?.tagName === 'P' && re.test(el.textContent ?? ''));
 
-const addButtons = () => screen.getAllByRole('button', { name: 'Add to cart' });
+const addButtons = () => screen.getAllByRole('button', { name: 'Choose' });
 
 describe('ClientPhotoShop', () => {
   beforeEach(async () => {
@@ -133,7 +133,7 @@ describe('ClientPhotoShop', () => {
     for (let i = 0; i < 6; i++) fireEvent.click(addButtons()[0]);
     // 6 picked = all 6 remaining → no suggestion (nothing more to add).
     expect(screen.queryByText(/no more than your cart/)).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: 'In cart' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Chosen ✓' })[0]);
     // 5 picked: 2 free + 3 × 30 = 90 < 100 → still no suggestion.
     expect(screen.queryByText(/no more than your cart/)).toBeNull();
     fireEvent.click(screen.getByLabelText('By card now'));
@@ -244,6 +244,6 @@ describe('ClientPhotoShop', () => {
     renderInApp(<ClientPhotoShop engagementId="e1" />);
     expect(await screen.findByText('קניית התמונות שלך')).toBeTruthy();
     expect(screen.getByText(/התמונות נמכרות כקבצים להורדה/)).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'הוספה לסל' })).toHaveLength(6);
+    expect(screen.getAllByRole('button', { name: 'לבחירה' })).toHaveLength(6);
   });
 });
