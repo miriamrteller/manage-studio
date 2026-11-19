@@ -473,12 +473,12 @@
         "link_sign_in": "Sign in",
         "pay_how": "How will you pay?",
         "pay_card": "By card now",
-        "pay_cash": "In cash to the studio",
-        "send_cash": "Send order ({{price}} in cash)",
-        "buy_all_cash": "Order all {{count}} photos ({{price}} in cash)",
-        "ordered_cash": "Order sent. Pay the studio in cash; they will prepare your photos.",
-        "cash_ordered": "Ordered, paying in cash",
-        "cash_waiting": "Sent in, paying in cash.",
+        "pay_cash": "Pay the studio directly (cash, bank transfer or other)",
+        "send_cash": "Send order ({{price}}, pay the studio)",
+        "buy_all_cash": "Order all {{count}} photos ({{price}}, pay the studio)",
+        "ordered_cash": "Order sent. Pay the studio directly by cash, bank transfer or another way they accept. They will prepare your photos.",
+        "cash_ordered": "Ordered, paying the studio directly",
+        "cash_waiting": "Sent in, paying the studio directly.",
         "pay_online_instead": "Pay by card instead"
       },
       "bookings_heading": "My bookings",
@@ -1926,7 +1926,7 @@
         "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
         "link_error": "We couldn't make the link. Please try again.",
         "link_no_email": "Add the client's email first, so the link can sign them in.",
-        "paying_cash": "The client will pay in cash.",
+        "paying_cash": "The client will pay you directly (cash, bank transfer or other).",
         "record_cash": "Record cash payment",
         "email_link": "Email shop link to client",
         "link_other_way": "WhatsApp or copy link",
@@ -2272,7 +2272,7 @@
       "failed": "The orders couldn't be loaded. Please try again.",
       "open": "Open shoot",
       "shoot_unknown": "Shoot",
-      "cash": "Paying in cash"
+      "cash": "Paying you directly"
     },
     "preview": {
       "intro": "Choose a shoot to see its photo shop exactly as that client sees it. You can pick photos and try the buttons; nothing is ordered or charged.",

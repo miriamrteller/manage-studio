@@ -251,7 +251,7 @@ describe('JobPhotoShopCard', () => {
     state.recordCash.mockReset().mockResolvedValue({ paymentId: 'pay1' });
     state.orders = [{ ...paidOrder, status: 'awaiting_payment', paid_at: null, pay_by_cash: true, job_payment_request_id: 'r1' }];
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    expect(await screen.findByText('The client will pay in cash.')).toBeTruthy();
+    expect(await screen.findByText('The client will pay you directly (cash, bank transfer or other).')).toBeTruthy();
     expect(screen.getByText('IMG_0002.jpg')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Record cash payment' }));
     await waitFor(() => expect(state.recordCash).toHaveBeenCalledWith('r1', 'cash'));

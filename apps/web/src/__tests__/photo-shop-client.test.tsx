@@ -3,7 +3,7 @@
  * Photo shop in "My shoots" (beta): hidden without a gallery; included photos
  * first, then the price per photo; nothing about included photos when there
  * are none; bought photos can't be added again; paying opens /pay/:token;
- * "all photos" offered when it's no dearer than the cart; "In cash to the studio" sends
+ * "all photos" offered when it's no dearer than the cart; "Pay the studio directly" sends
  * the order in without the pay page, and those photos stay with that order. EN + HE.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -190,11 +190,11 @@ describe('ClientPhotoShop', () => {
     await screen.findByText(/per photo/);
     for (let i = 0; i < 3; i++) fireEvent.click(addButtons()[0]);
     expect((screen.getByLabelText('By card now') as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByLabelText('In cash to the studio'));
-    fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪30(\.00)? in cash\)/ }));
+    fireEvent.click(screen.getByLabelText('Pay the studio directly (cash, bank transfer or other)'));
+    fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪30(\.00)?, pay the studio\)/ }));
     await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', ['g-1', 'g-2', 'g-3'], false));
     expect(state.payBy).toEqual(['cash']);
-    expect(await screen.findByText(/Order sent. Pay the studio in cash/)).toBeTruthy();
+    expect(await screen.findByText(/Order sent. Pay the studio directly/)).toBeTruthy();
     expect(screen.queryByText('pay page')).toBeNull();
   });
 
@@ -213,9 +213,9 @@ describe('ClientPhotoShop', () => {
     };
     renderInApp(<ClientPhotoShop engagementId="e1" />);
     const tile = (await screen.findByAltText('Preview of IMG_0001.jpg')).closest('li')!;
-    expect(within(tile).getByText('Ordered, paying in cash')).toBeTruthy();
+    expect(within(tile).getByText('Ordered, paying the studio directly')).toBeTruthy();
     expect(within(tile).queryByRole('button')).toBeNull();
-    expect(screen.getByText(/Sent in, paying in cash/)).toBeTruthy();
+    expect(screen.getByText(/Sent in, paying the studio directly/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Pay by card instead' }).getAttribute('href')).toBe('/pay/tok9');
   });
 
