@@ -1,6 +1,8 @@
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Tabs } from '@base-ui/react/tabs';
+import { DirectionProvider } from '@base-ui/react/direction-provider';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +13,7 @@ import { useWorkModes } from '@/hooks/useWorkModes';
 import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointmentWhen';
 import { useContactPreferences } from '@/features/notifications/hooks/useContactPreferences';
 import { useClientPortal } from '../hooks/useClientPortal';
+import { useClientPhotoShopOpen } from '../hooks/useClientPhotoShopOpen';
 import { ClientPortalService, type ClientBooking, type ClientShoot } from '../services/clientPortalService';
 import { JobPaymentService, type JobPaymentRequest } from '../services/jobPaymentService';
 import { formatDueDate, formatMinor, localeFor } from '../lib/jobPaymentFormat';
@@ -23,7 +26,10 @@ import { ClientPhotoShop } from './ClientPhotoShop';
  * children, no date of birth, no "enrol"). Rendered by PortalDashboard for
  * photographer tenants only; every other vertical keeps ParentPortal.
  *
- * Sections: My shoots, Contract, Payments, Gallery, Photo shop (beta), My details.
+ * Tabs: Photo shop (only when the photo shop feature is on and a shoot's gallery is
+ * open to the client; the page always opens on it then, with nothing else on it),
+ * My shoots (bookings, shoots, contract), Payments, Gallery, My details.
+ * Without an open shop the page opens on My shoots. ?tab= keeps the chosen tab.
  */
 export function ClientPortal() {
   const { t } = useTranslation();
@@ -32,8 +38,13 @@ export function ClientPortal() {
   const { data, isLoading, error } = useClientPortal();
   const { projects, appointments } = useWorkModes();
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  if (isLoading) {
+  const shoots = data?.shoots ?? [];
+  const liveShootIds = shoots.filter((shoot) => !isCancelled(shoot)).map((shoot) => shoot.engagementId);
+  const shop = useClientPhotoShopOpen(liveShootIds);
+
+  if (isLoading || shop.loading) {
     return (
       <div role="status" aria-live="polite">
         {t('common.loading')}
@@ -49,7 +60,6 @@ export function ClientPortal() {
     );
   }
 
-  const shoots = data?.shoots ?? [];
   const requests = data?.requests ?? [];
   const bookings = data?.bookings ?? [];
   const multipleShoots = shoots.length > 1;
@@ -57,6 +67,95 @@ export function ClientPortal() {
   // client sees "My bookings", not an empty "My shoots".
   const showShoots = projects || shoots.length > 0;
   const showBookings = bookings.length > 0 || (appointments && !projects);
+
+  const tabs: { value: ClientPortalTab; label: string; panel: ReactNode }[] = [];
+  if (shop.open) {
+    tabs.push({
+      value: 'shop',
+      label: t('pages.jobs.tabs.shop'),
+      panel: liveShootIds.map((id) => {
+        const shoot = shoots.find((s) => s.engagementId === id) as ClientShoot;
+        return (
+          <ClientPhotoShop
+            key={`photo-shop-${id}`}
+            engagementId={id}
+            caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
+          />
+        );
+      }),
+    });
+  }
+  if (showShoots || showBookings) {
+    tabs.push({
+      value: 'shoots',
+      label: showShoots ? t('pages.client_portal.shoots_heading') : t('pages.client_portal.bookings_heading'),
+      panel: (
+        <>
+          {showBookings && <BookingsSection bookings={bookings} />}
+          {showShoots && <ShootsSection shoots={shoots} />}
+          {shoots.length > 0 && <ContractSection shoots={shoots} labelled={multipleShoots} />}
+        </>
+      ),
+    });
+  }
+  if (showShoots) {
+    tabs.push({
+      value: 'payments',
+      label: t('pages.client_portal.payments_heading'),
+      panel: <PaymentsSection shoots={shoots} requests={requests} currency={currency} labelled={multipleShoots} />,
+    });
+  }
+  if (shoots.length > 0) {
+    tabs.push({
+      value: 'gallery',
+      label: t('pages.client_portal.gallery_heading'),
+      panel: (
+        <section aria-labelledby="client-gallery-heading" className="space-y-3">
+          <h3 id="client-gallery-heading" className="text-lg font-semibold text-gray-900">
+            {t('pages.client_portal.gallery_heading')}
+          </h3>
+          <ul className="space-y-3">
+            {shoots.map((shoot) => (
+              <li key={shoot.engagementId} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                {multipleShoots && <ShootCaption shoot={shoot} />}
+                <ClientJobGalleryCard engagementId={shoot.engagementId} currency={currency} mode="gallery" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ),
+    });
+  }
+  tabs.push({
+    value: 'details',
+    label: t('pages.client_portal.details_heading'),
+    panel: (
+      <>
+        <DetailsSection self={data?.self ?? null} onEditContact={() => setPrefsOpen(true)} />
+        {tenant && data?.self && (
+          <PersonConsentPanel
+            tenantId={tenant.id}
+            personId={data.self.personId}
+            personName={data.self.name}
+            studioName={tenant.name}
+            photographer
+            source="portal"
+          />
+        )}
+      </>
+    ),
+  });
+
+  const asked = searchParams.get('tab');
+  const activeTab = tabs.some((tab) => tab.value === asked) ? (asked as ClientPortalTab) : tabs[0].value;
+  const selectTab = (value: unknown) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', String(value));
+    setSearchParams(next, { replace: true });
+  };
+  // DocumentLanguageSync keeps <html dir> in step with the chosen language.
+  const direction =
+    typeof document !== 'undefined' && document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr';
 
   return (
     <div className="space-y-8">
@@ -72,57 +171,31 @@ export function ClientPortal() {
 
       <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
 
-      {showBookings && <BookingsSection bookings={bookings} />}
-
-      {showShoots && <ShootsSection shoots={shoots} />}
-
-      {shoots.length > 0 && <ContractSection shoots={shoots} labelled={multipleShoots} />}
-
-      {showShoots && (
-        <PaymentsSection shoots={shoots} requests={requests} currency={currency} labelled={multipleShoots} />
-      )}
-
-      {shoots.length > 0 && (
-        <section aria-labelledby="client-gallery-heading" className="space-y-3">
-          <h3 id="client-gallery-heading" className="text-lg font-semibold text-gray-900">
-            {t('pages.client_portal.gallery_heading')}
-          </h3>
-          <ul className="space-y-3">
-            {shoots.map((shoot) => (
-              <li key={shoot.engagementId} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                {multipleShoots && <ShootCaption shoot={shoot} />}
-                <ClientJobGalleryCard engagementId={shoot.engagementId} currency={currency} mode="gallery" />
-              </li>
+      <DirectionProvider direction={direction}>
+        <Tabs.Root value={activeTab} onValueChange={selectTab}>
+          <Tabs.List className="flex flex-wrap gap-1 border-b border-gray-200">
+            {tabs.map((tab) => (
+              <Tabs.Tab
+                key={tab.value}
+                value={tab.value}
+                className="-mb-px rounded-none border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-primary-ink)] data-[active]:border-[var(--color-primary-ink)] data-[active]:text-[var(--color-primary-ink)]"
+              >
+                {tab.label}
+              </Tabs.Tab>
             ))}
-          </ul>
-        </section>
-      )}
-
-      {shoots
-        .filter((shoot) => !isCancelled(shoot))
-        .map((shoot) => (
-          <ClientPhotoShop
-            key={`photo-shop-${shoot.engagementId}`}
-            engagementId={shoot.engagementId}
-            caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
-          />
-        ))}
-
-      <DetailsSection self={data?.self ?? null} onEditContact={() => setPrefsOpen(true)} />
-
-      {tenant && data?.self && (
-        <PersonConsentPanel
-          tenantId={tenant.id}
-          personId={data.self.personId}
-          personName={data.self.name}
-          studioName={tenant.name}
-          photographer
-          source="portal"
-        />
-      )}
+          </Tabs.List>
+          {tabs.map((tab) => (
+            <Tabs.Panel key={tab.value} value={tab.value} className="space-y-8 pt-6">
+              {tab.panel}
+            </Tabs.Panel>
+          ))}
+        </Tabs.Root>
+      </DirectionProvider>
     </div>
   );
 }
+
+type ClientPortalTab = 'shop' | 'shoots' | 'payments' | 'gallery' | 'details';
 
 function useShootDate() {
   const { t, i18n } = useTranslation();
