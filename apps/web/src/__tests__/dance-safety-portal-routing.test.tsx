@@ -233,6 +233,9 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
   it('shows shoots, contract, payments, gallery and details — no children / DOB / enrol', () => {
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
 
+    // No photo shop for this studio: the page opens on My shoots; the rest sit in their own tabs.
+    expect(screen.getByRole('tab', { name: 'My shoots' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('tab', { name: 'Photo shop' })).toBeNull();
     const shoots = screen.getByRole('region', { name: 'My shoots' });
     expect(within(shoots).getByText('Wedding Gold')).toBeInTheDocument();
     expect(within(shoots).getByText('Jaffa Port')).toBeInTheDocument();
@@ -242,20 +245,24 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
     expect(within(contract).getByText('Not signed yet')).toBeInTheDocument();
     expect(within(contract).getByRole('button', { name: 'Sign now' })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Payments' }));
     const payments = screen.getByRole('region', { name: 'Payments' });
     expect(within(payments).getByRole('link', { name: 'Receipt' })).toHaveAttribute('href', 'https://docs.example/r1');
     expect(within(payments).getByRole('button', { name: baseValue('pages.jobs.client_portal.pay') })).toBeInTheDocument();
     expect(within(payments).getByText('Paid')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Gallery' }));
     const gallery = screen.getByRole('region', { name: 'Gallery' });
     expect(within(gallery).getByTestId('gallery-card').textContent).toBe('eng-shoot-1:gallery');
 
+    fireEvent.click(screen.getByRole('tab', { name: 'My details' }));
     const details = screen.getByRole('region', { name: 'My details' });
     expect(within(details).getByText('Pat Client')).toBeInTheDocument();
     expect(within(details).getByText('pat@example.com')).toBeInTheDocument();
     expect(within(details).getByText('+972501234567')).toBeInTheDocument();
 
     expect(screen.queryByText(baseValue('pages.portal.children_heading'))).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'My shoots' }));
     expect(screen.queryByRole('button', { name: baseValue('pages.portal.add_child') })).toBeNull();
     expect(screen.queryByRole('button', { name: baseValue('pages.portal.enrol_new') })).toBeNull();
     expect(screen.queryByText(baseValue('pages.portal.myself_dob_missing'))).toBeNull();
