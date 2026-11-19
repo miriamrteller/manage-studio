@@ -44,7 +44,7 @@ vi.mock('@/features/jobs/hooks/usePhotoShop', async (orig) => {
     usePhotoShopEnabled: () => state.flag,
     useStudioPhotoOrders: () => ({ data: state.orders, isLoading: false, isError: false }),
     useStudioPhotoShopDefaults: () => ({
-      defaults: { data: { price_per_photo_minor: state.pricePerPhoto, all_photos_price_minor: null, gallery_open_days: 90 }, isLoading: false },
+      defaults: { data: { price_per_photo_minor: state.pricePerPhoto, all_photos_price_minor: null, gallery_open_days: 90, card_payments: false }, isLoading: false },
       save: { mutate: vi.fn(), isPending: false, error: null },
     }),
   };
@@ -125,7 +125,7 @@ describe('Photo shop page', () => {
   });
 
   it('Preview works like the client page but never places an order', async () => {
-    state.preview.mockResolvedValue({ shop: view(), photos, sample: true });
+    state.preview.mockResolvedValue({ shop: { ...view(), card_payments: true }, photos, sample: true });
     renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e1' } });
     expect(await screen.findByText(/this is exactly what your client sees/i)).toBeTruthy();
@@ -134,7 +134,8 @@ describe('Photo shop page', () => {
     expect(screen.getByText('IMG_0001.jpg')).toBeTruthy();
 
     // Card: picking photos and pressing Pay shows what would happen, nothing is ordered.
-    fireEvent.click(screen.getAllByRole('button', { name: 'Add to cart' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Choose' })[0]);
+    fireEvent.click(screen.getByLabelText('By card now'));
     fireEvent.click(screen.getByRole('button', { name: /^Pay/ }));
     expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/secure payment page/);
 

@@ -17,6 +17,8 @@ export interface ClientPhotoShopView {
   awaiting_image_keys: string[];
   /** Photos already sent in to be paid in cash: not pickable again. */
   cash_image_keys?: string[];
+  /** The studio takes cards in the photo shop. Off or absent: clients pay the studio directly. */
+  card_payments?: boolean;
   orders: ClientPhotoOrder[];
 }
 

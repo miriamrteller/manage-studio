@@ -141,14 +141,15 @@ export function ClientImport() {
     return byIndex;
   }, [matchesQuery.data]);
 
-  // New clients, plus clients already here who have a past shoot to add (sent with their
-  // person_id, so they are not added twice).
+  // New clients, plus clients already here who have a past shoot to add or an email
+  // (sent with their person_id, so they are not added twice; the database saves the
+  // email only for a client who has none).
   const toImport = useMemo(() => {
     if (!built) return [];
     return built.clients.flatMap((c, i) => {
       const m = matches.get(i);
       if (!m || (m.reason === 'name' && addAnyway[i])) return [c];
-      return c.shoots?.length ? [{ ...c, person_id: m.person_id }] : [];
+      return c.shoots?.length || c.email ? [{ ...c, person_id: m.person_id }] : [];
     });
   }, [built, matches, addAnyway]);
   const newClients = toImport.filter((c) => !c.person_id);
@@ -503,6 +504,9 @@ export function ClientImport() {
             <li>{t('clients_import.done_clients', { count: result.clients })}</li>
             {result.students > 0 && <li>{t('clients_import.done_students', { count: result.students })}</li>}
             {(result.shoots ?? 0) > 0 && <li>{t('clients_import.done_shoots', { count: result.shoots })}</li>}
+            {(result.emails_added ?? 0) > 0 && (
+              <li>{t('clients_import.done_emails', { count: result.emails_added })}</li>
+            )}
             {result.skipped > 0 && (
               <li>
                 {(result.shoots ?? 0) > 0

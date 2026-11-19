@@ -59,6 +59,7 @@ function view(over: Partial<ClientPhotoShopView> = {}): ClientPhotoShopView {
     spent_minor: 0,
     bought_image_keys: [],
     awaiting_image_keys: [],
+    card_payments: true,
     orders: [],
     ...over,
   };
@@ -68,7 +69,7 @@ function view(over: Partial<ClientPhotoShopView> = {}): ClientPhotoShopView {
 const cartLine = (re: RegExp) =>
   screen.getByText((_, el) => el?.tagName === 'P' && re.test(el.textContent ?? ''));
 
-const addButtons = () => screen.getAllByRole('button', { name: 'Add to cart' });
+const addButtons = () => screen.getAllByRole('button', { name: 'Choose' });
 
 describe('ClientPhotoShop', () => {
   beforeEach(async () => {
@@ -102,6 +103,7 @@ describe('ClientPhotoShop', () => {
     expect(cartLine(/2 photos in your cart · 2 included · ₪0/)).toBeTruthy();
     fireEvent.click(addButtons()[0]);
     expect(cartLine(/3 photos in your cart · 2 included · ₪30/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('By card now'));
     fireEvent.click(screen.getByRole('button', { name: /^Pay ₪30/ }));
     await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', ['g-1', 'g-2', 'g-3'], false));
     expect(await screen.findByTestId('location')).toHaveProperty('textContent', '/pay/tok123');
@@ -131,9 +133,10 @@ describe('ClientPhotoShop', () => {
     for (let i = 0; i < 6; i++) fireEvent.click(addButtons()[0]);
     // 6 picked = all 6 remaining → no suggestion (nothing more to add).
     expect(screen.queryByText(/no more than your cart/)).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: 'In cart' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Chosen ✓' })[0]);
     // 5 picked: 2 free + 3 × 30 = 90 < 100 → still no suggestion.
     expect(screen.queryByText(/no more than your cart/)).toBeNull();
+    fireEvent.click(screen.getByLabelText('By card now'));
     fireEvent.click(screen.getByRole('button', { name: /Buy all 6 photos for ₪100/ }));
     await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', expect.any(Array), true));
   });
@@ -182,6 +185,22 @@ describe('ClientPhotoShop', () => {
     expect(screen.queryByRole('link', { name: 'Download your photos' })).toBeNull();
   });
 
+  it('card payments off: no card choice, the order is sent in to pay the studio', async () => {
+    state.gallery = { shop: view({ card_payments: false }), photos };
+    state.order.mockResolvedValue({
+      orderId: 'o4', status: 'awaiting_payment', totalMinor: 3000, currency: 'ILS', payToken: 'tok8', payByCash: true,
+    });
+    renderInApp(<ClientPhotoShop engagementId="e1" />, { path: '/portal', extraRoutes: { '/pay/:token': <p>pay page</p> } });
+    await screen.findByText(/per photo/);
+    for (let i = 0; i < 3; i++) fireEvent.click(addButtons()[0]);
+    expect(screen.queryByLabelText('By card now')).toBeNull();
+    expect(screen.getByText('You pay the studio directly (cash, bank transfer or other).')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪30(\.00)?, pay the studio\)/ }));
+    await waitFor(() => expect(state.order).toHaveBeenCalled());
+    expect(state.payBy).toEqual(['cash']);
+    expect(screen.queryByText('pay page')).toBeNull();
+  });
+
   it('pay in cash: sends the order in, no pay page, and says what happens next', async () => {
     state.order.mockResolvedValue({
       orderId: 'o3', status: 'awaiting_payment', totalMinor: 3000, currency: 'ILS', payToken: 'tok9', payByCash: true,
@@ -189,8 +208,9 @@ describe('ClientPhotoShop', () => {
     renderInApp(<ClientPhotoShop engagementId="e1" />, { path: '/portal', extraRoutes: { '/pay/:token': <p>pay page</p> } });
     await screen.findByText(/per photo/);
     for (let i = 0; i < 3; i++) fireEvent.click(addButtons()[0]);
-    expect((screen.getByLabelText('By card now') as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByLabelText('Pay the studio directly (cash, bank transfer or other)'));
+    // Paying the studio directly is chosen first.
+    expect((screen.getByLabelText('Pay the studio directly (cash, bank transfer or other)') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('By card now') as HTMLInputElement).checked).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪30(\.00)?, pay the studio\)/ }));
     await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', ['g-1', 'g-2', 'g-3'], false));
     expect(state.payBy).toEqual(['cash']);
@@ -224,6 +244,6 @@ describe('ClientPhotoShop', () => {
     renderInApp(<ClientPhotoShop engagementId="e1" />);
     expect(await screen.findByText('קניית התמונות שלך')).toBeTruthy();
     expect(screen.getByText(/התמונות נמכרות כקבצים להורדה/)).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'הוספה לסל' })).toHaveLength(6);
+    expect(screen.getAllByRole('button', { name: 'לבחירה' })).toHaveLength(6);
   });
 });

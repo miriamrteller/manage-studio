@@ -20,6 +20,8 @@ export interface ClientImportResult {
   skipped: number;
   /** Past shoots added (absent before the past-shoots migration). */
   shoots?: number;
+  /** Clients already here who had no email and got the sheet's (absent before 19 Nov 2026). */
+  emails_added?: number;
   /** Each row's shoot, new or already there (for linking SmugMug galleries). */
   shoot_links?: ShootLink[];
 }
