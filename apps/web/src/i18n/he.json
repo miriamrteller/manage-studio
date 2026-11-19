@@ -1650,6 +1650,7 @@
       "package": "חבילה",
       "when": "תאריך ושעה",
       "location": "מיקום",
+      "smugmug_gallery": "גלריה ב-SmugMug",
       "status": "סטטוס",
       "notes": "הערות",
       "contract": "חוזה",

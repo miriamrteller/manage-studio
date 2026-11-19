@@ -103,6 +103,26 @@ export class PhotoShopService {
     return data as unknown as JobPhotoShop;
   }
 
+  /**
+   * engagement id -> name of the SmugMug gallery picked for that shoot, for the
+   * Shoots list (owner, 19 Nov 2026). Shoots with no SmugMug gallery are left out.
+   */
+  static async smugmugGalleryNames(tenantId: string): Promise<Map<string, string>> {
+    const { data, error } = await supabase
+      .from('job_photo_shops')
+      .select('engagement_id, gallery_name')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'smugmug')
+      .not('gallery_key', 'is', null);
+    if (error) throw error;
+    const map = new Map<string, string>();
+    for (const row of (data ?? []) as Array<{ engagement_id: string; gallery_name: string | null }>) {
+      const name = row.gallery_name?.trim();
+      if (name) map.set(row.engagement_id, name);
+    }
+    return map;
+  }
+
   static async saveShop(engagementId: string, patch: JobPhotoShopPatch): Promise<JobPhotoShop> {
     const { data, error } = await supabase.rpc('save_job_photo_shop', {
       p_engagement_id: engagementId,

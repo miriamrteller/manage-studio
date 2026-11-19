@@ -52,10 +52,11 @@ vi.mock('@/features/jobs/components/JobContractCard', () => ({ JobContractCard: 
 vi.mock('@/features/jobs/components/JobBookingProgress', () => ({ JobBookingProgress: () => null }));
 vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () => null }));
 vi.mock('@/features/quotes/components/CreateQuoteButton', () => ({ CreateQuoteButton: () => null }));
-const shop = vi.hoisted(() => ({ on: false }));
+const shop = vi.hoisted(() => ({ on: false, galleries: new Map<string, string>() }));
 vi.mock('@/features/jobs/hooks/usePhotoShop', async (orig) => ({
   ...(await orig<typeof import('@/features/jobs/hooks/usePhotoShop')>()),
   usePhotoShopEnabled: () => shop.on,
+  useShootGalleryNames: () => (shop.on ? shop.galleries : new Map<string, string>()),
 }));
 vi.mock('@/features/jobs/components/JobPhotoShopCard', () => ({ JobPhotoShopCard: () => <p>photo shop card</p> }));
 vi.mock('@/features/jobs/components/ClientPhotoShop', () => ({ PhotoShopPreview: () => <p>client view</p> }));
@@ -196,6 +197,34 @@ describe('JobsList', () => {
     setTenant('photographer');
     await setLanguage('en');
     state.job = job();
+    shop.on = false;
+    shop.galleries = new Map();
+  });
+
+  it('shows the linked SmugMug gallery name in the table and on the phone card', async () => {
+    shop.on = true;
+    shop.galleries = new Map([['e1', 'Pat & Sam wedding']]);
+    const first = renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'SmugMug gallery' })).toBeInTheDocument();
+    expect(screen.getAllByText('Pat & Sam wedding').length).toBe(2); // card + table row
+    first.unmount();
+
+    await setLanguage('he');
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'גלריה ב-SmugMug' })).toBeInTheDocument();
+  });
+
+  it('no gallery linked: a dash in the table, nothing on the phone card', () => {
+    shop.on = true;
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'SmugMug gallery' })).toBeInTheDocument();
+    const cards = screen.getAllByRole('list').find((l) => l.className.includes('sm:hidden')) as HTMLElement;
+    expect(within(cards).queryByText('SmugMug gallery')).toBeNull();
+  });
+
+  it('no gallery column without the photo shop', () => {
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.queryByRole('columnheader', { name: 'SmugMug gallery' })).toBeNull();
   });
 
   it('renders a stacked card per shoot for phones next to the sm+ table', () => {

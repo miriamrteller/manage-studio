@@ -12,6 +12,7 @@ import { JobCreateForm, type JobCreatePrefill } from './JobCreateForm';
 import { JobGalleryRowLink } from './JobGalleryLink';
 import { SendGalleryBulkBar, SendGalleryButton } from './SendGallery';
 import { useGalleryLastSent } from '../hooks/useSendShootGallery';
+import { usePhotoShopEnabled, useShootGalleryNames } from '../hooks/usePhotoShop';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { JobRow } from '../services/jobService';
 import { latestQuoteByProject, openAmountMinor, useProjectRequests } from '../lib/projectSummary';
@@ -69,7 +70,11 @@ export function JobsList() {
   const toggleAll = (on: boolean) =>
     setSelected(on ? new Set(selectable.map((job) => job.engagement_id)) : new Set());
   const lastSent = useGalleryLastSent(selectable.map((job) => job.engagement_id));
+  // The SmugMug gallery picked for each shoot (owner, 19 Nov 2026). Column only with the photo shop on.
+  const shopOn = usePhotoShopEnabled();
+  const galleryNames = useShootGalleryNames();
   const summaryOf = (job: JobRow): ProjectRowSummary => ({
+    galleryName: galleryNames.get(job.engagement_id) ?? null,
     lastSentAt: lastSent.get(job.engagement_id) ?? null,
     quote: quoteByProject.get(job.engagement_id),
     openMinor: openAmountMinor(requests.filter((r: JobPaymentRequest) => r.engagement_id === job.engagement_id)),
@@ -161,6 +166,7 @@ export function JobsList() {
                 </th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.client')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.package')}</th>
+                {shopOn && <th className="px-3 py-2 text-start">{t('pages.jobs.smugmug_gallery')}</th>}
                 <th className="px-3 py-2 text-start">{t('pages.jobs.when')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.location')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.status')}</th>
@@ -192,6 +198,11 @@ export function JobsList() {
                     )}
                   </td>
                   <td className="px-3 py-2">{job.package_name ?? '—'}</td>
+                  {shopOn && (
+                    <td className="px-3 py-2">
+                      <GalleryNameCell name={summaryOf(job).galleryName} />
+                    </td>
+                  )}
                   <td className="px-3 py-2">
                     {job.booked_starts_at
                       ? formatAppointmentWhen(job.booked_starts_at, i18n.language)
@@ -229,9 +240,21 @@ export function JobsList() {
 }
 
 interface ProjectRowSummary {
+  /** Name of the SmugMug gallery picked for the shoot; null = none. */
+  galleryName: string | null;
   lastSentAt: string | null;
   quote: QuoteSummary | undefined;
   openMinor: number;
+}
+
+function GalleryNameCell({ name }: { name: string | null }) {
+  return name ? (
+    <span className="break-words" dir="auto">
+      {name}
+    </span>
+  ) : (
+    <span className="text-muted-foreground">—</span>
+  );
 }
 
 function QuoteCell({ quote }: { quote: QuoteSummary | undefined }) {
@@ -286,6 +309,14 @@ function JobCard({
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
         <dt className="text-muted-foreground">{t('pages.jobs.package')}</dt>
         <dd>{job.package_name ?? '—'}</dd>
+        {summary.galleryName && (
+          <>
+            <dt className="text-muted-foreground">{t('pages.jobs.smugmug_gallery')}</dt>
+            <dd>
+              <GalleryNameCell name={summary.galleryName} />
+            </dd>
+          </>
+        )}
         <dt className="text-muted-foreground">{t('pages.jobs.when')}</dt>
         <dd>
           {job.booked_starts_at
