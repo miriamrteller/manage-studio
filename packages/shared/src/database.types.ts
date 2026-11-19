@@ -6407,6 +6407,15 @@ export type Database = {
       }
       client_import_matches: { Args: { p_clients: Json }; Returns: Json }
       client_import_phone_key: { Args: { p_phone: string }; Returns: string }
+      client_import_shoot_links: {
+        Args: {
+          p_client: number
+          p_person_id: string
+          p_shoots: Json
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       client_import_shoot_package: {
         Args: { p_name: string; p_tenant_id: string }
         Returns: string

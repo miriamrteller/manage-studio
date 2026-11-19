@@ -6468,6 +6468,15 @@ export type Database = {
                 };
                 Returns: string;
             };
+            client_import_shoot_links: {
+                Args: {
+                    p_client: number;
+                    p_person_id: string;
+                    p_shoots: Json;
+                    p_tenant_id: string;
+                };
+                Returns: Json;
+            };
             client_import_shoot_package: {
                 Args: {
                     p_name: string;

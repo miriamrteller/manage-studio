@@ -12,16 +12,18 @@ export type ClientFieldKey =
   | 'student_dob'
   | 'shoot_name'
   | 'shoot_date'
+  | 'shoot_gallery'
   | 'skip';
 
 /**
  * Fields a column can go to, in the order the screen lists them. Student fields only at family
- * studios; past shoot fields only with Projects.
+ * studios; past shoot fields only with Projects; the SmugMug gallery also needs the photo shop.
  */
-export function clientFieldKeys(families: boolean, projects = false): ClientFieldKey[] {
+export function clientFieldKeys(families: boolean, projects = false, galleries = false): ClientFieldKey[] {
   const keys: ClientFieldKey[] = ['name', 'first_name', 'last_name', 'email', 'phone'];
   if (families) keys.push('student_name', 'student_dob');
   if (projects) keys.push('shoot_name', 'shoot_date');
+  if (projects && galleries) keys.push('shoot_gallery');
   keys.push('skip');
   return keys;
 }
@@ -41,6 +43,8 @@ export interface ImportStudent {
 export interface ImportShoot {
   name: string;
   date: string | null;
+  /** The SmugMug gallery to link to the shoot, by its name (the screen links it after import). */
+  gallery?: string;
 }
 
 /**
@@ -80,6 +84,7 @@ export interface BuiltClients {
  * patterns come first so "Student name" is never read as the client's name.
  */
 const HEADER_RULES: Array<[ClientFieldKey, RegExp]> = [
+  ['shoot_gallery', /smug ?mug|^(shoot |photo )?gallery( name)?$|^(שם )?(ה)?גלריה$|^גלריית (ה)?(צילום|תמונות)$/],
   ['shoot_date', /^(shoot|session|project)'?s? date$|^date of (the )?(shoot|session)$|^date$|^תאריך( (ה)?(צילום|פרויקט))?$/],
   ['shoot_name', /^(shoot|session|project|package)'?s?( name| type)?$|^(שם |סוג )?(ה)?(צילום|פרויקט|חבילה)$/],
   ['student_dob', /^((student|child|pupil|dancer)'?s? )?(date of birth|birth ?date|dob|birthday)$|^תאריך לידה( (של )?(התלמיד|התלמידה|הילד|הילדה))?$|^ת\.? ?לידה$/],
@@ -101,24 +106,36 @@ const SINGLE_USE = new Set<ClientFieldKey>([
   'student_dob',
   'shoot_name',
   'shoot_date',
+  'shoot_gallery',
 ]);
 
-export function guessClientField(header: string, families: boolean, projects = false): ClientFieldKey {
+export function guessClientField(
+  header: string,
+  families: boolean,
+  projects = false,
+  galleries = false,
+): ClientFieldKey {
   const h = normalise(header);
   for (const [field, re] of HEADER_RULES) {
     if (!re.test(h)) continue;
     if (!families && (field === 'student_name' || field === 'student_dob')) return 'skip';
-    if (!projects && (field === 'shoot_name' || field === 'shoot_date')) return 'skip';
+    if (!projects && (field === 'shoot_name' || field === 'shoot_date' || field === 'shoot_gallery')) return 'skip';
+    if (!galleries && field === 'shoot_gallery') return 'skip';
     return field;
   }
   return 'skip';
 }
 
 /** Prefilled column matches: each field goes to the first column that fits. */
-export function guessClientColumns(headers: string[], families: boolean, projects = false): ClientColumn[] {
+export function guessClientColumns(
+  headers: string[],
+  families: boolean,
+  projects = false,
+  galleries = false,
+): ClientColumn[] {
   const used = new Set<ClientFieldKey>();
   return headers.map((header, index) => {
-    let field = guessClientField(header, families, projects);
+    let field = guessClientField(header, families, projects, galleries);
     if (SINGLE_USE.has(field)) {
       if (used.has(field)) field = 'skip';
       else used.add(field);
@@ -182,6 +199,7 @@ export function buildClients(rows: Cell[][], headerRow: number, opts: BuildClien
   const cDob = opts.families ? col('student_dob') : undefined;
   const cShoot = opts.projects ? col('shoot_name') : undefined;
   const cShootDate = opts.projects ? col('shoot_date') : undefined;
+  const cGallery = opts.projects ? col('shoot_gallery') : undefined;
   const today = opts.today ?? localToday();
   const text = (row: Cell[], c: number | undefined) => (c === undefined ? '' : cellText(row[c]));
 
@@ -224,13 +242,15 @@ export function buildClients(rows: Cell[][], headerRow: number, opts: BuildClien
     const rawShootDate = cShootDate === undefined ? undefined : row[cShootDate];
     const hasShootDate = rawShootDate !== undefined && cellText(rawShootDate) !== '';
     const shootName = text(row, cShoot).slice(0, 200);
-    if (shootName || (hasShootDate && opts.defaultShootName)) {
+    const gallery = text(row, cGallery).slice(0, 200);
+    if (shootName || ((hasShootDate || gallery) && opts.defaultShootName)) {
       let date = hasShootDate ? parseDate(rawShootDate, opts.dayFirst) : null;
       if (hasShootDate && (!date || date > today)) {
         problems.push({ rowNumber, code: 'bad_shoot_date' });
         date = null;
       }
       shoot = { name: shootName || opts.defaultShootName!.slice(0, 200), date };
+      if (gallery) shoot.gallery = gallery;
     }
 
     const key = email ? `e:${email}` : phoneKey(phone) ? `p:${phoneKey(phone)}` : `n:${normalise(name)}`;
