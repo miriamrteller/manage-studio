@@ -97,6 +97,16 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     const features = await getTenantFeatures(shopRow.tenant_id as string, service);
     if (!features.has(FEATURE)) return jsonResponse({ error: "feature_not_available" }, 403);
 
+    // Card payments are off until the studio switches them on (Settings > Payment > Photo
+    // shop): clients then only pay the studio directly.
+    const { data: shopSettings } = await service
+      .from("tenant_photo_shop_settings")
+      .select("card_payments")
+      .eq("tenant_id", shopRow.tenant_id as string)
+      .maybeSingle();
+    const cardPayments = shopSettings?.card_payments === true;
+    const shopView = { ...view, card_payments: cardPayments };
+
     if (action === "preview") {
       const { data: profile } = await service
         .from("user_profiles")
@@ -109,11 +119,11 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       }
       try {
         const real = await listGalleryPhotos(gallery, { uploads, adminPreview: true });
-        return jsonResponse({ shop: view, photos: real, sample: false });
+        return jsonResponse({ shop: shopView, photos: real, sample: false });
       } catch (e) {
         if (!(e instanceof GalleryNotReadyError)) throw e;
         // Sample photos only: nothing real is shown until the shoot's gallery is ready.
-        return jsonResponse({ shop: view, photos: mockGalleryPhotos(engagementId), sample: true });
+        return jsonResponse({ shop: shopView, photos: mockGalleryPhotos(engagementId), sample: true });
       }
     }
 
@@ -126,7 +136,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     }
 
     if (action === "gallery") {
-      return jsonResponse({ shop: view, photos });
+      return jsonResponse({ shop: shopView, photos });
     }
 
     // ── place an order ──────────────────────────────────────────────────────
@@ -167,7 +177,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       .maybeSingle();
     const language = tenant?.language_default === "en" ? "en" : "he";
 
-    const payByCash = body?.payBy === "cash";
+    const payByCash = body?.payBy === "cash" || !cardPayments;
     const { data: order, error: orderError } = await service.rpc("create_job_photo_order", {
       p_engagement_id: engagementId,
       p_person_id: personId,

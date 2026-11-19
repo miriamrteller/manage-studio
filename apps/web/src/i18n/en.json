@@ -474,6 +474,7 @@
         "pay_how": "How will you pay?",
         "pay_card": "By card now",
         "pay_cash": "Pay the studio directly (cash, bank transfer or other)",
+        "pay_direct_only": "You pay the studio directly (cash, bank transfer or other).",
         "send_cash": "Send order ({{price}}, pay the studio)",
         "buy_all_cash": "Order all {{count}} photos ({{price}}, pay the studio)",
         "ordered_cash": "Order sent. Pay the studio directly by cash, bank transfer or another way they accept. They will prepare your photos.",
@@ -4302,6 +4303,8 @@
       "all_photos": "All photos price ({{currency}}, optional)",
       "all_photos_hint": "Leave empty to sell photos one by one only.",
       "open_days": "Days a gallery stays open for buying",
+      "card_payments": "Clients can also pay by card",
+      "card_payments_hint": "Leave this off until card payments work for your studio. While it's off, clients send their order and pay you directly (cash, bank transfer or other).",
       "saved": "Saved."
     },
     "smugmug": {
@@ -5267,6 +5270,8 @@
     "import_button_shoots_other": "Add {{count}} past shoots",
     "done_shoots_one": "{{count}} past shoot added",
     "done_shoots_other": "{{count}} past shoots added",
+    "done_emails_one": "Email added to {{count}} client who had none",
+    "done_emails_other": "Emails added to {{count}} clients who had none",
     "done_already_one": "{{count}} was already a client, not added again",
     "done_already_other": "{{count}} were already clients, not added again",
     "preview_galleries_one": "{{found}} of {{count}} gallery name found in SmugMug. Each shoot gets its gallery straight after the import.",

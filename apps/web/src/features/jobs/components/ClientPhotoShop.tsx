@@ -93,8 +93,11 @@ function ShopBody({
   const [doneMessage, setDoneMessage] = useState<'free' | 'cash' | null>(null);
   // Preview: what would have happened, instead of placing an order.
   const [tried, setTried] = useState<'card' | 'cash' | 'free' | null>(null);
-  // Card is the usual way; cash lets the client send the order in and pay the studio later.
-  const [payBy, setPayBy] = useState<PhotoPayBy>('card');
+  // Paying the studio directly is chosen first (owner, 19 Nov 2026). Card is offered only
+  // when the studio has switched card payments on.
+  const cardOn = data.shop.card_payments === true;
+  const [chosenPayBy, setPayBy] = useState<PhotoPayBy>('cash');
+  const payBy: PhotoPayBy = cardOn ? chosenPayBy : 'cash';
   const payById = useId();
   const { shop, photos } = data;
   const lang = i18n.language;
@@ -264,19 +267,23 @@ function ShopBody({
               {t('pages.client_portal.photo_shop.suggest_all', { count: available.length, price: money(allTotal.totalMinor) })}
             </p>
           )}
-          <fieldset className="space-y-1 text-sm">
-            <legend className="font-medium" id={payById}>{t('pages.client_portal.photo_shop.pay_how')}</legend>
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" name={payById} value="card" checked={payBy === 'card'} onChange={() => { setPayBy('card'); setTried(null); }} />
-                {t('pages.client_portal.photo_shop.pay_card')}
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name={payById} value="cash" checked={payBy === 'cash'} onChange={() => { setPayBy('cash'); setTried(null); }} />
-                {t('pages.client_portal.photo_shop.pay_cash')}
-              </label>
-            </div>
-          </fieldset>
+          {cardOn ? (
+            <fieldset className="space-y-1 text-sm">
+              <legend className="font-medium" id={payById}>{t('pages.client_portal.photo_shop.pay_how')}</legend>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2">
+                  <input type="radio" name={payById} value="card" checked={payBy === 'card'} onChange={() => { setPayBy('card'); setTried(null); }} />
+                  {t('pages.client_portal.photo_shop.pay_card')}
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" name={payById} value="cash" checked={payBy === 'cash'} onChange={() => { setPayBy('cash'); setTried(null); }} />
+                  {t('pages.client_portal.photo_shop.pay_cash')}
+                </label>
+              </div>
+            </fieldset>
+          ) : (
+            <p className="text-sm">{t('pages.client_portal.photo_shop.pay_direct_only')}</p>
+          )}
           <p id={termsId} className="text-xs text-gray-500">{t('pages.client_portal.photo_shop.terms')}</p>
           <div className="flex flex-wrap gap-2">
             <Button

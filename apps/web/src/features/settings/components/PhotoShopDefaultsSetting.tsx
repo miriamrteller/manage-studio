@@ -24,6 +24,7 @@ function PhotoShopDefaultsForm() {
   const [perPhoto, setPerPhoto] = useState('');
   const [allPhotos, setAllPhotos] = useState('');
   const [days, setDays] = useState(String(DEFAULT_GALLERY_OPEN_DAYS));
+  const [card, setCard] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -32,6 +33,7 @@ function PhotoShopDefaultsForm() {
       setPerPhoto(minorToMajor(defaults.data.price_per_photo_minor));
       setAllPhotos(minorToMajor(defaults.data.all_photos_price_minor));
       setDays(String(defaults.data.gallery_open_days));
+      setCard(defaults.data.card_payments === true);
       setLoaded(true);
     }
   }, [defaults.data, loaded]);
@@ -70,6 +72,14 @@ function PhotoShopDefaultsForm() {
             onChange={(e) => touch(setDays)(e.target.value)} />
         </div>
       </div>
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={card} aria-describedby={`${id}-card-hint`}
+            onChange={(e) => touch(setCard)(e.target.checked)} />
+          {t('settings.photo_shop.card_payments')}
+        </label>
+        <p id={`${id}-card-hint`} className="text-xs text-muted-foreground">{t('settings.photo_shop.card_payments_hint')}</p>
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <Button
           size="sm"
@@ -82,6 +92,7 @@ function PhotoShopDefaultsForm() {
                 price_per_photo_minor: majorToMinor(perPhoto),
                 all_photos_price_minor: majorToMinor(allPhotos),
                 gallery_open_days: daysNumber,
+                card_payments: card,
               },
               { onSuccess: () => setSaved(true) },
             )

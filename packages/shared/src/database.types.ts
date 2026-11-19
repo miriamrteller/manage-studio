@@ -5276,6 +5276,7 @@ export type Database = {
       tenant_photo_shop_settings: {
         Row: {
           all_photos_price_minor: number | null
+          card_payments: boolean
           gallery_open_days: number
           price_per_photo_minor: number | null
           tenant_id: string
@@ -5283,6 +5284,7 @@ export type Database = {
         }
         Insert: {
           all_photos_price_minor?: number | null
+          card_payments?: boolean
           gallery_open_days?: number
           price_per_photo_minor?: number | null
           tenant_id: string
@@ -5290,6 +5292,7 @@ export type Database = {
         }
         Update: {
           all_photos_price_minor?: number | null
+          card_payments?: boolean
           gallery_open_days?: number
           price_per_photo_minor?: number | null
           tenant_id?: string
