@@ -32,6 +32,7 @@ import { invalidateAfterOfflinePayment } from '../lib/offlinePaymentCaches';
 import { PersonClassCards } from '@/features/class-cards/components/PersonClassCards';
 import { personPagePath } from '@/features/people/lib/personPagePath';
 import { PersonBookings } from './PersonBookings';
+import { DeleteClientDialog } from '@/features/people/components/DeleteClientDialog';
 
 interface StudentSlideOverProps {
   personId: string;
@@ -101,6 +102,7 @@ export function StudentSlideOver({
   const [contactSaving, setContactSaving] = useState(false);
   const [enrolModalOpen, setEnrolModalOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!highlightEngagementId) return;
@@ -231,9 +233,19 @@ export function StudentSlideOver({
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold text-gray-700">{t('pages.people.detail_title')}</h3>
                   {!isEditingPerson && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditingPerson(true)}>
-                      {t('common.edit')}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingPerson(true)}>
+                        {t('common.edit')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-700 hover:text-red-800"
+                        onClick={() => setDeleteOpen(true)}
+                      >
+                        {t('pages.people.delete_client.button')}
+                      </Button>
+                    </div>
                   )}
                 </div>
 
@@ -682,6 +694,16 @@ export function StudentSlideOver({
           )}
         </div>
       </div>
+
+      {person && (
+        <DeleteClientDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          personId={personId}
+          personName={person.name}
+          onDeleted={onClose}
+        />
+      )}
 
       {person && cancelTarget && (
         <CancelEnrolmentDialog
