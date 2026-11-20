@@ -6539,6 +6539,10 @@ export type Database = {
         Args: { p_reason?: string; p_tenant_id: string; p_token: string }
         Returns: Json
       }
+      delete_client: {
+        Args: { p_confirm?: boolean; p_person_id: string }
+        Returns: Json
+      }
       delete_job_photo_shop_photo: {
         Args: { p_photo_id: string }
         Returns: string

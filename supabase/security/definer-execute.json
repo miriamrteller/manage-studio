@@ -61,6 +61,7 @@
       "create_job_payment_requests",
       "custom_domain_enabled",
       "decline_age_review_engagement",
+      "delete_client",
       "delete_job_photo_shop_photo",
       "delete_shop_product",
       "deliver_job_photo_order",
