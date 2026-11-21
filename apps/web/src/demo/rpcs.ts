@@ -168,7 +168,12 @@ function financeSummary(ctx: DemoContext, start: string, end: string): Row {
 export const baseRpcs: Record<string, RpcHandler> = {
   get_tenant_config_by_subdomain: (_args, ctx) => tenantConfigRow(ctx),
 
-  get_tenant_features: (_args, ctx) => (rows(ctx, 'tenants')[0]?.enabled_features as string[]) ?? [],
+  // What the studio has, less what it switched off in Settings → Features.
+  get_tenant_features: (_args, ctx) => {
+    const tenant = rows(ctx, 'tenants')[0];
+    const off = new Set((tenant?.feature_optouts as string[] | undefined) ?? []);
+    return ((tenant?.enabled_features as string[] | undefined) ?? []).filter((key) => !off.has(key));
+  },
 
   /** Legal pages (/legal/:doc): the studio's legal details. */
   get_tenant_legal_profile: (args, ctx) => {

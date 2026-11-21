@@ -17,6 +17,7 @@ import {
 import { contractSignHref, demoContractSignPath, demoDepositRequest, formatIls } from './functions';
 import { showInvoice } from './invoice';
 import { sendToOutbox } from './outbox';
+import { photoOrderFollowsPayment } from './photoShopHandlers';
 import { insertJob, resolveClient } from './rpcs';
 import { canRead } from './rls';
 import { ADMIN_USER_ID, DEMO_INVOICE_HOST, TENANT_ID } from './seed';
@@ -140,6 +141,7 @@ function settleRequest(ctx: DemoContext, req: Row, method: string, provider: str
     invoice_url: `${DEMO_INVOICE_HOST}/${paymentId}`,
   });
   Object.assign(req, { status: 'paid', paid_at: ctx.now(), payment_id: paymentId, updated_at: ctx.now() });
+  photoOrderFollowsPayment(ctx, req);
   maybeGalleryReadyEmail(ctx, req.engagement_id as string);
   return paymentId;
 }
@@ -455,7 +457,84 @@ export const views: Record<string, ViewHandler> = {
       })),
 };
 
+/**
+ * Settings → Features: the demo studios' switchable features, with the set and
+ * description the real feature_definitions give them. Anything else they have
+ * is core (always on, not listed), as in private.feature_studio_switchable.
+ */
+const SWITCHABLE_FEATURES: Record<string, { description: string; set: string }> = {
+  'billing:delivery.gated': { description: 'Payment-gated file and gallery delivery', set: 'projects' },
+  'people:families.manage': { description: 'Family and account relationship management', set: 'families' },
+  'offerings:structure.configure': { description: 'Level, term, and session configuration', set: 'classes' },
+  'finance:reports.realtime': { description: 'Real-time profit & loss dashboard', set: 'extras' },
+};
+
+function adminStudio(ctx: DemoContext, tenantId: unknown, fn: string): Row {
+  requireAdmin(ctx, fn);
+  const tenant = rows(ctx, 'tenants').find((t) => t.id === tenantId);
+  if (!tenant) throw new DemoRpcError(`${fn}: not your studio`);
+  return tenant;
+}
+
 export const extraRpcs: Record<string, RpcHandler> = {
+  // Settings → Security: may this account switch its login to p_email?
+  login_email_status: (args, ctx) => {
+    if (!ctx.user) throw new DemoRpcError('Not authorized', '42501');
+    const email = String(args.p_email ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'invalid';
+    if (email === String(ctx.user.email ?? '').toLowerCase()) return 'same';
+    if (email.endsWith('@opalswift.com')) return 'reserved';
+    const taken = rows(ctx, 'user_profiles').some(
+      (p) => String(p.email ?? '').toLowerCase() === email && p.id !== ctx.user?.id,
+    );
+    return taken ? 'taken' : 'ok';
+  },
+
+  studio_feature_states: (args, ctx) => {
+    const tenant = adminStudio(ctx, args.p_tenant_id, 'studio_feature_states');
+    const off = new Set((tenant.feature_optouts as string[] | undefined) ?? []);
+    return ((tenant.enabled_features as string[] | undefined) ?? [])
+      .filter((key) => key in SWITCHABLE_FEATURES)
+      .sort()
+      .map((key) => ({
+        feature_key: key,
+        description: SWITCHABLE_FEATURES[key].description,
+        feature_set: SWITCHABLE_FEATURES[key].set,
+        is_on: !off.has(key),
+      }));
+  },
+
+  set_feature_optout: (args, ctx) => {
+    const tenant = adminStudio(ctx, args.p_tenant_id, 'set_feature_optout');
+    const key = String(args.p_feature_key);
+    if (!(key in SWITCHABLE_FEATURES)) throw new DemoRpcError(key.includes(':') ? 'core_feature' : 'unknown_feature', '23514');
+    const off = new Set((tenant.feature_optouts as string[] | undefined) ?? []);
+    if (args.p_off) off.add(key);
+    else off.delete(key);
+    tenant.feature_optouts = [...off];
+    return null;
+  },
+
+  // Settings → Your business. Null keeps a field as it is, like the real function.
+  set_business_profile: (args, ctx) => {
+    requireAdmin(ctx, 'set_business_profile');
+    const tenant = rows(ctx, 'tenants').find((t) => t.id === args.p_tenant_id);
+    if (!tenant) throw new DemoRpcError('set_business_profile: not your studio');
+    const flow = args.p_payment_flow;
+    if (flow != null && !['recurring', 'project', 'both'].includes(String(flow))) {
+      throw new DemoRpcError('set_business_profile: invalid payment flow', '22023');
+    }
+    if (flow != null) tenant.payment_flow = flow;
+    for (const [arg, column] of [
+      ['p_teaches_classes', 'teaches_classes'],
+      ['p_family_accounts', 'family_accounts'],
+      ['p_client_booking', 'client_booking'],
+    ] as const) {
+      if (args[arg] != null) tenant[column] = Boolean(args[arg]);
+    }
+    return null;
+  },
+
   search_enrolment_students: (args, ctx) => {
     if (!ctx.user) throw new DemoRpcError('Authentication required');
     if (!isAdmin(ctx)) throw new DemoRpcError('Forbidden');

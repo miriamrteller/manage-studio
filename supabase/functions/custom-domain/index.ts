@@ -11,14 +11,18 @@
  *   poll                           check pending domains inside their window, pause expired
  *                                  ones, delete never-activated ones after 30 days
  *
+ * Turnstile: a domain goes live only once it is on the sign-in bot check's
+ * widget (TURNSTILE_SITE_KEY + CLOUDFLARE_ACCOUNT_ID, same Cloudflare token).
+ *
  * Rules and their tests: _shared/custom-domain/service.ts. Only this function
  * writes tenant_custom_domains (service role). Feature switch: custom_domain_rollout.
  */
 import { z } from "npm:zod@4.6.7";
 import { corsHeaders, jsonResponse } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
-import { withMonitoring } from "../_shared/monitoring.ts";
+import { reportEdgeError, withMonitoring } from "../_shared/monitoring.ts";
 import { cloudflareSaas } from "../_shared/custom-domain/cloudflare.ts";
+import { DEFAULT_HOSTNAME_LIMIT, type TurnstileHostnames, turnstileHostnames } from "../_shared/custom-domain/turnstile.ts";
 import {
   checkDomain,
   type Deps,
@@ -74,6 +78,24 @@ async function dispatchRedirectSync(): Promise<void> {
   }
 }
 
+/**
+ * The widget client, or null when the app has no bot check (no site key).
+ * A site key without an account id can't be kept in step, so activation waits
+ * (every call fails) instead of going live with a broken sign-in.
+ */
+function buildTurnstile(token: string): TurnstileHostnames | null {
+  const siteKey = Deno.env.get("TURNSTILE_SITE_KEY")?.trim() ?? "";
+  if (!siteKey) return null;
+  const accountId = Deno.env.get("CLOUDFLARE_ACCOUNT_ID")?.trim() ?? "";
+  if (!accountId) {
+    console.error("[custom-domain] TURNSTILE_SITE_KEY is set but CLOUDFLARE_ACCOUNT_ID is not");
+    const missing = () => Promise.reject(new Error("CLOUDFLARE_ACCOUNT_ID not set"));
+    return { add: missing, remove: missing };
+  }
+  const limit = Number(Deno.env.get("TURNSTILE_HOSTNAME_LIMIT")) || DEFAULT_HOSTNAME_LIMIT;
+  return turnstileHostnames({ token, accountId, siteKey, limit });
+}
+
 function buildDeps(service: Service): Deps | null {
   const token = Deno.env.get("CLOUDFLARE_SAAS_API_TOKEN") ?? "";
   const zoneId = Deno.env.get("CLOUDFLARE_SAAS_ZONE_ID") ?? "";
@@ -127,6 +149,11 @@ function buildDeps(service: Service): Deps | null {
       return (data as DomainRow[] | null) ?? [];
     },
     activeDomainsChanged: dispatchRedirectSync,
+    turnstile: buildTurnstile(token),
+    async alert(message, tags) {
+      console.error(`[custom-domain] ${message}`, tags);
+      await reportEdgeError(new Error(message), "custom-domain", tags);
+    },
   };
 }
 

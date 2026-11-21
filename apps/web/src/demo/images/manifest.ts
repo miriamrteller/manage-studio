@@ -41,3 +41,12 @@ export const demoGallery: { src: string; alt: string }[] = [
   { src: pears, alt: 'Four pears on an olive-wood board' },
   { src: lenses, alt: 'Camera lenses seen from above, black and white' },
 ];
+
+/**
+ * Photo shop previews (watermarked, 480×360; see CREDITS.md). In real use the
+ * studio's photos come from its SmugMug gallery; the demo never calls SmugMug.
+ */
+const shopPreviews = import.meta.glob('./shop/shop-*.webp', { eager: true, import: 'default' }) as Record<string, string>;
+export const demoShopPreviews: string[] = Object.keys(shopPreviews)
+  .sort()
+  .map((k) => shopPreviews[k]);
