@@ -2076,11 +2076,11 @@ export type Database = {
                         referencedColumns: ["id"];
                     },
                     {
-                      foreignKeyName: "imported_income_payment_id_fkey";
-                      columns: ["payment_id"];
-                      isOneToOne: false;
-                      referencedRelation: "payments";
-                      referencedColumns: ["id"];
+                        foreignKeyName: "imported_income_payment_id_fkey";
+                        columns: ["payment_id"];
+                        isOneToOne: false;
+                        referencedRelation: "payments";
+                        referencedColumns: ["id"];
                     },
                     {
                         foreignKeyName: "imported_income_receipt_batch_id_fkey";
