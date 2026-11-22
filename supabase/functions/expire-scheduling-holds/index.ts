@@ -14,6 +14,8 @@
  *      cancel it herself.
  *   3. Holds with no booking: optional "slot released" email when the tenant
  *      has reminders enabled.
+ *   4. Studio shop: unpaid card orders older than 48 hours give their stock back
+ *      (release_stale_shop_orders).
  *
  * Security: invoked via pg_cron net.http_post with x-cron-secret header.
  * Refuses every request when CRON_SECRET is not set.
@@ -273,5 +275,12 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
     }
   }
 
-  return jsonResponse({ ok: true, remindersSent, expired, bookingsKept });
+  // 4. Studio shop: card orders still unpaid after 48 hours give their stock back
+  //    (owner, 22 Nov 2026). "Pay the studio directly" orders are left for the studio.
+  let shopOrdersReleased = 0;
+  const { data: released, error: releaseError } = await service.rpc("release_stale_shop_orders");
+  if (releaseError) console.error("[expire-scheduling-holds] shop orders release failed", releaseError.message);
+  else shopOrdersReleased = (released as number | null) ?? 0;
+
+  return jsonResponse({ ok: true, remindersSent, expired, bookingsKept, shopOrdersReleased });
 }));

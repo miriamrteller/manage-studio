@@ -3,6 +3,7 @@ import { FEATURES } from '@shared/index';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { StudioShopService, type ShopProductInput } from '../services/studioShopService';
 import { ShopOrdersService } from '../services/shopOrdersService';
+import { JobPaymentService } from '@/features/jobs/services/jobPaymentService';
 
 /** The studio shop is a beta: only studios the owner switched it on for. */
 export function useStudioShopEnabled(): boolean {
@@ -45,5 +46,10 @@ export function useStudioShopOrders() {
       await queryClient.invalidateQueries({ queryKey: productsKey });
     },
   });
-  return { orders, setStatus, cancel };
+  /** A buyer paying the studio directly: the studio records the payment it received (record-job-payment). */
+  const recordCash = useMutation({
+    mutationFn: (requestId: string) => JobPaymentService.recordManualPayment(requestId, 'cash'),
+    onSuccess: refresh,
+  });
+  return { orders, setStatus, cancel, recordCash };
 }

@@ -25,7 +25,16 @@ const state = vi.hoisted(() => ({
   orders: [] as ShopOrder[],
   setStatus: vi.fn(),
   cancel: vi.fn(),
+  recordCash: vi.fn(),
 }));
+
+vi.mock('@/features/jobs/services/jobPaymentService', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/services/jobPaymentService')>();
+  class FakeJobPaymentService extends real.JobPaymentService {
+    static override recordManualPayment = (id: string, method: string) => state.recordCash(id, method);
+  }
+  return { ...real, JobPaymentService: FakeJobPaymentService };
+});
 
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:studio_shop', isLoading: false }),
@@ -101,6 +110,7 @@ describe('StudioShopPage', () => {
     state.orders = [];
     state.setStatus.mockReset().mockResolvedValue({ emailed: true });
     state.cancel.mockReset().mockResolvedValue(undefined);
+    state.recordCash.mockReset().mockResolvedValue({ paymentId: 'pay1' });
   });
 
   it('is in the menu for studio admins of class studios with the feature', () => {
@@ -186,6 +196,22 @@ describe('StudioShopPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
     await waitFor(() => expect(state.cancel).toHaveBeenCalledWith('o2'));
     expect(screen.queryByRole('button', { name: 'Ready to collect' })).toBeNull();
+  });
+
+  it('shows a Shop page order with the buyer\'s details, and records a direct payment', async () => {
+    state.orders = [
+      order({
+        id: 'o3', status: 'awaiting_payment', person_name: 'Guest Buyer', ordered_by_name: null, guest: true,
+        pay_by_cash: true, contact_email: 'buyer@example.test', contact_phone: '050-0000000', request_id: 'r3',
+      }),
+    ];
+    renderInApp(<StudioShopPage />, { path: '/admin/shop/studio' });
+    const waiting = await screen.findByRole('region', { name: 'Waiting for payment' });
+    expect(waiting.textContent).toContain('Shop page order');
+    expect(waiting.textContent).toContain('Paying you directly');
+    expect(waiting.textContent).toContain('buyer@example.test · 050-0000000');
+    fireEvent.click(screen.getByRole('button', { name: 'Record cash payment' }));
+    await waitFor(() => expect(state.recordCash).toHaveBeenCalledWith('r3', 'cash'));
   });
 
   it('says when deleting an ordered item hid it instead', async () => {

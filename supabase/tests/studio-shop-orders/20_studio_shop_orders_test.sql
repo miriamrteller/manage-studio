@@ -249,6 +249,106 @@ SELECT pg_temp.expect_fail((SELECT bob_u FROM ids),
   format('SELECT place_shop_order(%L)', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('adult')))),
   'needs_enrolment', 'an order needs an active enrolment');
 
+-- 9b. Public Shop page: anyone orders, without a class. A new buyer becomes a client;
+-- the order is paid through the studio's one hidden shop record, which no list shows.
+DO $$
+DECLARE r JSONB; r2 JSONB; r3 JSONB; v_req job_payment_requests%ROWTYPE; v_eng engagements%ROWTYPE; n INT;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  r := place_guest_shop_order((SELECT studio FROM ids), '  Guest Buyer ', ' Guest@Example.TEST ', '050-0000000',
+         jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('small'))), false);
+  INSERT INTO t VALUES ('guest_order', (r->>'order_id')::uuid);
+  SELECT * INTO v_req FROM job_payment_requests WHERE shop_order_id = pg_temp.v('guest_order');
+  SELECT * INTO v_eng FROM engagements WHERE id = v_req.engagement_id;
+  IF r->>'pay_token' IS NULL OR v_eng.status <> 'shop'
+     OR (SELECT offering_type FROM offerings WHERE id = v_eng.offering_id) <> 'shop'
+     OR (SELECT email FROM people WHERE id = v_eng.person_id) <> 'guest@example.test'
+     OR (SELECT stock FROM shop_product_variants WHERE id = pg_temp.v('small')) <> 0 THEN
+    RAISE EXCEPTION 'FAIL guest order: % %', r, v_eng;
+  END IF;
+  IF NOT (SELECT guest AND NOT pay_by_cash AND contact_name = 'Guest Buyer' AND contact_phone = '050-0000000'
+            FROM shop_orders WHERE id = pg_temp.v('guest_order')) THEN
+    RAISE EXCEPTION 'FAIL guest contact details';
+  END IF;
+
+  -- Same email again (any case): same client, same hidden engagement, one shop offering.
+  r2 := place_guest_shop_order((SELECT studio FROM ids), 'Guest Buyer', 'guest@example.test', NULL,
+          jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('adult'))), true);
+  INSERT INTO t VALUES ('guest_cash', (r2->>'order_id')::uuid);
+  IF (SELECT engagement_id FROM job_payment_requests WHERE shop_order_id = pg_temp.v('guest_cash')) <> v_eng.id
+     OR (SELECT count(*) FROM offerings WHERE tenant_id = (SELECT studio FROM ids) AND offering_type = 'shop') <> 1
+     OR (SELECT count(*) FROM people WHERE tenant_id = (SELECT studio FROM ids) AND lower(email) = 'guest@example.test') <> 1
+     OR NOT (SELECT pay_by_cash FROM shop_orders WHERE id = pg_temp.v('guest_cash')) THEN
+    RAISE EXCEPTION 'FAIL second guest order';
+  END IF;
+
+  -- An existing client's email: the order joins that client.
+  r3 := place_guest_shop_order((SELECT studio FROM ids), 'Someone', (SELECT email FROM people WHERE id = (SELECT alice FROM ids)), NULL,
+          jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('adult'))), true);
+  IF (r3->>'person_id')::uuid <> (SELECT alice FROM ids) THEN RAISE EXCEPTION 'FAIL existing client: %', r3; END IF;
+  PERFORM cancel_shop_order((r3->>'order_id')::uuid);
+  RAISE NOTICE 'ok  guest orders: new or existing client, one hidden shop record, contact details kept';
+END $$;
+SELECT pg_temp.expect_fail((SELECT admin FROM ids), format('SELECT place_guest_shop_order(%L, %L, %L, NULL, %L, false)',
+  (SELECT studio FROM ids), 'X', 'not-an-email', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('adult'))))::text,
+  'email_required', 'a guest order needs an email');
+SELECT pg_temp.expect_fail((SELECT admin FROM ids), format('SELECT place_guest_shop_order(%L, %L, %L, NULL, %L, false)',
+  (SELECT studio FROM ids), ' ', 'a@b.test', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('adult'))))::text,
+  'name_required', 'a guest order needs a name');
+SELECT pg_temp.expect_fail((SELECT admin FROM ids), format('SELECT place_guest_shop_order(%L, %L, %L, NULL, %L, false)',
+  (SELECT studio FROM ids), 'X', 'a@b.test', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('small'))))::text,
+  'sold_out', 'a guest cannot order a sold-out size');
+
+-- 9c. The hidden records never show: not to the app (row policies), not in the
+-- studio's counts and lists, not to teachers or on public pages.
+DO $$
+DECLARE v_off UUID := (SELECT id FROM offerings WHERE tenant_id = (SELECT studio FROM ids) AND offering_type = 'shop');
+BEGIN
+  PERFORM pg_temp.as_user((SELECT admin FROM ids));
+  SET LOCAL ROLE authenticated;
+  IF EXISTS (SELECT 1 FROM offerings WHERE id = v_off) OR EXISTS (SELECT 1 FROM engagements WHERE status = 'shop') THEN
+    RAISE EXCEPTION 'FAIL the studio app can read the hidden shop records';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM offerings) OR NOT EXISTS (SELECT 1 FROM engagements) THEN
+    RAISE EXCEPTION 'FAIL the studio app cannot read its own classes (check is not testing anything)';
+  END IF;
+  RESET ROLE;
+  IF get_studio_shop_orders()::text NOT LIKE '%Guest Buyer%' OR get_studio_shop_orders()::text NOT LIKE '%050-0000000%' THEN
+    RAISE EXCEPTION 'FAIL studio does not see the guest order with contact details';
+  END IF;
+  IF COALESCE((SELECT string_agg(x::text, ' ') FROM search_enrolment_students('') x), '') LIKE '%' || v_off || '%' THEN
+    RAISE EXCEPTION 'FAIL the hidden shop offering shows as a class';
+  END IF;
+  IF EXISTS (SELECT 1 FROM get_public_offerings_by_subdomain((SELECT subdomain FROM tenants WHERE id = (SELECT studio FROM ids))) x
+              WHERE x::text LIKE '%' || v_off || '%')
+     OR EXISTS (SELECT 1 FROM get_bookable_offerings_by_subdomain((SELECT subdomain FROM tenants WHERE id = (SELECT studio FROM ids))) x
+              WHERE x::text LIKE '%' || v_off || '%') THEN
+    RAISE EXCEPTION 'FAIL the hidden shop offering is public';
+  END IF;
+  RAISE NOTICE 'ok  the hidden shop records never show';
+END $$;
+
+-- 9d. Unpaid card orders give their stock back after 48 hours; "pay the studio" orders wait.
+DO $$
+BEGIN
+  UPDATE shop_orders SET created_at = now() - interval '49 hours'
+   WHERE id IN (pg_temp.v('guest_order'), pg_temp.v('guest_cash'));
+  IF release_stale_shop_orders() <> 1 THEN RAISE EXCEPTION 'FAIL release count'; END IF;
+  IF (SELECT status FROM shop_orders WHERE id = pg_temp.v('guest_order')) <> 'cancelled'
+     OR (SELECT stock FROM shop_product_variants WHERE id = pg_temp.v('small')) <> 1
+     OR (SELECT status FROM job_payment_requests WHERE shop_order_id = pg_temp.v('guest_order')) <> 'cancelled'
+     OR (SELECT status FROM shop_orders WHERE id = pg_temp.v('guest_cash')) <> 'awaiting_payment' THEN
+    RAISE EXCEPTION 'FAIL 48-hour release';
+  END IF;
+  IF release_stale_shop_orders() <> 0 THEN RAISE EXCEPTION 'FAIL released twice'; END IF;
+  -- The studio records the direct payment on the order's request: the order is paid.
+  PERFORM pg_temp.pay(pg_temp.v('guest_cash'));
+  IF (SELECT status FROM shop_orders WHERE id = pg_temp.v('guest_cash')) <> 'paid' THEN
+    RAISE EXCEPTION 'FAIL direct payment does not mark the order paid';
+  END IF;
+  RAISE NOTICE 'ok  unpaid card orders released after 48 hours; direct-payment orders wait, then get paid';
+END $$;
+
 -- 10. Deleting an ordered item hides it and keeps the picture.
 DO $$
 BEGIN

@@ -1,7 +1,9 @@
 /**
  * Studio shop emails (plain announcement layout, no React):
  *  - to the studio when a family's order is paid: the items to get ready;
- *  - to the family when the studio marks the order ready to collect.
+ *  - to the family when the studio marks the order ready to collect;
+ *  - public Shop page: to the buyer when they order, and to the studio when the buyer
+ *    will pay the studio directly.
  * Each send is logged under a dunning_key, so a retry never sends twice.
  * A failed email never undoes the order or the payment.
  */
@@ -11,7 +13,14 @@ import { announcementAlreadySent, sendLoggedAnnouncement } from "../logged-annou
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
 import { TENANT_SENDER_COLUMNS } from "../notification-from.ts";
 import { tenantBaseUrl } from "../tenant-url.ts";
-import { buildFamilyShopOrderReadyEmail, buildStudioShopOrderPaidEmail, type Lang, type ShopEmailLine } from "./email-copy.ts";
+import {
+  buildBuyerShopOrderPlacedEmail,
+  buildFamilyShopOrderReadyEmail,
+  buildStudioShopOrderPaidEmail,
+  buildStudioShopOrderSentInEmail,
+  type Lang,
+  type ShopEmailLine,
+} from "./email-copy.ts";
 
 interface Loaded {
   order: {
@@ -23,6 +32,10 @@ interface Loaded {
     total_minor: number;
     currency: string;
     ready_at: string | null;
+    pay_by_cash: boolean;
+    contact_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
   };
   lines: ShopEmailLine[];
   tenant: Record<string, unknown>;
@@ -32,7 +45,7 @@ interface Loaded {
 async function load(service: SupabaseClient, orderId: string): Promise<Loaded | null> {
   const { data: order } = await service
     .from("shop_orders")
-    .select("id, tenant_id, person_id, ordered_by, status, total_minor, currency, ready_at")
+    .select("id, tenant_id, person_id, ordered_by, status, total_minor, currency, ready_at, pay_by_cash, contact_name, contact_email, contact_phone")
     .eq("id", orderId)
     .maybeSingle();
   if (!order) return null;
@@ -136,4 +149,67 @@ export async function notifyIfShopOrderPaid(service: SupabaseClient, requestId: 
   } catch (err) {
     console.error("[studio-shop] order email failed", err);
   }
+}
+
+const money = (l: Loaded) =>
+  formatCurrency(l.order.total_minor, l.order.currency, lang(l.tenant) === "he" ? "he-IL" : "en-GB");
+
+/** Public Shop page: thank the buyer, with the pay link for card orders. Safe to call more than once. */
+export async function notifyBuyerShopOrderPlaced(
+  service: SupabaseClient,
+  orderId: string,
+  payToken: string | null,
+): Promise<boolean> {
+  const l = await load(service, orderId);
+  if (!l || l.order.status !== "awaiting_payment" || !l.order.contact_email) return false;
+  const key = `shop_order:${orderId}:placed`;
+  if (await announcementAlreadySent(service, l.order.tenant_id, key)) return false;
+  const email = buildBuyerShopOrderPlacedEmail({
+    language: lang(l.tenant),
+    studioName: l.tenant.name as string,
+    buyerName: l.order.contact_name ?? l.forName,
+    totalFormatted: money(l),
+    lines: l.lines,
+    payByCash: l.order.pay_by_cash,
+    payUrl: !l.order.pay_by_cash && payToken ? `${baseUrl(l.tenant)}/pay/${payToken}` : null,
+  });
+  return sendLoggedAnnouncement(service, {
+    tenant: l.tenant,
+    tenantId: l.order.tenant_id,
+    to: l.order.contact_email,
+    personId: l.order.person_id,
+    key,
+    templateName: "shop_order_placed",
+    variables: { shop_order_id: orderId },
+    ...email,
+  });
+}
+
+/** Public Shop page: tell the studio about an order the buyer will pay directly. Safe to call more than once. */
+export async function notifyStudioShopOrderSentIn(service: SupabaseClient, orderId: string): Promise<boolean> {
+  const l = await load(service, orderId);
+  if (!l || !l.order.pay_by_cash || l.order.status !== "awaiting_payment") return false;
+  const key = `shop_order:${orderId}:sent_in`;
+  if (await announcementAlreadySent(service, l.order.tenant_id, key)) return false;
+  const to = String(l.tenant.contact_email ?? "").trim();
+  if (!to) return false;
+  const email = buildStudioShopOrderSentInEmail({
+    language: lang(l.tenant),
+    buyerName: l.order.contact_name ?? l.forName,
+    buyerEmail: l.order.contact_email ?? "",
+    buyerPhone: l.order.contact_phone,
+    totalFormatted: money(l),
+    lines: l.lines,
+    shopUrl: `${baseUrl(l.tenant)}/admin/shop/studio`,
+  });
+  return sendLoggedAnnouncement(service, {
+    tenant: l.tenant,
+    tenantId: l.order.tenant_id,
+    to,
+    personId: null,
+    key,
+    templateName: "shop_order_sent_in",
+    variables: { shop_order_id: orderId },
+    ...email,
+  });
 }
