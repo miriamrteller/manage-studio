@@ -2018,7 +2018,9 @@ export type Database = {
           job_name: string | null
           original_amount_minor: number | null
           original_currency: string | null
+          payer_email: string | null
           payer_name: string | null
+          payment_id: string | null
           payment_method: string | null
           receipt_batch_id: string | null
           receipt_book: string | null
@@ -2039,7 +2041,9 @@ export type Database = {
           job_name?: string | null
           original_amount_minor?: number | null
           original_currency?: string | null
+          payer_email?: string | null
           payer_name?: string | null
+          payment_id?: string | null
           payment_method?: string | null
           receipt_batch_id?: string | null
           receipt_book?: string | null
@@ -2060,7 +2064,9 @@ export type Database = {
           job_name?: string | null
           original_amount_minor?: number | null
           original_currency?: string | null
+          payer_email?: string | null
           payer_name?: string | null
+          payment_id?: string | null
           payment_method?: string | null
           receipt_batch_id?: string | null
           receipt_book?: string | null
@@ -2074,6 +2080,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "finance_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_income_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {
@@ -3480,6 +3493,7 @@ export type Database = {
           created_by: string | null
           currency: string
           description: string | null
+          document_name: string | null
           document_pdf_path: string | null
           document_stored_at: string | null
           document_type: string | null
@@ -3528,6 +3542,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          document_name?: string | null
           document_pdf_path?: string | null
           document_stored_at?: string | null
           document_type?: string | null
@@ -3576,6 +3591,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          document_name?: string | null
           document_pdf_path?: string | null
           document_stored_at?: string | null
           document_type?: string | null

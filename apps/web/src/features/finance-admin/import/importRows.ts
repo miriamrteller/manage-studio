@@ -12,6 +12,7 @@ export type FieldKey =
   | 'exchange_rate'
   | 'category'
   | 'name'
+  | 'email'
   | 'payment_method'
   | 'job_name'
   | 'description'
@@ -32,6 +33,7 @@ export const FIELD_KEYS: readonly FieldKey[] = [
   'exchange_rate',
   'category',
   'name',
+  'email',
   'payment_method',
   'job_name',
   'description',
@@ -74,6 +76,8 @@ export interface ImportRow {
   original_currency?: string;
   exchange_rate?: number;
   name?: string;
+  /** Payer email (income / receipt rows), so a receipt can be sent later in one click. */
+  email?: string;
   payment_method?: string;
   job_name?: string;
   description?: string;
@@ -157,6 +161,7 @@ const HEADER_RULES: Array<[FieldKey, RegExp]> = [
   ['receipt_number', /(receipt|invoice|קבלה|חשבונית)( ?(number|no|#|מספר|מס'?))?$|^(מספר|מס'?) (קבלה|חשבונית)$/],
   ['job_name', /^(job name|job|project|event|event name|שם עבודה|שם העבודה|עבודה|פרויקט|אירוע|שם אירוע)$/],
   ['category', /^(type|category|expense type|expense category|סוג|קטגוריה|סוג הוצאה|סיווג)$/],
+  ['email', /^(e ?mail|email address|e mail address|mail|מייל|אימייל|דוא"?ל|כתובת מייל|כתובת דוא"?ל)$/],
   ['payment_method', /(payment method|^method$|paid by|אמצעי תשלום|צורת תשלום|אופן תשלום)/],
   ['name', /^(recipient|recipient name|customer|customer name|client|client name|payer|paid by|supplier|vendor|name|שם|שם לקוח|לקוח|ספק|שם ספק|מקבל|משלם|שם המשלם)$/],
   ['description', /^(notes?|description|details|remarks|comments?|הערות|הערה|תיאור|פירוט)$/],
@@ -346,7 +351,7 @@ export function buildImportRows(
   const idx = {
     kind: col('kind'), date: col('date'), year: col('year'), month: col('month'),
     amount: col('amount'), original: col('original_amount'), currency: col('currency'),
-    rate: col('exchange_rate'), category: col('category'), name: col('name'),
+    rate: col('exchange_rate'), category: col('category'), name: col('name'), email: col('email'),
     method: col('payment_method'), job: col('job_name'), description: col('description'),
     book: col('receipt_book'), number: col('receipt_number'),
   };
@@ -426,6 +431,8 @@ export function buildImportRows(
     }
     const name = text(row, idx.name);
     if (name) out.name = name;
+    const email = text(row, idx.email)?.toLowerCase();
+    if (email && kind !== 'expense' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) out.email = email;
     const method = text(row, idx.method);
     if (method) out.payment_method = method;
     const job = text(row, idx.job);

@@ -22,6 +22,8 @@ interface PaymentRow {
   payment_method: string | null;
   paid_at: string | null;
   description: string | null;
+  /** Name for the document when it isn't the client's (imported payments). */
+  document_name: string | null;
 }
 
 function parsePaymentMethod(value: string | null): CanonicalDocumentInput["paymentMethod"] {
@@ -48,7 +50,7 @@ export async function buildCanonicalDocumentInput(
   const { data: payment, error: paymentError } = await service
     .from("payments")
     .select(
-      "id, tenant_id, person_id, billing_account_id, engagement_id, pretax_amount_minor, vat_amount_minor, total_amount_minor, currency, vat_rate, refunds_payment_id, payment_method, paid_at, description",
+      "id, tenant_id, person_id, billing_account_id, engagement_id, pretax_amount_minor, vat_amount_minor, total_amount_minor, currency, vat_rate, refunds_payment_id, payment_method, paid_at, description, document_name",
     )
     .eq("id", params.paymentId)
     .single();
@@ -134,7 +136,7 @@ export async function buildCanonicalDocumentInput(
     totalAmountMinor: row.total_amount_minor,
     vatRate: Number(row.vat_rate),
     payer: {
-      name: person.name as string,
+      name: row.document_name?.trim() || (person.name as string),
       email: (person.email as string | null) ?? undefined,
     },
     buyer,

@@ -29,6 +29,7 @@ import {
 } from './importRows';
 import { readSpreadsheet, SpreadsheetError, type SheetData } from './readSpreadsheet';
 import { FinanceImportService, type ImportResult } from './financeImportService';
+import { ImportedReceipts } from './ImportedReceipts';
 
 const SHEET_KINDS: SheetKind[] = ['mixed', 'expenses', 'income', 'receipts'];
 const NEW_CATEGORY = '__new__';
@@ -209,6 +210,7 @@ export function FinanceImport() {
     void queryClient.invalidateQueries({ queryKey: ['expense-categories', tenant?.id] });
     void queryClient.invalidateQueries({ queryKey: ['expenses', tenant?.id] });
     void queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
+    void queryClient.invalidateQueries({ queryKey: ['imported-income', tenant?.id] });
   }
 
   const setField = (index: number, field: FieldKey) => {
@@ -498,6 +500,8 @@ export function FinanceImport() {
           </div>
         </section>
       )}
+
+      <ImportedReceipts />
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">{t('finance.import.history_title')}</h2>
