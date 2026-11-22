@@ -4,7 +4,7 @@ import { isInternalLegalLink } from '@/lib/legalLinks';
 import { useLegalLinks } from '@/legal/useLegalLinks';
 import { cn } from '@/lib/utils';
 
-export type PrivacyNoticePurpose = 'enquiry' | 'booking' | 'payment' | 'enrolment' | 'signup' | 'quote';
+export type PrivacyNoticePurpose = 'enquiry' | 'booking' | 'payment' | 'enrolment' | 'signup' | 'quote' | 'order';
 
 /**
  * One-line privacy notice for any public form that collects personal details

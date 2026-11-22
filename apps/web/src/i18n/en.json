@@ -2246,7 +2246,7 @@
     },
     "orders": {
       "title": "Orders",
-      "none": "No orders yet. Families see your shown items in their account.",
+      "none": "No orders yet. Your shown items are on your Shop page and in families' accounts.",
       "group": {
         "paid": "Paid, to get ready",
         "ready": "Ready to collect",
@@ -2260,7 +2260,10 @@
       "mark_collected": "Collected",
       "cancel": "Cancel order",
       "cancel_confirm": "Cancel {{name}}'s unpaid order? Its items go back into stock.",
-      "not_emailed": "The order is marked ready, but we couldn't email the family (no email address on file). Please let them know."
+      "not_emailed": "The order is marked ready, but we couldn't email the family (no email address on file). Please let them know.",
+      "paying_direct": "Paying you directly",
+      "record_cash": "Record cash payment",
+      "from_shop_page": "Shop page order"
     }
   },
   "photo_shop_admin": {
@@ -4536,7 +4539,8 @@
       "enrolment": "We use these details to manage the enrolment, the class and payments.",
       "signup": "We use your details to create your account and send you service messages.",
       "quote": "We use your details to prepare your booking and contract.",
-      "policy_link": "Privacy policy"
+      "policy_link": "Privacy policy",
+      "order": "We use your details to manage your order and to email you about it."
     },
     "platform_gate": {
       "title": "Before you continue",
@@ -5211,17 +5215,45 @@
   },
   "public_shop": {
     "title": "Shop",
-    "intro": "Uniforms and items from {{studio}}. You collect them at the studio.",
-    "intro_no_name": "Uniforms and items from the studio. You collect them at the studio.",
+    "intro": "Uniforms and items from {{studio}}. Order here and collect at the studio.",
+    "intro_no_name": "Uniforms and items from the studio. Order here and collect at the studio.",
     "empty": "Nothing is on sale right now.",
-    "sizes": "Sizes",
     "sold_out": "Sold out",
     "size_sold_out": "{{size}} (sold out)",
-    "how_to_buy_signed_in": "To order, open your page. Your cart and payment are there.",
-    "open_my_page": "Order from my page",
-    "how_to_buy": "Families with a child in a class order online after signing in. Everyone else can buy at the studio.",
-    "sign_in": "Sign in to order",
-    "error": "The shop didn't load. Please try again."
+    "error": "The shop didn't load. Please try again.",
+    "size": "Size",
+    "quantity": "How many",
+    "add": "Add to cart",
+    "add_label": "Add {{name}} to cart",
+    "cart": "Your cart",
+    "remove": "Remove",
+    "remove_label": "Remove {{name}} from cart",
+    "total": "Total: {{total}}",
+    "your_details": "Your details",
+    "name": "Full name",
+    "email": "Email",
+    "phone": "Phone (optional)",
+    "how_to_pay": "How will you pay?",
+    "pay_card": "By card, now",
+    "pay_studio": "Pay the studio directly (cash, bank transfer or other)",
+    "card_note": "Card orders are kept for you for 48 hours.",
+    "collect_note": "You collect your order at the studio. We'll email you when it's ready.",
+    "place_order": "Place order",
+    "place_order_card": "Go to payment",
+    "sent_title": "Thank you, your order is in",
+    "sent_studio": "Pay the studio directly by cash, bank transfer or another way they accept. We've emailed you the details, and we'll email you again when it's ready to collect.",
+    "sent": "We've emailed you the details. We'll email you again when it's ready to collect.",
+    "shop_again": "Order something else",
+    "errors": {
+      "sold_out": "Some of these sold out just now. Please check the sizes and try again.",
+      "item_not_found": "One of these items isn't on sale any more. Please check your cart.",
+      "email_required": "Please enter a valid email address.",
+      "name_required": "Please enter your name.",
+      "captcha_failed": "The security check didn't pass. Please try again.",
+      "too_many": "Too many orders from this email just now. Please try again later.",
+      "switched_off": "The shop is closed right now.",
+      "failed": "Something went wrong. Please try again."
+    }
   },
   "clients_import": {
     "title": "Import from a spreadsheet",

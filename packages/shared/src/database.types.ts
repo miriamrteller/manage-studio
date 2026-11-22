@@ -4512,13 +4512,18 @@ export type Database = {
         Row: {
           cancelled_at: string | null
           collected_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           currency: string
           engagement_id: string
+          guest: boolean
           holds_stock: boolean
           id: string
           ordered_by: string | null
           paid_at: string | null
+          pay_by_cash: boolean
           person_id: string
           ready_at: string | null
           refunded_at: string | null
@@ -4529,13 +4534,18 @@ export type Database = {
         Insert: {
           cancelled_at?: string | null
           collected_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           currency?: string
           engagement_id: string
+          guest?: boolean
           holds_stock?: boolean
           id?: string
           ordered_by?: string | null
           paid_at?: string | null
+          pay_by_cash?: boolean
           person_id: string
           ready_at?: string | null
           refunded_at?: string | null
@@ -4546,13 +4556,18 @@ export type Database = {
         Update: {
           cancelled_at?: string | null
           collected_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           currency?: string
           engagement_id?: string
+          guest?: boolean
           holds_stock?: boolean
           id?: string
           ordered_by?: string | null
           paid_at?: string | null
+          pay_by_cash?: boolean
           person_id?: string
           ready_at?: string | null
           refunded_at?: string | null
@@ -7293,6 +7308,17 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      place_guest_shop_order: {
+        Args: {
+          p_email: string
+          p_lines: Json
+          p_name: string
+          p_pay_by_cash: boolean
+          p_phone: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       place_shop_order: {
         Args: { p_lines: Json; p_person_id?: string }
         Returns: Json
@@ -7451,6 +7477,7 @@ export type Database = {
         Args: { p_hold_id: string }
         Returns: undefined
       }
+      release_stale_shop_orders: { Args: never; Returns: number }
       replace_tenant_scheduling_hours: {
         Args: { p_hours: Json }
         Returns: undefined

@@ -224,7 +224,9 @@
       "set_tenant_smugmug_oauth_pending",
       "sign_waiver",
       "tenant_custom_domains_touch_and_audit",
-      "update_tenant_google_access_token"
+      "update_tenant_google_access_token",
+      "place_guest_shop_order",
+      "release_stale_shop_orders"
     ]
   },
   "internal": {
@@ -251,6 +253,9 @@
       "quote_job_offering_id",
       "quote_lines_json",
       "seed_expense_categories",
+      "shop_engagement_id",
+      "shop_offering_id",
+      "shop_order_create",
       "shop_order_lines_json",
       "shop_order_release_stock",
       "shop_orders_follow_request",

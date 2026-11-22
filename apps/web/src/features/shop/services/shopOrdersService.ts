@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { errorBodyFrom } from '@/features/crm/components/InquiryForm';
 
 /**
  * Studio shop orders (beta, flag billing:studio_shop). Families order in the portal and pay
@@ -60,7 +61,31 @@ export interface ShopOrder {
   refunded: boolean;
   /** Families only: the pay link token while the order waits for payment. */
   pay_token?: string | null;
+  /** Studio only: the buyer pays the studio directly (cash, bank transfer or other). */
+  pay_by_cash?: boolean;
+  /** Studio only: placed on the public Shop page. */
+  guest?: boolean;
+  /** Studio only: how to reach the buyer. */
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  /** Studio only: the open payment request, to record a direct payment against. */
+  request_id?: string | null;
   lines: ShopOrderLine[];
+}
+
+export type GuestPayBy = 'card' | 'studio';
+
+export interface GuestCheckoutInput {
+  subdomain: string;
+  name: string;
+  email: string;
+  phone: string;
+  lines: CartLine[];
+  payBy: GuestPayBy;
+  captchaToken: string | null;
+  /** Honeypot: always empty for people. */
+  website: string;
+  elapsedMs: number;
 }
 
 export interface CartLine {
@@ -114,6 +139,33 @@ export const ShopOrdersService = {
     if (error) throw new Error(`place_shop_order: ${shopOrderErrorCode(error)}`);
     const r = data as { order_id: string; pay_token: string | null };
     return { orderId: r.order_id, payToken: r.pay_token };
+  },
+
+  /**
+   * The public Shop page's checkout (anyone). Card: returns the pay link token. Paying the
+   * studio directly: the order is sent in. Errors come back as "place_shop_order: <code>".
+   */
+  async guestCheckout(input: GuestCheckoutInput): Promise<{ orderId: string | null; payToken: string | null }> {
+    const { data, error } = await supabase.functions.invoke('studio-shop-checkout', {
+      body: {
+        subdomain: input.subdomain,
+        name: input.name.trim(),
+        email: input.email.trim(),
+        phone: input.phone.trim() || null,
+        lines: input.lines.map((l) => ({ variant_id: l.variantId, quantity: l.quantity })),
+        payBy: input.payBy,
+        captchaToken: input.captchaToken,
+        website: input.website,
+        elapsedMs: input.elapsedMs,
+      },
+    });
+    const body = (data ?? {}) as { ok?: boolean; orderId?: string | null; payToken?: string | null; error?: string };
+    if (error || !body.ok) {
+      const errBody = (await errorBodyFrom(error, data)) as { error?: unknown } | null;
+      const code = typeof errBody?.error === 'string' && /^\w+$/.test(errBody.error) ? errBody.error : 'failed';
+      throw new Error(`place_shop_order: ${code}`);
+    }
+    return { orderId: body.orderId ?? null, payToken: body.payToken ?? null };
   },
 
   async cancelOrder(orderId: string): Promise<void> {

@@ -429,6 +429,12 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/studio-shop-order/index.ts"
 
+[functions.studio-shop-checkout]
+enabled = true
+# Public Shop page checkout: anyone can buy. Turnstile captcha, honeypot and rate limit checked in-function.
+verify_jwt = false
+entrypoint = "./functions/studio-shop-checkout/index.ts"
+
 [functions.verify-takbull-credentials]
 enabled = true
 verify_jwt = true
