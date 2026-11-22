@@ -66,7 +66,7 @@ export function InquiryForm({
   }, [invite.prefill]);
   // The class example only for studios that teach classes; a general one for everyone else.
   const teachesClasses = (tenant?.profile?.teachesClasses ?? true) && tenant?.vertical !== 'photographer';
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam' | 'own_email'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam' | 'own_email' | 'email'>('idle');
 
   // Embedded on a studio's own website: once sent, show the thank-you at the
   // top and tell the host page, so it can scroll the form back into view
@@ -90,6 +90,11 @@ export function InquiryForm({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || status === 'sending') return;
+    // Email is required so the studio can always reply (phone stays optional).
+    if (!looksLikeEmail(email)) {
+      setStatus('email');
+      return;
+    }
     const checked = validateLeadAnswers(questions, answers);
     setInvalid(checked.invalid);
     if (!checked.ok) {
@@ -106,7 +111,7 @@ export function InquiryForm({
         body: {
           tenantSubdomain: resolveTenantSubdomain(),
           name: name.trim(),
-          email: email.trim() || null,
+          email: email.trim(),
           phone: phone.trim() || null,
           message: message.trim() || null,
           src,
@@ -130,7 +135,9 @@ export function InquiryForm({
           setStatus('answers');
           return;
         }
-        setStatus(refusedAsSpam(body) ? 'spam' : refusedAsOwnEmail(body) ? 'own_email' : 'error');
+        setStatus(
+          refusedAsSpam(body) ? 'spam' : refusedAsOwnEmail(body) ? 'own_email' : refusedForEmail(body) ? 'email' : 'error',
+        );
         return;
       }
       setStatus('sent');
@@ -184,11 +191,14 @@ export function InquiryForm({
         </div>
         <div>
           <label htmlFor="inquire-email" className="block text-sm font-medium mb-1">
-            {t('pages.crm.inquire.email')}
+            {t('pages.crm.inquire.email')} *
           </label>
           <input
             id="inquire-email"
             type="email"
+            required
+            aria-invalid={status === 'email' || undefined}
+            aria-describedby={status === 'email' ? 'inquire-email-error' : undefined}
             autoComplete="email"
             className="w-full border rounded px-3 py-2"
             value={email}
@@ -247,6 +257,11 @@ export function InquiryForm({
         {status === 'error' && (
           <div className="alert-error" role="alert">
             {t('pages.crm.inquire.error')}
+          </div>
+        )}
+        {status === 'email' && (
+          <div id="inquire-email-error" className="alert-error" role="alert">
+            {t('pages.crm.inquire.email_required_error')}
           </div>
         )}
         {status === 'spam' && (
@@ -332,6 +347,17 @@ function invalidFieldsFrom(body: unknown): string[] {
 /** The server's spam check refused it (422 looks_like_spam). */
 export function refusedAsSpam(body: unknown): boolean {
   return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'looks_like_spam';
+}
+
+/** A non-empty address with one @ and a dot after it (the server checks the same way). */
+export function looksLikeEmail(raw: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim());
+}
+
+/** The server refused a missing or invalid email (400 email_required / email_invalid). */
+export function refusedForEmail(body: unknown): boolean {
+  const code = body && typeof body === 'object' ? (body as { error?: unknown }).error : null;
+  return code === 'email_required' || code === 'email_invalid';
 }
 
 /** Sent with the studio's own email (422 own_studio_email): someone at the studio trying the form. */

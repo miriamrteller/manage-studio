@@ -189,6 +189,7 @@ describe('public form with questions', () => {
     wrap(<InquiryForm />);
     const child = await screen.findByLabelText(/Child's name/);
     fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: 'dana@example.com' } });
     fireEvent.change(child, { target: { value: 'Noa' } });
     fireEvent.change(screen.getByLabelText(/Class or level of interest/), { target: { value: 'off-1' } });
     fireEvent.click(screen.getByLabelText('Monday'));
@@ -204,6 +205,7 @@ describe('public form with questions', () => {
     wrap(<InquiryForm />);
     const child = await screen.findByLabelText(/Child's name/);
     fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: 'dana@example.com' } });
     fireEvent.submit(child.closest('form')!);
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'pages.crm.inquire.answers_error');
     expect(child.getAttribute('aria-invalid')).toBe('true');
@@ -219,6 +221,7 @@ describe('public form with questions', () => {
     wrap(<InquiryForm />);
     const select = await screen.findByLabelText(/Previous experience/);
     fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: 'dana@example.com' } });
     fireEvent.change(select, { target: { value: 'some' } });
     fireEvent.click(screen.getByRole('button', { name: 'pages.crm.inquire.submit' }));
     await waitFor(() => expect(select.getAttribute('aria-invalid')).toBe('true'));
@@ -227,6 +230,7 @@ describe('public form with questions', () => {
   it('with no questions saved, the form is unchanged and sends no answers', async () => {
     wrap(<InquiryForm />);
     fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: 'dana@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'pages.crm.inquire.submit' }));
     await screen.findByRole('status');
     const body = (h.invoke.mock.calls[0] as unknown as [string, { body: Record<string, unknown> }])[1].body;

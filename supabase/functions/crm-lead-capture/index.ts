@@ -16,7 +16,7 @@ import { getTenantEmailConfig } from "../_shared/tenant-email.ts";
 import { resolveTenantSender } from "../_shared/notification-from.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { cleanInviteToken, inviteTokenHash } from "../_shared/lead-form-invite.ts";
-import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
+import { leadCaptchaPasses, leadEmailProblem, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
 import { assessLeadSpam, filledTooFast } from "../_shared/crm-contract/lead-spam.ts";
 import { enquiryUsesStudioEmail } from "../_shared/crm-contract/studio-own-email.ts";
 import {
@@ -65,7 +65,8 @@ import {
 const payloadSchema = z.object({
   tenantSubdomain: z.string().min(1).max(63),
   name: z.string().min(1).max(200),
-  email: z.string().email().max(320).nullable().optional(),
+  /** Required (checked below with a clear refusal code); nullable so a missing one gets email_required, not a generic 400. */
+  email: z.string().max(320).nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
   message: z.string().max(5000).nullable().optional(),
   interest: z.string().max(200).nullable().optional(),
@@ -195,6 +196,12 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
   // Honeypot and time trap: pretend success, write nothing.
   if (nonEmpty(payload.website) || filledTooFast(payload.elapsedMs)) {
     return json({ outcome: "created" });
+  }
+
+  // Email is required so the studio can always reply (phone stays optional).
+  const emailProblem = leadEmailProblem(payload.email);
+  if (emailProblem) {
+    return json({ error: emailProblem }, 400);
   }
 
   const spamCheck = assessLeadSpam({ name: payload.name, email: payload.email, message: payload.message });
