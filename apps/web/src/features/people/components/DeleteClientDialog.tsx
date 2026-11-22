@@ -72,7 +72,14 @@ export function DeleteClientDialog({ open, onOpenChange, personId, personName, o
       }
       onOpenChange(false);
       onDeleted();
-      void refreshLists();
+      // The client is gone: drop their page's cached queries instead of refetching them.
+      // A refetch of the deleted person fails (406 "no rows") and was reported as an error.
+      await queryClient.cancelQueries({ predicate: (query) => query.queryKey.includes(personId) });
+      queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(personId) });
+      if (tenant) {
+        void queryClient.invalidateQueries({ queryKey: ['students', tenant.id] });
+        void queryClient.invalidateQueries({ queryKey: ['people', tenant.id] });
+      }
     } catch {
       setFailed(true);
     } finally {
