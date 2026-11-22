@@ -935,6 +935,7 @@
         "answer_required": "Please answer this question.",
         "answer_invalid": "Please check this answer.",
         "spam_error": "This looks like it was typed by mistake. Please check your name and message, then send again.",
+        "email_required_error": "Please add a valid email address so the studio can reply to you.",
         "own_email_error": "This email address belongs to the studio, so it isn't saved as an enquiry. Please send it from a different email address.",
         "powered_by": "Powered by OpalSwift",
         "powered_by_new_tab": "(opens in a new tab)",

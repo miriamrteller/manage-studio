@@ -6,6 +6,7 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   CAMPAIGN_MAX_LENGTH,
   leadCaptchaPasses,
+  leadEmailProblem,
   normaliseCampaign,
 } from "../_shared/crm-contract/lead-capture-guard.ts";
 
@@ -45,4 +46,13 @@ Deno.test("campaign: trimmed, whitespace collapsed, control chars removed, empty
   assertEquals(normaliseCampaign(null), null);
   assertEquals(normaliseCampaign(undefined), null);
   assertEquals(normaliseCampaign("x".repeat(500))?.length, CAMPAIGN_MAX_LENGTH);
+});
+
+Deno.test("email is required and must look like an address", () => {
+  assertEquals(leadEmailProblem(null), "email_required");
+  assertEquals(leadEmailProblem(undefined), "email_required");
+  assertEquals(leadEmailProblem("   "), "email_required");
+  assertEquals(leadEmailProblem("not-an-email"), "email_invalid");
+  assertEquals(leadEmailProblem("a@b"), "email_invalid");
+  assertEquals(leadEmailProblem(" parent@example.com "), null);
 });

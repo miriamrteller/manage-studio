@@ -36,3 +36,15 @@ export function normaliseCampaign(raw: string | null | undefined): string | null
   const cleaned = raw.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
   return cleaned ? cleaned.slice(0, CAMPAIGN_MAX_LENGTH) : null;
 }
+
+/**
+ * Email is required on the public enquiry form (owner, 22 Nov 2026), so the
+ * studio can always reply. Phone stays optional. Returns the refusal code, or
+ * null when the address is fine.
+ */
+export function leadEmailProblem(raw: string | null | undefined): "email_required" | "email_invalid" | null {
+  const email = raw?.trim() ?? "";
+  if (!email) return "email_required";
+  if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "email_invalid";
+  return null;
+}
