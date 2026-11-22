@@ -232,13 +232,13 @@ describe('admin menu: one flat list of areas, pages are tabs', () => {
 
   it('other roles are unchanged: parents and students keep Browse and their own page', () => {
     const parent = buildNavSections(navigationConfig, ['account_holder']).flatMap((s) => s.items.map((i) => i.path));
-    expect(parent).toEqual(['/', '/classes', '/book', '/dashboard/portal']);
+    expect(parent).toEqual(['/', '/classes', '/book', '/shop', '/dashboard/portal']);
     const student = buildNavSections(navigationConfig, ['student']).flatMap((s) => s.items.map((i) => i.path));
-    expect(student).toEqual(['/', '/classes', '/book', '/dashboard/student']);
+    expect(student).toEqual(['/', '/classes', '/book', '/shop', '/dashboard/student']);
   });
 
-  it('the public menu (signed out) is unchanged', () => {
+  it('the public menu (signed out) adds only the Shop page', () => {
     const sections = buildNavSections(publicNavigationConfig, []);
-    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/', '/classes', '/book', '/login', '/signup']);
+    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/', '/classes', '/book', '/shop', '/login', '/signup']);
   });
 });

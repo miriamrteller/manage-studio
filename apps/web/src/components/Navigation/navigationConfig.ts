@@ -155,6 +155,15 @@ export const navigationConfig: NavItem[] = [
     featureKey: FEATURES.scheduling.clientBooking,
     disableWhenBookingOff: true,
   },
+  {
+    // The studio shop's public page (beta): what the studio sells.
+    path: '/shop',
+    labelKey: 'nav.shop',
+    requiredRoles: [],
+    sectionKey: 'browse',
+    needs: 'teaches_classes',
+    featureKey: FEATURES.billing.studioShop,
+  },
   // The studio admin's working pages: one flat menu of areas (no group to open). Each `area` is
   // one menu line; the pages in it are the tabs along the top of that area (AreaTabs). The menu
   // line opens the area's first visible page. Order = the order the work flows.
@@ -463,6 +472,15 @@ export const publicNavigationConfig: NavItem[] = [
     sectionKey: 'browse',
     featureKey: FEATURES.scheduling.clientBooking,
     disableWhenBookingOff: true,
+  },
+  {
+    // The studio shop's public page (beta): what the studio sells.
+    path: '/shop',
+    labelKey: 'nav.shop',
+    requiredRoles: [],
+    sectionKey: 'browse',
+    needs: 'teaches_classes',
+    featureKey: FEATURES.billing.studioShop,
   },
   {
     path: '/login',

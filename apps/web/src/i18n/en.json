@@ -5207,6 +5207,20 @@
       "failed": "Something went wrong. Please try again."
     }
   },
+  "public_shop": {
+    "title": "Shop",
+    "intro": "Uniforms and items from {{studio}}. You collect them at the studio.",
+    "intro_no_name": "Uniforms and items from the studio. You collect them at the studio.",
+    "empty": "Nothing is on sale right now.",
+    "sizes": "Sizes",
+    "sold_out": "Sold out",
+    "size_sold_out": "{{size}} (sold out)",
+    "how_to_buy_signed_in": "To order, open your page. Your cart and payment are there.",
+    "open_my_page": "Order from my page",
+    "how_to_buy": "Families with a child in a class order online after signing in. Everyone else can buy at the studio.",
+    "sign_in": "Sign in to order",
+    "error": "The shop didn't load. Please try again."
+  },
   "clients_import": {
     "title": "Import from a spreadsheet",
     "back": "Back to {{noun}}",

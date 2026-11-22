@@ -97,7 +97,7 @@ describe('sign up on the platform host', () => {
 });
 
 describe('studio-only pages on the platform host', () => {
-  it.each(['/classes', '/book', '/book/abc', '/enrol', '/inquire', '/f/trial'])('%s shows a notice, not a spinner', (path) => {
+  it.each(['/classes', '/book', '/book/abc', '/shop', '/enrol', '/inquire', '/f/trial'])('%s shows a notice, not a spinner', (path) => {
     const { unmount } = renderGate(path);
     expect(screen.getByRole('heading', { name: 'This page belongs to a studio' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Go to OpalSwift home' })).toHaveAttribute('href', '/');
