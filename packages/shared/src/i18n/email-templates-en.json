@@ -293,7 +293,7 @@
     "body": "Your photos are ready! Open your gallery to choose your photos.",
     "cta": "Open your gallery",
     "closing": "We hope you love them.",
-    "shop_body": "To order your photos:\n1. Press \"Open your photo shop\" below. It signs you in for {days} days.\n2. Press \"Choose\" under each photo you want.\n3. Press \"Send order\".\n4. Pay the studio directly by cash, bank transfer or another way they accept.\nThe studio then prepares your photos and emails you a download link.",
+    "shop_body": "To order your photos:\n1. Press \"Open your gallery\" above. It signs you in for {days} days.\n2. Press \"Choose\" under each photo you want.\n3. Press \"Send order\".\n4. Pay the studio directly by cash, bank transfer or another way they accept.\nThe studio then prepares your photos and emails you a download link.",
     "shop_cta": "Open your photo shop"
   },
   "shoot_cancelled": {

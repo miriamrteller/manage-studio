@@ -102,3 +102,38 @@ export function cleanPhotoAlt(raw: unknown, fallback: string): string {
     : "";
   return text || fallback;
 }
+
+/** The gallery email's wording this needs (gallery_ready strings, already in the email's language). */
+export interface GalleryEmailWording {
+  body: string;
+  closing: string;
+  shop_body: string;
+}
+
+/**
+ * Everything the gallery email is built from (send-shoot-gallery). ONE button: with a
+ * photo shop it opens the shop link (the order steps go under it, with no button of
+ * their own), never the SmugMug address (owner, 22 Nov 2026). Without a shop it opens
+ * the gallery link the studio set.
+ */
+export function galleryEmailVariables(input: {
+  recipientName: string;
+  galleryUrl: string | null;
+  shopUrl: string | null;
+  linkDays: number;
+  wording: GalleryEmailWording;
+  message: string | null;
+  photo: { url: string; alt: string } | null;
+}): Record<string, string> | null {
+  const button = input.shopUrl ?? input.galleryUrl;
+  if (!button) return null;
+  return {
+    recipientName: input.recipientName,
+    galleryUrl: button,
+    ...(input.shopUrl
+      ? { noteBody: input.wording.shop_body.split("{days}").join(String(input.linkDays)), noteBefore: input.wording.closing }
+      : {}),
+    ...(input.message ? { customBody: input.message, customBodyReplaces: input.wording.body } : {}),
+    ...(input.photo ? { photoUrl: input.photo.url, photoAlt: input.photo.alt, photoAfter: input.wording.body } : {}),
+  };
+}

@@ -7,6 +7,7 @@ import {
   cleanGalleryMessage,
   cleanPhotoAlt,
   galleryEmailPhotoUrl,
+  galleryEmailVariables,
   GALLERY_MESSAGE_MAX,
   planGallerySend,
   type SendGalleryShoot,
@@ -113,6 +114,35 @@ describe('gallery-ready email with the photo shop button', () => {
     expect(shopAt).toBeGreaterThan(0);
     expect(shopAt).toBeLessThan(html.indexOf(strings.closing));
     expect(html).toContain(strings.shop_cta);
+  });
+
+  it.each([
+    ['en', en.gallery_ready],
+    ['he', he.gallery_ready],
+  ] as const)('%s: Send gallery with a shop: ONE button, to the shop, steps above the closing line, no SmugMug', (language, strings) => {
+    const shop = 'https://studio.opalswift.com/shop/token';
+    const { html } = renderPhotographerEmail({
+      key: 'gallery_ready',
+      language,
+      schoolName: 'Studio',
+      primaryColor: '#2563eb',
+      accentColor: '#dc2626',
+      // What send-shoot-gallery passes when the shoot has a photo shop.
+      variables: {
+        recipientName: 'Pat',
+        galleryUrl: shop,
+        noteBody: strings.shop_body.replace('{days}', '3'),
+        noteBefore: strings.closing,
+      },
+    });
+    const buttons = [...html.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1])
+      .filter((href) => !href.includes('/preferences'));
+    expect(buttons).toEqual([shop]);
+    expect(html).not.toContain('smugmug');
+    expect(html).not.toContain(strings.shop_cta);
+    const stepsAt = html.indexOf(strings.shop_body.split('\n')[0].replace(/"/g, '&quot;'));
+    expect(stepsAt).toBeGreaterThan(html.indexOf(shop));
+    expect(stepsAt).toBeLessThan(html.indexOf(strings.closing));
   });
 
   it('without a shop link the email is unchanged', () => {
@@ -300,5 +330,65 @@ describe('ShootGalleryService.send', () => {
   it('throws when the function fails', async () => {
     invoke.mockResolvedValue({ data: null, error: new Error('boom') });
     await expect(ShootGalleryService.send(['e1'])).rejects.toThrow();
+  });
+});
+
+describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)', () => {
+  const smugmug = 'https://studio.smugmug.com/Pat';
+  const shop = 'https://studio.opalswift.com/shop/token123';
+  const photo = { url: 'https://ref.supabase.co/storage/v1/object/public/tenant-assets/t1/gallery-email/1-a.jpg', alt: 'Park' };
+  const cases = [
+    ['plain', null, null],
+    ['her own text', 'Lovely to see you!', null],
+    ['a photo', null, photo],
+    ['text and a photo', 'Lovely to see you!', photo],
+  ] as const;
+
+  for (const [language, strings] of [['en', en.gallery_ready], ['he', he.gallery_ready]] as const) {
+    for (const [label, message, withPhoto] of cases) {
+      it(`${language}, with a shop, ${label}`, () => {
+        const variables = galleryEmailVariables({
+          recipientName: 'Pat',
+          galleryUrl: smugmug,
+          shopUrl: shop,
+          linkDays: 3,
+          wording: strings,
+          message,
+          photo: withPhoto,
+        });
+        expect(variables).not.toBeNull();
+        const { html, subject } = renderPhotographerEmail({
+          key: 'gallery_ready',
+          language,
+          schoolName: 'Studio',
+          primaryColor: '#2563eb',
+          accentColor: '#dc2626',
+          variables: variables!,
+        });
+        const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]).filter((h) => !h.includes('/preferences'));
+        expect(links).toEqual([shop]);
+        expect(html.toLowerCase()).not.toContain('smugmug');
+        expect(subject.toLowerCase()).not.toContain('smugmug');
+        expect(html).toContain(strings.cta);
+        expect(html).not.toContain(strings.shop_cta);
+        if (withPhoto) expect(html).toContain(`src="${photo.url}"`);
+        if (message) expect(html).toContain(message);
+      });
+    }
+  }
+
+  it('without a photo shop the one button opens the gallery link the studio set', () => {
+    const variables = galleryEmailVariables({
+      recipientName: 'Pat', galleryUrl: 'https://pixies.test/g', shopUrl: null, linkDays: 3,
+      wording: en.gallery_ready, message: null, photo: null,
+    });
+    expect(variables).toEqual({ recipientName: 'Pat', galleryUrl: 'https://pixies.test/g' });
+  });
+
+  it('nothing to link to: no email', () => {
+    expect(galleryEmailVariables({
+      recipientName: 'Pat', galleryUrl: null, shopUrl: null, linkDays: 3,
+      wording: en.gallery_ready, message: null, photo: null,
+    })).toBeNull();
   });
 });

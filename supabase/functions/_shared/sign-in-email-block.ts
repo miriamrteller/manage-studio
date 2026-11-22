@@ -11,9 +11,14 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** A plain-text note paragraph (line breaks kept), styled like the sign-in block's text. */
+export function noteParagraphHtml(body: string): string {
+  return `<p style="font-size:14px;line-height:1.6;color:#374151;margin:24px 0 12px">${escapeHtml(body).split("\n").join("<br>")}</p>`;
+}
+
 export function signInBlockHtml(params: { body: string; cta: string; url: string; color: string }): string {
   const color = escapeHtml(params.color);
-  return `<p style="font-size:14px;line-height:1.6;color:#374151;margin:24px 0 12px">${escapeHtml(params.body).split("\n").join("<br>")}</p>`
+  return noteParagraphHtml(params.body)
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;margin:0 0 16px"><tr>`
     + `<td bgcolor="${color}" style="background-color:${color};border-radius:6px;">`
     + `<a href="${escapeHtml(params.url)}" style="display:inline-block;padding:12px 28px;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:15px;">${escapeHtml(params.cta)}</a>`

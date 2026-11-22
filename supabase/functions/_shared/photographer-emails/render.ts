@@ -13,6 +13,7 @@ import {
   insertAfterParagraph,
   insertBeforeParagraph,
   isHttpLink,
+  noteParagraphHtml,
   photoBlockHtml,
   replaceParagraphText,
   signInBlockHtml,
@@ -47,6 +48,16 @@ function withCustomBody(html: string, variables: Record<string, string>): string
   const { customBody, customBodyReplaces } = variables;
   if (!customBody || !customBodyReplaces) return html;
   return replaceParagraphText(html, customBodyReplaces, customBody);
+}
+
+/**
+ * A plain note above a line (noteBody, noteBefore = that line's text), no button. Send
+ * gallery puts the photo shop steps there: the email's one button already opens the shop.
+ */
+function withNote(html: string, variables: Record<string, string>): string {
+  const { noteBody, noteBefore } = variables;
+  if (!noteBody || !noteBefore) return html;
+  return insertBeforeParagraph(html, noteBefore, noteParagraphHtml(noteBody));
 }
 
 /**
@@ -117,7 +128,12 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     variables: input.variables,
   });
   const html = applyEmailBrand(
-    withSignInBlock(input.key, withCustomBody(withPhoto(shellHtml, input.variables), input.variables), input.variables, input.primaryColor),
+    withSignInBlock(
+      input.key,
+      withNote(withCustomBody(withPhoto(shellHtml, input.variables), input.variables), input.variables),
+      input.variables,
+      input.primaryColor,
+    ),
     input.primaryColor,
     input.accentColor,
   );

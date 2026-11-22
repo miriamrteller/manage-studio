@@ -6,7 +6,7 @@
  * ?tab= picks a tab. EN + HE.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { ClientPortal } from '@/features/jobs/components/ClientPortal';
 import type { ClientPortalData } from '@/features/jobs/hooks/useClientPortal';
 import type { ClientPhotoGallery } from '@/features/jobs/services/clientPhotoShopService';
@@ -137,6 +137,22 @@ describe('ClientPortal tabs', () => {
     renderInApp(<ClientPortal />, { path: '/dashboard/portal' });
     expect(await screen.findByRole('tab', { name: 'My shoots' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByRole('tab', { name: 'Photo shop' })).toBeNull();
+  });
+
+  it('the gallery email link (?tab=shop&shoot=) opens that shoot\'s gallery first and scrolls to it', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const second = { ...data().shoots[0], engagementId: 'e2', location: 'Old Town' };
+    state.data = { ...data(), shoots: [...data().shoots, second] };
+    const { container } = renderInApp(<ClientPortal />, {
+      path: '/dashboard/portal',
+      initialEntry: '/dashboard/portal?tab=shop&shoot=e2',
+    });
+    expect(await screen.findByRole('tab', { name: 'Photo shop' })).toHaveAttribute('aria-selected', 'true');
+    const order = [...container.querySelectorAll('[id^="client-photo-shop-"]')].map((el) => el.id);
+    expect(order).toEqual(['client-photo-shop-e2', 'client-photo-shop-e1']);
+    await waitFor(() => expect(scroll).toHaveBeenCalled());
+    expect(scroll.mock.contexts[0]).toBe(container.querySelector('#client-photo-shop-e2'));
   });
 
   it('?tab= opens that tab', async () => {

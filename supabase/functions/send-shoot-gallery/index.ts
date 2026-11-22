@@ -16,9 +16,11 @@
  *   attachment.
  * Response: { sent, skipped, failed, results: [{ engagementId, outcome }] }
  *
- * For each shoot it sends the client the gallery-ready email now, with the gallery
- * button and, when the shoot has a photo shop ready, a 3-day photo shop sign-in button
- * (the same link as "Email shop link to client"). Then it opens the gallery to the
+ * For each shoot it sends the client the gallery-ready email now, with ONE button
+ * ("Open your gallery"). When the shoot has a photo shop ready, that button is the 3-day
+ * photo shop sign-in link (the same link as "Email shop link to client") and the order
+ * steps sit under it; the SmugMug address is never in the email. Without a photo shop
+ * the button opens the gallery link the studio set. Then it opens the gallery to the
  * client (as "release anyway" does) and moves the shoot to Delivered, as the hourly
  * job would once the client has the gallery.
  *
@@ -41,6 +43,7 @@ import {
   cleanGalleryMessage,
   cleanPhotoAlt,
   galleryEmailPhotoUrl,
+  galleryEmailVariables,
   planGallerySend,
   type SendGallerySkip,
 } from "../_shared/photo-shop/send-gallery.ts";
@@ -50,17 +53,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Outcome = "sent" | "failed" | "already_sent" | SendGallerySkip;
 
-/** The photo shop button's wording; it goes above the email's closing line. */
-function shopWording(language: "en" | "he", url: string) {
-  const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY);
-  const text = (key: string) => (typeof strings[key] === "string" ? strings[key] as string : "");
-  return {
-    signInUrl: url,
-    signInBody: text("shop_body").split("{days}").join(String(LINK_DAYS)),
-    signInCta: text("shop_cta"),
-    signInBefore: text("closing"),
-  };
-}
 
 Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const options = handleOptions(req);
@@ -121,9 +113,13 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const standardBody = String(getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY).body ?? "");
   const message = cleanGalleryMessage(body?.message, standardBody);
   const photoUrl = galleryEmailPhotoUrl(body?.photoUrl, Deno.env.get("SUPABASE_URL") ?? "", tenantId);
-  const photo: Record<string, string> = photoUrl
-    ? { photoUrl, photoAlt: cleanPhotoAlt(body?.photoAlt, tenant.name), photoAfter: standardBody }
-    : {};
+  const photo = photoUrl ? { url: photoUrl, alt: cleanPhotoAlt(body?.photoAlt, tenant.name) } : null;
+  const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY);
+  const wording = {
+    body: standardBody,
+    closing: typeof strings.closing === "string" ? strings.closing : "",
+    shop_body: typeof strings.shop_body === "string" ? strings.shop_body : "",
+  };
 
   let shopFeature = true;
   try {
@@ -174,26 +170,33 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
       const shopLink = plan.withShop
         ? await createShopLink(service, { tenantId, engagementId, createdBy: auth.user.id })
         : null;
-      // Photo shop only (uploaded photos): the shop is the gallery.
-      const galleryUrl = plan.galleryUrl ?? shopLink?.url ?? null;
-      if (!galleryUrl) {
+      // A shop that should be in the email but whose link could not be made: never fall
+      // back to the SmugMug address. "failed", so the studio can press again.
+      if (plan.withShop && !shopLink) {
         results.push({ engagementId, outcome: "failed" });
         continue;
       }
       const name = typeof engagement.people?.name === "string" ? engagement.people.name.trim() : "";
+      const variables = galleryEmailVariables({
+        recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
+        galleryUrl: plan.galleryUrl,
+        shopUrl: shopLink?.url ?? null,
+        linkDays: LINK_DAYS,
+        wording,
+        message,
+        photo,
+      });
+      if (!variables) {
+        results.push({ engagementId, outcome: "failed" });
+        continue;
+      }
       const outcome = await sendAutomaticEmail(service, {
         tenant,
         key: "gallery_ready",
         engagementId,
         to: email,
         force: true,
-        variables: {
-          recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
-          galleryUrl,
-          ...(shopLink && plan.galleryUrl ? shopWording(language, shopLink.url) : {}),
-          ...(message ? { customBody: message, customBodyReplaces: standardBody } : {}),
-          ...photo,
-        },
+        variables,
       });
       if (outcome !== "sent") {
         results.push({ engagementId, outcome: "failed" });
