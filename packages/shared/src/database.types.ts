@@ -2401,9 +2401,9 @@ export type Database = {
           photo_count: number
           product_count: number
           proof_path: string | null
-          proof_requested: boolean
           proof_reminded_at: string | null
           proof_reminders_sent: number
+          proof_requested: boolean
           proof_sent_at: string | null
           refunded_at: string | null
           status: string
@@ -2429,9 +2429,9 @@ export type Database = {
           photo_count: number
           product_count?: number
           proof_path?: string | null
-          proof_requested?: boolean
           proof_reminded_at?: string | null
           proof_reminders_sent?: number
+          proof_requested?: boolean
           proof_sent_at?: string | null
           refunded_at?: string | null
           status?: string
@@ -2457,9 +2457,9 @@ export type Database = {
           photo_count?: number
           product_count?: number
           proof_path?: string | null
-          proof_requested?: boolean
           proof_reminded_at?: string | null
           proof_reminders_sent?: number
+          proof_requested?: boolean
           proof_sent_at?: string | null
           refunded_at?: string | null
           status?: string
