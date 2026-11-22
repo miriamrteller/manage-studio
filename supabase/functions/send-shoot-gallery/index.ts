@@ -121,7 +121,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const standardBody = String(getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY).body ?? "");
   const message = cleanGalleryMessage(body?.message, standardBody);
   const photoUrl = galleryEmailPhotoUrl(body?.photoUrl, Deno.env.get("SUPABASE_URL") ?? "", tenantId);
-  const photo = photoUrl
+  const photo: Record<string, string> = photoUrl
     ? { photoUrl, photoAlt: cleanPhotoAlt(body?.photoAlt, tenant.name), photoAfter: standardBody }
     : {};
 
