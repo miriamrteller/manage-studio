@@ -40,7 +40,7 @@ import {
   type AutomaticEmailTenant,
   sendAutomaticEmail,
 } from "../_shared/photographer-emails/send.ts";
-import { createShopLink, LINK_DAYS } from "../_shared/photo-shop/shop-link.ts";
+import { createShopLink } from "../_shared/photo-shop/shop-link.ts";
 import {
   cleanGalleryMessage,
   cleanPhotoAlt,
@@ -123,7 +123,6 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const wording = {
     body: standardBody,
     closing: typeof strings.closing === "string" ? strings.closing : "",
-    shop_body: typeof strings.shop_body === "string" ? strings.shop_body : "",
     sign_off: typeof strings.sign_off === "string" ? strings.sign_off : "",
   };
   // "Sincerely," and a name: what she typed in the box (kept for next time), else the
@@ -199,7 +198,6 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
         recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "client"),
         galleryUrl: plan.galleryUrl,
         shopUrl: shopLink?.url ?? null,
-        linkDays: LINK_DAYS,
         wording,
         message,
         photo,

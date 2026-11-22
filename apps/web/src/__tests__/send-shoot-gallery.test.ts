@@ -118,35 +118,6 @@ describe('gallery-ready email with the photo shop button', () => {
     expect(html).toContain(strings.shop_cta);
   });
 
-  it.each([
-    ['en', en.gallery_ready],
-    ['he', he.gallery_ready],
-  ] as const)('%s: Send gallery with a shop: ONE button, to the shop, steps above the closing line, no SmugMug', (language, strings) => {
-    const shop = 'https://studio.opalswift.com/shop/token';
-    const { html } = renderPhotographerEmail({
-      key: 'gallery_ready',
-      language,
-      schoolName: 'Studio',
-      primaryColor: '#2563eb',
-      accentColor: '#dc2626',
-      // What send-shoot-gallery passes when the shoot has a photo shop.
-      variables: {
-        recipientName: 'Pat',
-        galleryUrl: shop,
-        noteBody: strings.shop_body.replace('{days}', '3'),
-        noteBefore: strings.closing,
-      },
-    });
-    const buttons = [...html.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1])
-      .filter((href) => !href.includes('/preferences'));
-    expect(buttons).toEqual([shop]);
-    expect(html).not.toContain('smugmug');
-    expect(html).not.toContain(strings.shop_cta);
-    const stepsAt = html.indexOf(strings.shop_body.split('\n')[0].replace(/"/g, '&quot;'));
-    expect(stepsAt).toBeGreaterThan(html.indexOf(shop));
-    expect(stepsAt).toBeLessThan(html.indexOf(strings.closing));
-  });
-
   it('without a shop link the email is unchanged', () => {
     const { html } = renderPhotographerEmail({
       key: 'gallery_ready',
@@ -276,7 +247,7 @@ describe('a photo in the gallery email', () => {
 
 it('English greeting is "Dear", closing line and sign-off read as the owner asked', () => {
   expect(en.gallery_ready.greeting).toBe('Dear {recipientName},');
-  expect(en.gallery_ready.closing).toBe('We hope you love the photos.');
+  expect(en.gallery_ready.closing).toBe('We hope you love them.');
   expect(en.gallery_ready.sign_off).toBe('Sincerely,');
   expect(he.gallery_ready.sign_off).toBe('בברכה,');
 });
@@ -367,7 +338,6 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
           recipientName: 'Pat',
           galleryUrl: smugmug,
           shopUrl: shop,
-          linkDays: 3,
           wording: strings,
           message,
           photo: withPhoto,
@@ -393,15 +363,17 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
           expect(html).toContain(message);
           expect(html).not.toContain(strings.body);
         }
-        // Reads in order: greeting, her words, one button, the steps, closing, sign-off.
+        // Owner's layout: greeting, only her words, one button, closing, sign-off. Nothing else.
         const at = (text: string) => html.indexOf(text);
         const greeting = strings.greeting.replace('{recipientName}', 'Pat');
-        const steps = strings.shop_body.split('\n')[0];
         expect(at(greeting)).toBeGreaterThan(0);
         expect(at(greeting)).toBeLessThan(at(message ?? strings.body));
         expect(at(message ?? strings.body)).toBeLessThan(at(shop));
-        expect(at(shop)).toBeLessThan(at(steps));
-        expect(at(steps)).toBeLessThan(at(strings.closing));
+        expect(at(shop)).toBeLessThan(at(strings.closing));
+        expect(html).not.toContain(strings.shop_body.split('\n')[0].replace(/"/g, '&quot;'));
+        // Between the greeting and the button: only her words (and the photo, if any).
+        const middle = html.slice(at(greeting) + greeting.length, at(`<a href="${shop}"`));
+        expect(middle.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).toBe((message ?? strings.body).trim());
         expect(at(strings.closing)).toBeLessThan(at(`${strings.sign_off}<br>Pat Photographer`));
       });
     }
@@ -409,7 +381,7 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
 
   it('without a photo shop the one button opens the gallery link the studio set', () => {
     const variables = galleryEmailVariables({
-      recipientName: 'Pat', galleryUrl: 'https://pixies.test/g', shopUrl: null, linkDays: 3,
+      recipientName: 'Pat', galleryUrl: 'https://pixies.test/g', shopUrl: null,
       wording: en.gallery_ready, message: null, photo: null, signature: null,
     });
     expect(variables).toEqual({ recipientName: 'Pat', galleryUrl: 'https://pixies.test/g' });
@@ -417,7 +389,7 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
 
   it('no shop and only a SmugMug address: no email at all (never a SmugMug link)', () => {
     expect(galleryEmailVariables({
-      recipientName: 'Pat', galleryUrl: 'https://studio.smugmug.com/Pat', shopUrl: null, linkDays: 3,
+      recipientName: 'Pat', galleryUrl: 'https://studio.smugmug.com/Pat', shopUrl: null,
       wording: en.gallery_ready, message: null, photo: null, signature: null,
     })).toBeNull();
   });
@@ -433,7 +405,7 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
 
   it('nothing to link to: no email', () => {
     expect(galleryEmailVariables({
-      recipientName: 'Pat', galleryUrl: null, shopUrl: null, linkDays: 3,
+      recipientName: 'Pat', galleryUrl: null, shopUrl: null,
       wording: en.gallery_ready, message: null, photo: null, signature: null,
     })).toBeNull();
   });

@@ -8,7 +8,7 @@ import type { createServiceClient } from "../edge-runtime/supabase.ts";
 import { EMAIL_TEMPLATE_NAMES, getEmailStrings } from "../email-dist/i18n/email.js";
 import { requireFeature } from "../feature-gate.ts";
 import type { DueShootEmail } from "../photographer-emails/variables.ts";
-import { createShopLink, LINK_DAYS } from "./shop-link.ts";
+import { createShopLink } from "./shop-link.ts";
 import { cleanSignature, galleryEmailVariables, planGallerySend } from "./send-gallery.ts";
 
 type Service = ReturnType<typeof createServiceClient>;
@@ -62,8 +62,7 @@ export async function hourlyGalleryEmailVariables(
     recipientName: row.recipient_name?.trim() || (language === "he" ? "לקוח/ה יקר/ה" : "client"),
     galleryUrl: plan.galleryUrl,
     shopUrl: shopLink?.url ?? null,
-    linkDays: LINK_DAYS,
-    wording: { body: text("body"), closing: text("closing"), shop_body: text("shop_body"), sign_off: text("sign_off") },
+    wording: { body: text("body"), closing: text("closing"), sign_off: text("sign_off") },
     message: null,
     photo: null,
     signature: cleanSignature((settings.data as { email_signature?: unknown } | null)?.email_signature) ??

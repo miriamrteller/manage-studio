@@ -13,7 +13,6 @@ import {
   insertAfterParagraph,
   insertBeforeParagraph,
   isHttpLink,
-  noteParagraphHtml,
   photoBlockHtml,
   replaceParagraphText,
   signatureHtml,
@@ -59,16 +58,6 @@ function withSignature(html: string, variables: Record<string, string>): string 
   const { signOff, signatureName, signatureAfter } = variables;
   if (!signOff || !signatureName || !signatureAfter) return html;
   return insertAfterParagraph(html, signatureAfter, signatureHtml({ signOff, name: signatureName }));
-}
-
-/**
- * A plain note above a line (noteBody, noteBefore = that line's text), no button. Send
- * gallery puts the photo shop steps there: the email's one button already opens the shop.
- */
-function withNote(html: string, variables: Record<string, string>): string {
-  const { noteBody, noteBefore } = variables;
-  if (!noteBody || !noteBefore) return html;
-  return insertBeforeParagraph(html, noteBefore, noteParagraphHtml(noteBody));
 }
 
 /**
@@ -142,7 +131,7 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     withSignInBlock(
       input.key,
       withSignature(
-        withNote(withCustomBody(withPhoto(shellHtml, input.variables), input.variables), input.variables),
+        withCustomBody(withPhoto(shellHtml, input.variables), input.variables),
         input.variables,
       ),
       input.variables,

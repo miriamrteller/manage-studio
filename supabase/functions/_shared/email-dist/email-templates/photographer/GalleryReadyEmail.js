@@ -6,7 +6,7 @@ const DEFAULTS = {
     greeting: 'Dear {recipientName},',
     body: 'Your photos are ready! Open your gallery to choose your photos.',
     cta: 'Open your gallery',
-    closing: 'We hope you love the photos.',
+    closing: 'We hope you love them.',
 };
 export default function GalleryReadyEmail(props) {
     const { recipientName, galleryUrl, ...common } = props;

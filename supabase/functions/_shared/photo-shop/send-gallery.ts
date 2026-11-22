@@ -107,7 +107,6 @@ export function cleanPhotoAlt(raw: unknown, fallback: string): string {
 export interface GalleryEmailWording {
   body: string;
   closing: string;
-  shop_body: string;
   /** "Sincerely," / "בברכה," */
   sign_off: string;
 }
@@ -129,16 +128,15 @@ export function cleanSignature(raw: unknown): string | null {
 }
 
 /**
- * Everything the gallery email is built from (send-shoot-gallery). ONE button: with a
- * photo shop it opens the shop link (the order steps go under it, with no button of
- * their own), never the SmugMug address (owner, 22 Nov 2026). Without a shop it opens
- * the gallery link the studio set.
+ * Everything the gallery email is built from (Send gallery and the hourly email). The
+ * owner's layout (22 Nov 2026): "Dear {name}," then only the body (hers, or the short
+ * standard one), the ONE button, then the closing line and "Sincerely, {signature}".
+ * The button opens the shop link when there is a shop, never a SmugMug address.
  */
 export function galleryEmailVariables(input: {
   recipientName: string;
   galleryUrl: string | null;
   shopUrl: string | null;
-  linkDays: number;
   wording: GalleryEmailWording;
   message: string | null;
   photo: { url: string; alt: string } | null;
@@ -151,9 +149,6 @@ export function galleryEmailVariables(input: {
   return {
     recipientName: input.recipientName,
     galleryUrl: button,
-    ...(input.shopUrl
-      ? { noteBody: input.wording.shop_body.split("{days}").join(String(input.linkDays)), noteBefore: input.wording.closing }
-      : {}),
     ...(input.message ? { customBody: input.message, customBodyReplaces: input.wording.body } : {}),
     ...(input.photo ? { photoUrl: input.photo.url, photoAlt: input.photo.alt, photoAfter: input.wording.body } : {}),
     ...(input.signature
