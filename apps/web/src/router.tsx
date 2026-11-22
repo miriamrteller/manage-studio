@@ -57,6 +57,7 @@ const StudioShopPage = lazy(() => import("./pages/StudioShopPage"));
 const WaiversPage = lazy(() => import("./pages/WaiversPage"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const PortalDashboard = lazy(() => import("./pages/PortalDashboard"));
+const PhotoOrderPaymentPage = lazy(() => import("./pages/PhotoOrderPaymentPage"));
 const EnrolEntryRoute = lazy(() => import("./layouts/EnrolEntryRoute").then((m) => ({ default: m.EnrolEntryRoute })));
 const EnrolPayPage = lazy(() => import("./pages/EnrolPayPage"));
 const EnrolReturnPage = lazy(() => import("./pages/EnrolReturnPage"));
@@ -321,6 +322,8 @@ const router = createBrowserRouter([
           // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
           { path: "dashboard/admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },
           { path: "dashboard/portal", element: <ParentRoute><PortalDashboard /></ParentRoute> },
+          // A photo order's payment page: Bit / bank transfer details and the payment screenshot.
+          { path: "dashboard/portal/photo-order/:engagementId/:orderId", element: <ParentRoute><PhotoOrderPaymentPage /></ParentRoute> },
           { path: "dashboard/student", element: <StudentRoute><PortalDashboard /></StudentRoute> },
 
           // 404

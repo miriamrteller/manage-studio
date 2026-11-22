@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   allPhotosIsBetter,
@@ -19,10 +19,14 @@ import {
   type ClientGalleryPhoto,
   type ClientPhotoGallery,
   type ClientPhotoOrder,
+  hasPayDirect,
+  payDirectWays,
+  photoOrderPaymentPath,
   type PhotoPayBy,
   type PhotoProductLine,
 } from '../services/clientPhotoShopService';
 import { formatDueDate, formatMinor } from '../lib/jobPaymentFormat';
+import { payWaysLabel } from '../lib/payDirectLabel';
 
 const galleryKey = (id: string) => ['client-photo-shop', id] as const;
 
@@ -128,10 +132,25 @@ function ShopBody({
   // Preview: what would have happened, instead of placing an order.
   const [tried, setTried] = useState<'card' | 'cash' | 'free' | null>(null);
   // Paying the studio directly is chosen first (owner, 19 Nov 2026). Card is offered only
-  // when the studio has switched card payments on.
+  // when the studio has switched card payments on. When the studio filled in Bit / bank
+  // transfer details (Settings > Payment > Photo shop), "Continue to payment" opens the
+  // order's own payment page: pick Bit or bank transfer, pay, send a screenshot (22 Nov 2026).
   const cardOn = data.shop.card_payments === true;
-  const [chosenPayBy, setPayBy] = useState<PhotoPayBy>('cash');
-  const payBy: PhotoPayBy = cardOn ? chosenPayBy : 'cash';
+  const hasDirect = hasPayDirect(data.shop);
+  const direct: PhotoPayBy = hasDirect ? 'direct' : 'cash';
+  const choices: PhotoPayBy[] = cardOn ? [direct, 'card'] : [direct];
+  const [chosenPayBy, setPayBy] = useState<PhotoPayBy>(direct);
+  const payBy: PhotoPayBy = choices.includes(chosenPayBy) ? chosenPayBy : direct;
+  const paysDirect = payBy !== 'card';
+  const choiceLabel = (c: PhotoPayBy) =>
+    c === 'card'
+      ? t('pages.client_portal.photo_shop.pay_card')
+      : c === 'direct'
+        ? payWaysLabel(t, payDirectWays(data.shop).map((w) => w.method))
+        : t('pages.client_portal.photo_shop.pay_cash');
+  const orderedCashMessage = t(
+    hasDirect ? 'pages.client_portal.photo_shop.ordered_direct' : 'pages.client_portal.photo_shop.ordered_cash',
+  );
   const payById = useId();
   const { shop, photos } = data;
   const lang = i18n.language;
@@ -179,6 +198,11 @@ function ShopBody({
         navigate(`/pay/${placed.payToken}`);
         return;
       }
+      if (placed.paymentPage) {
+        await queryClient.invalidateQueries({ queryKey: galleryKey(engagementId) });
+        navigate(photoOrderPaymentPath(engagementId, placed.orderId));
+        return;
+      }
       setDoneMessage(placed.payByCash ? 'cash' : 'free');
       await queryClient.invalidateQueries({ queryKey: galleryKey(engagementId) });
     },
@@ -190,7 +214,7 @@ function ShopBody({
       return;
     }
     const minor = allPhotos ? allTotal.totalMinor : total.totalMinor;
-    setTried(minor <= 0 ? 'free' : payBy);
+    setTried(minor <= 0 ? 'free' : paysDirect ? 'cash' : 'card');
   };
 
   const addLine = (imageKey: string, productId: string) => {
@@ -256,7 +280,7 @@ function ShopBody({
         </p>
       </div>
 
-      <ClientPhotoOrders orders={shop.orders} />
+      <ClientPhotoOrders engagementId={engagementId} orders={shop.orders} preview={preview} />
 
       {tried && (
         <p role="status" className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
@@ -264,17 +288,15 @@ function ShopBody({
           {tried === 'card'
             ? t('photo_shop_admin.preview.tried_card')
             : t('photo_shop_admin.preview.tried_shows', {
-                message: t(tried === 'cash' ? 'pages.client_portal.photo_shop.ordered_cash' : 'pages.client_portal.photo_shop.ordered_free'),
+                message: tried === 'cash' ? orderedCashMessage : t('pages.client_portal.photo_shop.ordered_free'),
               })}
         </p>
       )}
 
       {doneMessage && (
-        <p role="status" className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          {doneMessage === 'cash'
-            ? t('pages.client_portal.photo_shop.ordered_cash')
-            : t('pages.client_portal.photo_shop.ordered_free')}
-        </p>
+        <div role="status" className="space-y-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          <p>{doneMessage === 'cash' ? orderedCashMessage : t('pages.client_portal.photo_shop.ordered_free')}</p>
+        </div>
       )}
 
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -401,22 +423,24 @@ function ShopBody({
               {t('pages.client_portal.photo_shop.suggest_all', { count: available.length, price: money(allDigital.totalMinor) })}
             </p>
           )}
-          {cardOn ? (
-            <fieldset className="space-y-1 text-sm">
+          {choices.length > 1 ? (
+            <fieldset className="space-y-2 text-sm">
               <legend className="font-medium" id={payById}>{t('pages.client_portal.photo_shop.pay_how')}</legend>
               <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
-                  <input type="radio" name={payById} value="card" checked={payBy === 'card'} onChange={() => { setPayBy('card'); setTried(null); }} />
-                  {t('pages.client_portal.photo_shop.pay_card')}
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="radio" name={payById} value="cash" checked={payBy === 'cash'} onChange={() => { setPayBy('cash'); setTried(null); }} />
-                  {t('pages.client_portal.photo_shop.pay_cash')}
-                </label>
+                {choices.map((c) => (
+                  <label key={c} className="flex items-center gap-2">
+                    <input type="radio" name={payById} value={c} checked={payBy === c} onChange={() => { setPayBy(c); setTried(null); }} />
+                    {choiceLabel(c)}
+                  </label>
+                ))}
               </div>
             </fieldset>
           ) : (
-            <p className="text-sm">{t('pages.client_portal.photo_shop.pay_direct_only')}</p>
+            <p className="text-sm">
+              {hasDirect
+                ? t('pages.client_portal.photo_shop.pay_direct_next', { how: choiceLabel('direct') })
+                : t('pages.client_portal.photo_shop.pay_direct_only')}
+            </p>
           )}
           <p id={termsId} className="text-xs text-gray-500">{t('pages.client_portal.photo_shop.terms')}</p>
           <div className="flex flex-wrap gap-2">
@@ -429,7 +453,9 @@ function ShopBody({
             >
               {total.totalMinor <= 0
                 ? t('pages.client_portal.photo_shop.take_free')
-                : payBy === 'cash'
+                : payBy === 'direct'
+                  ? t('pages.client_portal.photo_shop.continue_payment', { price: money(total.totalMinor) })
+                  : paysDirect
                   ? t('pages.client_portal.photo_shop.send_cash', { price: money(total.totalMinor) })
                   : t('pages.client_portal.photo_shop.pay', { price: money(total.totalMinor) })}
             </Button>
@@ -441,7 +467,7 @@ function ShopBody({
                 onClick={() => place(true)}
               >
                 {t(
-                  `pages.client_portal.photo_shop.${lines.length > 0 ? 'buy_all_prints' : 'buy_all'}${payBy === 'cash' && allTotal.totalMinor > 0 ? '_cash' : ''}`,
+                  `pages.client_portal.photo_shop.${lines.length > 0 ? 'buy_all_prints' : 'buy_all'}${paysDirect && allTotal.totalMinor > 0 ? '_cash' : ''}`,
                   { count: available.length, price: money(allTotal.totalMinor) },
                 )}
               </Button>
@@ -616,7 +642,15 @@ function PhotoOptionsPanel({
   );
 }
 
-function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
+function ClientPhotoOrders({
+  engagementId,
+  orders,
+  preview,
+}: {
+  engagementId: string;
+  orders: ClientPhotoOrder[];
+  preview: boolean;
+}) {
   const { t, i18n } = useTranslation();
   if (orders.length === 0) return null;
   return (
@@ -656,6 +690,22 @@ function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
             <span className="text-gray-600">
               {t(o.photo_count === 0 ? 'pages.client_portal.photo_shop.preparing_prints' : 'pages.client_portal.photo_shop.preparing')}
             </span>
+          )}
+          {o.status === 'awaiting_payment' && o.pay_by_cash && o.proof_requested && (
+            <p className="w-full">
+              {o.proof_sent_at ? (
+                <span className="text-green-800">
+                  {t('pages.client_portal.photo_shop.proof_sent', { date: formatDueDate(o.proof_sent_at, i18n.language) })}{' '}
+                </span>
+              ) : null}
+              {preview ? (
+                <span className="font-medium">{t('pages.client_portal.photo_shop.go_to_payment')}</span>
+              ) : (
+                <Link to={photoOrderPaymentPath(engagementId, o.id)} className="font-medium underline">
+                  {o.proof_sent_at ? t('pages.client_portal.photo_shop.proof_replace') : t('pages.client_portal.photo_shop.go_to_payment')}
+                </Link>
+              )}
+            </p>
           )}
         </li>
       ))}

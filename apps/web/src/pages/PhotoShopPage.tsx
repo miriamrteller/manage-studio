@@ -152,10 +152,22 @@ function OrdersTab() {
                     {formatDueDate(o.created_at, i18n.language)} ·{' '}
                     {orderCountsText(o, t)} ·{' '}
                     {formatMinor(o.total_minor, o.currency, i18n.language)}
-                    {o.status === 'awaiting_payment' && o.pay_by_cash && <> · {t('photo_shop_admin.orders.cash')}</>}
+                    {o.status === 'awaiting_payment' && o.pay_by_cash && (
+                      <>
+                        {' · '}
+                        {o.pay_method === 'bit'
+                          ? t('photo_shop_admin.orders.bit')
+                          : o.pay_method === 'bank'
+                            ? t('photo_shop_admin.orders.bank')
+                            : t('photo_shop_admin.orders.cash')}
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
+                  {o.status === 'awaiting_payment' && o.proof_sent_at && (
+                    <Badge variant="success">{t('pages.jobs.photo_shop.proof_sent')}</Badge>
+                  )}
                   <Badge variant={ORDER_BADGE[o.status]}>{t(`pages.jobs.photo_shop.status.${o.status}`)}</Badge>
                   <Link to={`/admin/projects/${o.engagement_id}?tab=shop`} className="font-medium underline">
                     {t('photo_shop_admin.orders.open')}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import {
   isDeliveryLink,
   majorToMinor,
   minorToMajor,
+  PhotoShopService,
   type JobPhotoShop,
   type PhotoOrder,
   type PhotoOrderStatus,
@@ -307,7 +309,13 @@ function PhotoOrderRow({
 
       {order.status === 'awaiting_payment' && order.pay_by_cash && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground">{t('pages.jobs.photo_shop.paying_cash')}</span>
+          <span className="text-muted-foreground">
+            {order.pay_method === 'bit'
+              ? t('pages.jobs.photo_shop.paying_bit')
+              : order.pay_method === 'bank'
+                ? t('pages.jobs.photo_shop.paying_bank')
+                : t('pages.jobs.photo_shop.paying_cash')}
+          </span>
           {order.job_payment_request_id && (
             <Button size="sm" variant="primary" isLoading={recordCash.isPending}
               onClick={() => recordCash.mutate(order.job_payment_request_id as string)}>
@@ -317,6 +325,7 @@ function PhotoOrderRow({
           {recordCash.error && <p role="alert" className="w-full text-error">{(recordCash.error as Error).message}</p>}
         </div>
       )}
+      {order.status === 'awaiting_payment' && (order.proof_requested || order.proof_path) && <PaymentProofForStudio order={order} />}
 
       <details open={order.status === 'paid' || (order.status === 'awaiting_payment' && order.pay_by_cash === true)}>
         <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.order_photos_list')}</summary>
@@ -467,6 +476,31 @@ function SendShopLink({ engagementId }: { engagementId: string }) {
         </div>
       )}
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * Bit / bank transfer orders: the client's payment screenshot, opened through a short-lived
+ * link (private storage). None yet: the client is reminded by email at 1, 3 and 7 days.
+ */
+function PaymentProofForStudio({ order }: { order: PhotoOrder }) {
+  const { t, i18n } = useTranslation();
+  const open = useMutation({
+    mutationFn: () => PhotoShopService.proofUrl(order.proof_path as string),
+    onSuccess: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
+  });
+  if (!order.proof_path || !order.proof_sent_at) {
+    return <p className="text-muted-foreground">{t('pages.jobs.photo_shop.proof_waiting')}</p>;
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge variant="success">{t('pages.jobs.photo_shop.proof_sent')}</Badge>
+      <span className="text-muted-foreground">{formatDueDate(order.proof_sent_at, i18n.language)}</span>
+      <Button size="sm" variant="outline" isLoading={open.isPending} onClick={() => open.mutate()}>
+        {t('pages.jobs.photo_shop.proof_view')}
+      </Button>
+      {open.error && <p role="alert" className="w-full text-error">{t('pages.jobs.photo_shop.proof_failed')}</p>}
     </div>
   );
 }

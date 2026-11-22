@@ -4,13 +4,24 @@
  * The client's photo shop for one shoot (beta, feature billing:photo_shop).
  *   { action: "gallery", engagementId }
  *     → { shop, photos: [{ key, fileName, previewUrl }] }
- *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean, payBy?: "card" | "cash",
+ *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean, payBy?: "card" | "cash" | "direct",
  *     products?: [{ imageKey, productId }] }
  *       products: prints and other products the studio sells, one line each, priced in the
  *       database. An order may hold products only (imageKeys empty).
  *     → { orderId, status, totalMinor, currency, payToken, payByCash }
  *       payBy "cash": the order is sent in to pay the studio in cash. It waits for
  *       payment (the pay link still works) and the studio is emailed at once.
+ *       When the studio switched on ways to pay it directly (Settings > Payment > Photo
+ *       shop), paymentPage is true: the client goes on to the order's payment page and is
+ *       emailed the ways and its link. Bit / bank transfer ask for a payment screenshot.
+ *   { action: "payment", engagementId, orderId }
+ *     → { studioName, order, pay_direct, card_payments } — the order's payment page.
+ *   { action: "method", engagementId, orderId, method: "bit" | "bank" | "cash" | "cheque" }
+ *     → { ok } — the way the client picked on the payment page (cash / cheque: no screenshot).
+ *   { action: "proof", engagementId, orderId, image: base64, method?: "bit" | "bank" }
+ *     → { ok, proofSentAt } — the client's payment screenshot (PNG, JPEG or WebP, up to
+ *       5 MB) for their own Bit / bank transfer order. Saved on the order (private bucket
+ *       photo-order-proofs) and the studio is emailed. The order itself is unchanged.
  *   { action: "preview", engagementId }   (studio admins only)
  *     → { shop, photos, sample } — what the shoot's client sees. While the shoot's gallery
  *       is not ready (none chosen, or SmugMug still locked) the photos are the sample
@@ -39,7 +50,21 @@ import {
 } from "../_shared/photo-shop/gallery.ts";
 import { refreshGalleryLinks, type SmugMugConnection } from "../_shared/photo-shop/smugmug/refresh.ts";
 import { orderPersonId, photoOrderLabel, resolveOrderItems, resolveProductItems } from "../_shared/photo-shop/order-items.ts";
-import { notifyStudioPhotoOrderCash, notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
+import {
+  notifyClientPhotoOrderPayDirect,
+  notifyStudioPhotoOrderCash,
+  notifyStudioPhotoOrderPaid,
+  notifyStudioPhotoOrderProof,
+} from "../_shared/photo-shop/emails.ts";
+import { decodeProof, detectProofImageType, PROOF_BUCKET, PROOF_EXTENSION } from "../_shared/photo-shop/payment-proof.ts";
+import {
+  asksForProof,
+  isPayDirectMethod,
+  PAY_DIRECT_COLUMNS,
+  payDirectFromSettings,
+  type PayDirectSettingsRow,
+  PROOF_METHODS,
+} from "../_shared/photo-shop/pay-direct.ts";
 
 const FEATURE = "billing:photo_shop";
 
@@ -69,7 +94,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const action = body?.action;
     const engagementId = typeof body?.engagementId === "string" ? body.engagementId : "";
-    if (!engagementId || (action !== "gallery" && action !== "order" && action !== "preview")) {
+    if (!engagementId || (action !== "gallery" && action !== "order" && action !== "preview" && action !== "proof" && action !== "payment" && action !== "method")) {
       return jsonResponse({ error: "bad_request" }, 400);
     }
 
@@ -102,6 +127,105 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     const features = await getTenantFeatures(shopRow.tenant_id as string, service);
     if (!features.has(FEATURE)) return jsonResponse({ error: "feature_not_available" }, 403);
 
+    // ── the order's payment page: the studio's Bit / bank transfer details ──
+    // Read only; the client's own orders only (get_client_photo_shop let them in above).
+    if (action === "payment") {
+      const orderId = typeof body?.orderId === "string" ? body.orderId : "";
+      const orders = Array.isArray(view.orders) ? (view.orders as Array<Record<string, unknown>>) : [];
+      const mine = orders.find((o) => o.id === orderId);
+      if (!mine) return jsonResponse({ error: "not_found" }, 404);
+      const [{ data: proofRow }, { data: settings }, { data: studio }] = await Promise.all([
+        service.from("job_photo_orders").select("pay_method, proof_requested, proof_sent_at").eq("id", orderId).maybeSingle(),
+        service.from("tenant_photo_shop_settings").select(`card_payments, ${PAY_DIRECT_COLUMNS}`)
+          .eq("tenant_id", shopRow.tenant_id as string).maybeSingle(),
+        service.from("tenants").select("name").eq("id", shopRow.tenant_id as string).maybeSingle(),
+      ]);
+      const pay = payDirectFromSettings(settings as PayDirectSettingsRow | null);
+      return jsonResponse({
+        studioName: (studio?.name as string | undefined) ?? "",
+        order: {
+          ...mine,
+          pay_method: proofRow?.pay_method ?? null,
+          proof_requested: proofRow?.proof_requested === true,
+          proof_sent_at: proofRow?.proof_sent_at ?? null,
+        },
+        pay_direct: pay,
+        card_payments: (settings as { card_payments?: boolean } | null)?.card_payments === true,
+      });
+    }
+
+    // ── the client picks cash or cheque on the payment page: no screenshot needed ──
+    if (action === "method") {
+      const orderId = typeof body?.orderId === "string" ? body.orderId : "";
+      const method = body?.method;
+      const personId = await orderPersonId(auth.supabase, service, engagementId);
+      if (!orderId || !personId || !isPayDirectMethod(method)) return jsonResponse({ error: "bad_request" }, 400);
+      const { data: target } = await service
+        .from("job_photo_orders")
+        .select("id, status, pay_by_cash")
+        .eq("id", orderId)
+        .eq("engagement_id", engagementId)
+        .eq("person_id", personId)
+        .maybeSingle();
+      if (!target || target.pay_by_cash !== true) return jsonResponse({ error: "not_found" }, 404);
+      if (target.status !== "awaiting_payment") return jsonResponse({ error: "already_paid" }, 409);
+      // Bit / bank transfer keep asking for the screenshot; cash / cheque stop the reminders.
+      const { error: saveError } = await service
+        .from("job_photo_orders")
+        .update({ pay_method: method, ...(PROOF_METHODS.includes(method) ? {} : { proof_requested: false }) })
+        .eq("id", orderId);
+      if (saveError) return jsonResponse({ error: "server_error" }, 500);
+      return jsonResponse({ ok: true });
+    }
+
+    // ── payment screenshot for an order paid by Bit / bank transfer ─────────
+    // Saved on the order; the studio is emailed. Never changes the order's status.
+    if (action === "proof") {
+      const orderId = typeof body?.orderId === "string" ? body.orderId : "";
+      const personId = await orderPersonId(auth.supabase, service, engagementId);
+      if (!orderId || !personId) return jsonResponse({ error: "not_found" }, 404);
+      const { data: target } = await service
+        .from("job_photo_orders")
+        .select("id, tenant_id, status, pay_by_cash, proof_path")
+        .eq("id", orderId)
+        .eq("engagement_id", engagementId)
+        .eq("person_id", personId)
+        .maybeSingle();
+      if (!target || target.pay_by_cash !== true) return jsonResponse({ error: "not_found" }, 404);
+      if (target.status !== "awaiting_payment") return jsonResponse({ error: "already_paid" }, 409);
+      const bytes = decodeProof(body?.image);
+      if (!bytes) return jsonResponse({ error: "proof_too_big" }, 413);
+      const type = detectProofImageType(bytes);
+      if (!type) return jsonResponse({ error: "proof_not_image" }, 422);
+      const path = `${target.tenant_id}/${orderId}/${crypto.randomUUID()}.${PROOF_EXTENSION[type]}`;
+      const { error: upError } = await service.storage.from(PROOF_BUCKET).upload(path, bytes, {
+        contentType: type,
+        upsert: false,
+      });
+      if (upError) {
+        console.error("[client-photo-shop] proof upload failed", upError.message);
+        return jsonResponse({ error: "server_error" }, 500);
+      }
+      const sentAt = new Date().toISOString();
+      const method = isPayDirectMethod(body?.method) && PROOF_METHODS.includes(body.method) ? body.method : null;
+      const { error: saveError } = await service
+        .from("job_photo_orders")
+        .update({ proof_path: path, proof_sent_at: sentAt, proof_requested: true, ...(method ? { pay_method: method } : {}) })
+        .eq("id", orderId);
+      if (saveError) {
+        await service.storage.from(PROOF_BUCKET).remove([path]);
+        return jsonResponse({ error: "server_error" }, 500);
+      }
+      // A new screenshot replaces the old one.
+      if (typeof target.proof_path === "string" && target.proof_path) {
+        await service.storage.from(PROOF_BUCKET).remove([target.proof_path]).catch(() => undefined);
+      }
+      await notifyStudioPhotoOrderProof(service, orderId).catch((e) =>
+        console.error("[client-photo-shop] studio proof email failed", e)
+      );
+      return jsonResponse({ ok: true, proofSentAt: sentAt });
+    }
+
     // A checked SmugMug gallery: fresh preview links from SmugMug instead of only the ones
     // saved at the check (they can stop opening). "refresh": none of the links loaded.
     let smugmugConnection: SmugMugConnection = "unknown";
@@ -125,11 +249,17 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     // shop): clients then only pay the studio directly.
     const { data: shopSettings } = await service
       .from("tenant_photo_shop_settings")
-      .select("card_payments")
+      .select(`card_payments, ${PAY_DIRECT_COLUMNS}`)
       .eq("tenant_id", shopRow.tenant_id as string)
       .maybeSingle();
     const cardPayments = shopSettings?.card_payments === true;
-    const shopView = { ...view, card_payments: cardPayments };
+    // How to pay the studio directly: Bit and/or bank transfer, as the studio filled them in.
+    const payDirect = payDirectFromSettings(shopSettings as PayDirectSettingsRow | null);
+    const shopView = {
+      ...view,
+      card_payments: cardPayments,
+      pay_direct: payDirect,
+    };
 
     if (action === "preview") {
       const { data: profile } = await service
@@ -160,7 +290,23 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     }
 
     if (action === "gallery") {
-      return jsonResponse({ shop: shopView, photos });
+      // Which orders wait for a payment screenshot (Bit / bank transfer) and which have one.
+      const orders = Array.isArray(view.orders) ? (view.orders as Array<Record<string, unknown>>) : [];
+      const ids = orders.map((o) => o.id).filter((id): id is string => typeof id === "string");
+      const { data: proofRows } = ids.length
+        ? await service.from("job_photo_orders").select("id, pay_method, proof_requested, proof_sent_at").in("id", ids)
+        : { data: [] };
+      const proofById = new Map((proofRows ?? []).map((r) => [r.id as string, r]));
+      const withProof = orders.map((o) => {
+        const r = proofById.get(o.id as string);
+        return {
+          ...o,
+          pay_method: r?.pay_method ?? null,
+          proof_requested: r?.proof_requested === true,
+          proof_sent_at: r?.proof_sent_at ?? null,
+        };
+      });
+      return jsonResponse({ shop: { ...shopView, orders: withProof }, photos });
     }
 
     // ── place an order ──────────────────────────────────────────────────────
@@ -209,7 +355,15 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       .maybeSingle();
     const language = tenant?.language_default === "en" ? "en" : "he";
 
-    const payByCash = body?.payBy === "cash" || !cardPayments;
+    // Paying the studio directly while it has Bit / bank transfer details: the client goes on
+    // to the payment page, picks one, pays and sends a screenshot (owner, 22 Nov 2026).
+    const wantsDirect = body?.payBy === "cash" || body?.payBy === "direct" || body?.payBy === "bit" ||
+      body?.payBy === "bank";
+    const payByCash = wantsDirect || !cardPayments;
+    // A payment page whenever the studio switched on ways to pay it directly; a screenshot is
+    // asked for when one of them is Bit or bank transfer (cash / cheque just confirm).
+    const paymentPage = payByCash && payDirect !== null;
+    const proofRequested = paymentPage && asksForProof(payDirect);
     const { data: order, error: orderError } = await service.rpc("create_job_photo_order", {
       p_engagement_id: engagementId,
       p_person_id: personId,
@@ -224,6 +378,10 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       return jsonResponse({ error: code }, code === "order_failed" ? 500 : 409);
     }
     const o = order as Record<string, unknown>;
+    // Ask for the payment screenshot on this order: the reminders follow it.
+    if (proofRequested && o.pay_by_cash === true && o.status === "awaiting_payment") {
+      await service.from("job_photo_orders").update({ proof_requested: true }).eq("id", o.order_id as string);
+    }
     // Free orders are paid at once; paid ones email the studio when the payment lands.
     if (o.status === "paid") {
       await notifyStudioPhotoOrderPaid(service, o.order_id as string).catch((e) =>
@@ -231,9 +389,15 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       );
     } else if (o.pay_by_cash === true) {
       // Sent in to pay in cash: the studio hears now, not only when the cash is recorded.
-      await notifyStudioPhotoOrderCash(service, o.order_id as string).catch((e) =>
+      await notifyStudioPhotoOrderCash(service, o.order_id as string, paymentPage ? payDirect : null).catch((e) =>
         console.error("[client-photo-shop] studio email failed", e)
       );
+      // Bit / bank transfer: the client gets the details and the payment page link by email too.
+      if (paymentPage && payDirect) {
+        await notifyClientPhotoOrderPayDirect(service, o.order_id as string, payDirect).catch((e) =>
+          console.error("[client-photo-shop] client email failed", e)
+        );
+      }
     }
     return jsonResponse({
       orderId: o.order_id,
@@ -242,6 +406,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       currency: o.currency,
       payToken: o.pay_token ?? null,
       payByCash: o.pay_by_cash === true,
+      paymentPage: paymentPage && o.pay_by_cash === true && o.status === "awaiting_payment",
     });
   } catch (e) {
     if (e instanceof Response) return e;
