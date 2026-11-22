@@ -189,12 +189,12 @@ describe('studio admin menu (Hebrew)', () => {
 });
 
 describe('other roles', () => {
-  it('a parent still sees Classes, Book and their own page, not the admin list', async () => {
+  it('a parent still sees Classes, Book, Shop and their own page, not the admin list', async () => {
     await setLanguage('en');
     auth.roles = ['account_holder'];
     renderMenu('dance', '/dashboard/portal');
     const labels = menuLabels();
-    expect(labels.slice(0, 4)).toEqual(['Home', 'Classes', 'Book', 'My Account']);
+    expect(labels.slice(0, 5)).toEqual(['Home', 'Classes', 'Book', 'Shop', 'My Account']);
     expect(labels).not.toContain('Leads');
   });
 });
