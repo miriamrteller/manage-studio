@@ -33,7 +33,7 @@ export function parseClassRemindersSetting(raw: unknown): ClassReminders {
 
 /**
  * Notifications -> Automatic emails: the morning-of class reminder and the
- * "no class" notice a week ahead, to enrolled families. Saved to
+ * "no class" notice 6 days ahead (the day after the previous class), to enrolled families. Saved to
  * tenants.class_reminders; run-class-reminders sends them every morning.
  * Holidays are skipped automatically; closed dates add the studio's own days off.
  */

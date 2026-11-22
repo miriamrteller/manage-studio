@@ -974,7 +974,7 @@
         "morning_hint": "On each class day: the time, where (the class's location) and what to wear.",
         "wear_en": "What to wear (English)",
         "wear_he": "What to wear (Hebrew)",
-        "no_class_label": "\"No class\" notice, a week ahead",
+        "no_class_label": "\"No class\" notice, the day after the previous class (6 days ahead)",
         "no_class_hint": "When a class day falls on a holiday (skipped automatically, as on your timetable) or on one of your closed dates below.",
         "closed_legend": "Your own closed dates",
         "closed_hint": "Days with no class besides the holidays, for example Shushan Purim in Jerusalem or a day off.",

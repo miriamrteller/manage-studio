@@ -1,7 +1,7 @@
 /**
  * Automatic class emails to enrolled families (tenants.class_reminders):
  *  - the morning-of reminder: "class today at 4:30", with where and what to wear;
- *  - the no-class notice, a week ahead: "no class next Wednesday".
+ *  - the no-class notice, 6 days ahead (day after the previous class): "no class next Wednesday".
  *
  * Pure logic, no I/O: run-class-reminders loads the rows and sends. A day has
  * no class when it is a skipped Israeli holiday (the same rule as the
