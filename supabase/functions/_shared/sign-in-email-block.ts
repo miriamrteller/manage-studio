@@ -45,3 +45,18 @@ export function replaceParagraphText(html: string, text: string, replacement: st
   const words = escapeHtml(replacement).split("\n").join("<br>");
   return html.slice(0, at + 1) + words + html.slice(at + needle.length - "</p>".length);
 }
+
+/** One photo across the email's width (hosted image, never an attachment). */
+export function photoBlockHtml(params: { url: string; alt: string }): string {
+  return `<p style="margin:0 0 16px 0"><img src="${escapeHtml(params.url)}" alt="${escapeHtml(params.alt)}" width="560"`
+    + ` style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:6px"></p>`;
+}
+
+/** Inserts the block just after the paragraph that holds exactly `text`. Not found: unchanged. */
+export function insertAfterParagraph(html: string, text: string, block: string): string {
+  const needle = `>${escapeHtml(text)}</p>`;
+  const at = html.indexOf(needle);
+  if (at < 0) return html;
+  const end = at + needle.length;
+  return html.slice(0, end) + block + html.slice(end);
+}

@@ -15,7 +15,24 @@ import { baseValue, renderInApp, setLanguage, setTenant } from './helpers/vertic
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
 const invoke = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), functions: { invoke } } }));
+const upload = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    functions: { invoke },
+    storage: {
+      from: () => ({
+        upload,
+        getPublicUrl: (path: string) => ({ data: { publicUrl: `https://ref.supabase.co/storage/v1/object/public/tenant-assets/${path}` } }),
+      }),
+    },
+  },
+}));
+vi.mock('@/features/jobs/lib/photoPreview', async (orig) => ({
+  ...(await orig<typeof import('@/features/jobs/lib/photoPreview')>()),
+  makePreview: async () => new Blob(['jpeg'], { type: 'image/jpeg' }),
+}));
 
 const state = vi.hoisted(() => ({ job: null as JobRow | null, released: false }));
 vi.mock('@/features/jobs/hooks/useJobs', () => ({
@@ -294,7 +311,7 @@ describe('JobsList', () => {
       error: null,
     });
     renderInApp(<JobsList />, { path: '/admin/projects' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
     const box = await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
     fireEvent.change(box, { target: { value: 'Lovely to meet you, Pat.\nHere are your photos.' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
@@ -304,13 +321,42 @@ describe('JobsList', () => {
     });
   });
 
+  it('Add a photo: uploaded once, the same photo and its description go with the send', async () => {
+    upload.mockResolvedValue({ data: {}, error: null });
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
+    await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
+    const input = screen.getAllByTestId('gallery-email-photo-input')[0];
+    fireEvent.change(input, { target: { files: [new File(['x'], 'family.png', { type: 'image/png' })] } });
+    const alt = await screen.findByLabelText(/Describe the photo/);
+    expect((alt as HTMLInputElement).value).toMatch(/^A photo from /);
+    fireEvent.change(alt, { target: { value: 'Autumn in the park' } });
+    expect(upload).toHaveBeenCalledTimes(1);
+    const path = upload.mock.calls[0][0] as string;
+    expect(path).toMatch(/^[^/]+\/gallery-email\/[A-Za-z0-9_-]+\.jpg$/);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
+      body: {
+        engagementIds: ['e1'],
+        resend: true,
+        photoUrl: `https://ref.supabase.co/storage/v1/object/public/tenant-assets/${path}`,
+        photoAlt: 'Autumn in the park',
+      },
+    });
+  });
+
   it('Edit email text left as it was: the standard text goes', async () => {
     invoke.mockResolvedValue({
       data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
       error: null,
     });
     renderInApp(<JobsList />, { path: '/admin/projects' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
     await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
     fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
     expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();

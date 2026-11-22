@@ -5,6 +5,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanGalleryMessage,
+  cleanPhotoAlt,
+  galleryEmailPhotoUrl,
   GALLERY_MESSAGE_MAX,
   planGallerySend,
   type SendGalleryShoot,
@@ -171,6 +173,75 @@ describe('the studio\'s own gallery email text', () => {
   });
 });
 
+describe('a photo in the gallery email', () => {
+  const base = 'https://ref.supabase.co';
+  const tenant = '11111111-1111-4111-8111-111111111111';
+  const ok = `${base}/storage/v1/object/public/tenant-assets/${tenant}/gallery-email/1795-ab12cd.jpg`;
+
+  it('galleryEmailPhotoUrl: only this studio\'s own gallery email upload', () => {
+    expect(galleryEmailPhotoUrl(ok, base, tenant)).toBe(ok);
+    expect(galleryEmailPhotoUrl(ok, `${base}/`, tenant)).toBe(ok);
+    expect(galleryEmailPhotoUrl(ok.replace(tenant, '22222222-2222-4222-8222-222222222222'), base, tenant)).toBeNull();
+    expect(galleryEmailPhotoUrl(ok.replace('gallery-email', 'logo'), base, tenant)).toBeNull();
+    expect(galleryEmailPhotoUrl(ok.replace('.jpg', '.svg'), base, tenant)).toBeNull();
+    expect(galleryEmailPhotoUrl(`${ok}"onerror="x`, base, tenant)).toBeNull();
+    expect(galleryEmailPhotoUrl(ok.replace('1795-ab12cd', '../x'), base, tenant)).toBeNull();
+    expect(galleryEmailPhotoUrl('https://evil.test/a.jpg', base, tenant)).toBeNull();
+    expect(galleryEmailPhotoUrl(42, base, tenant)).toBeNull();
+  });
+
+  it('cleanPhotoAlt: one plain line, or the fallback', () => {
+    expect(cleanPhotoAlt('  Autumn\n in the\tpark ', 'Studio')).toBe('Autumn in the park');
+    expect(cleanPhotoAlt('', 'Studio')).toBe('Studio');
+    expect(cleanPhotoAlt(undefined, 'Studio')).toBe('Studio');
+    expect(cleanPhotoAlt('x'.repeat(500), 'Studio')).toHaveLength(200);
+  });
+
+  it.each([
+    ['en', en.gallery_ready],
+    ['he', he.gallery_ready],
+  ] as const)('%s: the photo sits under her message and above the gallery button', (language, strings) => {
+    const { html } = renderPhotographerEmail({
+      key: 'gallery_ready',
+      language,
+      schoolName: 'Studio',
+      primaryColor: '#2563eb',
+      accentColor: '#dc2626',
+      variables: {
+        recipientName: 'Pat',
+        galleryUrl: 'https://studio.smugmug.com/Pat',
+        customBody: 'Thank you!',
+        customBodyReplaces: strings.body,
+        photoUrl: ok,
+        photoAlt: 'Park "autumn" <b>',
+        photoAfter: strings.body,
+      },
+    });
+    const photoAt = html.indexOf(`src="${ok}"`);
+    expect(photoAt).toBeGreaterThan(html.indexOf('Thank you!'));
+    expect(photoAt).toBeLessThan(html.indexOf('https://studio.smugmug.com/Pat'));
+    expect(html).toContain('alt="Park &quot;autumn&quot; &lt;b&gt;"');
+    expect(html.split(`src="${ok}"`).length - 1).toBe(1);
+  });
+
+  it('a link that is not http(s) never becomes a photo', () => {
+    const { html } = renderPhotographerEmail({
+      key: 'gallery_ready',
+      language: 'en',
+      schoolName: 'Studio',
+      primaryColor: '#2563eb',
+      accentColor: '#dc2626',
+      variables: {
+        recipientName: 'Pat',
+        galleryUrl: 'https://studio.smugmug.com/Pat',
+        photoUrl: 'javascript:alert(1)',
+        photoAfter: en.gallery_ready.body,
+      },
+    });
+    expect(html).not.toContain('javascript:alert(1)');
+  });
+});
+
 describe('ShootGalleryService.send', () => {
   beforeEach(() => invoke.mockReset());
 
@@ -209,6 +280,14 @@ describe('ShootGalleryService.send', () => {
     await ShootGalleryService.send(['e1'], { resend: true });
     expect(invoke.mock.calls.map((call) => call[1].body.message)).toEqual(['Hello', undefined]);
     expect('message' in invoke.mock.calls[1][1].body).toBe(false);
+  });
+
+  it('passes the photo on only with an address', async () => {
+    invoke.mockResolvedValue({ data: { sent: 1, skipped: 0, failed: 0, results: [] }, error: null });
+    await ShootGalleryService.send(['e1'], { photoUrl: 'https://x.test/a.jpg', photoAlt: ' Park ' });
+    await ShootGalleryService.send(['e1'], { photoAlt: 'Park' });
+    expect(invoke.mock.calls[0][1].body).toMatchObject({ photoUrl: 'https://x.test/a.jpg', photoAlt: 'Park' });
+    expect('photoAlt' in invoke.mock.calls[1][1].body).toBe(false);
   });
 
   it('lastSent: when each gallery email last went', async () => {
