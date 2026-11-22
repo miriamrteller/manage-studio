@@ -2396,9 +2396,15 @@ export type Database = {
           job_payment_request_id: string | null
           paid_at: string | null
           pay_by_cash: boolean
+          pay_method: string | null
           person_id: string | null
           photo_count: number
           product_count: number
+          proof_path: string | null
+          proof_reminded_at: string | null
+          proof_reminders_sent: number
+          proof_requested: boolean
+          proof_sent_at: string | null
           refunded_at: string | null
           status: string
           tenant_id: string
@@ -2418,9 +2424,15 @@ export type Database = {
           job_payment_request_id?: string | null
           paid_at?: string | null
           pay_by_cash?: boolean
+          pay_method?: string | null
           person_id?: string | null
           photo_count: number
           product_count?: number
+          proof_path?: string | null
+          proof_reminded_at?: string | null
+          proof_reminders_sent?: number
+          proof_requested?: boolean
+          proof_sent_at?: string | null
           refunded_at?: string | null
           status?: string
           tenant_id: string
@@ -2440,9 +2452,15 @@ export type Database = {
           job_payment_request_id?: string | null
           paid_at?: string | null
           pay_by_cash?: boolean
+          pay_method?: string | null
           person_id?: string | null
           photo_count?: number
           product_count?: number
+          proof_path?: string | null
+          proof_reminded_at?: string | null
+          proof_reminders_sent?: number
+          proof_requested?: boolean
+          proof_sent_at?: string | null
           refunded_at?: string | null
           status?: string
           tenant_id?: string
@@ -5365,8 +5383,16 @@ export type Database = {
       }
       tenant_photo_shop_settings: {
         Row: {
+          accepts_bank: boolean
+          accepts_bit: boolean
+          accepts_cash: boolean
+          accepts_cheque: boolean
           all_photos_price_minor: number | null
+          bank_details: string | null
+          bit_phone: string | null
           card_payments: boolean
+          cash_instructions: string | null
+          cheque_instructions: string | null
           email_signature: string | null
           gallery_open_days: number
           price_per_photo_minor: number | null
@@ -5374,8 +5400,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
           all_photos_price_minor?: number | null
+          bank_details?: string | null
+          bit_phone?: string | null
           card_payments?: boolean
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
           email_signature?: string | null
           gallery_open_days?: number
           price_per_photo_minor?: number | null
@@ -5383,8 +5417,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
           all_photos_price_minor?: number | null
+          bank_details?: string | null
+          bit_phone?: string | null
           card_payments?: boolean
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
           email_signature?: string | null
           gallery_open_days?: number
           price_per_photo_minor?: number | null

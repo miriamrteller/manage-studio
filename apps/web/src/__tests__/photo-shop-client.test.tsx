@@ -20,6 +20,7 @@ const state = vi.hoisted(() => ({
   flag: true,
   gallery: null as ClientPhotoGallery | null,
   order: vi.fn(),
+  proof: vi.fn(async (_id: string, _orderId: string, _file: File) => undefined),
   payBy: [] as string[],
   products: [] as unknown[],
   galleryCall: (_id: string, _refresh?: boolean) => undefined as void,
@@ -41,6 +42,7 @@ vi.mock('@/features/jobs/services/clientPhotoShopService', async (orig) => {
         state.products = products;
         return state.order(id, keys, all);
       },
+      sendProof: (id: string, orderId: string, file: File) => state.proof(id, orderId, file),
     },
   };
 });
@@ -292,6 +294,55 @@ describe('ClientPhotoShop', () => {
     await waitFor(() => expect(state.order).toHaveBeenCalled());
     expect(state.payBy).toEqual(['cash']);
     expect(screen.queryByText('pay page')).toBeNull();
+  });
+
+  it('Bit and bank transfer filled in: "Continue to payment" opens the payment page', async () => {
+    state.gallery = {
+      shop: view({ pay_direct: { ways: [{ method: 'bit', details: '050-0000000' }, { method: 'bank', details: 'Bank 12, branch 345' }] } }),
+      photos,
+    };
+    state.order.mockResolvedValue({
+      orderId: 'o5', status: 'awaiting_payment', totalMinor: 3000, currency: 'ILS', payToken: 'tok5', payByCash: true, paymentPage: true,
+    });
+    renderInApp(<ClientPhotoShop engagementId="e1" />, {
+      path: '/portal',
+      extraRoutes: { '/pay/:token': <p>pay page</p>, '/dashboard/portal/photo-order/:e/:o': <p>payment step</p> },
+    });
+    await screen.findByText(/per photo/);
+    for (let i = 0; i < 3; i++) fireEvent.click(addButtons()[0]);
+    expect((screen.getByLabelText('Pay by Bit or by bank transfer') as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText('By card now')).toBeTruthy();
+    // The details are on the payment page, not in the gallery.
+    expect(screen.queryByText(/050-0000000/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Continue to payment \(₪30(\.00)?\)/ }));
+    await waitFor(() => expect(state.order).toHaveBeenCalled());
+    expect(state.payBy).toEqual(['direct']);
+    expect(await screen.findByText('payment step')).toBeTruthy();
+  });
+
+  it('only Bit filled in and card off: no choice to make, says what comes next', async () => {
+    state.gallery = { shop: view({ card_payments: false, pay_direct: { ways: [{ method: 'bit', details: '050-0000000' }] } }), photos };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    await screen.findByText(/per photo/);
+    for (let i = 0; i < 3; i++) fireEvent.click(addButtons()[0]);
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(screen.getByText('Next you choose how to pay: Pay by Bit.')).toBeTruthy();
+  });
+
+  it('an order waiting for its payment screenshot links to its payment page', async () => {
+    state.gallery = {
+      shop: view({
+        orders: [{
+          id: 'o9', status: 'awaiting_payment', photo_count: 1, included_count: 0, total_minor: 1000, currency: 'ILS',
+          created_at: '2026-11-22T10:00:00Z', paid_at: null, delivered_at: null, pay_token: null, delivery_url: null,
+          pay_by_cash: true, proof_requested: true, pay_method: null, proof_sent_at: null,
+        }],
+      }),
+      photos,
+    };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    const link = await screen.findByRole('link', { name: 'Pay and send the screenshot' });
+    expect(link.getAttribute('href')).toBe('/dashboard/portal/photo-order/e1/o9');
   });
 
   it('pay in cash: sends the order in, no pay page, and says what happens next', async () => {

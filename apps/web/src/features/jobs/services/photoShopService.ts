@@ -9,6 +9,8 @@ import { supabase } from '@/lib/supabase';
  */
 
 export const PHOTO_SHOP_BUCKET = 'photo-shop-photos';
+/** Clients' payment screenshots (private; studio admins read their own studio's). */
+export const PHOTO_ORDER_PROOF_BUCKET = 'photo-order-proofs';
 /** How long the studio's own thumbnail links work. */
 const THUMB_URL_SECONDS = 60 * 60;
 /** Register uploads in small batches so a long upload keeps what's done. */
@@ -98,6 +100,13 @@ export interface PhotoOrder {
   delivered_at: string | null;
   /** Sent in by the client to pay in cash; the studio records the cash on the order. */
   pay_by_cash?: boolean;
+  /** A payment screenshot is asked for (the studio had Bit / bank transfer details). */
+  proof_requested?: boolean;
+  /** What the client picked on the payment page: Bit or bank transfer. */
+  pay_method?: 'bit' | 'bank' | null;
+  /** The client's payment screenshot (private bucket), and when it came. */
+  proof_path?: string | null;
+  proof_sent_at?: string | null;
   job_payment_request_id?: string | null;
   items: PhotoOrderItem[];
 }
@@ -113,6 +122,15 @@ export interface StudioPhotoShopDefaults {
   gallery_open_days: number;
   /** Clients may also pay by card. Off: they only pay the studio directly. */
   card_payments: boolean;
+  /** Ways clients may pay the studio directly, each with its details (payment page). */
+  accepts_bit: boolean;
+  bit_phone: string | null;
+  accepts_bank: boolean;
+  bank_details: string | null;
+  accepts_cash: boolean;
+  cash_instructions: string | null;
+  accepts_cheque: boolean;
+  cheque_instructions: string | null;
 }
 
 export const DEFAULT_GALLERY_OPEN_DAYS = 90;
@@ -161,7 +179,7 @@ export class PhotoShopService {
     const { data, error } = await supabase
       .from('job_photo_orders')
       .select(
-        `id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
+        `id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, pay_method, proof_requested, proof_path, proof_sent_at, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
       )
       .eq('engagement_id', engagementId)
       .neq('status', 'cancelled')
@@ -175,7 +193,7 @@ export class PhotoShopService {
     const { data, error } = await supabase
       .from('job_photo_orders')
       .select(
-        `id, engagement_id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
+        `id, engagement_id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, pay_method, proof_requested, proof_path, proof_sent_at, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
       )
       .eq('tenant_id', tenantId)
       .neq('status', 'cancelled')
@@ -183,6 +201,13 @@ export class PhotoShopService {
       .limit(500);
     if (error) throw error;
     return (data ?? []) as unknown as StudioPhotoOrder[];
+  }
+
+  /** A short-lived link to an order's payment screenshot, for the studio. */
+  static async proofUrl(path: string): Promise<string> {
+    const { data, error } = await supabase.storage.from(PHOTO_ORDER_PROOF_BUCKET).createSignedUrl(path, 600);
+    if (error || !data?.signedUrl) throw error ?? new Error('no_url');
+    return data.signedUrl;
   }
 
   /** Saves the download link and emails the client (deliver-photo-order). */
@@ -270,7 +295,7 @@ export class PhotoShopService {
   static async getDefaults(tenantId: string): Promise<StudioPhotoShopDefaults> {
     const { data, error } = await supabase
       .from('tenant_photo_shop_settings')
-      .select('price_per_photo_minor, all_photos_price_minor, gallery_open_days, card_payments')
+      .select('price_per_photo_minor, all_photos_price_minor, gallery_open_days, card_payments, accepts_bit, bit_phone, accepts_bank, bank_details, accepts_cash, cash_instructions, accepts_cheque, cheque_instructions')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     if (error) throw error;
@@ -280,6 +305,14 @@ export class PhotoShopService {
         all_photos_price_minor: null,
         gallery_open_days: DEFAULT_GALLERY_OPEN_DAYS,
         card_payments: false,
+        accepts_bit: false,
+        bit_phone: null,
+        accepts_bank: false,
+        bank_details: null,
+        accepts_cash: false,
+        cash_instructions: null,
+        accepts_cheque: false,
+        cheque_instructions: null,
       }
     );
   }
@@ -331,7 +364,7 @@ export class PhotoShopService {
     return PhotoShopService.listProducts(tenantId);
   }
 
-  static async saveDefaults(tenantId: string, values: StudioPhotoShopDefaults): Promise<void> {
+  static async saveDefaults(tenantId: string, values: Partial<StudioPhotoShopDefaults>): Promise<void> {
     const { error } = await supabase
       .from('tenant_photo_shop_settings')
       .upsert({ tenant_id: tenantId, ...values }, { onConflict: 'tenant_id' });
@@ -349,6 +382,15 @@ export function majorToMinor(value: string): number | null {
 export function minorToMajor(value: number | null): string {
   if (value == null) return '';
   return (value / 100).toFixed(value % 100 === 0 ? 0 : 2);
+}
+
+export const BIT_PHONE_MAX = 30;
+/** Bank details and cash / cheque instructions, like the database check. */
+export const PAY_TEXT_MAX = 500;
+
+/** Keeps only what a phone number may hold (digits, spaces, + - ( )), like the database check. */
+export function bitPhoneInput(value: string): string {
+  return value.replace(/[^0-9+\-() ]/g, '').slice(0, BIT_PHONE_MAX);
 }
 
 /** https only, like deliver_job_photo_order(). */

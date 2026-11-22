@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTenant } from '@/hooks/useTenant';
@@ -7,7 +8,7 @@ import { usePhotoShopEnabled, useStudioPhotoShopDefaults } from '@/features/jobs
 import { DEFAULT_GALLERY_OPEN_DAYS, majorToMinor, minorToMajor } from '@/features/jobs/services/photoShopService';
 
 /**
- * Settings → Payment: photo shop defaults, copied into each new shoot's shop
+ * Photo shop › Prices: photo shop defaults, copied into each new shoot's shop
  * (and editable there). Only for studios with the photo shop switched on.
  */
 export function PhotoShopDefaultsSetting() {
@@ -24,7 +25,6 @@ function PhotoShopDefaultsForm() {
   const [perPhoto, setPerPhoto] = useState('');
   const [allPhotos, setAllPhotos] = useState('');
   const [days, setDays] = useState(String(DEFAULT_GALLERY_OPEN_DAYS));
-  const [card, setCard] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -33,7 +33,6 @@ function PhotoShopDefaultsForm() {
       setPerPhoto(minorToMajor(defaults.data.price_per_photo_minor));
       setAllPhotos(minorToMajor(defaults.data.all_photos_price_minor));
       setDays(String(defaults.data.gallery_open_days));
-      setCard(defaults.data.card_payments === true);
       setLoaded(true);
     }
   }, [defaults.data, loaded]);
@@ -72,14 +71,12 @@ function PhotoShopDefaultsForm() {
             onChange={(e) => touch(setDays)(e.target.value)} />
         </div>
       </div>
-      <div className="space-y-1">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" checked={card} aria-describedby={`${id}-card-hint`}
-            onChange={(e) => touch(setCard)(e.target.checked)} />
-          {t('settings.photo_shop.card_payments')}
-        </label>
-        <p id={`${id}-card-hint`} className="text-xs text-muted-foreground">{t('settings.photo_shop.card_payments_hint')}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {t('settings.photo_shop.pay_ways_where')}{' '}
+        <Link to="/admin/settings?tab=payment" className="font-medium text-primary underline underline-offset-2">
+          {t('settings.photo_shop.pay_ways_link')}
+        </Link>
+      </p>
       <div className="flex flex-wrap items-center gap-3">
         <Button
           size="sm"
@@ -92,7 +89,6 @@ function PhotoShopDefaultsForm() {
                 price_per_photo_minor: majorToMinor(perPhoto),
                 all_photos_price_minor: majorToMinor(allPhotos),
                 gallery_open_days: daysNumber,
-                card_payments: card,
               },
               { onSuccess: () => setSaved(true) },
             )

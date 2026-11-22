@@ -22,6 +22,7 @@
  */
 
 import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
+import { remindPhotoOrderProofs } from "../_shared/photo-shop/emails.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
@@ -282,5 +283,14 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
   if (releaseError) console.error("[expire-scheduling-holds] shop orders release failed", releaseError.message);
   else shopOrdersReleased = (released as number | null) ?? 0;
 
-  return jsonResponse({ ok: true, remindersSent, expired, bookingsKept, shopOrdersReleased });
+  // 5. Photo orders paid by Bit / bank transfer with no payment screenshot yet: remind the
+  //    client at 1, 3 and 7 days (owner, 22 Nov 2026). Never cancels the order.
+  let proofRemindersSent = 0;
+  try {
+    proofRemindersSent = await remindPhotoOrderProofs(service);
+  } catch (e) {
+    console.error("[expire-scheduling-holds] payment screenshot reminders failed", String(e));
+  }
+
+  return jsonResponse({ ok: true, remindersSent, expired, bookingsKept, shopOrdersReleased, proofRemindersSent });
 }));
