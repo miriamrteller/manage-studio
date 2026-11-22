@@ -9,7 +9,7 @@ import {
   type PhotographerEmailLanguage,
 } from "../photographer-email-shells/generated.ts";
 import { applyEmailBrand } from "../email-brand.ts";
-import { insertBeforeParagraph, isHttpLink, signInBlockHtml } from "../sign-in-email-block.ts";
+import { insertBeforeParagraph, isHttpLink, replaceParagraphText, signInBlockHtml } from "../sign-in-email-block.ts";
 
 /** Emails that carry a sign-in button when signInUrl is set ("Go to my page"; gallery_ready: the photo shop). */
 const SIGN_IN_EMAILS: readonly PhotographerEmailKey[] = ["booking_confirmed", "gallery_ready"];
@@ -29,6 +29,17 @@ function withSignInBlock(
   if (!SIGN_IN_EMAILS.includes(key) || !isHttpLink(signInUrl)) return html;
   if (!signInBody || !signInCta || !signInBefore) return html;
   return insertBeforeParagraph(html, signInBefore, signInBlockHtml({ body: signInBody, cta: signInCta, url: signInUrl, color }));
+}
+
+/**
+ * The studio's own message in place of the standard body paragraph (Send gallery, owner
+ * 22 Nov 2026). The caller passes the standard wording it replaces (customBodyReplaces),
+ * so this file stays free of the i18n bundle. Plain text; escaped here.
+ */
+function withCustomBody(html: string, variables: Record<string, string>): string {
+  const { customBody, customBodyReplaces } = variables;
+  if (!customBody || !customBodyReplaces) return html;
+  return replaceParagraphText(html, customBodyReplaces, customBody);
 }
 
 export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
@@ -88,7 +99,7 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     variables: input.variables,
   });
   const html = applyEmailBrand(
-    withSignInBlock(input.key, shellHtml, input.variables, input.primaryColor),
+    withSignInBlock(input.key, withCustomBody(shellHtml, input.variables), input.variables, input.primaryColor),
     input.primaryColor,
     input.accentColor,
   );

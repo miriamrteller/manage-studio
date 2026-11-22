@@ -33,3 +33,15 @@ export function insertBeforeParagraph(html: string, text: string, block: string)
 export function isHttpLink(value: unknown): value is string {
   return typeof value === "string" && /^https?:\/\//i.test(value);
 }
+
+/**
+ * Replaces the words of the paragraph that holds exactly `text` with `replacement`
+ * (plain text: escaped, line breaks kept). Not found: unchanged.
+ */
+export function replaceParagraphText(html: string, text: string, replacement: string): string {
+  const needle = `>${escapeHtml(text)}</p>`;
+  const at = html.indexOf(needle);
+  if (at < 0) return html;
+  const words = escapeHtml(replacement).split("\n").join("<br>");
+  return html.slice(0, at + 1) + words + html.slice(at + needle.length - "</p>".length);
+}

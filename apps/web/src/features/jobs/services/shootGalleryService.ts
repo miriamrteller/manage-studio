@@ -30,13 +30,18 @@ export const ShootGalleryService = {
   /**
    * More than SEND_GALLERY_MAX shoots go in several calls, one after another.
    * resend: false skips clients who already got the gallery email ("already_sent").
+   * message: the studio's own words for the email's main paragraph (plain text; the
+   * links stay outside it). Left out when not given, so the standard text goes.
    */
-  async send(engagementIds: string[], { resend = false }: { resend?: boolean } = {}): Promise<SendGalleryResult> {
+  async send(
+    engagementIds: string[],
+    { resend = false, message }: { resend?: boolean; message?: string } = {},
+  ): Promise<SendGalleryResult> {
     const total: SendGalleryResult = { sent: 0, skipped: 0, failed: 0, results: [] };
     for (let i = 0; i < engagementIds.length; i += SEND_GALLERY_MAX) {
       const chunk = engagementIds.slice(i, i + SEND_GALLERY_MAX);
       const { data, error } = await supabase.functions.invoke('send-shoot-gallery', {
-        body: { engagementIds: chunk, resend },
+        body: message ? { engagementIds: chunk, resend, message } : { engagementIds: chunk, resend },
       });
       const parsed = await parseFunctionInvokeBody(data, error);
       if (error || !parsed || !Array.isArray(parsed.results)) throw new Error('send_gallery_failed');

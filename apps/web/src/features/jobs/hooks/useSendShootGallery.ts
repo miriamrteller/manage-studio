@@ -12,7 +12,8 @@ export function useSendShootGallery({ resend = false }: { resend?: boolean } = {
   const tenant = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (engagementIds: string[]) => ShootGalleryService.send(engagementIds, { resend }),
+    mutationFn: ({ engagementIds, message }: { engagementIds: string[]; message?: string }) =>
+      ShootGalleryService.send(engagementIds, { resend, message }),
     onSuccess: () => {
       // 'jobs' is useJobs' key: the list and every shoot page under it.
       void queryClient.invalidateQueries({ queryKey: ['jobs', tenant?.id] });
@@ -20,6 +21,27 @@ export function useSendShootGallery({ resend = false }: { resend?: boolean } = {
       void queryClient.invalidateQueries({ queryKey: [SENT_KEY] });
     },
   });
+}
+
+/**
+ * The gallery email's standard main paragraph, in the language the email goes in (the
+ * studio's language): the "Edit email text" box starts with it. Loaded only when the box opens.
+ */
+export function useGalleryEmailStandardBody(enabled: boolean) {
+  const tenant = useTenant();
+  const language = tenant?.language_default === 'he' ? 'he' : 'en';
+  const query = useQuery({
+    queryKey: ['gallery-email-standard-body', language],
+    queryFn: async () => {
+      const strings = language === 'he'
+        ? (await import('@shared/i18n/email-templates-he.json')).default
+        : (await import('@shared/i18n/email-templates-en.json')).default;
+      return strings.gallery_ready.body;
+    },
+    enabled,
+    staleTime: Infinity,
+  });
+  return { body: query.data, language };
 }
 
 /** engagement id -> when its gallery email last went. One query for the whole list. */

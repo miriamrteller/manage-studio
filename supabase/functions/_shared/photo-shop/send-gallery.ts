@@ -44,3 +44,30 @@ export function planGallerySend(shoot: SendGalleryShoot): SendGalleryPlan {
   if (!galleryUrl && !shopReady) return { send: false, reason: "no_gallery" };
   return { send: true, galleryUrl, withShop: shopReady };
 }
+
+/** Longest message the studio can write in the gallery email (the box stops there too). */
+export const GALLERY_MESSAGE_MAX = 2000;
+
+/**
+ * The studio's own words for the gallery email (owner, 22 Nov 2026). Plain text only:
+ * it is HTML-escaped when the email is built. Control characters go, line breaks stay
+ * (at most one blank line in a row), and so do
+ * bidi override characters that could disguise text. Empty, or the same as the standard wording: null,
+ * so the email keeps its standard text.
+ */
+export function cleanGalleryMessage(raw: unknown, standard: string): string | null {
+  if (typeof raw !== "string") return null;
+  const text = raw
+    .replace(/\r\n?/g, "\n")
+    // deno-lint-ignore no-control-regex
+    .replace(/[\u0000-\u0009\u000B-\u001F\u007F‪-‮⁦-⁩]/g, (c) =>
+      c === "\t" ? " " : ""
+    )
+    .split("\n").map((line) => line.trimEnd()).join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, GALLERY_MESSAGE_MAX)
+    .trim();
+  if (!text || text === standard.trim()) return null;
+  return text;
+}
