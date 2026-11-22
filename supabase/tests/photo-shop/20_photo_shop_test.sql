@@ -367,3 +367,93 @@ BEGIN
   IF (SELECT status FROM job_photo_orders WHERE id = v_cash) <> 'paid' THEN RAISE EXCEPTION 'FAIL cash recorded but not paid'; END IF;
   RAISE NOTICE 'ok  pay in cash: kept, photos taken, paid once the cash is recorded';
 END $$;
+
+-- 15. Prints and other products: priced from the studio's own products, never the caller's;
+--     a print alone is an order; prints never use free photos, never count towards the
+--     "all photos" price, never make the digital file "bought", and the same photo can be
+--     printed again. Another studio's product is refused.
+DO $$
+DECLARE r JSONB; v JSONB; v_canvas UUID; v_wood UUID; v_other UUID; v_free_before INT;
+BEGIN
+  INSERT INTO tenant_photo_products (tenant_id, name_en, name_he, size_label, price_minor, position)
+  SELECT photo, 'Canvas print', 'הדפסה על קנבס', '20x30 cm', 14000, 0 FROM ids RETURNING id INTO v_canvas;
+  INSERT INTO tenant_photo_products (tenant_id, name_en, name_he, size_label, price_minor, position)
+  SELECT photo, 'Wood print', 'הדפסה על עץ', '30x45 cm', 23000, 1 FROM ids RETURNING id INTO v_wood;
+  INSERT INTO tenant_photo_products (tenant_id, name_en, name_he, price_minor)
+  VALUES ('a0000000-0000-4000-8000-000000000002', 'Cheap', 'זול', 100) RETURNING id INTO v_other;
+
+  PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
+  v := get_client_photo_shop((SELECT shoot_a FROM ids));
+  IF jsonb_array_length(v->'products') <> 2 OR v->'products'->0->>'name_en' <> 'Canvas print'
+     OR (v->'products'->1->>'price_minor')::int <> 23000 THEN
+    RAISE EXCEPTION 'FAIL client products: %', v->'products';
+  END IF;
+  v_free_before := (v->>'included_left')::int;
+
+  -- A print alone, of a photo already bought (k5): an order on its own, the digital file untouched.
+  r := create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), '[]'::jsonb, false, 'Photo prints (1)', true,
+         jsonb_build_array(jsonb_build_object('image_key', 'k5', 'file_name', 'IMG_0005.jpg', 'product_id', v_canvas,
+                                              'price_minor', 1)));
+  IF (r->>'total_minor')::int <> 14000 OR (r->>'photo_count')::int <> 0 OR (r->>'product_count')::int <> 1
+     OR r->>'status' <> 'awaiting_payment' THEN
+    RAISE EXCEPTION 'FAIL print-only order: %', r;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM job_photo_order_items WHERE order_id = (r->>'order_id')::uuid AND kind = 'product'
+                 AND product_name_en = 'Canvas print' AND product_name_he = 'הדפסה על קנבס' AND product_size = '20x30 cm'
+                 AND price_minor = 14000 AND NOT included) THEN
+    RAISE EXCEPTION 'FAIL product line not copied';
+  END IF;
+
+  -- Digital + two prints of one new photo (k60): the digital uses the price, prints their own.
+  UPDATE job_photo_shops SET included_photos = 0 WHERE engagement_id = (SELECT shoot_a FROM ids);
+  r := create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), pg_temp.items(60, 60), false, 'x', true,
+         jsonb_build_array(
+           jsonb_build_object('image_key', 'k60', 'file_name', 'IMG_0060.jpg', 'product_id', v_canvas),
+           jsonb_build_object('image_key', 'k60', 'file_name', 'IMG_0060.jpg', 'product_id', v_wood)));
+  IF (r->>'total_minor')::int <> 3000 + 14000 + 23000 OR (r->>'photo_count')::int <> 1 OR (r->>'product_count')::int <> 2 THEN
+    RAISE EXCEPTION 'FAIL digital + prints: %', r;
+  END IF;
+  -- The same photo printed again in another order is fine.
+  r := create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), '[]'::jsonb, false, 'x', true,
+         jsonb_build_array(jsonb_build_object('image_key', 'k60', 'file_name', 'IMG_0060.jpg', 'product_id', v_canvas)));
+  PERFORM pg_temp.pay((r->>'job_payment_request_id')::uuid);
+
+  -- Prints don't make photos "bought" and don't count as money kept towards "all photos".
+  PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
+  v := get_client_photo_shop((SELECT shoot_a FROM ids));
+  IF (SELECT count(*) FROM jsonb_array_elements_text(v->'awaiting_image_keys') k WHERE k = 'k60') <> 1 THEN
+    RAISE EXCEPTION 'FAIL prints listed as awaiting digital: %', v->'awaiting_image_keys';
+  END IF;
+  IF (SELECT COALESCE(sum(i.price_minor), 0) FROM job_photo_order_items i JOIN job_photo_orders o ON o.id = i.order_id
+      WHERE i.engagement_id = (SELECT shoot_a FROM ids) AND i.voided_at IS NULL AND i.kind = 'digital'
+        AND o.status IN ('paid', 'delivered')) <> (v->>'spent_minor')::bigint THEN
+    RAISE EXCEPTION 'FAIL spent_minor counts prints';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v->'orders') o WHERE (o->>'product_count')::int = 1 AND (o->>'photo_count')::int = 0) THEN
+    RAISE EXCEPTION 'FAIL orders carry no product_count';
+  END IF;
+
+  -- Another studio's product, or a removed one, is refused.
+  BEGIN
+    PERFORM create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), '[]'::jsonb, false, 'x', true,
+      jsonb_build_array(jsonb_build_object('image_key', 'k61', 'file_name', 'IMG_0061.jpg', 'product_id', v_other)));
+    RAISE EXCEPTION 'FAIL another studio''s product was sold';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE '%product_not_found%' THEN RAISE; END IF;
+  END;
+  -- An empty cart is still refused.
+  BEGIN
+    PERFORM create_job_photo_order((SELECT shoot_a FROM ids), (SELECT alice FROM ids), '[]'::jsonb, false, 'x', true, '[]'::jsonb);
+    RAISE EXCEPTION 'FAIL empty order accepted';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE '%no_photos%' THEN RAISE; END IF;
+  END;
+
+  -- A removed product leaves the order readable.
+  DELETE FROM tenant_photo_products WHERE id = v_wood;
+  IF NOT EXISTS (SELECT 1 FROM job_photo_order_items WHERE kind = 'product' AND product_id IS NULL AND product_name_en = 'Wood print') THEN
+    RAISE EXCEPTION 'FAIL removed product broke the order line';
+  END IF;
+
+  RAISE NOTICE 'ok  prints: priced by the studio, print-only orders, digital rules untouched, other studios refused';
+END $$;

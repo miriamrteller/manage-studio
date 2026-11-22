@@ -37,4 +37,33 @@ export declare function photoCartTotal(prices: PhotoShopPrices, photoCount: numb
  * cheaper than (or equal to) buying the picked photos one by one.
  */
 export declare function allPhotosIsBetter(prices: PhotoShopPrices, pickedCount: number, remainingCount: number): boolean;
+/** A product (print, canvas ...) the studio sells per photo, as the client sees it. */
+export interface PhotoProduct {
+    id: string;
+    name_en: string;
+    name_he: string;
+    /** e.g. "20x30 cm"; null when the product has no size. */
+    size: string | null;
+    price_minor: number;
+}
+export interface PhotoCartGrandTotal {
+    digital: PhotoCartTotal;
+    productCount: number;
+    productsMinor: number;
+    totalMinor: number;
+    /** Set when the cart cannot be priced. A cart of products only is fine. */
+    problem: PhotoCartProblem | null;
+}
+/**
+ * Total for a cart of `digitalCount` digital photos plus product lines (one price per
+ * line). Free (package) photos and the "all photos" price apply to digital files only.
+ * Mirror of create_job_photo_order() in 20261122204839_photo_shop_print_products.sql.
+ */
+export declare function photoCartGrandTotal(prices: PhotoShopPrices, digitalCount: number, productPricesMinor: number[], allPhotos?: boolean): PhotoCartGrandTotal;
+/** "Canvas print · 20x30 cm" in the client's language. */
+export declare function photoProductLabel(p: {
+    name_en: string;
+    name_he: string;
+    size: string | null;
+}, language: string): string;
 //# sourceMappingURL=photoShop.d.ts.map

@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   gallery: null as ClientPhotoGallery | null,
   order: vi.fn(),
   payBy: [] as string[],
+  products: [] as unknown[],
   galleryCall: (_id: string, _refresh?: boolean) => undefined as void,
 }));
 vi.mock('@/hooks/useFeatureGate', () => ({
@@ -35,8 +36,9 @@ vi.mock('@/features/jobs/services/clientPhotoShopService', async (orig) => {
         state.galleryCall(id, refresh);
         return state.gallery;
       },
-      order: (id: string, keys: string[], all: boolean, payBy = 'card') => {
+      order: (id: string, keys: string[], all: boolean, payBy = 'card', products: unknown[] = []) => {
         state.payBy.push(payBy);
+        state.products = products;
         return state.order(id, keys, all);
       },
     },
@@ -74,6 +76,56 @@ const cartLine = (re: RegExp) =>
   screen.getByText((_, el) => el?.tagName === 'P' && re.test(el.textContent ?? ''));
 
 const addButtons = () => screen.getAllByRole('button', { name: 'Choose' });
+
+describe('ClientPhotoShop: prints and other products', () => {
+  const products = [
+    { id: 'p-canvas', name_en: 'Canvas print', name_he: 'הדפסה על קנבס', size: '20x30 cm', price_minor: 14000 },
+    { id: 'p-wood', name_en: 'Wood print', name_he: 'הדפסה על עץ', size: '30x45 cm', price_minor: 23000 },
+  ];
+  beforeEach(async () => {
+    setTenant('photographer');
+    await setLanguage('en');
+    state.flag = true;
+    state.payBy = [];
+    state.products = [];
+    state.order.mockReset().mockResolvedValue({ orderId: 'o1', status: 'awaiting_payment', totalMinor: 14000, currency: 'ILS', payToken: 'tok', payByCash: true });
+  });
+
+  it('a print alone, then digital and two prints of one photo; prints never use included photos', async () => {
+    state.gallery = {
+      shop: view({ included_photos: 1, included_left: 1, price_per_photo_minor: 7500, products, bought_image_keys: ['g-2'] }),
+      photos,
+    };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    const picker = await screen.findByLabelText('Add a print of IMG_0001.jpg');
+    expect(screen.getAllByRole('button', { name: /^Digital ₪75/ }).length).toBe(5);
+    // A bought photo can still be printed.
+    expect(screen.getByLabelText('Add a print of IMG_0002.jpg')).toBeTruthy();
+
+    fireEvent.change(picker, { target: { value: 'p-canvas' } });
+    expect(cartLine(/0 photos in your cart · 1 print · ₪140/)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Add a print of IMG_0001.jpg'), { target: { value: 'p-wood' } });
+    fireEvent.click(screen.getAllByRole('button', { name: /^Digital ₪75/ })[0]);
+    // 1 digital (included, free) + 140 + 230.
+    expect(cartLine(/1 photo in your cart · 2 prints · 1 included · ₪370/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Wood print · 30x45 cm · ₪230 of IMG_0001.jpg' }));
+    expect(cartLine(/1 photo in your cart · 1 print · 1 included · ₪140/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪140/ }));
+    await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', ['g-1'], false));
+    expect(state.payBy).toEqual(['cash']);
+    expect(state.products).toEqual([{ imageKey: 'g-1', productId: 'p-canvas' }]);
+  });
+
+  it('without products the shop looks as before', async () => {
+    state.gallery = { shop: view(), photos };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    await screen.findAllByRole('button', { name: 'Choose' });
+    expect(screen.queryByText('Add a print…')).toBeNull();
+  });
+});
 
 describe('ClientPhotoShop', () => {
   beforeEach(async () => {

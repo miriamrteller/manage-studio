@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useHasFeature } from '@/hooks/useHasFeature';
 import { FEATURES } from '@shared/index';
@@ -11,6 +12,7 @@ import { formatDueDate, formatMinor } from '@/features/jobs/lib/jobPaymentFormat
 import type { PhotoOrderStatus } from '@/features/jobs/services/photoShopService';
 import { PhotoShopPreview } from '@/features/jobs/components/ClientPhotoShop';
 import { PhotoShopDefaultsSetting } from '@/features/settings/components/PhotoShopDefaultsSetting';
+import { PhotoProductsSetting } from '@/features/settings/components/PhotoProductsSetting';
 import { SmugMugSetting } from '@/features/settings/components/SmugMugSetting';
 
 const TABS = ['overview', 'orders', 'prices', 'smugmug', 'preview'] as const;
@@ -52,7 +54,12 @@ export default function PhotoShopPage() {
           {tab === 'orders' && <OrdersTab />}
         </TabsContent>
         <TabsContent value="prices" className="pt-4">
-          {tab === 'prices' && <PhotoShopDefaultsSetting />}
+          {tab === 'prices' && (
+            <div className="space-y-8">
+              <PhotoShopDefaultsSetting />
+              <PhotoProductsSetting />
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="smugmug" className="pt-4">
           {tab === 'smugmug' && <SmugMugSetting />}
@@ -143,7 +150,7 @@ function OrdersTab() {
                   <p className="font-medium">{name}</p>
                   <p className="text-muted-foreground">
                     {formatDueDate(o.created_at, i18n.language)} ·{' '}
-                    {t('pages.jobs.photo_shop.order_photos', { count: o.photo_count })} ·{' '}
+                    {orderCountsText(o, t)} ·{' '}
                     {formatMinor(o.total_minor, o.currency, i18n.language)}
                     {o.status === 'awaiting_payment' && o.pay_by_cash && <> · {t('photo_shop_admin.orders.cash')}</>}
                   </p>
@@ -161,6 +168,16 @@ function OrdersTab() {
       )}
     </div>
   );
+}
+
+/** "2 photos · 1 print" for an order: digital photos and products (prints ...). */
+function orderCountsText(o: { photo_count: number; product_count?: number }, t: TFunction) {
+  return [
+    o.photo_count > 0 ? t('pages.jobs.photo_shop.order_photos', { count: o.photo_count }) : null,
+    (o.product_count ?? 0) > 0 ? t('pages.jobs.photo_shop.order_prints', { count: o.product_count }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /** The shoot comes from the address (?shoot=), so "See it as your client" on a shoot opens it ready. */

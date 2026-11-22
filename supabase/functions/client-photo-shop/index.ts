@@ -4,7 +4,10 @@
  * The client's photo shop for one shoot (beta, feature billing:photo_shop).
  *   { action: "gallery", engagementId }
  *     → { shop, photos: [{ key, fileName, previewUrl }] }
- *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean, payBy?: "card" | "cash" }
+ *   { action: "order", engagementId, imageKeys: string[], allPhotos?: boolean, payBy?: "card" | "cash",
+ *     products?: [{ imageKey, productId }] }
+ *       products: prints and other products the studio sells, one line each, priced in the
+ *       database. An order may hold products only (imageKeys empty).
  *     → { orderId, status, totalMinor, currency, payToken, payByCash }
  *       payBy "cash": the order is sent in to pay the studio in cash. It waits for
  *       payment (the pay link still works) and the studio is emailed at once.
@@ -35,7 +38,7 @@ import {
   uploadedPhotoSource,
 } from "../_shared/photo-shop/gallery.ts";
 import { refreshGalleryLinks, type SmugMugConnection } from "../_shared/photo-shop/smugmug/refresh.ts";
-import { orderPersonId, photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
+import { orderPersonId, photoOrderLabel, resolveOrderItems, resolveProductItems } from "../_shared/photo-shop/order-items.ts";
 import { notifyStudioPhotoOrderCash, notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
 const FEATURE = "billing:photo_shop";
@@ -183,12 +186,20 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       .eq("job_photo_orders.pay_by_cash", false);
     const mine = new Set((ownAwaiting ?? []).map((r) => r.image_key as string));
 
-    const resolved = resolveOrderItems(
-      photos,
-      body?.imageKeys,
-      taken.filter((k) => !mine.has(k)),
-      body?.allPhotos === true,
-    );
+    const products = resolveProductItems(photos, body?.products);
+    if (!products.ok) return jsonResponse({ error: products.error }, 422);
+    // Products only (no digital file picked): no digital items to check.
+    const requestedKeys = body?.imageKeys;
+    const productsOnly = body?.allPhotos !== true && products.items.length > 0 &&
+      Array.isArray(requestedKeys) && requestedKeys.length === 0;
+    const resolved = productsOnly
+      ? { ok: true as const, items: [] as { image_key: string; file_name: string }[] }
+      : resolveOrderItems(
+        photos,
+        body?.imageKeys,
+        taken.filter((k) => !mine.has(k)),
+        body?.allPhotos === true,
+      );
     if (!resolved.ok) return jsonResponse({ error: resolved.error }, 422);
 
     const { data: tenant } = await service
@@ -204,8 +215,9 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       p_person_id: personId,
       p_items: resolved.items,
       p_all_photos: body?.allPhotos === true,
-      p_label: photoOrderLabel(resolved.items.length, language),
+      p_label: photoOrderLabel(resolved.items.length, language, products.items.length),
       p_pay_by_cash: payByCash,
+      p_products: products.items,
     });
     if (orderError || !order) {
       const code = orderErrorCode(orderError?.message ?? "");

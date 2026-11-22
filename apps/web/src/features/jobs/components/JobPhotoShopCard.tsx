@@ -292,7 +292,12 @@ function PhotoOrderRow({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
           {formatDueDate(order.created_at, i18n.language)} ·{' '}
-          {t('pages.jobs.photo_shop.order_photos', { count: order.photo_count })}
+          {[
+            order.photo_count > 0 ? t('pages.jobs.photo_shop.order_photos', { count: order.photo_count }) : null,
+            (order.product_count ?? 0) > 0 ? t('pages.jobs.photo_shop.order_prints', { count: order.product_count }) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
           {order.included_count > 0 && <> ({t('pages.jobs.photo_shop.order_included', { count: order.included_count })})</>}
           {' · '}
           {formatMinor(order.total_minor, order.currency, i18n.language)}
@@ -316,8 +321,8 @@ function PhotoOrderRow({
       <details open={order.status === 'paid' || (order.status === 'awaiting_payment' && order.pay_by_cash === true)}>
         <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.order_photos_list')}</summary>
         <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5" dir="ltr">
-          {order.items.map((i) => (
-            <li key={i.image_key} className="space-y-1">
+          {order.items.map((i, n) => (
+            <li key={`${i.image_key}-${n}`} className="space-y-1">
               {thumbs.get(i.image_key) ? (
                 <img src={thumbs.get(i.image_key)} alt={i.file_name} loading="lazy"
                   className="aspect-square w-full rounded object-cover" />
@@ -325,6 +330,15 @@ function PhotoOrderRow({
                 <div aria-hidden="true" className="aspect-square w-full rounded bg-muted" />
               )}
               <p className="break-all text-xs">{i.file_name}</p>
+              {(order.product_count ?? 0) > 0 && (
+                <p className="text-xs font-medium" dir="auto">
+                  {i.kind === 'product'
+                    ? [i18n.language.startsWith('he') ? i.product_name_he : i.product_name_en, i.product_size]
+                        .filter(Boolean)
+                        .join(' · ')
+                    : t('pages.jobs.photo_shop.item_digital')}
+                </p>
+              )}
             </li>
           ))}
         </ul>

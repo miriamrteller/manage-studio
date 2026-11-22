@@ -467,7 +467,8 @@
           "no_price": "The studio hasn't set a price for extra photos yet.",
           "no_all_photos_price": "The studio doesn't offer all photos at one price.",
           "no_photos": "Choose at least one photo.",
-          "server_error": "Something went wrong. Please try again."
+          "server_error": "Something went wrong. Please try again.",
+          "product_not_found": "One of the prints you chose is no longer offered. Please refresh the page."
         },
         "link_opening": "Opening your photos…",
         "link_expired": "This link has expired or doesn't work any more. Sign in with your email to see your photos, or ask the studio for a new link.",
@@ -481,7 +482,21 @@
         "ordered_cash": "Order sent. Pay the studio directly by cash, bank transfer or another way they accept. They will prepare your photos.",
         "cash_ordered": "Ordered, paying the studio directly",
         "cash_waiting": "Sent in, paying the studio directly.",
-        "pay_online_instead": "Pay by card instead"
+        "pay_online_instead": "Pay by card instead",
+        "digital": "Digital file",
+        "digital_price": "Digital {{price}}",
+        "digital_chosen": "Digital ✓",
+        "add_print": "Add a print…",
+        "add_print_for": "Add a print of {{name}}",
+        "remove": "Remove",
+        "remove_line": "Remove {{name}} of {{photo}}",
+        "cart_prints_one": "{{count}} print",
+        "cart_prints_other": "{{count}} prints",
+        "order_prints_one": "{{count}} print",
+        "order_prints_other": "{{count}} prints",
+        "preparing_prints": "The studio is preparing your order",
+        "buy_all_prints": "Buy all {{count}} photos and your prints for {{price}}",
+        "buy_all_prints_cash": "Order all {{count}} photos and your prints ({{price}}, pay the studio)"
       },
       "bookings_heading": "My bookings",
       "book_again": "Book a time",
@@ -1947,7 +1962,10 @@
         "email_link": "Email shop link to client",
         "link_other_way": "WhatsApp or copy link",
         "link_emailed": "Emailed to {{email}}. The link works until {{date}}.",
-        "link_not_emailed": "We couldn't email it. Copy the link or send it on WhatsApp:"
+        "link_not_emailed": "We couldn't email it. Copy the link or send it on WhatsApp:",
+        "order_prints_one": "{{count}} print",
+        "order_prints_other": "{{count}} prints",
+        "item_digital": "Digital file"
       },
       "tabs": {
         "details": "Details",
@@ -4328,7 +4346,20 @@
       "open_days": "Days a gallery stays open for buying",
       "card_payments": "Clients can also pay by card",
       "card_payments_hint": "Leave this off until card payments work for your studio. While it's off, clients send their order and pay you directly (cash, bank transfer or other).",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "products": {
+        "title": "Prints and other products",
+        "intro": "Sell prints of any photo as well as the digital file. Clients pick them under each photo. Rows without a price are not offered.",
+        "suggested": "We've added canvas and wood prints in two sizes. Type your prices, remove any you don't sell, then save.",
+        "name_en": "Name (English)",
+        "name_he": "Name (Hebrew)",
+        "size": "Size",
+        "price": "Price ({{currency}})",
+        "add": "Add a product",
+        "remove": "Remove",
+        "remove_row": "Remove product {{number}}",
+        "needs_price": "Products without a name and a price aren't saved."
+      }
     },
     "smugmug": {
       "title": "SmugMug",

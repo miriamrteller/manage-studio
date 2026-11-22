@@ -2314,8 +2314,13 @@ export type Database = {
           id: string
           image_key: string
           included: boolean
+          kind: string
           order_id: string
           price_minor: number
+          product_id: string | null
+          product_name_en: string | null
+          product_name_he: string | null
+          product_size: string | null
           tenant_id: string
           voided_at: string | null
         }
@@ -2326,8 +2331,13 @@ export type Database = {
           id?: string
           image_key: string
           included?: boolean
+          kind?: string
           order_id: string
           price_minor: number
+          product_id?: string | null
+          product_name_en?: string | null
+          product_name_he?: string | null
+          product_size?: string | null
           tenant_id: string
           voided_at?: string | null
         }
@@ -2338,8 +2348,13 @@ export type Database = {
           id?: string
           image_key?: string
           included?: boolean
+          kind?: string
           order_id?: string
           price_minor?: number
+          product_id?: string | null
+          product_name_en?: string | null
+          product_name_he?: string | null
+          product_size?: string | null
           tenant_id?: string
           voided_at?: string | null
         }
@@ -2349,6 +2364,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "job_photo_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_photo_products"
             referencedColumns: ["id"]
           },
           {
@@ -2376,6 +2398,7 @@ export type Database = {
           pay_by_cash: boolean
           person_id: string | null
           photo_count: number
+          product_count: number
           refunded_at: string | null
           status: string
           tenant_id: string
@@ -2397,6 +2420,7 @@ export type Database = {
           pay_by_cash?: boolean
           person_id?: string | null
           photo_count: number
+          product_count?: number
           refunded_at?: string | null
           status?: string
           tenant_id: string
@@ -2418,6 +2442,7 @@ export type Database = {
           pay_by_cash?: boolean
           person_id?: string | null
           photo_count?: number
+          product_count?: number
           refunded_at?: string | null
           status?: string
           tenant_id?: string
@@ -5291,6 +5316,53 @@ export type Database = {
           },
         ]
       }
+      tenant_photo_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name_en: string
+          name_he: string
+          position: number
+          price_minor: number
+          size_label: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name_en: string
+          name_he: string
+          position?: number
+          price_minor: number
+          size_label?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name_en?: string
+          name_he?: string
+          position?: number
+          price_minor?: number
+          size_label?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_photo_products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_photo_shop_settings: {
         Row: {
           all_photos_price_minor: number | null
@@ -6504,6 +6576,7 @@ export type Database = {
           p_label?: string
           p_pay_by_cash?: boolean
           p_person_id: string
+          p_products?: Json
         }
         Returns: Json
       }

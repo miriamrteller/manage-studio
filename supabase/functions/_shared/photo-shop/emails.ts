@@ -26,7 +26,14 @@ interface Loaded {
     delivery_url: string | null;
     delivered_at: string | null;
   };
-  items: { image_key: string; file_name: string }[];
+  items: {
+    image_key: string;
+    file_name: string;
+    kind?: string;
+    product_name_en?: string | null;
+    product_name_he?: string | null;
+    product_size?: string | null;
+  }[];
   tenant: Record<string, unknown>;
   personId: string;
 }
@@ -39,7 +46,11 @@ async function load(service: SupabaseClient, orderId: string): Promise<Loaded | 
     .maybeSingle();
   if (!order) return null;
   const [{ data: items }, { data: tenant }, { data: engagement }] = await Promise.all([
-    service.from("job_photo_order_items").select("image_key, file_name").eq("order_id", orderId).order("created_at"),
+    service
+      .from("job_photo_order_items")
+      .select("image_key, file_name, kind, product_name_en, product_name_he, product_size")
+      .eq("order_id", orderId)
+      .order("created_at"),
     service
       .from("tenants")
       .select(`id, name, language_default, primary_color, accent_color, ${TENANT_SENDER_COLUMNS}`)
@@ -71,6 +82,13 @@ function send(
 
 const lang = (t: Record<string, unknown>): Lang => (t.language_default === "en" ? "en" : "he");
 
+/** "IMG_0001.jpg" for a digital file; "IMG_0001.jpg: Canvas print, 20x30 cm" for a product. */
+export function orderLineName(i: Loaded["items"][number], language: Lang): string {
+  if (i.kind !== "product") return i.file_name;
+  const name = (language === "he" ? i.product_name_he : i.product_name_en) ?? i.product_name_en ?? "";
+  return `${i.file_name}: ${[name, i.product_size].filter(Boolean).join(", ")}`;
+}
+
 /** Tell the studio about a paid (or free) order. Safe to call more than once. */
 export async function notifyStudioPhotoOrderPaid(service: SupabaseClient, orderId: string): Promise<boolean> {
   const l = await load(service, orderId);
@@ -84,7 +102,7 @@ export async function notifyStudioPhotoOrderPaid(service: SupabaseClient, orderI
     language,
     clientName: (client?.name as string | undefined) ?? "—",
     totalFormatted: formatCurrency(l.order.total_minor, l.order.currency, language === "he" ? "he-IL" : "en-GB"),
-    photos: l.items.map((i) => ({ fileName: i.file_name, key: i.image_key })),
+    photos: l.items.map((i) => ({ fileName: orderLineName(i, language), key: i.image_key })),
     shootUrl: `${tenantBaseUrl(l.tenant as { subdomain: string; custom_domain?: string | null })}/admin/jobs/${l.order.engagement_id}`,
   });
   const to = String(l.tenant.contact_email ?? "").trim();
@@ -105,7 +123,7 @@ export async function notifyStudioPhotoOrderCash(service: SupabaseClient, orderI
     language,
     clientName: (client?.name as string | undefined) ?? "—",
     totalFormatted: formatCurrency(l.order.total_minor, l.order.currency, language === "he" ? "he-IL" : "en-GB"),
-    photos: l.items.map((i) => ({ fileName: i.file_name, key: i.image_key })),
+    photos: l.items.map((i) => ({ fileName: orderLineName(i, language), key: i.image_key })),
     shootUrl: `${tenantBaseUrl(l.tenant as { subdomain: string; custom_domain?: string | null })}/admin/jobs/${l.order.engagement_id}`,
     payInCash: true,
   });
