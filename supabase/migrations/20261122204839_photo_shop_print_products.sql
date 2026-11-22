@@ -53,9 +53,9 @@ ALTER TABLE tenant_photo_products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_photo_products_super_admin ON tenant_photo_products FOR ALL USING (is_super_admin());
 CREATE POLICY tenant_photo_products_admin_manage ON tenant_photo_products FOR ALL
   USING (tenant_id = get_my_tenant_id() AND EXISTS (
-    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)))
+    SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND 'tenant_admin' = ANY(role)))
   WITH CHECK (tenant_id = get_my_tenant_id() AND EXISTS (
-    SELECT 1 FROM user_profiles WHERE id = auth.uid() AND 'tenant_admin' = ANY(role)));
+    SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND 'tenant_admin' = ANY(role)));
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tenant_photo_products TO authenticated;
 GRANT ALL ON TABLE tenant_photo_products TO service_role;
 
