@@ -5352,5 +5352,164 @@
     "done_galleries_not_found_other": "{{count}} galleries weren't found: choose them on the shoot",
     "done_galleries_failed_one": "{{count}} gallery couldn't be linked: choose it on the shoot",
     "done_galleries_failed_other": "{{count}} galleries couldn't be linked: choose them on the shoot"
+  },
+  "help": {
+    "title": "Help",
+    "intro": "Short guides for the main jobs in OpalSwift. Each guide opens the right page for you.",
+    "ask_title": "Can't find the answer?",
+    "ask_text": "Send us your question. We read every one, and the answer becomes a new guide here.",
+    "ask_button": "Ask OpalSwift a question",
+    "open_page": "Open this page",
+    "contents": "Guides",
+    "none": "There are no guides for your kind of business yet. Send us your question and we'll help.",
+    "topics": {
+      "packages": {
+        "title": "Set up your packages",
+        "summary": "Packages are what clients can book with you, each with its price. They show on your Book page.",
+        "steps": [
+          "Open Packages.",
+          "Press Add package and give it a name, a price and how long the shoot takes.",
+          "Fill in how many photos are included. The photo shop uses this for every shoot with this package.",
+          "Save. The package now shows on your Book page and in your quotes."
+        ]
+      },
+      "contract": {
+        "title": "Set up your contract",
+        "summary": "One contract template is used for every new booking. The client's name, shoot date, location, package and price are filled in for each shoot.",
+        "steps": [
+          "Open Contracts.",
+          "Create a template and paste in your contract text.",
+          "Where the shoot details should go, type {{client_name}}, {{shoot_date}}, {{location}}, {{package}} or {{price}}.",
+          "Make it the active template. Contracts already signed are not changed."
+        ]
+      },
+      "shoot_requests": {
+        "title": "Confirm a shoot request",
+        "summary": "Clients can ask for a shoot on your Book page by choosing a package and a day. Nothing is charged until you confirm.",
+        "steps": [
+          "You get an email for each request. It also shows in the Diary under Requests to confirm.",
+          "Press Confirm, in the email or in the Diary.",
+          "Check the date, time and location, then press Confirm.",
+          "The shoot is booked on that day and the client is emailed a quote at the package price, to accept and pay the deposit."
+        ]
+      },
+      "new_shoot": {
+        "title": "Add a shoot and send a quote",
+        "summary": "Add a shoot yourself when a client gets in touch by phone, WhatsApp or email.",
+        "steps": [
+          "Open Shoots and press New shoot.",
+          "Choose an existing client or add a new one with their email.",
+          "Choose the package, the date and the location.",
+          "Press Create and send quote. The client gets the quote by email. Or press Create without a quote if you agreed the price another way."
+        ]
+      },
+      "quotes": {
+        "title": "How quotes work",
+        "summary": "A quote is a price offer the client accepts online. Accepting books the shoot and creates the deposit and balance payments.",
+        "steps": [
+          "Open Quotes to see every quote and whether it is a draft, sent, accepted, declined or expired.",
+          "Open a quote to change the price, add-ons, deposit percentage or how long it is valid.",
+          "Tick Send the contract when the client accepts if you want the contract to go out by itself.",
+          "Send it by email, on WhatsApp or copy the link. The client accepts and pays the deposit online."
+        ]
+      },
+      "payments": {
+        "title": "Payments for a shoot",
+        "summary": "Each shoot has its payments: usually a deposit and a balance due on the shoot date.",
+        "steps": [
+          "Open the shoot. Payments shows what is paid and what is still owed.",
+          "To ask for money, press Add payment request, choose a deposit and balance or a single amount, then send the pay link.",
+          "Paid in cash or by bank transfer? Press Record a payment on that request. The amount is filled in; change it if a different amount was paid.",
+          "Gave money back? Press Record refund on the payment, after you have refunded the client."
+        ]
+      },
+      "cancel_shoot": {
+        "title": "Cancel a shoot",
+        "summary": "Cancelling frees the date in your calendar and stops pay links and payment reminders.",
+        "steps": [
+          "Open the shoot and press Cancel shoot.",
+          "Choose whether to email the client to let them know.",
+          "Money already paid is not refunded by itself. To give money back, use Record refund on the payment."
+        ]
+      },
+      "smugmug": {
+        "title": "Connect SmugMug",
+        "summary": "Your photos stay on SmugMug. OpalSwift uses your own SmugMug API key to show your galleries in your photo shop.",
+        "steps": [
+          "Open Photo shop, then the SmugMug tab.",
+          "Follow the steps there to create an API key in your SmugMug account. The page gives you every value to copy.",
+          "Paste the API Key and API Secret and press Save.",
+          "Press Connect SmugMug and allow access in SmugMug."
+        ]
+      },
+      "check_gallery": {
+        "title": "Check a shoot's gallery",
+        "summary": "Before clients can see a SmugMug gallery in the photo shop, it must pass Check gallery. Nothing is changed in SmugMug.",
+        "steps": [
+          "Open the shoot, then the Photo shop tab.",
+          "Choose In a SmugMug gallery and pick the gallery. You can type its name to search.",
+          "Press Check gallery. Lines marked ✗ must be fixed in SmugMug; lines marked ⚠ are only tips.",
+          "Added photos to the gallery later? Press Check again."
+        ]
+      },
+      "send_gallery": {
+        "title": "Send a client their gallery",
+        "summary": "Send gallery emails the client their gallery and, when there is a photo shop, a button to choose their photos.",
+        "steps": [
+          "Open the shoot and press Send gallery. To send several at once, select shoots on the Shoots page and press Send gallery to selected.",
+          "The gallery must pass Check gallery first, and the client needs an email address.",
+          "On the client's page the gallery stays locked until every payment is made. To open it sooner, press Release anyway on the shoot's payments."
+        ]
+      },
+      "photo_prices": {
+        "title": "Set your photo prices",
+        "summary": "Your photo shop prices are the starting point for every shoot. You can change them for one shoot.",
+        "steps": [
+          "Open Photo shop, then the Prices tab, and set your price per photo.",
+          "Optional: set a price for all the photos together.",
+          "Each package can include a number of photos at no extra cost.",
+          "To change prices for one shoot, open the shoot, then the Photo shop tab, and change them there."
+        ]
+      },
+      "photo_orders": {
+        "title": "Deliver a photo order",
+        "summary": "When a client orders photos, the order shows on the shoot and in Photo shop, under Orders.",
+        "steps": [
+          "Open the order's shoot, then the Photo shop tab. The order lists the photos and their file names.",
+          "Put the finished photos in a download folder (for example Google Drive or WeTransfer).",
+          "Paste the folder's link and press Send. The client gets an email with the link.",
+          "Sent the photos another way? Press Mark as sent.",
+          "Client paying you directly? Press Record cash payment on the order."
+        ]
+      },
+      "client_view": {
+        "title": "See what your client sees",
+        "summary": "You can try the photo shop exactly as your client sees it. Nothing is ordered or charged.",
+        "steps": [
+          "Open Photo shop, then the Preview tab, and choose a shoot.",
+          "Or open a shoot and choose the What your client sees tab.",
+          "Pick photos and try the buttons. It is only a preview."
+        ]
+      },
+      "import_clients": {
+        "title": "Bring in your existing clients",
+        "summary": "Import your client list from a spreadsheet. Each row becomes a client, and can bring a past shoot with its SmugMug gallery.",
+        "steps": [
+          "Open Clients and press Import from a spreadsheet.",
+          "Upload your sheet. Each column is matched for you; change any that are wrong.",
+          "Add a SmugMug gallery column to link each shoot to its gallery. Connect SmugMug first.",
+          "Check the preview, which shows who is already here, then import the rest."
+        ]
+      },
+      "automatic_emails": {
+        "title": "Automatic emails to clients",
+        "summary": "Clients get some emails by themselves, in your studio's language. You can switch off any you don't want.",
+        "steps": [
+          "Open Quotes and scroll to the automatic emails.",
+          "They cover: quote sent, booking confirmed, a reminder two days before the shoot, gallery ready, and a review request five days after the gallery.",
+          "For the review request, add your review link (for example your Google reviews). Without a link, that email isn't sent."
+        ]
+      }
+    }
   }
 }

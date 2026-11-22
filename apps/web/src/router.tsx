@@ -80,6 +80,7 @@ const EmbedNamedFormPage = lazy(() => import("./pages/EmbedInquirePage").then((m
 const NamedFormPage = lazy(() => import("./pages/NamedFormPage"));
 const LeadFormsPage = lazy(() => import("./pages/LeadFormsPage"));
 const LeadsHelpPage = lazy(() => import("./pages/LeadsHelpPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
 const LeadSettingsPage = lazy(() => import("./pages/LeadSettingsPage"));
 const PersonPage = lazy(() => import("./pages/PersonPage"));
 const ClassCardsSettingsPage = lazy(() => import("./pages/ClassCardsSettingsPage"));
@@ -230,6 +231,7 @@ const router = createBrowserRouter([
           // Admin addresses follow the menu: /admin/<area>/<tab> (owner, 13 Nov 2026).
           { path: "admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
+          { path: "admin/help", element: <AdminRoute><HelpPage /></AdminRoute> },
           // Leads
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
           { path: "admin/leads/get", element: <AdminRoute><GetLeadsPage /></AdminRoute> },
