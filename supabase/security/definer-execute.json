@@ -16,6 +16,7 @@
       "get_public_offerings_by_subdomain",
       "get_public_quote",
       "get_public_schedule_events_by_subdomain",
+      "get_public_shop_catalogue",
       "get_tenant_config_by_host",
       "get_tenant_config_by_subdomain",
       "get_tenant_legal_documents",

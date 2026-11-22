@@ -75,6 +75,10 @@ BEGIN
   PERFORM pg_temp.as_user((SELECT alice_u FROM ids));
   IF get_shop_catalogue() <> '[]'::jsonb THEN RAISE EXCEPTION 'FAIL catalogue without the feature'; END IF;
   RAISE NOTICE 'ok  no catalogue without the feature';
+  IF get_public_shop_catalogue((SELECT studio FROM ids)) <> '[]'::jsonb THEN
+    RAISE EXCEPTION 'FAIL public catalogue without the feature';
+  END IF;
+  RAISE NOTICE 'ok  no public catalogue without the feature';
 END $$;
 SELECT pg_temp.expect_fail((SELECT alice_u FROM ids),
   format('SELECT place_shop_order(%L)', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.v('adult')))),
@@ -95,6 +99,27 @@ BEGIN
     RAISE EXCEPTION 'FAIL catalogue: %', c;
   END IF;
   RAISE NOTICE 'ok  catalogue: shown items, sizes in order, stock';
+END $$;
+
+-- The public Shop page: anyone (no sign-in), shown items only, in stock or not, no counts.
+DO $$
+DECLARE c JSONB;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  c := get_public_shop_catalogue((SELECT studio FROM ids));
+  IF jsonb_array_length(c) <> 1 OR c->0->>'name' <> 'Black leotard'
+     OR c->0->'variants'->0->>'label' <> 'Age 4-6' OR (c->0->'variants'->0->>'in_stock')::boolean IS NOT TRUE
+     OR (c->0->'variants'->1->>'in_stock')::boolean IS NOT TRUE
+     OR c->0->'variants'->0 ? 'stock' THEN
+    RAISE EXCEPTION 'FAIL public catalogue: %', c;
+  END IF;
+  IF get_public_shop_catalogue(gen_random_uuid()) <> '[]'::jsonb OR get_public_shop_catalogue(NULL) <> '[]'::jsonb THEN
+    RAISE EXCEPTION 'FAIL public catalogue for another or no studio';
+  END IF;
+  IF NOT has_function_privilege('anon', 'get_public_shop_catalogue(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'FAIL public catalogue not open to visitors';
+  END IF;
+  RAISE NOTICE 'ok  public catalogue: shown items, in stock or not, no counts, open to visitors';
 END $$;
 
 -- 3. Ari orders for Alice (same family): price from the item, stock held, request on Alice's enrolment.

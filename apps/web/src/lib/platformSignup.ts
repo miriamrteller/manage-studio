@@ -11,7 +11,7 @@ export function platformSignupUrl(): string {
 }
 
 /**
- * Pages that only work for one studio (its classes, booking, enrolment, forms).
+ * Pages that only work for one studio (its classes, booking, shop, enrolment, forms).
  * On the platform host they show a notice instead of waiting for a studio.
  */
 export function isStudioOnlyPath(pathname: string): boolean {
@@ -21,6 +21,7 @@ export function isStudioOnlyPath(pathname: string): boolean {
     p === '/enrol' ||
     p === '/inquire' ||
     p === '/book' ||
+    p === '/shop' ||
     p.startsWith('/book/') ||
     p.startsWith('/f/')
   );

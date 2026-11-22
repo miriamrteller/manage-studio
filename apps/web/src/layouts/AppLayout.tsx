@@ -15,7 +15,7 @@ import { LegalFooterLinks } from '../components/LegalFooterLinks';
 import { ReportProblemProvider } from '../components/ReportProblem';
 import { currentStudioDisplayName } from '../lib/studioDisplayName';
 
-const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
+const PUBLIC_PATHS = new Set(['/', '/classes', '/shop', '/login', '/signup', '/enrol']);
 
 function isPublicRoute(pathname: string): boolean {
   return (

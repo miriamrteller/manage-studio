@@ -26,6 +26,17 @@ export interface CatalogueItem {
   variants: CatalogueVariant[];
 }
 
+/** A size on the public Shop page: in stock or not, never the count. */
+export interface PublicCatalogueVariant {
+  id: string;
+  label: string;
+  in_stock: boolean;
+}
+
+export interface PublicCatalogueItem extends Omit<CatalogueItem, 'variants'> {
+  variants: PublicCatalogueVariant[];
+}
+
 export interface ShopOrderLine {
   product_name: string;
   variant_label: string;
@@ -79,6 +90,13 @@ export const ShopOrdersService = {
     const { data, error } = await supabase.rpc('get_shop_catalogue');
     if (error) throw error;
     return (data ?? []) as unknown as CatalogueItem[];
+  },
+
+  /** The public Shop page: anyone, signed in or not. Empty when the studio has no shop. */
+  async publicCatalogue(tenantId: string): Promise<PublicCatalogueItem[]> {
+    const { data, error } = await supabase.rpc('get_public_shop_catalogue', { p_tenant_id: tenantId });
+    if (error) throw error;
+    return (data ?? []) as unknown as PublicCatalogueItem[];
   },
 
   async myOrders(): Promise<ShopOrder[]> {

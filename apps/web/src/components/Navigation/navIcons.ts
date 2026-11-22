@@ -41,6 +41,7 @@ const PATH_ICONS: Record<string, LucideIcon> = {
   '/': Home,
   '/classes': GraduationCap,
   '/book': CalendarPlus,
+  '/shop': ShoppingBag,
   '/login': LogIn,
   '/signup': UserPlus,
   '/platform/onboard': PlusCircle,

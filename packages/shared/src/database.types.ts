@@ -6830,6 +6830,10 @@ export type Database = {
           title: string
         }[]
       }
+      get_public_shop_catalogue: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_schedule_events: {
         Args: { p_end: string; p_start: string; p_tenant_id: string }
         Returns: {

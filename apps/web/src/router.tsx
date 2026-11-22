@@ -15,6 +15,7 @@ import { RouteLoading } from "./components/RouteLoading";
 // Pages load on demand, so a visitor downloads only the area they open
 // (a parent on an enrolment link never downloads the admin or finance pages).
 const ClassesRoute = lazy(() => import("./pages/ClassesRoute"));
+const PublicShopPage = lazy(() => import("./pages/PublicShopPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
@@ -212,6 +213,8 @@ const router = createBrowserRouter([
           { path: 'pay/:token', element: <PayRequestPage /> },
           // Booking email "Go to my page": signs the client in (token in the fragment, 3 days).
           { path: 'signin', element: <SignInLinkPage /> },
+          // The studio shop's public page: anyone can see what the studio sells.
+          { path: 'shop', element: <PublicShopPage /> },
           { path: 'shop/:token', element: <ShopLinkPage /> },
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
