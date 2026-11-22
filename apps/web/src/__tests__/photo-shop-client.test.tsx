@@ -127,6 +127,14 @@ describe('ClientPhotoShop', () => {
     expect(addButtons()).toHaveLength(5);
   });
 
+  it('when no photo loads, says so instead of showing an empty shop', async () => {
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    const imgs = await screen.findAllByRole('img');
+    imgs.forEach((img) => fireEvent.error(img));
+    expect(await screen.findByText(/The photos can't be shown right now/)).toBeTruthy();
+    expect(screen.queryAllByRole('button', { name: 'Choose' })).toHaveLength(0);
+  });
+
   it('offers all photos once it is no dearer than the cart', async () => {
     renderInApp(<ClientPhotoShop engagementId="e1" />);
     await screen.findByText(/per photo/);

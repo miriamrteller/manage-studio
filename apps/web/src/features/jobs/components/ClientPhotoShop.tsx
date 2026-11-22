@@ -252,6 +252,12 @@ function ShopBody({
         })}
       </ul>
 
+      {photos.length > 0 && shown.length === 0 && (
+        <p role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          {preview ? t('photo_shop_admin.preview.photos_failed') : t('pages.client_portal.photo_shop.photos_failed')}
+        </p>
+      )}
+
       {shop.open && available.length > 0 && (
         <div className="space-y-3 rounded-md border bg-gray-50 p-3" aria-live="polite">
           <p className="text-sm">
