@@ -71,3 +71,34 @@ export function cleanGalleryMessage(raw: unknown, standard: string): string | nu
   if (!text || text === standard.trim()) return null;
   return text;
 }
+
+/** Where the studio's gallery email photo is stored (public tenant-assets bucket, its own folder). */
+export const GALLERY_PHOTO_FOLDER = "gallery-email";
+/** Longest photo description (alt text). */
+export const GALLERY_PHOTO_ALT_MAX = 200;
+
+/**
+ * The photo the studio added to the gallery email (owner, 22 Nov 2026): only one of
+ * this studio's own uploads (a JPEG the app made, in tenant-assets/<tenant>/gallery-email/).
+ * Anything else: null, and the email goes without a photo.
+ */
+export function galleryEmailPhotoUrl(raw: unknown, supabaseUrl: string, tenantId: string): string | null {
+  if (typeof raw !== "string" || !supabaseUrl || !tenantId) return null;
+  const prefix = `${supabaseUrl.replace(/\/+$/, "")}/storage/v1/object/public/tenant-assets/${tenantId}/${GALLERY_PHOTO_FOLDER}/`;
+  if (!raw.startsWith(prefix)) return null;
+  return /^[A-Za-z0-9_-]{1,80}\.jpg$/.test(raw.slice(prefix.length)) ? raw : null;
+}
+
+/** The photo's description: one plain line, or the fallback when empty. */
+export function cleanPhotoAlt(raw: unknown, fallback: string): string {
+  const text = typeof raw === "string"
+    ? raw
+      // deno-lint-ignore no-control-regex
+      .replace(/[\u0000-\u001F\u007F‪-‮⁦-⁩]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, GALLERY_PHOTO_ALT_MAX)
+      .trim()
+    : "";
+  return text || fallback;
+}

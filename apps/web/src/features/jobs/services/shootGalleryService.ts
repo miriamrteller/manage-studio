@@ -1,5 +1,20 @@
 import { supabase } from '@/lib/supabase';
 import { parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
+import { makePreview } from '../lib/photoPreview';
+
+/** The studio's own words and photo for the gallery email (Send gallery, owner 22 Nov 2026). */
+export interface GalleryEmailExtras {
+  message?: string;
+  /** Public address of an uploadGalleryEmailPhoto upload. */
+  photoUrl?: string;
+  photoAlt?: string;
+}
+
+/** Same folder as GALLERY_PHOTO_FOLDER in supabase/functions/_shared/photo-shop/send-gallery.ts. */
+const GALLERY_PHOTO_FOLDER = 'gallery-email';
+const TENANT_ASSETS_BUCKET = 'tenant-assets';
+/** Longest edge of the email photo: sharp on phones, light to download. */
+export const GALLERY_PHOTO_MAX_EDGE = 1200;
 
 /** Why a shoot was not sent (send-shoot-gallery), or that it was. */
 export type SendGalleryOutcome =
@@ -31,17 +46,22 @@ export const ShootGalleryService = {
    * More than SEND_GALLERY_MAX shoots go in several calls, one after another.
    * resend: false skips clients who already got the gallery email ("already_sent").
    * message: the studio's own words for the email's main paragraph (plain text; the
-   * links stay outside it). Left out when not given, so the standard text goes.
+   * links stay outside it). photoUrl/photoAlt: one photo under it, the same for every
+   * client. Each is left out when not given, so the standard email goes.
    */
   async send(
     engagementIds: string[],
-    { resend = false, message }: { resend?: boolean; message?: string } = {},
+    { resend = false, message, photoUrl, photoAlt }: { resend?: boolean } & GalleryEmailExtras = {},
   ): Promise<SendGalleryResult> {
+    const extras = {
+      ...(message ? { message } : {}),
+      ...(photoUrl ? { photoUrl, ...(photoAlt?.trim() ? { photoAlt: photoAlt.trim() } : {}) } : {}),
+    };
     const total: SendGalleryResult = { sent: 0, skipped: 0, failed: 0, results: [] };
     for (let i = 0; i < engagementIds.length; i += SEND_GALLERY_MAX) {
       const chunk = engagementIds.slice(i, i + SEND_GALLERY_MAX);
       const { data, error } = await supabase.functions.invoke('send-shoot-gallery', {
-        body: message ? { engagementIds: chunk, resend, message } : { engagementIds: chunk, resend },
+        body: { engagementIds: chunk, resend, ...extras },
       });
       const parsed = await parseFunctionInvokeBody(data, error);
       if (error || !parsed || !Array.isArray(parsed.results)) throw new Error('send_gallery_failed');
@@ -51,6 +71,22 @@ export const ShootGalleryService = {
       total.results.push(...(parsed.results as SendGalleryResult['results']));
     }
     return total;
+  },
+
+  /**
+   * The photo for the gallery email: made into a JPEG in her browser (at most
+   * GALLERY_PHOTO_MAX_EDGE, no watermark) and stored once in the studio's public
+   * assets, so every client's email shows the same hosted image.
+   */
+  async uploadEmailPhoto(tenantId: string, file: File): Promise<string> {
+    const jpeg = await makePreview(file, null, GALLERY_PHOTO_MAX_EDGE);
+    const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+    const path = `${tenantId}/${GALLERY_PHOTO_FOLDER}/${name}`;
+    const { error } = await supabase.storage
+      .from(TENANT_ASSETS_BUCKET)
+      .upload(path, jpeg, { upsert: false, contentType: 'image/jpeg', cacheControl: String(60 * 60 * 24 * 365) });
+    if (error) throw new Error(error.message);
+    return supabase.storage.from(TENANT_ASSETS_BUCKET).getPublicUrl(path).data.publicUrl;
   },
 
   /** When each shoot's gallery email last went (the delivery log; studio admins may read it). */

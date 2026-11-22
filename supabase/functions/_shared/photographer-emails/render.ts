@@ -9,7 +9,14 @@ import {
   type PhotographerEmailLanguage,
 } from "../photographer-email-shells/generated.ts";
 import { applyEmailBrand } from "../email-brand.ts";
-import { insertBeforeParagraph, isHttpLink, replaceParagraphText, signInBlockHtml } from "../sign-in-email-block.ts";
+import {
+  insertAfterParagraph,
+  insertBeforeParagraph,
+  isHttpLink,
+  photoBlockHtml,
+  replaceParagraphText,
+  signInBlockHtml,
+} from "../sign-in-email-block.ts";
 
 /** Emails that carry a sign-in button when signInUrl is set ("Go to my page"; gallery_ready: the photo shop). */
 const SIGN_IN_EMAILS: readonly PhotographerEmailKey[] = ["booking_confirmed", "gallery_ready"];
@@ -40,6 +47,17 @@ function withCustomBody(html: string, variables: Record<string, string>): string
   const { customBody, customBodyReplaces } = variables;
   if (!customBody || !customBodyReplaces) return html;
   return replaceParagraphText(html, customBodyReplaces, customBody);
+}
+
+/**
+ * The studio's photo under the main paragraph (Send gallery, owner 22 Nov 2026): photoUrl,
+ * photoAlt, and photoAfter = the standard main paragraph it goes under. Runs before
+ * withCustomBody, which then swaps that paragraph's words for hers.
+ */
+function withPhoto(html: string, variables: Record<string, string>): string {
+  const { photoUrl, photoAlt, photoAfter } = variables;
+  if (!isHttpLink(photoUrl) || !photoAfter) return html;
+  return insertAfterParagraph(html, photoAfter, photoBlockHtml({ url: photoUrl, alt: photoAlt ?? "" }));
 }
 
 export const PHOTOGRAPHER_EMAIL_KEYS: readonly PhotographerEmailKey[] = [
@@ -99,7 +117,7 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     variables: input.variables,
   });
   const html = applyEmailBrand(
-    withSignInBlock(input.key, withCustomBody(shellHtml, input.variables), input.variables, input.primaryColor),
+    withSignInBlock(input.key, withCustomBody(withPhoto(shellHtml, input.variables), input.variables), input.variables, input.primaryColor),
     input.primaryColor,
     input.accentColor,
   );

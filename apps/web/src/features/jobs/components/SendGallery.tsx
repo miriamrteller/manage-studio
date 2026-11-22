@@ -1,22 +1,39 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useGalleryEmailStandardBody, useSendShootGallery } from '../hooks/useSendShootGallery';
-import type { SendGalleryOutcome, SendGalleryResult } from '../services/shootGalleryService';
+import { useTenant } from '@/hooks/useTenant';
+import {
+  useGalleryEmailStandardBody,
+  useSendShootGallery,
+  useUploadGalleryEmailPhoto,
+} from '../hooks/useSendShootGallery';
+import { PREVIEW_ACCEPT } from '../lib/photoPreview';
+import type { GalleryEmailExtras, SendGalleryOutcome, SendGalleryResult } from '../services/shootGalleryService';
 
 /** Same as GALLERY_MESSAGE_MAX in supabase/functions/_shared/photo-shop/send-gallery.ts. */
 const GALLERY_MESSAGE_MAX = 2000;
+/** Same as GALLERY_PHOTO_ALT_MAX there. */
+const GALLERY_PHOTO_ALT_MAX = 200;
 
 /**
  * "Edit email text" (owner, 22 Nov 2026): the studio can change the gallery email's main
  * paragraph before sending. The box starts with the standard text; the greeting, the
  * gallery and photo shop buttons and the closing line stay outside it, so no link is lost.
  * Closed, or unchanged: the standard text goes.
+ * "Add a photo" (owner, 22 Nov 2026): one photo under that paragraph, the same for every
+ * client in the send. Uploaded once and linked (a hosted image, not an attachment). Its
+ * description starts filled in, in the email's language.
  */
 function useGalleryMessage() {
+  const { i18n } = useTranslation();
+  const tenant = useTenant();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoAlt, setPhotoAlt] = useState('');
+  const upload = useUploadGalleryEmailPhoto();
   const standard = useGalleryEmailStandardBody(open);
   useEffect(() => {
     if (open && text === null && standard.body) setText(standard.body);
@@ -24,15 +41,41 @@ function useGalleryMessage() {
   const message = open && text !== null && text.trim() && text.trim() !== standard.body?.trim()
     ? text
     : undefined;
+  const extras: GalleryEmailExtras = open
+    ? { message, ...(photoUrl ? { photoUrl, photoAlt } : {}) }
+    : {};
+  const removePhoto = () => {
+    setPhotoUrl(null);
+    setPhotoAlt('');
+    upload.reset();
+  };
   return {
     open,
     text: text ?? '',
     language: standard.language,
     ready: text !== null,
-    message,
+    extras,
     setText,
+    photoUrl,
+    photoAlt,
+    setPhotoAlt,
+    uploading: upload.isPending,
+    uploadFailed: upload.isError,
+    addPhoto: (file: File) => {
+      upload.mutate(file, {
+        onSuccess: (url) => {
+          setPhotoUrl(url);
+          const inEmailLanguage = i18n.getFixedT(standard.language);
+          setPhotoAlt(inEmailLanguage('pages.jobs.send_gallery.photo_alt_default', { studio: tenant?.name ?? '' }));
+        },
+      });
+    },
+    removePhoto,
     toggle: () => {
-      if (open) setText(null);
+      if (open) {
+        setText(null);
+        removePhoto();
+      }
       setOpen(!open);
     },
   };
@@ -72,7 +115,61 @@ function GalleryMessageEditor({ editor }: { editor: ReturnType<typeof useGallery
           <p id={`${id}-hint`} className="text-xs text-muted-foreground">
             {t('pages.jobs.send_gallery.message_hint')}
           </p>
+          <GalleryPhotoPicker editor={editor} />
         </div>
+      )}
+    </div>
+  );
+}
+
+function GalleryPhotoPicker({ editor }: { editor: ReturnType<typeof useGalleryMessage> }) {
+  const { t } = useTranslation();
+  const id = useId();
+  const fileInput = useRef<HTMLInputElement>(null);
+  if (editor.photoUrl) {
+    return (
+      <div className="space-y-1 pt-1">
+        <img src={editor.photoUrl} alt="" className="h-24 w-auto rounded border border-border object-cover" />
+        <label htmlFor={`${id}-alt`} className="block text-xs font-medium">
+          {t('pages.jobs.send_gallery.photo_alt_label')}
+        </label>
+        <Input
+          id={`${id}-alt`}
+          dir={editor.language === 'he' ? 'rtl' : 'ltr'}
+          lang={editor.language}
+          maxLength={GALLERY_PHOTO_ALT_MAX}
+          value={editor.photoAlt}
+          onChange={(event) => editor.setPhotoAlt(event.target.value)}
+          className="min-w-[16rem]"
+        />
+        <p className="text-xs text-muted-foreground">{t('pages.jobs.send_gallery.photo_same_for_all')}</p>
+        <Button size="sm" variant="ghost" onClick={editor.removePhoto}>
+          {t('pages.jobs.send_gallery.photo_remove')}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1 pt-1">
+      <input
+        ref={fileInput}
+        type="file"
+        accept={PREVIEW_ACCEPT}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        data-testid="gallery-email-photo-input"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) editor.addPhoto(file);
+        }}
+      />
+      <Button size="sm" variant="outline" isLoading={editor.uploading} onClick={() => fileInput.current?.click()}>
+        {t('pages.jobs.send_gallery.photo_add')}
+      </Button>
+      {editor.uploadFailed && (
+        <p role="alert" className="text-xs text-error">{t('pages.jobs.send_gallery.photo_failed')}</p>
       )}
     </div>
   );
@@ -102,7 +199,8 @@ export function SendGalleryButton({
         size={size}
         variant="outline"
         isLoading={send.isPending}
-        onClick={() => send.mutate({ engagementIds: [engagementId], message: editor.message })}
+        disabled={editor.uploading}
+        onClick={() => send.mutate({ engagementIds: [engagementId], ...editor.extras })}
       >
         {lastSentAt ? t('pages.jobs.send_gallery.button_again') : t('pages.jobs.send_gallery.button')}
       </Button>
@@ -202,9 +300,9 @@ export function SendGalleryBulkBar({
         <Button
           size="sm"
           variant="primary"
-          disabled={engagementIds.length === 0}
+          disabled={engagementIds.length === 0 || editor.uploading}
           isLoading={send.isPending}
-          onClick={() => send.mutate({ engagementIds, message: editor.message })}
+          onClick={() => send.mutate({ engagementIds, ...editor.extras })}
         >
           {t('pages.jobs.send_gallery.button_selected')}
         </Button>

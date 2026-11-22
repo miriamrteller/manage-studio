@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
-import { ShootGalleryService } from '../services/shootGalleryService';
+import { type GalleryEmailExtras, ShootGalleryService } from '../services/shootGalleryService';
 
 const SENT_KEY = 'job-gallery-sent';
 
@@ -12,8 +12,8 @@ export function useSendShootGallery({ resend = false }: { resend?: boolean } = {
   const tenant = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ engagementIds, message }: { engagementIds: string[]; message?: string }) =>
-      ShootGalleryService.send(engagementIds, { resend, message }),
+    mutationFn: ({ engagementIds, ...extras }: { engagementIds: string[] } & GalleryEmailExtras) =>
+      ShootGalleryService.send(engagementIds, { resend, ...extras }),
     onSuccess: () => {
       // 'jobs' is useJobs' key: the list and every shoot page under it.
       void queryClient.invalidateQueries({ queryKey: ['jobs', tenant?.id] });
@@ -42,6 +42,17 @@ export function useGalleryEmailStandardBody(enabled: boolean) {
     staleTime: Infinity,
   });
   return { body: query.data, language };
+}
+
+/** Uploads the gallery email photo; returns its public address. */
+export function useUploadGalleryEmailPhoto() {
+  const tenant = useTenant();
+  return useMutation({
+    mutationFn: (file: File) => {
+      if (!tenant?.id) throw new Error('no_tenant');
+      return ShootGalleryService.uploadEmailPhoto(tenant.id, file);
+    },
+  });
 }
 
 /** engagement id -> when its gallery email last went. One query for the whole list. */
