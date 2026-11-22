@@ -34,9 +34,9 @@ describe('ShopLinkPage', () => {
     renderInApp(<ShopLinkPage />, {
       path: '/shop/:token',
       initialEntry: '/shop/tok123',
-      extraRoutes: { '/dashboard/portal': <Where /> },
+      extraRoutes: { '/photos/:engagementId': <Where /> },
     });
-    expect(await screen.findByTestId('where')).toHaveTextContent('/dashboard/portal?tab=shop&shoot=e1');
+    expect(await screen.findByTestId('where')).toHaveTextContent('/photos/e1');
     expect(setSession).toHaveBeenCalledWith({ access_token: 'a', refresh_token: 'r' });
     expect(window.location.href).not.toContain('tok123');
     expect(window.location.pathname).not.toBe('/shop');

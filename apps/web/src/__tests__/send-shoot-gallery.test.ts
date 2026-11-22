@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanGalleryMessage,
+  cleanSignature,
   cleanPhotoAlt,
   galleryEmailPhotoUrl,
   galleryEmailVariables,
@@ -272,6 +273,20 @@ describe('a photo in the gallery email', () => {
   });
 });
 
+it('English greeting is "Dear", closing line and sign-off read as the owner asked', () => {
+  expect(en.gallery_ready.greeting).toBe('Dear {recipientName},');
+  expect(en.gallery_ready.closing).toBe('We hope you love the photos.');
+  expect(en.gallery_ready.sign_off).toBe('Sincerely,');
+  expect(he.gallery_ready.sign_off).toBe('בברכה,');
+});
+
+it('cleanSignature: one plain line, null when empty', () => {
+  expect(cleanSignature('  Pat \n Photographer ')).toBe('Pat Photographer');
+  expect(cleanSignature('')).toBeNull();
+  expect(cleanSignature(7)).toBeNull();
+  expect(cleanSignature('x'.repeat(300))).toHaveLength(100);
+});
+
 describe('ShootGalleryService.send', () => {
   beforeEach(() => invoke.mockReset());
 
@@ -355,6 +370,7 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
           wording: strings,
           message,
           photo: withPhoto,
+          signature: 'Pat Photographer',
         });
         expect(variables).not.toBeNull();
         const { html, subject } = renderPhotographerEmail({
@@ -372,7 +388,20 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
         expect(html).toContain(strings.cta);
         expect(html).not.toContain(strings.shop_cta);
         if (withPhoto) expect(html).toContain(`src="${photo.url}"`);
-        if (message) expect(html).toContain(message);
+        if (message) {
+          expect(html).toContain(message);
+          expect(html).not.toContain(strings.body);
+        }
+        // Reads in order: greeting, her words, one button, the steps, closing, sign-off.
+        const at = (text: string) => html.indexOf(text);
+        const greeting = strings.greeting.replace('{recipientName}', 'Pat');
+        const steps = strings.shop_body.split('\n')[0];
+        expect(at(greeting)).toBeGreaterThan(0);
+        expect(at(greeting)).toBeLessThan(at(message ?? strings.body));
+        expect(at(message ?? strings.body)).toBeLessThan(at(shop));
+        expect(at(shop)).toBeLessThan(at(steps));
+        expect(at(steps)).toBeLessThan(at(strings.closing));
+        expect(at(strings.closing)).toBeLessThan(at(`${strings.sign_off}<br>Pat Photographer`));
       });
     }
   }
@@ -380,7 +409,7 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
   it('without a photo shop the one button opens the gallery link the studio set', () => {
     const variables = galleryEmailVariables({
       recipientName: 'Pat', galleryUrl: 'https://pixies.test/g', shopUrl: null, linkDays: 3,
-      wording: en.gallery_ready, message: null, photo: null,
+      wording: en.gallery_ready, message: null, photo: null, signature: null,
     });
     expect(variables).toEqual({ recipientName: 'Pat', galleryUrl: 'https://pixies.test/g' });
   });
@@ -388,7 +417,7 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
   it('nothing to link to: no email', () => {
     expect(galleryEmailVariables({
       recipientName: 'Pat', galleryUrl: null, shopUrl: null, linkDays: 3,
-      wording: en.gallery_ready, message: null, photo: null,
+      wording: en.gallery_ready, message: null, photo: null, signature: null,
     })).toBeNull();
   });
 });

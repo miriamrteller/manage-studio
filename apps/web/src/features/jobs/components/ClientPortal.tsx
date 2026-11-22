@@ -1,5 +1,5 @@
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Tabs } from '@base-ui/react/tabs';
 import { DirectionProvider } from '@base-ui/react/direction-provider';
@@ -30,8 +30,6 @@ import { ClientPhotoShop } from './ClientPhotoShop';
  * open to the client; the page always opens on it then, with nothing else on it),
  * My shoots (bookings, shoots, contract), Payments, Gallery, My details.
  * Without an open shop the page opens on My shoots. ?tab= keeps the chosen tab.
- * ?shoot=<id> (the gallery email's button): that shoot's gallery comes first in the shop
- * and the page scrolls to it.
  */
 export function ClientPortal() {
   const { t } = useTranslation();
@@ -45,11 +43,6 @@ export function ClientPortal() {
   const shoots = data?.shoots ?? [];
   const liveShootIds = shoots.filter((shoot) => !isCancelled(shoot)).map((shoot) => shoot.engagementId);
   const shop = useClientPhotoShopOpen(liveShootIds);
-  const scrollToShoot = searchParams.get('tab') === 'shop' ? searchParams.get('shoot') : null;
-  useEffect(() => {
-    if (!scrollToShoot || shop.loading || !shop.open) return;
-    document.getElementById(`client-photo-shop-${scrollToShoot}`)?.scrollIntoView?.({ block: 'start' });
-  }, [scrollToShoot, shop.loading, shop.open]);
 
   if (isLoading || shop.loading) {
     return (
@@ -76,23 +69,18 @@ export function ClientPortal() {
   const showBookings = bookings.length > 0 || (appointments && !projects);
 
   const tabs: { value: ClientPortalTab; label: string; panel: ReactNode }[] = [];
-  const askedShoot = searchParams.get('shoot');
-  const shopOrder = askedShoot && liveShootIds.includes(askedShoot)
-    ? [askedShoot, ...liveShootIds.filter((id) => id !== askedShoot)]
-    : liveShootIds;
   if (shop.open) {
     tabs.push({
       value: 'shop',
       label: t('pages.jobs.tabs.shop'),
-      panel: shopOrder.map((id) => {
+      panel: liveShootIds.map((id) => {
         const shoot = shoots.find((s) => s.engagementId === id) as ClientShoot;
         return (
-          <div key={`photo-shop-${id}`} id={`client-photo-shop-${id}`} className="scroll-mt-4">
-            <ClientPhotoShop
-              engagementId={id}
-              caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
-            />
-          </div>
+          <ClientPhotoShop
+            key={`photo-shop-${id}`}
+            engagementId={id}
+            caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
+          />
         );
       }),
     });

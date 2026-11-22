@@ -64,6 +64,7 @@ const EnrolCompletePage = lazy(() => import("./pages/EnrolCompletePage"));
 const PayRequestPage = lazy(() => import("./pages/PayRequestPage"));
 const SignInLinkPage = lazy(() => import("./pages/SignInLinkPage"));
 const ShopLinkPage = lazy(() => import("./pages/ShopLinkPage"));
+const ClientShootPhotosPage = lazy(() => import("./pages/ClientShootPhotosPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const FinanceHubPage = lazy(() => import("./pages/FinanceHubPage"));
 const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
@@ -217,6 +218,8 @@ const router = createBrowserRouter([
           // The studio shop's public page: anyone can see what the studio sells.
           { path: 'shop', element: <PublicShopPage /> },
           { path: 'shop/:token', element: <ShopLinkPage /> },
+          // Where the gallery email's button lands: that shoot's photo shop, nothing else.
+          { path: 'photos/:engagementId', element: <ParentRoute><ClientShootPhotosPage /></ParentRoute> },
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },

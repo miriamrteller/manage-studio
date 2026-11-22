@@ -108,6 +108,24 @@ export interface GalleryEmailWording {
   body: string;
   closing: string;
   shop_body: string;
+  /** "Sincerely," / "בברכה," */
+  sign_off: string;
+}
+
+/** Longest name the email can be signed with. */
+export const GALLERY_SIGNATURE_MAX = 100;
+
+/** The name the email is signed with: one plain line, or null when empty. */
+export function cleanSignature(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const text = raw
+    // deno-lint-ignore no-control-regex
+    .replace(/[\u0000-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, GALLERY_SIGNATURE_MAX)
+    .trim();
+  return text || null;
 }
 
 /**
@@ -124,6 +142,8 @@ export function galleryEmailVariables(input: {
   wording: GalleryEmailWording;
   message: string | null;
   photo: { url: string; alt: string } | null;
+  /** "Sincerely," and this name under the closing line. */
+  signature: string | null;
 }): Record<string, string> | null {
   const button = input.shopUrl ?? input.galleryUrl;
   if (!button) return null;
@@ -135,5 +155,8 @@ export function galleryEmailVariables(input: {
       : {}),
     ...(input.message ? { customBody: input.message, customBodyReplaces: input.wording.body } : {}),
     ...(input.photo ? { photoUrl: input.photo.url, photoAlt: input.photo.alt, photoAfter: input.wording.body } : {}),
+    ...(input.signature
+      ? { signOff: input.wording.sign_off, signatureName: input.signature, signatureAfter: input.wording.closing }
+      : {}),
   };
 }

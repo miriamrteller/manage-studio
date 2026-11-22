@@ -64,11 +64,13 @@ export const PhotoShopLinkService = {
 /** Same as CLIENT_PORTAL_PATH (BackToPortalButton.tsx). */
 const CLIENT_PORTAL = '/dashboard/portal';
 
-/** The client's page, on the photo shop tab, at this shoot's gallery (?shoot=). */
+/**
+ * Where the link lands: that shoot's photo shop on its own page (/photos/:id). Without a
+ * shoot, the photo shop tab of the client's page.
+ */
 export function shopGalleryPath(engagementId: string | null): string {
-  const params = new URLSearchParams({ tab: 'shop' });
-  if (engagementId) params.set('shoot', engagementId);
-  return `${CLIENT_PORTAL}?${params.toString()}`;
+  if (engagementId) return `/photos/${encodeURIComponent(engagementId)}`;
+  return `${CLIENT_PORTAL}?tab=shop`;
 }
 
 /** The message the studio sends with the link (email body / WhatsApp text). */

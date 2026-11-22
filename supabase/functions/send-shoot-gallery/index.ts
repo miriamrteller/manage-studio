@@ -3,7 +3,8 @@
  * (owner, 18 Nov 2026), for one shoot or several selected at once.
  *
  * Authorization: Bearer <supabase session> (studio admin)
- * Body: { engagementIds: string[], resend?: boolean, message?: string, photoUrl?: string, photoAlt?: string }
+ * Body: { engagementIds: string[], resend?: boolean, message?: string, photoUrl?: string, photoAlt?: string,
+ *   signature?: string }
  *   (1 to 100 shoots of the admin's studio)
  *   resend false (the default, sending several): a client who already got the
  *   gallery email is skipped as "already_sent". resend true (one shoot's button,
@@ -14,6 +15,7 @@
  *   photoUrl / photoAlt: one photo under that paragraph, the same for every client in
  *   the send. Only the studio's own upload (galleryEmailPhotoUrl); a hosted image, not an
  *   attachment.
+ *   signature: the name under "Sincerely," (saved for next time when it changes).
  * Response: { sent, skipped, failed, results: [{ engagementId, outcome }] }
  *
  * For each shoot it sends the client the gallery-ready email now, with ONE button
@@ -42,6 +44,7 @@ import { createShopLink, LINK_DAYS } from "../_shared/photo-shop/shop-link.ts";
 import {
   cleanGalleryMessage,
   cleanPhotoAlt,
+  cleanSignature,
   galleryEmailPhotoUrl,
   galleryEmailVariables,
   planGallerySend,
@@ -68,6 +71,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
     message?: unknown;
     photoUrl?: unknown;
     photoAlt?: unknown;
+    signature?: unknown;
   } | null;
   const resend = body?.resend === true;
   const raw = Array.isArray(body?.engagementIds) ? body.engagementIds : [];
@@ -79,7 +83,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const service = createServiceClient();
   const { data: profile } = await service
     .from("user_profiles")
-    .select("tenant_id, role")
+    .select("tenant_id, role, people:person_id(name)")
     .eq("id", auth.user.id)
     .single();
   const roles = (profile?.role as string[] | null) ?? [];
@@ -87,7 +91,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   if (!tenantId || !roles.includes("tenant_admin")) return jsonResponse({ error: "forbidden" }, 403);
 
   // Everything for the selected shoots, limited to this studio.
-  const [engagements, details, shops, photos, tenantRow, sentLog] = await Promise.all([
+  const [engagements, details, shops, photos, tenantRow, sentLog, settings] = await Promise.all([
     service.from("engagements").select("id, status, people:person_id(name, email)")
       .eq("tenant_id", tenantId).in("id", ids),
     service.from("job_details").select("engagement_id, job_status, auto_status, gallery_url, gallery_released_at, gallery_shared_at")
@@ -100,9 +104,10 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
     service.from("tenants").select(AUTOMATIC_EMAIL_TENANT_COLUMNS).eq("id", tenantId).single(),
     service.from("automatic_email_log").select("engagement_id")
       .eq("tenant_id", tenantId).eq("email_key", "gallery_ready").eq("status", "sent").in("engagement_id", ids),
+    service.from("tenant_photo_shop_settings").select("email_signature").eq("tenant_id", tenantId).maybeSingle(),
   ]);
   const loadError = engagements.error ?? details.error ?? shops.error ?? photos.error ?? tenantRow.error ??
-    sentLog.error;
+    sentLog.error ?? settings.error;
   if (loadError) {
     console.error("[send-shoot-gallery] load:", loadError.message);
     return jsonResponse({ error: "server_error" }, 500);
@@ -119,7 +124,20 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
     body: standardBody,
     closing: typeof strings.closing === "string" ? strings.closing : "",
     shop_body: typeof strings.shop_body === "string" ? strings.shop_body : "",
+    sign_off: typeof strings.sign_off === "string" ? strings.sign_off : "",
   };
+  // "Sincerely," and a name: what she typed in the box (kept for next time), else the
+  // saved one, else her own name, else the studio's.
+  const typedSignature = cleanSignature(body?.signature);
+  const savedSignature = cleanSignature((settings.data as { email_signature?: unknown } | null)?.email_signature);
+  // deno-lint-ignore no-explicit-any
+  const adminName = cleanSignature((profile as any)?.people?.name);
+  const signature = typedSignature ?? savedSignature ?? adminName ?? cleanSignature(tenant.name);
+  if (typedSignature && typedSignature !== savedSignature) {
+    const { error } = await service.from("tenant_photo_shop_settings")
+      .upsert({ tenant_id: tenantId, email_signature: typedSignature }, { onConflict: "tenant_id" });
+    if (error) console.error("[send-shoot-gallery] save signature:", error.message);
+  }
 
   let shopFeature = true;
   try {
@@ -185,6 +203,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
         wording,
         message,
         photo,
+        signature,
       });
       if (!variables) {
         results.push({ engagementId, outcome: "failed" });

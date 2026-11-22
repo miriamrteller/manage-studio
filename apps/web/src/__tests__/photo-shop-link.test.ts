@@ -49,7 +49,7 @@ describe('PhotoShopLinkService', () => {
   });
 
   it('the link lands on that shoot\'s gallery in the photo shop', () => {
-    expect(shopGalleryPath('e1')).toBe('/dashboard/portal?tab=shop&shoot=e1');
+    expect(shopGalleryPath('e1')).toBe('/photos/e1');
     expect(shopGalleryPath(null)).toBe('/dashboard/portal?tab=shop');
   });
 

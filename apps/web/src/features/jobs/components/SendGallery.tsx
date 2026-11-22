@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTenant } from '@/hooks/useTenant';
 import {
+  useGalleryEmailSignature,
   useGalleryEmailStandardBody,
   useSendShootGallery,
   useUploadGalleryEmailPhoto,
@@ -16,6 +17,8 @@ import type { GalleryEmailExtras, SendGalleryOutcome, SendGalleryResult } from '
 const GALLERY_MESSAGE_MAX = 2000;
 /** Same as GALLERY_PHOTO_ALT_MAX there. */
 const GALLERY_PHOTO_ALT_MAX = 200;
+/** Same as GALLERY_SIGNATURE_MAX there. */
+const GALLERY_SIGNATURE_MAX = 100;
 
 /**
  * "Edit email text" (owner, 22 Nov 2026): the studio can change the gallery email's main
@@ -35,6 +38,11 @@ function useGalleryMessage() {
   const [photoAlt, setPhotoAlt] = useState('');
   const upload = useUploadGalleryEmailPhoto();
   const standard = useGalleryEmailStandardBody(open);
+  const [signature, setSignature] = useState<string | null>(null);
+  const savedSignature = useGalleryEmailSignature(open);
+  useEffect(() => {
+    if (open && signature === null && savedSignature.name !== null) setSignature(savedSignature.name);
+  }, [open, signature, savedSignature.name]);
   useEffect(() => {
     if (open && text === null && standard.body) setText(standard.body);
   }, [open, text, standard.body]);
@@ -42,7 +50,7 @@ function useGalleryMessage() {
     ? text
     : undefined;
   const extras: GalleryEmailExtras = open
-    ? { message, ...(photoUrl ? { photoUrl, photoAlt } : {}) }
+    ? { message, ...(photoUrl ? { photoUrl, photoAlt } : {}), ...(signature?.trim() ? { signature } : {}) }
     : {};
   const removePhoto = () => {
     setPhotoUrl(null);
@@ -56,6 +64,8 @@ function useGalleryMessage() {
     ready: text !== null,
     extras,
     setText,
+    signature: signature ?? '',
+    setSignature,
     photoUrl,
     photoAlt,
     setPhotoAlt,
@@ -74,6 +84,7 @@ function useGalleryMessage() {
     toggle: () => {
       if (open) {
         setText(null);
+        setSignature(null);
         removePhoto();
       }
       setOpen(!open);
@@ -114,6 +125,22 @@ function GalleryMessageEditor({ editor }: { editor: ReturnType<typeof useGallery
           />
           <p id={`${id}-hint`} className="text-xs text-muted-foreground">
             {t('pages.jobs.send_gallery.message_hint')}
+          </p>
+          <label htmlFor={`${id}-signature`} className="block pt-1 text-xs font-medium">
+            {t('pages.jobs.send_gallery.signature_label')}
+          </label>
+          <Input
+            id={`${id}-signature`}
+            dir={editor.language === 'he' ? 'rtl' : 'ltr'}
+            lang={editor.language}
+            maxLength={GALLERY_SIGNATURE_MAX}
+            value={editor.signature}
+            onChange={(event) => editor.setSignature(event.target.value)}
+            aria-describedby={`${id}-signature-hint`}
+            className="min-w-[16rem]"
+          />
+          <p id={`${id}-signature-hint`} className="text-xs text-muted-foreground">
+            {t('pages.jobs.send_gallery.signature_hint')}
           </p>
           <GalleryPhotoPicker editor={editor} />
         </div>

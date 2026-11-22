@@ -314,10 +314,18 @@ describe('JobsList', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
     const box = await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
     fireEvent.change(box, { target: { value: 'Lovely to meet you, Pat.\nHere are your photos.' } });
+    const signed = screen.getByLabelText(/^Signed/) as HTMLInputElement;
+    expect(signed.value).not.toBe('');
+    fireEvent.change(signed, { target: { value: 'Pat Photographer' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
     expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
-      body: { engagementIds: ['e1'], resend: true, message: 'Lovely to meet you, Pat.\nHere are your photos.' },
+      body: {
+        engagementIds: ['e1'],
+        resend: true,
+        message: 'Lovely to meet you, Pat.\nHere are your photos.',
+        signature: 'Pat Photographer',
+      },
     });
   });
 
@@ -346,6 +354,7 @@ describe('JobsList', () => {
         resend: true,
         photoUrl: `https://ref.supabase.co/storage/v1/object/public/tenant-assets/${path}`,
         photoAlt: 'Autumn in the park',
+        signature: expect.any(String),
       },
     });
   });
@@ -360,6 +369,9 @@ describe('JobsList', () => {
     await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
     fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
     expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
-    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: true } });
+    // Only the signature (prefilled, kept for next time) goes: no message, so the standard text.
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
+      body: { engagementIds: ['e1'], resend: true, signature: expect.any(String) },
+    });
   });
 });

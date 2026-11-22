@@ -5367,6 +5367,7 @@ export type Database = {
         Row: {
           all_photos_price_minor: number | null
           card_payments: boolean
+          email_signature: string | null
           gallery_open_days: number
           price_per_photo_minor: number | null
           tenant_id: string
@@ -5375,6 +5376,7 @@ export type Database = {
         Insert: {
           all_photos_price_minor?: number | null
           card_payments?: boolean
+          email_signature?: string | null
           gallery_open_days?: number
           price_per_photo_minor?: number | null
           tenant_id: string
@@ -5383,6 +5385,7 @@ export type Database = {
         Update: {
           all_photos_price_minor?: number | null
           card_payments?: boolean
+          email_signature?: string | null
           gallery_open_days?: number
           price_per_photo_minor?: number | null
           tenant_id?: string
