@@ -63,7 +63,6 @@ export function ClientImport() {
   const [columns, setColumns] = useState<ClientColumn[]>([]);
   const [dayFirst, setDayFirst] = useState(true);
   // Same-name matches are left out unless the studio says otherwise (index → add anyway).
-  const [addAnyway, setAddAnyway] = useState<Record<number, boolean>>({});
   const [result, setResult] = useState<ClientImportResult | null>(null);
   const [galleryResult, setGalleryResult] = useState<GalleryLinkResult | null>(null);
   const [galleryProgress, setGalleryProgress] = useState<{ done: number; total: number } | null>(null);
@@ -86,7 +85,6 @@ export function ClientImport() {
     setColumns(guessClientColumns(headerNames(rows[hRow] ?? [], width), families, projects, photoShop));
     setGalleryResult(null);
     setDayFirst(true);
-    setAddAnyway({});
     setResult(null);
   };
 
@@ -143,20 +141,20 @@ export function ClientImport() {
 
   // New clients, plus clients already here who have a past shoot to add or an email
   // (sent with their person_id, so they are not added twice; the database saves the
-  // email only for a client who has none).
+  // email only for a client who has none). A row with the same name as a client is that
+  // client: nothing to tick or answer (owner, 22 Nov 2026: "don't ask her any questions").
   const toImport = useMemo(() => {
     if (!built) return [];
     return built.clients.flatMap((c, i) => {
       const m = matches.get(i);
-      if (!m || (m.reason === 'name' && addAnyway[i])) return [c];
+      if (!m) return [c];
       return c.shoots?.length || c.email ? [{ ...c, person_id: m.person_id }] : [];
     });
-  }, [built, matches, addAnyway]);
+  }, [built, matches]);
   const newClients = toImport.filter((c) => !c.person_id);
   const studentsToImport = newClients.reduce((n, c) => n + (c.students?.length ?? 0), 0);
   const shootsToImport = toImport.reduce((n, c) => n + (c.shoots?.length ?? 0), 0);
-  const alreadyClients = [...matches.values()].filter((m) => m.reason !== 'name');
-  const sameName = [...matches.values()].filter((m) => m.reason === 'name');
+  const alreadyClients = [...matches.values()];
 
   // The studio's SmugMug galleries, read once when the sheet has a gallery column.
   const hasGalleryColumn = photoShop && columns.some((c) => c.field === 'shoot_gallery');
@@ -222,7 +220,6 @@ export function ClientImport() {
   });
 
   const setField = (index: number, field: ClientFieldKey) => {
-    setAddAnyway({});
     setColumns((prev) =>
       prev.map((c) => {
         if (c.index === index) return { ...c, field };
@@ -359,7 +356,7 @@ export function ClientImport() {
                   {t('clients_import.check_failed', { message: (matchesQuery.error as Error).message })}
                 </div>
               )}
-              {!matchesQuery.isLoading && !matchesQuery.error && alreadyClients.length === 0 && sameName.length === 0 && (
+              {!matchesQuery.isLoading && !matchesQuery.error && alreadyClients.length === 0 && (
                 <p className="text-sm text-gray-600">{t('clients_import.no_duplicates')}</p>
               )}
 
@@ -382,33 +379,6 @@ export function ClientImport() {
                     ))}
                   </ul>
                 </details>
-              )}
-
-              {sameName.length > 0 && (
-                <div className="space-y-2 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                  <p>
-                    {shootsToImport > 0
-                      ? t('clients_import.same_name_hint_shoots', { count: sameName.length })
-                      : t('clients_import.same_name_hint', { count: sameName.length })}
-                  </p>
-                  <ul className="space-y-1">
-                    {sameName.map((m) => (
-                      <li key={m.index}>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!addAnyway[m.index]}
-                            onChange={(e) => setAddAnyway((p) => ({ ...p, [m.index]: e.target.checked }))}
-                          />
-                          <span dir="auto">
-                            {t('clients_import.add_anyway', { name: built.clients[m.index]?.name ?? '' })}
-                          </span>
-                          <span className="text-amber-800">({rowsLabel(built.clients[m.index]?.rowNumbers ?? [])})</span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               )}
 
               <ul className="space-y-1 text-sm">
