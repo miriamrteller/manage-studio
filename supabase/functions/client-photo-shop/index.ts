@@ -28,11 +28,13 @@ import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/su
 import { getTenantFeatures } from "../_shared/feature-gate.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import {
+  checkedSmugMugPhotos,
   GalleryNotReadyError,
   listGalleryPhotos,
   mockGalleryPhotos,
   uploadedPhotoSource,
 } from "../_shared/photo-shop/gallery.ts";
+import { refreshGalleryLinks, type SmugMugConnection } from "../_shared/photo-shop/smugmug/refresh.ts";
 import { orderPersonId, photoOrderLabel, resolveOrderItems } from "../_shared/photo-shop/order-items.ts";
 import { notifyStudioPhotoOrderCash, notifyStudioPhotoOrderPaid } from "../_shared/photo-shop/emails.ts";
 
@@ -78,7 +80,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
     const service = createServiceClient();
     const { data: shopRow } = await service
       .from("job_photo_shops")
-      .select("tenant_id, provider, gallery_key, smugmug_check, smugmug_photos, smugmug_checked_at")
+      .select("tenant_id, provider, gallery_key, smugmug_check, smugmug_photos, smugmug_checked_at, smugmug_photos_refreshed_at")
       .eq("engagement_id", engagementId)
       .maybeSingle();
     if (!shopRow || !view.has_shop) {
@@ -96,6 +98,25 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
 
     const features = await getTenantFeatures(shopRow.tenant_id as string, service);
     if (!features.has(FEATURE)) return jsonResponse({ error: "feature_not_available" }, 403);
+
+    // A checked SmugMug gallery: fresh preview links from SmugMug instead of only the ones
+    // saved at the check (they can stop opening). "refresh": none of the links loaded.
+    let smugmugConnection: SmugMugConnection = "unknown";
+    if (action !== "order" && checkedSmugMugPhotos(gallery)) {
+      const times = [shopRow.smugmug_checked_at, shopRow.smugmug_photos_refreshed_at]
+        .filter((t): t is string => typeof t === "string")
+        .sort();
+      const refreshed = await refreshGalleryLinks(service, {
+        tenantId: shopRow.tenant_id as string,
+        engagementId,
+        galleryKey: gallery.gallery_key,
+        savedPhotos: gallery.smugmug_photos,
+        lastRefreshedAt: times.length ? times[times.length - 1] : null,
+        force: body?.refresh === true,
+      });
+      if (refreshed.photos) gallery.smugmug_photos = refreshed.photos;
+      smugmugConnection = refreshed.connection;
+    }
 
     // Card payments are off until the studio switches them on (Settings > Payment > Photo
     // shop): clients then only pay the studio directly.
@@ -119,7 +140,7 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       }
       try {
         const real = await listGalleryPhotos(gallery, { uploads, adminPreview: true });
-        return jsonResponse({ shop: shopView, photos: real, sample: false });
+        return jsonResponse({ shop: shopView, photos: real, sample: false, smugmugConnection });
       } catch (e) {
         if (!(e instanceof GalleryNotReadyError)) throw e;
         // Sample photos only: nothing real is shown until the shoot's gallery is ready.

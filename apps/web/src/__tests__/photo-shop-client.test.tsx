@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   gallery: null as ClientPhotoGallery | null,
   order: vi.fn(),
   payBy: [] as string[],
+  galleryCall: (_id: string, _refresh?: boolean) => undefined as void,
 }));
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:photo_shop', isLoading: false }),
@@ -30,7 +31,10 @@ vi.mock('@/features/jobs/services/clientPhotoShopService', async (orig) => {
   return {
     ...real,
     ClientPhotoShopService: {
-      gallery: async () => state.gallery,
+      gallery: async (id: string, refresh = false) => {
+        state.galleryCall(id, refresh);
+        return state.gallery;
+      },
       order: (id: string, keys: string[], all: boolean, payBy = 'card') => {
         state.payBy.push(payBy);
         return state.order(id, keys, all);
@@ -129,9 +133,15 @@ describe('ClientPhotoShop', () => {
 
   it('when no photo loads, says so instead of showing an empty shop', async () => {
     renderInApp(<ClientPhotoShop engagementId="e1" />);
-    const imgs = await screen.findAllByRole('img');
-    imgs.forEach((img) => fireEvent.error(img));
+    const gallery = vi.spyOn(state, 'galleryCall');
+    (await screen.findAllByRole('img')).forEach((img) => fireEvent.error(img));
+    // First: fresh links are asked for once, and the shop shows again.
+    await waitFor(() => expect(gallery).toHaveBeenLastCalledWith('e1', true));
+    expect(screen.queryByText(/The photos can't be shown right now/)).toBeNull();
+    // Those don't load either: the client is told, instead of an empty shop.
+    (await screen.findAllByRole('img')).forEach((img) => fireEvent.error(img));
     expect(await screen.findByText(/The photos can't be shown right now/)).toBeTruthy();
+    expect(gallery.mock.calls.filter(([, refresh]) => refresh)).toHaveLength(1);
     expect(screen.queryAllByRole('button', { name: 'Choose' })).toHaveLength(0);
   });
 

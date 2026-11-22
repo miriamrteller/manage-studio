@@ -52,6 +52,8 @@ export interface ClientPhotoGallery {
 /** The studio's preview of a shoot's shop. sample: the photos are the sample gallery. */
 export interface PhotoShopPreview extends ClientPhotoGallery {
   sample: boolean;
+  /** SmugMug galleries: "lost" when SmugMug refused the studio's connection. */
+  smugmugConnection?: 'ok' | 'lost' | 'unknown';
 }
 
 export interface PlacedPhotoOrder {
@@ -82,10 +84,13 @@ export class ClientPhotoShopError extends Error {
 }
 
 export class ClientPhotoShopService {
-  /** null when the shoot has no shop the client can use yet. */
-  static async gallery(engagementId: string): Promise<ClientPhotoGallery | null> {
+  /**
+   * null when the shoot has no shop the client can use yet.
+   * refresh: none of the photos loaded, so ask for fresh links from the gallery.
+   */
+  static async gallery(engagementId: string, refresh = false): Promise<ClientPhotoGallery | null> {
     const { data, error } = await supabase.functions.invoke('client-photo-shop', {
-      body: { action: 'gallery', engagementId },
+      body: { action: 'gallery', engagementId, ...(refresh ? { refresh: true } : {}) },
     });
     if (error) {
       const code = await errorCode(error);
@@ -98,9 +103,9 @@ export class ClientPhotoShopService {
   }
 
   /** Studio admins: what the shoot's client sees. Throws ClientPhotoShopError("no_shop") when the shoot's shop isn't saved. */
-  static async preview(engagementId: string): Promise<PhotoShopPreview> {
+  static async preview(engagementId: string, refresh = false): Promise<PhotoShopPreview> {
     const { data, error } = await supabase.functions.invoke('client-photo-shop', {
-      body: { action: 'preview', engagementId },
+      body: { action: 'preview', engagementId, ...(refresh ? { refresh: true } : {}) },
     });
     if (error) throw new ClientPhotoShopError((await errorCode(error)) ?? 'server_error');
     return data as PhotoShopPreview;
