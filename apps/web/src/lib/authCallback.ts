@@ -126,19 +126,6 @@ export async function establishSessionFromAuthCallback(
     return error ? { ok: false, message: error.message } : { ok: true };
   }
 
-  const {
-    data: { session: existingSession },
-    error: existingSessionError,
-  } = await supabase.auth.getSession();
-
-  if (existingSessionError) {
-    return { ok: false, message: existingSessionError.message };
-  }
-
-  if (existingSession) {
-    return { ok: true };
-  }
-
   const searchParams = parseSearchParams(url.search);
   const hashParams = parseHashParams(url.hash);
   const authError = readAuthError(searchParams, hashParams);
@@ -147,18 +134,77 @@ export async function establishSessionFromAuthCallback(
     return { ok: false, message: authError };
   }
 
+  // A link that carries its own sign-in always wins: it signs in only the person it was
+  // made for. Whoever was signed in before in this browser (another login, a client's
+  // shop link, the studio owner) is signed out here first, never kept (22 Nov 2026).
+  const credential = linkCredential(searchParams, hashParams);
+  if (!credential) {
+    const {
+      data: { session: existingSession },
+      error: existingSessionError,
+    } = await supabase.auth.getSession();
+    if (existingSessionError) {
+      return { ok: false, message: existingSessionError.message };
+    }
+    if (existingSession) {
+      return { ok: true };
+    }
+  } else {
+    // The same link handled twice in one page load (e.g. a re-run effect) shares one result.
+    const pending = redeemedLinks.get(credential);
+    if (pending) return pending;
+    const run = redeemLink(searchParams, hashParams);
+    redeemedLinks.set(credential, run);
+    return run;
+  }
+
+  const session = await waitForAuthSession();
+  if (session) {
+    return { ok: true };
+  }
+
+  return { ok: false, message: 'invalid_callback' };
+}
+
+/** Links already redeemed in this page load, so a second run never signs out the first. */
+const redeemedLinks = new Map<string, Promise<AuthCallbackResult>>();
+
+/** The sign-in a link carries (PKCE code, token hash or session tokens), if any. */
+function linkCredential(searchParams: URLSearchParams, hashParams: URLSearchParams): string | null {
+  const code = searchParams.get('code');
+  if (code) return `code:${code}`;
+  const tokenHash = searchParams.get('token_hash');
+  if (tokenHash) return `hash:${tokenHash}`;
+  const accessToken = hashParams.get('access_token');
+  if (accessToken && hashParams.get('refresh_token')) return `tokens:${accessToken}`;
+  return null;
+}
+
+async function redeemLink(
+  searchParams: URLSearchParams,
+  hashParams: URLSearchParams,
+): Promise<AuthCallbackResult> {
+  const {
+    data: { session: existingSession },
+  } = await supabase.auth.getSession();
+  // Only this browser: the other person's sessions elsewhere stay signed in.
+  const signOutHere = async () => {
+    if (existingSession) await supabase.auth.signOut({ scope: 'local' });
+  };
+
   const code = searchParams.get('code');
   if (code) {
+    // Signing out first would drop the PKCE verifier this code needs. The exchange
+    // replaces the session in this browser; on failure the old one is signed out.
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
-      // Supabase JS may have already auto-exchanged this code on page load (race
-      // condition with its internal PKCE detection). Re-check before surfacing error.
-      const { data: raceCheck } = await supabase.auth.getSession();
-      if (raceCheck.session) return { ok: true };
+      await signOutHere();
       return { ok: false, message: error.message };
     }
     return { ok: true };
   }
+
+  await signOutHere();
 
   const tokenHash = searchParams.get('token_hash');
   if (tokenHash) {
@@ -168,8 +214,6 @@ export async function establishSessionFromAuthCallback(
       type: otpType,
     });
     if (error) {
-      const { data: raceCheck } = await supabase.auth.getSession();
-      if (raceCheck.session) return { ok: true };
       return { ok: false, message: error.message };
     }
     return { ok: true };
@@ -183,15 +227,8 @@ export async function establishSessionFromAuthCallback(
       refresh_token: refreshToken,
     });
     if (error) {
-      const { data: raceCheck } = await supabase.auth.getSession();
-      if (raceCheck.session) return { ok: true };
       return { ok: false, message: error.message };
     }
-    return { ok: true };
-  }
-
-  const session = await waitForAuthSession();
-  if (session) {
     return { ok: true };
   }
 
