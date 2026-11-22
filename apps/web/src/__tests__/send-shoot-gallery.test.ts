@@ -4,6 +4,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  cleanGalleryMessage,
+  GALLERY_MESSAGE_MAX,
   planGallerySend,
   type SendGalleryShoot,
 } from '../../../../supabase/functions/_shared/photo-shop/send-gallery.ts';
@@ -124,6 +126,51 @@ describe('gallery-ready email with the photo shop button', () => {
   });
 });
 
+describe('the studio\'s own gallery email text', () => {
+  const standard = en.gallery_ready.body;
+
+  it('cleanGalleryMessage: plain text, tidy, null when empty or unchanged', () => {
+    expect(cleanGalleryMessage(undefined, standard)).toBeNull();
+    expect(cleanGalleryMessage(42, standard)).toBeNull();
+    expect(cleanGalleryMessage('   \n ', standard)).toBeNull();
+    expect(cleanGalleryMessage(` ${standard} `, standard)).toBeNull();
+    expect(cleanGalleryMessage('Hello\r\n\r\n\r\n\r\nThanks  \n', standard)).toBe('Hello\n\nThanks');
+    expect(cleanGalleryMessage('a\u0000b\u202Ec\td', standard)).toBe('abc d');
+    expect(cleanGalleryMessage('x'.repeat(GALLERY_MESSAGE_MAX + 50), standard)).toHaveLength(GALLERY_MESSAGE_MAX);
+  });
+
+  it.each([
+    ['en', en.gallery_ready],
+    ['he', he.gallery_ready],
+  ] as const)('%s: her words replace the main paragraph, escaped; the buttons stay', (language, strings) => {
+    const { html } = renderPhotographerEmail({
+      key: 'gallery_ready',
+      language,
+      schoolName: 'Studio',
+      primaryColor: '#2563eb',
+      accentColor: '#dc2626',
+      variables: {
+        recipientName: 'Pat',
+        galleryUrl: 'https://studio.smugmug.com/Pat',
+        signInUrl: 'https://studio.opalswift.com/shop/token',
+        signInBody: strings.shop_body.replace('{days}', '3'),
+        signInCta: strings.shop_cta,
+        signInBefore: strings.closing,
+        customBody: 'Thank you!\n<script>alert(1)</script> & <a href="https://evil.test">x</a>',
+        customBodyReplaces: strings.body,
+      },
+    });
+    expect(html).not.toContain(strings.body);
+    expect(html).toContain('Thank you!<br>&lt;script&gt;alert(1)&lt;/script&gt; &amp; &lt;a href=&quot;https://evil.test&quot;&gt;x&lt;/a&gt;');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('href="https://evil.test"');
+    expect(html).toContain('https://studio.smugmug.com/Pat');
+    expect(html).toContain('https://studio.opalswift.com/shop/token');
+    expect(html).toContain(strings.cta);
+    expect(html).toContain(strings.closing);
+  });
+});
+
 describe('ShootGalleryService.send', () => {
   beforeEach(() => invoke.mockReset());
 
@@ -154,6 +201,14 @@ describe('ShootGalleryService.send', () => {
     await ShootGalleryService.send(['e1']);
     await ShootGalleryService.send(['e1'], { resend: true });
     expect(invoke.mock.calls.map((call) => call[1].body.resend)).toEqual([false, true]);
+  });
+
+  it('passes her message on only when there is one', async () => {
+    invoke.mockResolvedValue({ data: { sent: 1, skipped: 0, failed: 0, results: [] }, error: null });
+    await ShootGalleryService.send(['e1'], { resend: true, message: 'Hello' });
+    await ShootGalleryService.send(['e1'], { resend: true });
+    expect(invoke.mock.calls.map((call) => call[1].body.message)).toEqual(['Hello', undefined]);
+    expect('message' in invoke.mock.calls[1][1].body).toBe(false);
   });
 
   it('lastSent: when each gallery email last went', async () => {

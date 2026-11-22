@@ -1978,6 +1978,10 @@
         "skipped_one": "{{count}} not sent:",
         "skipped_other": "{{count}} not sent:",
         "error": "Could not send. Please try again.",
+        "message_edit": "Edit email text",
+        "message_standard": "Use the standard text",
+        "message_label": "Your message to the client",
+        "message_hint": "The email still starts with \"Hi\" and the client's name, and keeps the gallery button, any photo shop steps and the closing line.",
         "reason": {
           "no_email": "no client email",
           "not_checked": "the SmugMug gallery has not passed Check gallery yet",

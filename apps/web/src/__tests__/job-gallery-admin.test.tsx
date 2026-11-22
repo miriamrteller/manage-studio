@@ -287,4 +287,33 @@ describe('JobsList', () => {
     expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: true } });
   });
+
+  it('Edit email text: the box starts with the standard text and her words go with the send', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text' })[0]);
+    const box = await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
+    fireEvent.change(box, { target: { value: 'Lovely to meet you, Pat.\nHere are your photos.' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
+      body: { engagementIds: ['e1'], resend: true, message: 'Lovely to meet you, Pat.\nHere are your photos.' },
+    });
+  });
+
+  it('Edit email text left as it was: the standard text goes', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text' })[0]);
+    await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: true } });
+  });
 });

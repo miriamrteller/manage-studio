@@ -3,10 +3,13 @@
  * (owner, 18 Nov 2026), for one shoot or several selected at once.
  *
  * Authorization: Bearer <supabase session> (studio admin)
- * Body: { engagementIds: string[], resend?: boolean } (1 to 100 shoots of the admin's studio)
+ * Body: { engagementIds: string[], resend?: boolean, message?: string } (1 to 100 shoots of the admin's studio)
  *   resend false (the default, sending several): a client who already got the
  *   gallery email is skipped as "already_sent". resend true (one shoot's button,
  *   which shows when it was last sent): it goes again.
+ *   message: the studio's own words in place of the standard body paragraph (plain
+ *   text, cleaned by cleanGalleryMessage). The greeting, the gallery button, the photo
+ *   shop steps and the closing line stay as they are, so the links can never be lost.
  * Response: { sent, skipped, failed, results: [{ engagementId, outcome }] }
  *
  * For each shoot it sends the client the gallery-ready email now, with the gallery
@@ -30,7 +33,7 @@ import {
   sendAutomaticEmail,
 } from "../_shared/photographer-emails/send.ts";
 import { createShopLink, LINK_DAYS } from "../_shared/photo-shop/shop-link.ts";
-import { planGallerySend, type SendGallerySkip } from "../_shared/photo-shop/send-gallery.ts";
+import { cleanGalleryMessage, planGallerySend, type SendGallerySkip } from "../_shared/photo-shop/send-gallery.ts";
 
 const MAX_SHOOTS = 100;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,7 +60,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const auth = await requireAuthUser(req);
   if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
 
-  const body = (await req.json().catch(() => null)) as { engagementIds?: unknown; resend?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { engagementIds?: unknown; resend?: unknown; message?: unknown } | null;
   const resend = body?.resend === true;
   const raw = Array.isArray(body?.engagementIds) ? body.engagementIds : [];
   const ids = [...new Set(raw.filter((id): id is string => typeof id === "string" && UUID.test(id)))];
@@ -98,6 +101,9 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   }
   const tenant = tenantRow.data as unknown as AutomaticEmailTenant;
   const language = tenant.language_default === "he" ? "he" : "en";
+  // The box was prefilled with the standard body in the email's language.
+  const standardBody = String(getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY).body ?? "");
+  const message = cleanGalleryMessage(body?.message, standardBody);
 
   let shopFeature = true;
   try {
@@ -165,6 +171,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
           recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
           galleryUrl,
           ...(shopLink && plan.galleryUrl ? shopWording(language, shopLink.url) : {}),
+          ...(message ? { customBody: message, customBodyReplaces: standardBody } : {}),
         },
       });
       if (outcome !== "sent") {

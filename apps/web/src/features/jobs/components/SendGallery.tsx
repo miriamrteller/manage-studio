@@ -1,7 +1,82 @@
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { useSendShootGallery } from '../hooks/useSendShootGallery';
+import { Textarea } from '@/components/ui/textarea';
+import { useGalleryEmailStandardBody, useSendShootGallery } from '../hooks/useSendShootGallery';
 import type { SendGalleryOutcome, SendGalleryResult } from '../services/shootGalleryService';
+
+/** Same as GALLERY_MESSAGE_MAX in supabase/functions/_shared/photo-shop/send-gallery.ts. */
+const GALLERY_MESSAGE_MAX = 2000;
+
+/**
+ * "Edit email text" (owner, 22 Nov 2026): the studio can change the gallery email's main
+ * paragraph before sending. The box starts with the standard text; the greeting, the
+ * gallery and photo shop buttons and the closing line stay outside it, so no link is lost.
+ * Closed, or unchanged: the standard text goes.
+ */
+function useGalleryMessage() {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState<string | null>(null);
+  const standard = useGalleryEmailStandardBody(open);
+  useEffect(() => {
+    if (open && text === null && standard.body) setText(standard.body);
+  }, [open, text, standard.body]);
+  const message = open && text !== null && text.trim() && text.trim() !== standard.body?.trim()
+    ? text
+    : undefined;
+  return {
+    open,
+    text: text ?? '',
+    language: standard.language,
+    ready: text !== null,
+    message,
+    setText,
+    toggle: () => {
+      if (open) setText(null);
+      setOpen(!open);
+    },
+  };
+}
+
+function GalleryMessageEditor({ editor }: { editor: ReturnType<typeof useGalleryMessage> }) {
+  const { t } = useTranslation();
+  const id = useId();
+  return (
+    <div className="w-full space-y-1">
+      <button
+        type="button"
+        className="text-xs text-primary underline underline-offset-2"
+        aria-expanded={editor.open}
+        aria-controls={`${id}-box`}
+        onClick={editor.toggle}
+      >
+        {editor.open ? t('pages.jobs.send_gallery.message_standard') : t('pages.jobs.send_gallery.message_edit')}
+      </button>
+      {editor.open && (
+        <div id={`${id}-box`} className="space-y-1">
+          <label htmlFor={`${id}-text`} className="block text-xs font-medium">
+            {t('pages.jobs.send_gallery.message_label')}
+          </label>
+          <Textarea
+            id={`${id}-text`}
+            rows={4}
+            dir={editor.language === 'he' ? 'rtl' : 'ltr'}
+            lang={editor.language}
+            maxLength={GALLERY_MESSAGE_MAX}
+            disabled={!editor.ready}
+            value={editor.text}
+            onChange={(event) => editor.setText(event.target.value)}
+            aria-describedby={`${id}-hint`}
+            className="min-w-[16rem]"
+          />
+          <p id={`${id}-hint`} className="text-xs text-muted-foreground">
+            {t('pages.jobs.send_gallery.message_hint')}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * "Send gallery" (owner, 18 Nov 2026): one press emails the client the gallery-ready
@@ -20,9 +95,15 @@ export function SendGalleryButton({
 }) {
   const { t, i18n } = useTranslation();
   const send = useSendShootGallery({ resend: true });
+  const editor = useGalleryMessage();
   return (
     <span className="inline-flex flex-col items-start gap-1">
-      <Button size={size} variant="outline" isLoading={send.isPending} onClick={() => send.mutate([engagementId])}>
+      <Button
+        size={size}
+        variant="outline"
+        isLoading={send.isPending}
+        onClick={() => send.mutate({ engagementIds: [engagementId], message: editor.message })}
+      >
         {lastSentAt ? t('pages.jobs.send_gallery.button_again') : t('pages.jobs.send_gallery.button')}
       </Button>
       {lastSentAt && !send.data && (
@@ -30,6 +111,7 @@ export function SendGalleryButton({
           {t('pages.jobs.send_gallery.last_sent', { when: formatSentAt(lastSentAt, i18n.language) })}
         </span>
       )}
+      <GalleryMessageEditor editor={editor} />
       <SendGalleryOutcomeText result={send.data} error={send.error} single />
     </span>
   );
@@ -110,6 +192,7 @@ export function SendGalleryBulkBar({
 }) {
   const { t } = useTranslation();
   const send = useSendShootGallery();
+  const editor = useGalleryMessage();
   return (
     <div className="card space-y-2 p-3" aria-label={t('pages.jobs.send_gallery.select')}>
       <div className="flex flex-wrap items-center gap-3">
@@ -121,7 +204,7 @@ export function SendGalleryBulkBar({
           variant="primary"
           disabled={engagementIds.length === 0}
           isLoading={send.isPending}
-          onClick={() => send.mutate(engagementIds)}
+          onClick={() => send.mutate({ engagementIds, message: editor.message })}
         >
           {t('pages.jobs.send_gallery.button_selected')}
         </Button>
@@ -130,6 +213,7 @@ export function SendGalleryBulkBar({
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">{t('pages.jobs.send_gallery.hint')}</p>
+      <GalleryMessageEditor editor={editor} />
       {owingCount > 0 && (
         <p className="text-xs text-amber-800">{t('pages.jobs.send_gallery.owing', { count: owingCount })}</p>
       )}
