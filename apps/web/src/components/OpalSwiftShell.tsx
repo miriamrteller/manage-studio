@@ -5,7 +5,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { OPALSWIFT_BRAND } from '@/lib/theme/opalswiftBrand';
 import opalswiftGem from '@/assets/opalswift-gem.png';
 
-export const OPALSWIFT_SITE_URL = 'https://opalswift.com';
+import { OPALSWIFT_SITE_URL } from '@/lib/opalswiftSite';
+
+export { OPALSWIFT_SITE_URL };
 
 /** The OpalSwift gemstone logo (from opalswift.com's footer), 256px source. */
 export const OPALSWIFT_GEM_SRC = opalswiftGem;
