@@ -91,39 +91,62 @@ describe('ClientPhotoShop: prints and other products', () => {
     state.order.mockReset().mockResolvedValue({ orderId: 'o1', status: 'awaiting_payment', totalMinor: 14000, currency: 'ILS', payToken: 'tok', payByCash: true });
   });
 
-  it('a print alone, then digital and two prints of one photo; prints never use included photos', async () => {
+  it('tapping a photo opens its buying options: digital, prints with how many, next photo', async () => {
     state.gallery = {
       shop: view({ included_photos: 1, included_left: 1, price_per_photo_minor: 7500, products, bought_image_keys: ['g-2'] }),
       photos,
     };
     renderInApp(<ClientPhotoShop engagementId="e1" />);
-    const picker = await screen.findByLabelText('Add a print of IMG_0001.jpg');
-    expect(screen.getAllByRole('button', { name: /^Digital ₪75/ }).length).toBe(5);
-    // A bought photo can still be printed.
-    expect(screen.getByLabelText('Add a print of IMG_0002.jpg')).toBeTruthy();
+    // The grid keeps the quick digital button.
+    expect((await screen.findAllByRole('button', { name: /^Digital ₪75/ })).length).toBe(5);
 
-    fireEvent.change(picker, { target: { value: 'p-canvas' } });
-    expect(cartLine(/0 photos in your cart · 1 print · ₪140/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open IMG_0001.jpg to see the ways to buy it' }));
+    const panel = await screen.findByRole('dialog');
+    expect(within(panel).getByText('Buy this photo')).toBeTruthy();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Add Canvas print · 20x30 cm' }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Add Canvas print · 20x30 cm' }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Add Wood print · 30x45 cm' }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Add' }));
+    // 1 digital (included, free) + 2 × 140 + 230.
+    expect(within(panel).getByText('1 photo in your cart · 3 prints · ₪510')).toBeTruthy();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove one Canvas print · 20x30 cm' }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove one Wood print · 30x45 cm' }));
+    expect(within(panel).getByText('1 photo in your cart · 1 print · ₪140')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Add a print of IMG_0001.jpg'), { target: { value: 'p-wood' } });
-    fireEvent.click(screen.getAllByRole('button', { name: /^Digital ₪75/ })[0]);
-    // 1 digital (included, free) + 140 + 230.
-    expect(cartLine(/1 photo in your cart · 2 prints · 1 included · ₪370/)).toBeTruthy();
+    // Next photo: already bought, but it can still be printed.
+    fireEvent.click(within(panel).getByRole('button', { name: 'Next' }));
+    expect(within(panel).getByText('Bought')).toBeTruthy();
+    expect(within(panel).getByText(/IMG_0002\.jpg · 2\/6/)).toBeTruthy();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Wood print · 30x45 cm · ₪230 of IMG_0001.jpg' }));
+    expect(screen.getByRole('button', { name: '1 print chosen' })).toBeTruthy();
     expect(cartLine(/1 photo in your cart · 1 print · 1 included · ₪140/)).toBeTruthy();
-
     fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪140/ }));
     await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', ['g-1'], false));
     expect(state.payBy).toEqual(['cash']);
     expect(state.products).toEqual([{ imageKey: 'g-1', productId: 'p-canvas' }]);
   });
 
+  it('a print alone is an order', async () => {
+    state.gallery = { shop: view({ included_photos: 0, included_left: 0, products }), photos };
+    renderInApp(<ClientPhotoShop engagementId="e1" />);
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Prints and sizes' }))[2]);
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Add Wood print · 30x45 cm' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(cartLine(/0 photos in your cart · 1 print · ₪230/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Send order \(₪230/ }));
+    await waitFor(() => expect(state.order).toHaveBeenCalledWith('e1', [], false));
+    expect(state.products).toEqual([{ imageKey: 'g-3', productId: 'p-wood' }]);
+  });
+
   it('without products the shop looks as before', async () => {
     state.gallery = { shop: view(), photos };
     renderInApp(<ClientPhotoShop engagementId="e1" />);
     await screen.findAllByRole('button', { name: 'Choose' });
-    expect(screen.queryByText('Add a print…')).toBeNull();
+    expect(screen.queryByText('Prints and sizes')).toBeNull();
+    expect(screen.queryByRole('button', { name: /to see the ways to buy it/ })).toBeNull();
   });
 });
 

@@ -9,12 +9,14 @@ import {
   photoProductLabel,
   type PhotoShopPrices,
 } from '@shared/photoShop';
+import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePhotoShopEnabled } from '../hooks/usePhotoShop';
 import {
   ClientPhotoShopError,
   ClientPhotoShopService,
+  type ClientGalleryPhoto,
   type ClientPhotoGallery,
   type ClientPhotoOrder,
   type PhotoPayBy,
@@ -163,10 +165,6 @@ function ShopBody({
   const allTotal = photoCartGrandTotal(prices, available.length, linePrices, true);
   const allDigital = photoCartTotal(prices, available.length, true);
   const suggestAll = allPhotosIsBetter(prices, cart.size, available.length);
-  const productLabel = (id: string) => {
-    const product = productById.get(id);
-    return product ? `${photoProductLabel(product, lang)} · ${money(product.price_minor)}` : '';
-  };
 
   const order = useMutation({
     mutationFn: (allPhotos: boolean) =>
@@ -200,9 +198,30 @@ function ShopBody({
     setTried(null);
     setLines((prev) => [...prev, { imageKey, productId }]);
   };
-  const removeLine = (index: number) => {
+  /** Takes one copy of this product of this photo off the cart (the last one added). */
+  const removeOne = (imageKey: string, productId: string) => {
     setTried(null);
-    setLines((prev) => prev.filter((_, i) => i !== index));
+    setLines((prev) => {
+      const at = prev.map((l) => l.imageKey === imageKey && l.productId === productId).lastIndexOf(true);
+      return at < 0 ? prev : prev.filter((_, i) => i !== at);
+    });
+  };
+  // The photo open large with its buying options (side panel; a bottom sheet on phones).
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const openIndex = openKey ? shown.findIndex((p) => p.key === openKey) : -1;
+  const openPhoto = openIndex >= 0 ? shown[openIndex] : null;
+  const withOptions = shop.open && products.length > 0;
+
+  /** A preview that doesn't load is left out, and so is anything of it in the cart. */
+  const dropPhoto = (key: string) => {
+    setBroken((prev) => new Set(prev).add(key));
+    setLines((prev) => (prev.some((l) => l.imageKey === key) ? prev.filter((l) => l.imageKey !== key) : prev));
+    setCart((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
   };
 
   const toggle = (key: string) => {
@@ -265,25 +284,22 @@ function ShopBody({
           const inCart = cart.has(p.key);
           return (
             <li key={p.key} className="space-y-1">
-              <img
-                src={p.previewUrl}
-                alt={t('pages.client_portal.photo_shop.photo_alt', { name: p.fileName })}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                draggable={false}
-                onContextMenu={(e) => e.preventDefault()}
-                onError={() => {
-                  setBroken((prev) => new Set(prev).add(p.key));
-                  setLines((prev) => (prev.some((l) => l.imageKey === p.key) ? prev.filter((l) => l.imageKey !== p.key) : prev));
-                  setCart((prev) => {
-                    if (!prev.has(p.key)) return prev;
-                    const next = new Set(prev);
-                    next.delete(p.key);
-                    return next;
-                  });
-                }}
-                className="aspect-[4/3] w-full select-none rounded object-cover"
-              />
+              {withOptions ? (
+                <button
+                  type="button"
+                  className="block w-full rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  aria-label={t('pages.client_portal.photo_shop.open_options', { name: p.fileName })}
+                  onClick={() => setOpenKey(p.key)}
+                >
+                  <PhotoImg photo={p} alt="" onBroken={() => dropPhoto(p.key)} />
+                </button>
+              ) : (
+                <PhotoImg
+                  photo={p}
+                  alt={t('pages.client_portal.photo_shop.photo_alt', { name: p.fileName })}
+                  onBroken={() => dropPhoto(p.key)}
+                />
+              )}
               <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
                 <span className="truncate text-gray-600" dir="ltr">{p.fileName}</span>
                 {isBought ? (
@@ -309,31 +325,16 @@ function ShopBody({
                   )
                 )}
               </div>
-              {shop.open && products.length > 0 && (
-                <PrintPicker
-                  photoName={p.fileName}
-                  options={products.map((pr) => ({ id: pr.id, label: productLabel(pr.id) }))}
-                  onPick={(productId) => addLine(p.key, productId)}
-                />
-              )}
-              {lines.some((l) => l.imageKey === p.key) && (
-                <ul className="space-y-1">
-                  {lines.map((l, i) =>
-                    l.imageKey !== p.key ? null : (
-                      <li key={i} className="flex items-center justify-between gap-1 rounded bg-gray-50 px-2 py-1 text-xs">
-                        <span>{productLabel(l.productId)}</span>
-                        <button
-                          type="button"
-                          className="font-medium underline"
-                          aria-label={t('pages.client_portal.photo_shop.remove_line', { name: productLabel(l.productId), photo: p.fileName })}
-                          onClick={() => removeLine(i)}
-                        >
-                          {t('pages.client_portal.photo_shop.remove')}
-                        </button>
-                      </li>
-                    ),
-                  )}
-                </ul>
+              {withOptions && (
+                <button
+                  type="button"
+                  className="text-xs font-medium underline"
+                  onClick={() => setOpenKey(p.key)}
+                >
+                  {lines.some((l) => l.imageKey === p.key)
+                    ? t('pages.client_portal.photo_shop.prints_chosen', { count: lines.filter((l) => l.imageKey === p.key).length })
+                    : t('pages.client_portal.photo_shop.see_prints')}
+                </button>
               )}
               {!isBought && !isCashOrdered && awaiting.has(p.key) && (
                 <p className="text-xs text-gray-500">{t('pages.client_portal.photo_shop.awaiting')}</p>
@@ -342,6 +343,41 @@ function ShopBody({
           );
         })}
       </ul>
+
+      {openPhoto && (
+        <PhotoOptionsPanel
+          photo={openPhoto}
+          position={{ index: openIndex, count: shown.length }}
+          onClose={() => setOpenKey(null)}
+          onMove={(step) => setOpenKey(shown[(openIndex + step + shown.length) % shown.length].key)}
+          digital={
+            bought.has(openPhoto.key)
+              ? { state: 'bought' }
+              : cashOrdered.has(openPhoto.key)
+                ? { state: 'cash_ordered' }
+                : {
+                    state: cart.has(openPhoto.key) ? 'in_cart' : 'available',
+                    price: shop.price_per_photo_minor != null ? money(shop.price_per_photo_minor) : null,
+                    onToggle: () => toggle(openPhoto.key),
+                  }
+          }
+          products={products.map((pr) => ({
+            id: pr.id,
+            label: photoProductLabel(pr, lang),
+            price: money(pr.price_minor),
+            count: lines.filter((l) => l.imageKey === openPhoto.key && l.productId === pr.id).length,
+          }))}
+          onAdd={(productId) => addLine(openPhoto.key, productId)}
+          onRemove={(productId) => removeOne(openPhoto.key, productId)}
+          cartSummary={[
+            t('pages.client_portal.photo_shop.cart_count', { count: cart.size }),
+            lines.length > 0 ? t('pages.client_portal.photo_shop.cart_prints', { count: lines.length }) : null,
+            total.problem === null ? money(total.totalMinor) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        />
+      )}
 
       {noPhotoLoaded && !onNoPhotoLoaded && (
         <p role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -424,34 +460,159 @@ function ShopBody({
   );
 }
 
-/**
- * "Add a print" under a photo: one pick adds that product (print, canvas ...) of this photo
- * to the cart, and the list resets so the same or another product can be added again.
- */
-function PrintPicker({
-  photoName,
-  options,
-  onPick,
+function PhotoImg({
+  photo,
+  alt,
+  onBroken,
+  large = false,
 }: {
-  photoName: string;
-  options: { id: string; label: string }[];
-  onPick: (productId: string) => void;
+  photo: ClientGalleryPhoto;
+  alt: string;
+  onBroken?: () => void;
+  large?: boolean;
+}) {
+  return (
+    <img
+      src={photo.previewUrl}
+      alt={alt}
+      loading={large ? undefined : 'lazy'}
+      referrerPolicy="no-referrer"
+      draggable={false}
+      onContextMenu={(e) => e.preventDefault()}
+      onError={onBroken}
+      className={
+        large
+          ? 'max-h-[45vh] w-full select-none rounded object-contain sm:max-h-[75vh]'
+          : 'aspect-[4/3] w-full select-none rounded object-cover'
+      }
+    />
+  );
+}
+
+type DigitalOption =
+  | { state: 'bought' | 'cash_ordered' }
+  | { state: 'available' | 'in_cart'; price: string | null; onToggle: () => void };
+
+/**
+ * One photo open large with every way to buy it (owner, 22 Nov 2026: "on the side"):
+ * the options sit beside the photo on a wide screen and slide up under it on a phone.
+ * Digital file on/off, each print with − and + for how many, arrows to the next photo.
+ */
+function PhotoOptionsPanel({
+  photo,
+  position,
+  onClose,
+  onMove,
+  digital,
+  products,
+  onAdd,
+  onRemove,
+  cartSummary,
+}: {
+  photo: ClientGalleryPhoto;
+  position: { index: number; count: number };
+  onClose: () => void;
+  onMove: (step: 1 | -1) => void;
+  digital: DigitalOption;
+  products: { id: string; label: string; price: string; count: number }[];
+  onAdd: (productId: string) => void;
+  onRemove: (productId: string) => void;
+  cartSummary: string;
 }) {
   const { t } = useTranslation();
   return (
-    <select
-      className="w-full rounded-md border border-gray-300 bg-white p-1 text-xs"
-      aria-label={t('pages.client_portal.photo_shop.add_print_for', { name: photoName })}
-      value=""
-      onChange={(e) => {
-        if (e.target.value) onPick(e.target.value);
-      }}
-    >
-      <option value="">{t('pages.client_portal.photo_shop.add_print')}</option>
-      {options.map((o) => (
-        <option key={o.id} value={o.id}>{o.label}</option>
-      ))}
-    </select>
+    <BaseDialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <BaseDialog.Portal>
+        <BaseDialog.Backdrop className="fixed inset-0 z-[var(--z-modal)] bg-black/60" />
+        <BaseDialog.Popup
+          className="fixed inset-x-0 bottom-0 z-[var(--z-modal)] max-h-[92vh] overflow-y-auto rounded-t-xl bg-white p-4 shadow-xl sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[min(64rem,95vw)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl"
+        >
+          <div className="grid gap-4 sm:grid-cols-[1fr_18rem]">
+            <div className="space-y-2">
+              <PhotoImg
+                photo={photo}
+                alt={t('pages.client_portal.photo_shop.photo_alt', { name: photo.fileName })}
+                large
+              />
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <Button size="sm" variant="outline" onClick={() => onMove(-1)} disabled={position.count < 2}>
+                  {t('pages.client_portal.photo_shop.previous_photo')}
+                </Button>
+                <span className="text-gray-600" dir="ltr">
+                  {photo.fileName} · {position.index + 1}/{position.count}
+                </span>
+                <Button size="sm" variant="outline" onClick={() => onMove(1)} disabled={position.count < 2}>
+                  {t('pages.client_portal.photo_shop.next_photo')}
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <BaseDialog.Title className="text-lg font-semibold text-gray-900">
+                {t('pages.client_portal.photo_shop.options_title')}
+              </BaseDialog.Title>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center justify-between gap-2 rounded-md border p-2">
+                  <span>
+                    {t('pages.client_portal.photo_shop.digital')}
+                    {'price' in digital && digital.price && <> · {digital.price}</>}
+                  </span>
+                  {digital.state === 'bought' ? (
+                    <Badge variant="success">{t('pages.client_portal.photo_shop.bought')}</Badge>
+                  ) : digital.state === 'cash_ordered' ? (
+                    <Badge variant="secondary">{t('pages.client_portal.photo_shop.cash_ordered')}</Badge>
+                  ) : (
+                    'onToggle' in digital && <Button
+                      size="sm"
+                      variant={digital.state === 'in_cart' ? 'primary' : 'outline'}
+                      aria-pressed={digital.state === 'in_cart'}
+                      onClick={digital.onToggle}
+                    >
+                      {digital.state === 'in_cart'
+                        ? t('pages.client_portal.photo_shop.added')
+                        : t('pages.client_portal.photo_shop.add_one')}
+                    </Button>
+                  )}
+                </li>
+                {products.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
+                    <span>
+                      {p.label} · {p.price}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {p.count > 0 && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            aria-label={t('pages.client_portal.photo_shop.remove_one', { name: p.label })}
+                            onClick={() => onRemove(p.id)}
+                          >
+                            −
+                          </Button>
+                          <span className="min-w-[1.5rem] text-center font-medium" aria-live="polite">{p.count}</span>
+                        </>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={p.count > 0 ? 'primary' : 'outline'}
+                        aria-label={t('pages.client_portal.photo_shop.add_named', { name: p.label })}
+                        onClick={() => onAdd(p.id)}
+                      >
+                        +
+                      </Button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-gray-700" aria-live="polite">{cartSummary}</p>
+              <BaseDialog.Close render={<Button variant="primary" />}>
+                {t('pages.client_portal.photo_shop.options_done')}
+              </BaseDialog.Close>
+            </div>
+          </div>
+        </BaseDialog.Popup>
+      </BaseDialog.Portal>
+    </BaseDialog.Root>
   );
 }
 
