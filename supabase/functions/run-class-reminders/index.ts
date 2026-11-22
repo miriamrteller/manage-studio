@@ -4,7 +4,7 @@
  * For each studio that switched them on (tenants.class_reminders):
  *  - morning: today's class reminder to each enrolled family, with the time,
  *    where (the class's location) and what to wear;
- *  - no_class: a week ahead, "no class on <day>" when the class would meet
+ *  - no_class: 6 days ahead (the day after the previous weekly class), "no class on <day>" when the class would meet
  *    that day but it is a skipped holiday or one of the studio's closed dates.
  *
  * Sent to the family's account contact, in their language (contact
@@ -35,7 +35,9 @@ import {
 
 const MORNING = "class_reminder_morning";
 const NO_CLASS = "class_no_class_notice";
-const NOTICE_DAYS_AHEAD = 7;
+// 6, not 7: a weekly class's notice goes out the day after the previous
+// class (Wednesday class -> Thursday notice), not on class day itself.
+const NOTICE_DAYS_AHEAD = 6;
 const ENROLLED = ["active", "pending_payment"];
 
 interface TenantRow extends Record<string, unknown> {

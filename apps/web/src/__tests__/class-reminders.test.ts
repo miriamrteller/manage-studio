@@ -71,6 +71,10 @@ describe('classOnDate', () => {
       off: false,
     });
   });
+  it('notice date: 6 days ahead, the day after the previous weekly class', () => {
+    expect(addDays('2027-03-18', 6)).toBe('2027-03-24');
+    expect(addDays('2026-12-31', 6)).toBe('2027-01-06');
+  });
   it('a week ahead', () => {
     expect(addDays('2027-03-17', 7)).toBe('2027-03-24');
     expect(addDays('2026-12-30', 7)).toBe('2027-01-06');
