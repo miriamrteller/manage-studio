@@ -8,7 +8,7 @@ const invoke = vi.hoisted(() => vi.fn());
 const setSession = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke }, auth: { setSession } } }));
 
-import { PhotoShopLinkService, shopLinkMessage } from '@/features/jobs/services/photoShopLinkService';
+import { PhotoShopLinkService, shopGalleryPath, shopLinkMessage } from '@/features/jobs/services/photoShopLinkService';
 
 beforeEach(() => {
   invoke.mockReset();
@@ -37,7 +37,7 @@ describe('PhotoShopLinkService', () => {
   it('open: signs in with the session the link gives', async () => {
     invoke.mockResolvedValue({ data: { ok: true, access_token: 'a', refresh_token: 'r', engagementId: 'e1' }, error: null });
     setSession.mockResolvedValue({ error: null });
-    await PhotoShopLinkService.open('t');
+    await expect(PhotoShopLinkService.open('t')).resolves.toEqual({ engagementId: 'e1' });
     expect(invoke).toHaveBeenCalledWith('photo-shop-link', { body: { action: 'open', token: 't' } });
     expect(setSession).toHaveBeenCalledWith({ access_token: 'a', refresh_token: 'r' });
   });
@@ -46,6 +46,11 @@ describe('PhotoShopLinkService', () => {
     invoke.mockResolvedValue({ data: { ok: false, code: 'expired' }, error: null });
     await expect(PhotoShopLinkService.open('old')).rejects.toMatchObject({ code: 'expired' });
     expect(setSession).not.toHaveBeenCalled();
+  });
+
+  it('the link lands on that shoot\'s gallery in the photo shop', () => {
+    expect(shopGalleryPath('e1')).toBe('/photos/e1');
+    expect(shopGalleryPath(null)).toBe('/dashboard/portal?tab=shop');
   });
 
   it('message puts the link on its own line', () => {

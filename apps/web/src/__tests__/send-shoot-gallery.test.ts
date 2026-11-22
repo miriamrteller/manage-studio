@@ -5,8 +5,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanGalleryMessage,
+  cleanSignature,
   cleanPhotoAlt,
   galleryEmailPhotoUrl,
+  galleryEmailVariables,
+  isSmugMugLink,
   GALLERY_MESSAGE_MAX,
   planGallerySend,
   type SendGalleryShoot,
@@ -242,6 +245,20 @@ describe('a photo in the gallery email', () => {
   });
 });
 
+it('English greeting is "Dear", closing line and sign-off read as the owner asked', () => {
+  expect(en.gallery_ready.greeting).toBe('Dear {recipientName},');
+  expect(en.gallery_ready.closing).toBe('We hope you love them.');
+  expect(en.gallery_ready.sign_off).toBe('Sincerely,');
+  expect(he.gallery_ready.sign_off).toBe('בברכה,');
+});
+
+it('cleanSignature: one plain line, null when empty', () => {
+  expect(cleanSignature('  Pat \n Photographer ')).toBe('Pat Photographer');
+  expect(cleanSignature('')).toBeNull();
+  expect(cleanSignature(7)).toBeNull();
+  expect(cleanSignature('x'.repeat(300))).toHaveLength(100);
+});
+
 describe('ShootGalleryService.send', () => {
   beforeEach(() => invoke.mockReset());
 
@@ -300,5 +317,96 @@ describe('ShootGalleryService.send', () => {
   it('throws when the function fails', async () => {
     invoke.mockResolvedValue({ data: null, error: new Error('boom') });
     await expect(ShootGalleryService.send(['e1'])).rejects.toThrow();
+  });
+});
+
+describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)', () => {
+  const smugmug = 'https://studio.smugmug.com/Pat';
+  const shop = 'https://studio.opalswift.com/shop/token123';
+  const photo = { url: 'https://ref.supabase.co/storage/v1/object/public/tenant-assets/t1/gallery-email/1-a.jpg', alt: 'Park' };
+  const cases = [
+    ['plain', null, null],
+    ['her own text', 'Lovely to see you!', null],
+    ['a photo', null, photo],
+    ['text and a photo', 'Lovely to see you!', photo],
+  ] as const;
+
+  for (const [language, strings] of [['en', en.gallery_ready], ['he', he.gallery_ready]] as const) {
+    for (const [label, message, withPhoto] of cases) {
+      it(`${language}, with a shop, ${label}`, () => {
+        const variables = galleryEmailVariables({
+          recipientName: 'Pat',
+          galleryUrl: smugmug,
+          shopUrl: shop,
+          wording: strings,
+          message,
+          photo: withPhoto,
+          signature: 'Pat Photographer',
+        });
+        expect(variables).not.toBeNull();
+        const { html, subject } = renderPhotographerEmail({
+          key: 'gallery_ready',
+          language,
+          schoolName: 'Studio',
+          primaryColor: '#2563eb',
+          accentColor: '#dc2626',
+          variables: variables!,
+        });
+        const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]).filter((h) => !h.includes('/preferences'));
+        expect(links).toEqual([shop]);
+        expect(html.toLowerCase()).not.toContain('smugmug');
+        expect(subject.toLowerCase()).not.toContain('smugmug');
+        expect(html).toContain(strings.cta);
+        expect(html).not.toContain(strings.shop_cta);
+        if (withPhoto) expect(html).toContain(`src="${photo.url}"`);
+        if (message) {
+          expect(html).toContain(message);
+          expect(html).not.toContain(strings.body);
+        }
+        // Owner's layout: greeting, only her words, one button, closing, sign-off. Nothing else.
+        const at = (text: string) => html.indexOf(text);
+        const greeting = strings.greeting.replace('{recipientName}', 'Pat');
+        expect(at(greeting)).toBeGreaterThan(0);
+        expect(at(greeting)).toBeLessThan(at(message ?? strings.body));
+        expect(at(message ?? strings.body)).toBeLessThan(at(shop));
+        expect(at(shop)).toBeLessThan(at(strings.closing));
+        expect(html).not.toContain(strings.shop_body.split('\n')[0].replace(/"/g, '&quot;'));
+        // Between the greeting and the button: only her words (and the photo, if any).
+        const middle = html.slice(at(greeting) + greeting.length, at(`<a href="${shop}"`));
+        expect(middle.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).toBe((message ?? strings.body).trim());
+        expect(at(strings.closing)).toBeLessThan(at(`${strings.sign_off}<br>Pat Photographer`));
+      });
+    }
+  }
+
+  it('without a photo shop the one button opens the gallery link the studio set', () => {
+    const variables = galleryEmailVariables({
+      recipientName: 'Pat', galleryUrl: 'https://pixies.test/g', shopUrl: null,
+      wording: en.gallery_ready, message: null, photo: null, signature: null,
+    });
+    expect(variables).toEqual({ recipientName: 'Pat', galleryUrl: 'https://pixies.test/g' });
+  });
+
+  it('no shop and only a SmugMug address: no email at all (never a SmugMug link)', () => {
+    expect(galleryEmailVariables({
+      recipientName: 'Pat', galleryUrl: 'https://studio.smugmug.com/Pat', shopUrl: null,
+      wording: en.gallery_ready, message: null, photo: null, signature: null,
+    })).toBeNull();
+  });
+
+  it('isSmugMugLink', () => {
+    expect(isSmugMugLink('https://studio.smugmug.com/Pat')).toBe(true);
+    expect(isSmugMugLink('https://smugmug.com/x')).toBe(true);
+    expect(isSmugMugLink('https://photos.smugmug.com/a.jpg')).toBe(true);
+    expect(isSmugMugLink('https://notsmugmug.com/x')).toBe(false);
+    expect(isSmugMugLink('https://pixies.test/g')).toBe(false);
+    expect(isSmugMugLink(null)).toBe(false);
+  });
+
+  it('nothing to link to: no email', () => {
+    expect(galleryEmailVariables({
+      recipientName: 'Pat', galleryUrl: null, shopUrl: null,
+      wording: en.gallery_ready, message: null, photo: null, signature: null,
+    })).toBeNull();
   });
 });

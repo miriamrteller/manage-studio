@@ -43,8 +43,11 @@ export const PhotoShopLinkService = {
     return { url: body.url, email: body.email, expiresAt: body.expiresAt, emailed: body.emailed === true };
   },
 
-  /** The /shop/:token page: swap the link for the client's session and sign in. */
-  async open(token: string): Promise<void> {
+  /**
+   * The /shop/:token page: swap the link for the client's session and sign in.
+   * Returns the shoot the link is for, so the page can open that shoot's gallery.
+   */
+  async open(token: string): Promise<{ engagementId: string | null }> {
     const body = await call({ action: 'open', token });
     if (typeof body.access_token !== 'string' || typeof body.refresh_token !== 'string') {
       throw new PhotoShopLinkError('sign_in');
@@ -54,8 +57,21 @@ export const PhotoShopLinkService = {
       refresh_token: body.refresh_token,
     });
     if (error) throw new PhotoShopLinkError('sign_in');
+    return { engagementId: typeof body.engagementId === 'string' ? body.engagementId : null };
   },
 };
+
+/** Same as CLIENT_PORTAL_PATH (BackToPortalButton.tsx). */
+const CLIENT_PORTAL = '/dashboard/portal';
+
+/**
+ * Where the link lands: that shoot's photo shop on its own page (/photos/:id). Without a
+ * shoot, the photo shop tab of the client's page.
+ */
+export function shopGalleryPath(engagementId: string | null): string {
+  if (engagementId) return `/photos/${encodeURIComponent(engagementId)}`;
+  return `${CLIENT_PORTAL}?tab=shop`;
+}
 
 /** The message the studio sends with the link (email body / WhatsApp text). */
 export function shopLinkMessage(text: string, url: string): string {

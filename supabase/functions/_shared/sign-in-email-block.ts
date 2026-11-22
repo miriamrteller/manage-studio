@@ -60,3 +60,8 @@ export function insertAfterParagraph(html: string, text: string, block: string):
   const end = at + needle.length;
   return html.slice(0, end) + block + html.slice(end);
 }
+
+/** "Sincerely,<br>Name" under the closing line. Plain text, escaped. */
+export function signatureHtml(params: { signOff: string; name: string }): string {
+  return `<p style="font-size:16px;line-height:1.6;color:#1f2937;margin:16px 0 0 0">${escapeHtml(params.signOff)}<br>${escapeHtml(params.name)}</p>`;
+}

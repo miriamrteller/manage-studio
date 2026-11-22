@@ -15,6 +15,7 @@ import {
   isHttpLink,
   photoBlockHtml,
   replaceParagraphText,
+  signatureHtml,
   signInBlockHtml,
 } from "../sign-in-email-block.ts";
 
@@ -47,6 +48,16 @@ function withCustomBody(html: string, variables: Record<string, string>): string
   const { customBody, customBodyReplaces } = variables;
   if (!customBody || !customBodyReplaces) return html;
   return replaceParagraphText(html, customBodyReplaces, customBody);
+}
+
+/**
+ * The sign-off under the closing line (Send gallery, owner 22 Nov 2026): signOff
+ * ("Sincerely,"), signatureName, and signatureAfter = the closing line's text.
+ */
+function withSignature(html: string, variables: Record<string, string>): string {
+  const { signOff, signatureName, signatureAfter } = variables;
+  if (!signOff || !signatureName || !signatureAfter) return html;
+  return insertAfterParagraph(html, signatureAfter, signatureHtml({ signOff, name: signatureName }));
 }
 
 /**
@@ -117,7 +128,15 @@ export function renderPhotographerEmail(input: RenderPhotographerEmailInput): { 
     variables: input.variables,
   });
   const html = applyEmailBrand(
-    withSignInBlock(input.key, withCustomBody(withPhoto(shellHtml, input.variables), input.variables), input.variables, input.primaryColor),
+    withSignInBlock(
+      input.key,
+      withSignature(
+        withCustomBody(withPhoto(shellHtml, input.variables), input.variables),
+        input.variables,
+      ),
+      input.variables,
+      input.primaryColor,
+    ),
     input.primaryColor,
     input.accentColor,
   );

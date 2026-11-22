@@ -8,6 +8,8 @@ export interface GalleryEmailExtras {
   /** Public address of an uploadGalleryEmailPhoto upload. */
   photoUrl?: string;
   photoAlt?: string;
+  /** The name under "Sincerely," (the server keeps it for next time). */
+  signature?: string;
 }
 
 /** Same folder as GALLERY_PHOTO_FOLDER in supabase/functions/_shared/photo-shop/send-gallery.ts. */
@@ -51,10 +53,11 @@ export const ShootGalleryService = {
    */
   async send(
     engagementIds: string[],
-    { resend = false, message, photoUrl, photoAlt }: { resend?: boolean } & GalleryEmailExtras = {},
+    { resend = false, message, photoUrl, photoAlt, signature }: { resend?: boolean } & GalleryEmailExtras = {},
   ): Promise<SendGalleryResult> {
     const extras = {
       ...(message ? { message } : {}),
+      ...(signature?.trim() ? { signature: signature.trim() } : {}),
       ...(photoUrl ? { photoUrl, ...(photoAlt?.trim() ? { photoAlt: photoAlt.trim() } : {}) } : {}),
     };
     const total: SendGalleryResult = { sent: 0, skipped: 0, failed: 0, results: [] };
@@ -87,6 +90,30 @@ export const ShootGalleryService = {
       .upload(path, jpeg, { upsert: false, contentType: 'image/jpeg', cacheControl: String(60 * 60 * 24 * 365) });
     if (error) throw new Error(error.message);
     return supabase.storage.from(TENANT_ASSETS_BUCKET).getPublicUrl(path).data.publicUrl;
+  },
+
+  /**
+   * The name the gallery email is signed with: the one the studio saved, else the
+   * signed-in admin's own name. Null: the caller falls back to the studio name.
+   */
+  async signatureDefault(tenantId: string): Promise<string | null> {
+    const { data: saved } = await supabase
+      .from('tenant_photo_shop_settings')
+      .select('email_signature')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    const savedName = (saved as { email_signature?: string | null } | null)?.email_signature?.trim();
+    if (savedName) return savedName;
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) return null;
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('people:person_id(name)')
+      .eq('id', auth.user.id)
+      .maybeSingle();
+    const people = (profile as { people?: { name?: string | null } | Array<{ name?: string | null }> | null } | null)?.people;
+    const name = (Array.isArray(people) ? people[0]?.name : people?.name)?.trim();
+    return name || null;
   },
 
   /** When each shoot's gallery email last went (the delivery log; studio admins may read it). */

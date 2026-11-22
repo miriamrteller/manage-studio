@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PhotoShopLinkService } from '@/features/jobs/services/photoShopLinkService';
+import { PhotoShopLinkService, shopGalleryPath } from '@/features/jobs/services/photoShopLinkService';
 import { CLIENT_PORTAL_PATH } from '@/features/jobs/components/BackToPortalButton';
 
 /**
  * /shop/:token — the link the studio sends with "Send shop link". Signs the client in
- * (valid 3 days) and opens their page, where the photo shop is. The token never stays
- * in the address.
+ * (valid 3 days) and opens that shoot's gallery in the photo shop on their page
+ * (owner, 22 Nov 2026: straight to the gallery, never another tab). The token never
+ * stays in the address.
  */
 export default function ShopLinkPage() {
   const { t } = useTranslation();
@@ -19,13 +20,15 @@ export default function ShopLinkPage() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    window.history.replaceState(null, '', '/shop');
+    // Drop the token from the address at once. Not "/shop": that is the studio's public
+    // shop now, where a refresh would leave the client.
+    window.history.replaceState(window.history.state, '', shopGalleryPath(null));
     if (!token) {
       setFailed(true);
       return;
     }
     PhotoShopLinkService.open(token)
-      .then(() => navigate(CLIENT_PORTAL_PATH, { replace: true }))
+      .then(({ engagementId }) => navigate(shopGalleryPath(engagementId), { replace: true }))
       .catch(() => setFailed(true));
   }, [token, navigate]);
 

@@ -8,7 +8,7 @@ export interface GalleryReadyEmailProps extends ShootEmailCommonProps {
 
 const DEFAULTS = {
   preview: 'Your gallery from {schoolName} is ready',
-  greeting: 'Hi {recipientName},',
+  greeting: 'Dear {recipientName},',
   body: 'Your photos are ready! Open your gallery to choose your photos.',
   cta: 'Open your gallery',
   closing: 'We hope you love them.',

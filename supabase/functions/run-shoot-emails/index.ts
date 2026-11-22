@@ -5,7 +5,9 @@
  *   shoot_reminder  — 1–2 days before a booked shoot
  *   shoot_thank_you — 1–3 days after the shoot
  *   gallery_ready   — within 7 days of the client first seeing the gallery
- *                     (released by hand, or everything paid: gallery_shared_at)
+ *                     (released by hand, or everything paid: gallery_shared_at).
+ *                     Built like Send gallery: one button, to the photo shop when
+ *                     the shoot has one, never to SmugMug (skipped if that is all).
  *   review_request  — 5–12 days after the gallery is shared, when the studio
  *                     has a review link (tenants.review_url)
  * First it moves project statuses on (advance_job_statuses: booked → shot the
@@ -27,6 +29,7 @@ import {
 } from "../_shared/photographer-emails/send.ts";
 import { type DueShootEmail, dueShootEmailVariables, isSafeLink } from "../_shared/photographer-emails/variables.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { hourlyGalleryEmailVariables } from "../_shared/photo-shop/hourly-gallery-email.ts";
 
 Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -68,12 +71,21 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
       continue;
     }
     try {
+      const language = tenant.language_default === "he" ? "he" : "en";
+      // gallery_ready: one button to the photo shop, never SmugMug (Send gallery's rules).
+      const variables = row.email_key === "gallery_ready"
+        ? await hourlyGalleryEmailVariables(service, row, tenant, language)
+        : dueShootEmailVariables(row, language, tenant.review_url);
+      if (!variables) {
+        counts.invalid += 1;
+        continue;
+      }
       const outcome = await sendAutomaticEmail(service, {
         tenant,
         key: row.email_key,
         engagementId: row.engagement_id,
         to: row.recipient_email,
-        variables: dueShootEmailVariables(row, tenant.language_default === "he" ? "he" : "en", tenant.review_url),
+        variables,
       });
       counts[outcome] += 1;
     } catch (sendError) {

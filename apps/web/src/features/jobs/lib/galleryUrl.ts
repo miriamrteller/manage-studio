@@ -16,3 +16,11 @@ export function safeGalleryUrl(raw: string | null | undefined): string | null {
   if (!url.hostname) return null;
   return url.href;
 }
+
+/** A SmugMug address: clients are never sent there (owner, 22 Nov 2026). */
+export function isSmugMugUrl(raw: string | null | undefined): boolean {
+  const href = safeGalleryUrl(raw);
+  if (!href) return false;
+  const host = new URL(href).hostname.toLowerCase();
+  return host === 'smugmug.com' || host.endsWith('.smugmug.com');
+}

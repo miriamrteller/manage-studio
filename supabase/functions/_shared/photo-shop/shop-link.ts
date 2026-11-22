@@ -23,7 +23,8 @@ export async function sha256Hex(value: string): Promise<string> {
 /** Makes a new link for the shoot. null when it could not be saved. */
 export async function createShopLink(
   service: Service,
-  input: { tenantId: string; engagementId: string; createdBy: string },
+  /** createdBy: the admin who sent it; null for the hourly gallery email. */
+  input: { tenantId: string; engagementId: string; createdBy: string | null },
 ): Promise<{ url: string; expiresAt: string } | null> {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + LINK_DAYS * 24 * 60 * 60 * 1000).toISOString();

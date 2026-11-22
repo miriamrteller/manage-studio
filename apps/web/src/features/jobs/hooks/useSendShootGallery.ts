@@ -44,6 +44,17 @@ export function useGalleryEmailStandardBody(enabled: boolean) {
   return { body: query.data, language };
 }
 
+/** The name the gallery email is signed with, prefilled in the box (saved, else hers, else the studio's). */
+export function useGalleryEmailSignature(enabled: boolean) {
+  const tenant = useTenant();
+  const query = useQuery({
+    queryKey: ['gallery-email-signature', tenant?.id],
+    queryFn: () => ShootGalleryService.signatureDefault(tenant!.id),
+    enabled: enabled && Boolean(tenant?.id),
+  });
+  return { name: query.isPending && enabled ? null : (query.data ?? tenant?.name ?? '') };
+}
+
 /** Uploads the gallery email photo; returns its public address. */
 export function useUploadGalleryEmailPhoto() {
   const tenant = useTenant();

@@ -102,3 +102,68 @@ export function cleanPhotoAlt(raw: unknown, fallback: string): string {
     : "";
   return text || fallback;
 }
+
+/** The gallery email's wording this needs (gallery_ready strings, already in the email's language). */
+export interface GalleryEmailWording {
+  body: string;
+  closing: string;
+  /** "Sincerely," / "בברכה," */
+  sign_off: string;
+}
+
+/** Longest name the email can be signed with. */
+export const GALLERY_SIGNATURE_MAX = 100;
+
+/** The name the email is signed with: one plain line, or null when empty. */
+export function cleanSignature(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const text = raw
+    // deno-lint-ignore no-control-regex
+    .replace(/[\u0000-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, GALLERY_SIGNATURE_MAX)
+    .trim();
+  return text || null;
+}
+
+/**
+ * Everything the gallery email is built from (Send gallery and the hourly email). The
+ * owner's layout (22 Nov 2026): "Dear {name}," then only the body (hers, or the short
+ * standard one), the ONE button, then the closing line and "Sincerely, {signature}".
+ * The button opens the shop link when there is a shop, never a SmugMug address.
+ */
+export function galleryEmailVariables(input: {
+  recipientName: string;
+  galleryUrl: string | null;
+  shopUrl: string | null;
+  wording: GalleryEmailWording;
+  message: string | null;
+  photo: { url: string; alt: string } | null;
+  /** "Sincerely," and this name under the closing line. */
+  signature: string | null;
+}): Record<string, string> | null {
+  // Never a SmugMug address: without a shop link there is then nothing to send.
+  const button = input.shopUrl ?? (isSmugMugLink(input.galleryUrl) ? null : input.galleryUrl);
+  if (!button) return null;
+  return {
+    recipientName: input.recipientName,
+    galleryUrl: button,
+    ...(input.message ? { customBody: input.message, customBodyReplaces: input.wording.body } : {}),
+    ...(input.photo ? { photoUrl: input.photo.url, photoAlt: input.photo.alt, photoAfter: input.wording.body } : {}),
+    ...(input.signature
+      ? { signOff: input.wording.sign_off, signatureName: input.signature, signatureAfter: input.wording.closing }
+      : {}),
+  };
+}
+
+/** A SmugMug address (owner, 22 Nov 2026: no client email ever links to SmugMug). */
+export function isSmugMugLink(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const host = new URL(url.trim()).hostname.toLowerCase();
+    return host === "smugmug.com" || host.endsWith(".smugmug.com");
+  } catch {
+    return false;
+  }
+}
