@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, MessageSquare, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { HelpCircle, LogOut, MessageSquare, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -175,6 +175,25 @@ export function NavDrawer() {
             <p className="text-sm opacity-90 truncate" title={user.email}>
               {user.email}
             </p>
+          )}
+          {canReport && (
+            <button
+              type="button"
+              onClick={() => {
+                close();
+                navigate('/admin/help');
+              }}
+              aria-label={isIconsOnly ? t('help.title') : undefined}
+              title={isIconsOnly ? t('help.title') : undefined}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-md py-2 text-start text-sm font-medium text-[var(--nav-text)] transition-colors hover:bg-[var(--nav-hover)]',
+                'focus-visible:outline-2 focus-visible:outline-[var(--nav-text)] focus-visible:outline-offset-[-2px]',
+                isIconsOnly ? 'justify-center px-0' : 'px-2',
+              )}
+            >
+              <HelpCircle size={18} aria-hidden className="shrink-0" />
+              {!isIconsOnly && <span className="truncate">{t('help.title')}</span>}
+            </button>
           )}
           {canReport && (
             // Styled like a menu line (icon and name on one row), not a Button: Button is not a
