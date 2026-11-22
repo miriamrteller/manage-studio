@@ -110,7 +110,7 @@ export function useStudioPhotoShopDefaults() {
     enabled: Boolean(tenant?.id),
   });
   const save = useMutation({
-    mutationFn: (values: StudioPhotoShopDefaults) => PhotoShopService.saveDefaults(tenant!.id, values),
+    mutationFn: (values: Partial<StudioPhotoShopDefaults>) => PhotoShopService.saveDefaults(tenant!.id, values),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: defaultsKey(tenant?.id) }),
   });
   return { defaults, save };

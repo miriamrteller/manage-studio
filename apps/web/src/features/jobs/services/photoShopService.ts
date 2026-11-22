@@ -364,7 +364,7 @@ export class PhotoShopService {
     return PhotoShopService.listProducts(tenantId);
   }
 
-  static async saveDefaults(tenantId: string, values: StudioPhotoShopDefaults): Promise<void> {
+  static async saveDefaults(tenantId: string, values: Partial<StudioPhotoShopDefaults>): Promise<void> {
     const { error } = await supabase
       .from('tenant_photo_shop_settings')
       .upsert({ tenant_id: tenantId, ...values }, { onConflict: 'tenant_id' });
