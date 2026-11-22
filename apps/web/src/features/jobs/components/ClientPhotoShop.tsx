@@ -2,7 +2,13 @@ import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { allPhotosIsBetter, photoCartTotal, type PhotoShopPrices } from '@shared/photoShop';
+import {
+  allPhotosIsBetter,
+  photoCartGrandTotal,
+  photoCartTotal,
+  photoProductLabel,
+  type PhotoShopPrices,
+} from '@shared/photoShop';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePhotoShopEnabled } from '../hooks/usePhotoShop';
@@ -12,6 +18,7 @@ import {
   type ClientPhotoGallery,
   type ClientPhotoOrder,
   type PhotoPayBy,
+  type PhotoProductLine,
 } from '../services/clientPhotoShopService';
 import { formatDueDate, formatMinor } from '../lib/jobPaymentFormat';
 
@@ -113,6 +120,8 @@ function ShopBody({
   const headingId = useId();
   const termsId = useId();
   const [cart, setCart] = useState<Set<string>>(new Set());
+  // Prints and other products, one line each (the same photo may have several).
+  const [lines, setLines] = useState<PhotoProductLine[]>([]);
   const [doneMessage, setDoneMessage] = useState<'free' | 'cash' | null>(null);
   // Preview: what would have happened, instead of placing an order.
   const [tried, setTried] = useState<'card' | 'cash' | 'free' | null>(null);
@@ -147,15 +156,27 @@ function ShopBody({
     allPhotosPriceMinor: shop.all_photos_price_minor,
     keptMinor: shop.spent_minor,
   };
-  const total = photoCartTotal(prices, cart.size);
-  const allTotal = photoCartTotal(prices, available.length, true);
+  const products = useMemo(() => shop.products ?? [], [shop.products]);
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const linePrices = lines.map((l) => productById.get(l.productId)?.price_minor ?? 0);
+  const total = photoCartGrandTotal(prices, cart.size, linePrices);
+  const allTotal = photoCartGrandTotal(prices, available.length, linePrices, true);
+  const allDigital = photoCartTotal(prices, available.length, true);
   const suggestAll = allPhotosIsBetter(prices, cart.size, available.length);
+  const productLabel = (id: string) => {
+    const product = productById.get(id);
+    return product ? `${photoProductLabel(product, lang)} · ${money(product.price_minor)}` : '';
+  };
 
   const order = useMutation({
-    mutationFn: (allPhotos: boolean) => ClientPhotoShopService.order(engagementId, [...cart], allPhotos, payBy),
+    mutationFn: (allPhotos: boolean) =>
+      lines.length > 0
+        ? ClientPhotoShopService.order(engagementId, allPhotos ? [] : [...cart], allPhotos, payBy, lines)
+        : ClientPhotoShopService.order(engagementId, [...cart], allPhotos, payBy),
     onMutate: () => setDoneMessage(null),
     onSuccess: async (placed) => {
       setCart(new Set());
+      setLines([]);
       if (placed.payToken && !placed.payByCash) {
         navigate(`/pay/${placed.payToken}`);
         return;
@@ -172,6 +193,16 @@ function ShopBody({
     }
     const minor = allPhotos ? allTotal.totalMinor : total.totalMinor;
     setTried(minor <= 0 ? 'free' : payBy);
+  };
+
+  const addLine = (imageKey: string, productId: string) => {
+    if (!productById.has(productId)) return;
+    setTried(null);
+    setLines((prev) => [...prev, { imageKey, productId }]);
+  };
+  const removeLine = (index: number) => {
+    setTried(null);
+    setLines((prev) => prev.filter((_, i) => i !== index));
   };
 
   const toggle = (key: string) => {
@@ -243,6 +274,7 @@ function ShopBody({
                 onContextMenu={(e) => e.preventDefault()}
                 onError={() => {
                   setBroken((prev) => new Set(prev).add(p.key));
+                  setLines((prev) => (prev.some((l) => l.imageKey === p.key) ? prev.filter((l) => l.imageKey !== p.key) : prev));
                   setCart((prev) => {
                     if (!prev.has(p.key)) return prev;
                     const next = new Set(prev);
@@ -266,11 +298,43 @@ function ShopBody({
                       aria-pressed={inCart}
                       onClick={() => toggle(p.key)}
                     >
-                      {inCart ? t('pages.client_portal.photo_shop.in_cart') : t('pages.client_portal.photo_shop.add')}
+                      {products.length === 0
+                        ? inCart ? t('pages.client_portal.photo_shop.in_cart') : t('pages.client_portal.photo_shop.add')
+                        : inCart
+                          ? t('pages.client_portal.photo_shop.digital_chosen')
+                          : shop.price_per_photo_minor != null
+                            ? t('pages.client_portal.photo_shop.digital_price', { price: money(shop.price_per_photo_minor) })
+                            : t('pages.client_portal.photo_shop.digital')}
                     </Button>
                   )
                 )}
               </div>
+              {shop.open && products.length > 0 && (
+                <PrintPicker
+                  photoName={p.fileName}
+                  options={products.map((pr) => ({ id: pr.id, label: productLabel(pr.id) }))}
+                  onPick={(productId) => addLine(p.key, productId)}
+                />
+              )}
+              {lines.some((l) => l.imageKey === p.key) && (
+                <ul className="space-y-1">
+                  {lines.map((l, i) =>
+                    l.imageKey !== p.key ? null : (
+                      <li key={i} className="flex items-center justify-between gap-1 rounded bg-gray-50 px-2 py-1 text-xs">
+                        <span>{productLabel(l.productId)}</span>
+                        <button
+                          type="button"
+                          className="font-medium underline"
+                          aria-label={t('pages.client_portal.photo_shop.remove_line', { name: productLabel(l.productId), photo: p.fileName })}
+                          onClick={() => removeLine(i)}
+                        >
+                          {t('pages.client_portal.photo_shop.remove')}
+                        </button>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              )}
               {!isBought && !isCashOrdered && awaiting.has(p.key) && (
                 <p className="text-xs text-gray-500">{t('pages.client_portal.photo_shop.awaiting')}</p>
               )}
@@ -285,19 +349,20 @@ function ShopBody({
         </p>
       )}
 
-      {shop.open && available.length > 0 && (
+      {shop.open && (available.length > 0 || products.length > 0) && (
         <div className="space-y-3 rounded-md border bg-gray-50 p-3" aria-live="polite">
           <p className="text-sm">
             {t('pages.client_portal.photo_shop.cart_count', { count: cart.size })}
-            {total.includedCount > 0 && <> · {t('pages.client_portal.photo_shop.cart_included', { count: total.includedCount })}</>}
+            {lines.length > 0 && <> · {t('pages.client_portal.photo_shop.cart_prints', { count: lines.length })}</>}
+            {total.digital.includedCount > 0 && <> · {t('pages.client_portal.photo_shop.cart_included', { count: total.digital.includedCount })}</>}
             {total.problem === null && <> · <strong>{money(total.totalMinor)}</strong></>}
           </p>
           {total.problem === 'no_price' && (
             <p className="text-sm text-gray-600">{t('pages.client_portal.photo_shop.no_price')}</p>
           )}
-          {suggestAll && allTotal.problem === null && (
+          {suggestAll && allDigital.problem === null && (
             <p className="text-sm text-gray-700">
-              {t('pages.client_portal.photo_shop.suggest_all', { count: available.length, price: money(allTotal.totalMinor) })}
+              {t('pages.client_portal.photo_shop.suggest_all', { count: available.length, price: money(allDigital.totalMinor) })}
             </p>
           )}
           {cardOn ? (
@@ -332,16 +397,17 @@ function ShopBody({
                   ? t('pages.client_portal.photo_shop.send_cash', { price: money(total.totalMinor) })
                   : t('pages.client_portal.photo_shop.pay', { price: money(total.totalMinor) })}
             </Button>
-            {allTotal.problem === null && shop.all_photos_price_minor != null && (
+            {available.length > 0 && allDigital.problem === null && shop.all_photos_price_minor != null && (
               <Button
                 variant={suggestAll ? 'primary' : 'outline'}
                 isLoading={order.isPending && order.variables === true}
                 aria-describedby={termsId}
                 onClick={() => place(true)}
               >
-                {payBy === 'cash' && allTotal.totalMinor > 0
-                  ? t('pages.client_portal.photo_shop.buy_all_cash', { count: available.length, price: money(allTotal.totalMinor) })
-                  : t('pages.client_portal.photo_shop.buy_all', { count: available.length, price: money(allTotal.totalMinor) })}
+                {t(
+                  `pages.client_portal.photo_shop.${lines.length > 0 ? 'buy_all_prints' : 'buy_all'}${payBy === 'cash' && allTotal.totalMinor > 0 ? '_cash' : ''}`,
+                  { count: available.length, price: money(allTotal.totalMinor) },
+                )}
               </Button>
             )}
           </div>
@@ -358,6 +424,37 @@ function ShopBody({
   );
 }
 
+/**
+ * "Add a print" under a photo: one pick adds that product (print, canvas ...) of this photo
+ * to the cart, and the list resets so the same or another product can be added again.
+ */
+function PrintPicker({
+  photoName,
+  options,
+  onPick,
+}: {
+  photoName: string;
+  options: { id: string; label: string }[];
+  onPick: (productId: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <select
+      className="w-full rounded-md border border-gray-300 bg-white p-1 text-xs"
+      aria-label={t('pages.client_portal.photo_shop.add_print_for', { name: photoName })}
+      value=""
+      onChange={(e) => {
+        if (e.target.value) onPick(e.target.value);
+      }}
+    >
+      <option value="">{t('pages.client_portal.photo_shop.add_print')}</option>
+      {options.map((o) => (
+        <option key={o.id} value={o.id}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
 function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
   const { t, i18n } = useTranslation();
   if (orders.length === 0) return null;
@@ -367,8 +464,13 @@ function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
         <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
           <span>
             {formatDueDate(o.created_at, i18n.language)} ·{' '}
-            {t('pages.client_portal.photo_shop.order_photos', { count: o.photo_count })} ·{' '}
-            {formatMinor(o.total_minor, o.currency, i18n.language)}
+            {[
+              o.photo_count > 0 ? t('pages.client_portal.photo_shop.order_photos', { count: o.photo_count }) : null,
+              (o.product_count ?? 0) > 0 ? t('pages.client_portal.photo_shop.order_prints', { count: o.product_count }) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}{' '}
+            · {formatMinor(o.total_minor, o.currency, i18n.language)}
           </span>
           {o.delivery_url ? (
             <a href={o.delivery_url} target="_blank" rel="noopener noreferrer" className="font-medium underline">
@@ -390,7 +492,9 @@ function ClientPhotoOrders({ orders }: { orders: ClientPhotoOrder[] }) {
           ) : o.status === 'delivered' ? (
             <span className="text-gray-600">{t('pages.client_portal.photo_shop.sent')}</span>
           ) : (
-            <span className="text-gray-600">{t('pages.client_portal.photo_shop.preparing')}</span>
+            <span className="text-gray-600">
+              {t(o.photo_count === 0 ? 'pages.client_portal.photo_shop.preparing_prints' : 'pages.client_portal.photo_shop.preparing')}
+            </span>
           )}
         </li>
       ))}

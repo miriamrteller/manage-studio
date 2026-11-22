@@ -63,12 +63,31 @@ export interface PhotoOrderItem {
   file_name: string;
   included: boolean;
   price_minor: number;
+  /** digital: the photo file. product: a print (or other product) of the photo. */
+  kind?: 'digital' | 'product';
+  product_name_en?: string | null;
+  product_name_he?: string | null;
+  product_size?: string | null;
 }
+
+/** A product the studio sells per photo (Photo shop > Prices). */
+export interface StudioPhotoProduct {
+  id: string;
+  name_en: string;
+  name_he: string;
+  size_label: string | null;
+  price_minor: number;
+  position: number;
+}
+
+export type StudioPhotoProductInput = Omit<StudioPhotoProduct, 'id'> & { id?: string };
 
 export interface PhotoOrder {
   id: string;
   status: PhotoOrderStatus;
   photo_count: number;
+  /** Product lines (prints ...) in the order. */
+  product_count?: number;
   included_count: number;
   total_minor: number;
   currency: string;
@@ -97,6 +116,9 @@ export interface StudioPhotoShopDefaults {
 }
 
 export const DEFAULT_GALLERY_OPEN_DAYS = 90;
+
+const ORDER_ITEM_COLUMNS =
+  'image_key, file_name, included, price_minor, kind, product_name_en, product_name_he, product_size';
 
 export class PhotoShopService {
   static async getShop(engagementId: string): Promise<JobPhotoShop> {
@@ -139,7 +161,7 @@ export class PhotoShopService {
     const { data, error } = await supabase
       .from('job_photo_orders')
       .select(
-        'id, status, photo_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(image_key, file_name, included, price_minor)',
+        `id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
       )
       .eq('engagement_id', engagementId)
       .neq('status', 'cancelled')
@@ -153,7 +175,7 @@ export class PhotoShopService {
     const { data, error } = await supabase
       .from('job_photo_orders')
       .select(
-        'id, engagement_id, status, photo_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(image_key, file_name, included, price_minor)',
+        `id, engagement_id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
       )
       .eq('tenant_id', tenantId)
       .neq('status', 'cancelled')
@@ -260,6 +282,53 @@ export class PhotoShopService {
         card_payments: false,
       }
     );
+  }
+
+  /** The studio's products (prints ...), in the order it set. */
+  static async listProducts(tenantId: string): Promise<StudioPhotoProduct[]> {
+    const { data, error } = await supabase
+      .from('tenant_photo_products')
+      .select('id, name_en, name_he, size_label, price_minor, position')
+      .eq('tenant_id', tenantId)
+      .eq('active', true)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as StudioPhotoProduct[];
+  }
+
+  /**
+   * Saves the studio's product list as shown: rows with an id are updated, new rows are
+   * added, and products no longer in the list are removed (orders keep their own copy of
+   * the name, size and price).
+   */
+  static async saveProducts(tenantId: string, rows: StudioPhotoProductInput[]): Promise<StudioPhotoProduct[]> {
+    const current = await PhotoShopService.listProducts(tenantId);
+    const keep = new Set(rows.map((r) => r.id).filter((id): id is string => Boolean(id)));
+    const removed = current.filter((p) => !keep.has(p.id)).map((p) => p.id);
+    if (removed.length > 0) {
+      const { error } = await supabase.from('tenant_photo_products').delete().in('id', removed);
+      if (error) throw error;
+    }
+    const clean = rows.map((r, i) => ({
+      tenant_id: tenantId,
+      name_en: r.name_en.trim(),
+      name_he: r.name_he.trim(),
+      size_label: r.size_label?.trim() || null,
+      price_minor: r.price_minor,
+      position: i,
+    }));
+    const updates = rows.flatMap((r, i) => (r.id ? [{ id: r.id, ...clean[i] }] : []));
+    const inserts = rows.flatMap((r, i) => (r.id ? [] : [clean[i]]));
+    if (updates.length > 0) {
+      const { error } = await supabase.from('tenant_photo_products').upsert(updates, { onConflict: 'id' });
+      if (error) throw error;
+    }
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('tenant_photo_products').insert(inserts);
+      if (error) throw error;
+    }
+    return PhotoShopService.listProducts(tenantId);
   }
 
   static async saveDefaults(tenantId: string, values: StudioPhotoShopDefaults): Promise<void> {

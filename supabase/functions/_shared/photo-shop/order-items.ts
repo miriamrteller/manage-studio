@@ -41,8 +41,48 @@ export function resolveOrderItems(
   return { ok: true, items };
 }
 
-/** "Photos (3)" in the studio's language: the payment request's label on the receipt and in Finance. */
-export function photoOrderLabel(count: number, language: "he" | "en"): string {
+export type ProductItemsResult =
+  | { ok: true; items: { image_key: string; file_name: string; product_id: string }[] }
+  | { ok: false; error: "not_in_gallery" | "too_many_photos" | "bad_request" };
+
+const MAX_PRODUCT_LINES = 500;
+
+/**
+ * Products the client picked per photo (prints ...): [{ imageKey, productId }].
+ * Only photos in the shoot's gallery; file names come from the gallery. The same
+ * photo may have many products, and products never depend on the digital file
+ * being bought. Whether a product is the studio's own (and its price) is checked
+ * in the database.
+ */
+export function resolveProductItems(gallery: GalleryPhoto[], requested: unknown): ProductItemsResult {
+  if (requested == null) return { ok: true, items: [] };
+  if (!Array.isArray(requested)) return { ok: false, error: "bad_request" };
+  if (requested.length > MAX_PRODUCT_LINES) return { ok: false, error: "too_many_photos" };
+  const byKey = new Map(gallery.map((p) => [p.key, p]));
+  const items: { image_key: string; file_name: string; product_id: string }[] = [];
+  for (const r of requested) {
+    const imageKey = (r as { imageKey?: unknown } | null)?.imageKey;
+    const productId = (r as { productId?: unknown } | null)?.productId;
+    if (typeof imageKey !== "string" || typeof productId !== "string" || !productId) {
+      return { ok: false, error: "bad_request" };
+    }
+    const photo = byKey.get(imageKey);
+    if (!photo) return { ok: false, error: "not_in_gallery" };
+    items.push({ image_key: photo.key, file_name: photo.fileName, product_id: productId });
+  }
+  return { ok: true, items };
+}
+
+/**
+ * "Photos (3)" in the studio's language: the payment request's label on the receipt and
+ * in Finance. With products (prints ...): "Photos and prints (4)", counting every line.
+ */
+export function photoOrderLabel(count: number, language: "he" | "en", productCount = 0): string {
+  if (productCount > 0) {
+    const n = count + productCount;
+    if (count === 0) return language === "he" ? `הדפסות תמונות (${n})` : `Photo prints (${n})`;
+    return language === "he" ? `תמונות והדפסות (${n})` : `Photos and prints (${n})`;
+  }
   return language === "he" ? `תמונות (${count})` : `Photos (${count})`;
 }
 

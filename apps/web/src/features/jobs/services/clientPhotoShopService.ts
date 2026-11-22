@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { PhotoProduct } from '@shared/index';
 import type { PhotoOrderStatus } from './photoShopService';
 
 /** What the client sees of a shoot's photo shop (get_client_photo_shop). No gallery id. */
@@ -17,6 +18,8 @@ export interface ClientPhotoShopView {
   awaiting_image_keys: string[];
   /** Photos already sent in to be paid in cash: not pickable again. */
   cash_image_keys?: string[];
+  /** Prints and other products the studio sells per photo. */
+  products?: PhotoProduct[];
   /** The studio takes cards in the photo shop. Off or absent: clients pay the studio directly. */
   card_payments?: boolean;
   orders: ClientPhotoOrder[];
@@ -26,6 +29,8 @@ export interface ClientPhotoOrder {
   id: string;
   status: PhotoOrderStatus;
   photo_count: number;
+  /** Prints and other products in the order. */
+  product_count?: number;
   included_count: number;
   total_minor: number;
   currency: string;
@@ -66,6 +71,12 @@ export interface PlacedPhotoOrder {
 }
 
 export type PhotoPayBy = 'card' | 'cash';
+
+/** One product (print ...) of one photo in the cart. */
+export interface PhotoProductLine {
+  imageKey: string;
+  productId: string;
+}
 
 /** The function's error code (e.g. "no_gallery", "already_bought"), or null. */
 async function errorCode(error: unknown): Promise<string | null> {
@@ -117,9 +128,17 @@ export class ClientPhotoShopService {
     imageKeys: string[],
     allPhotos: boolean,
     payBy: PhotoPayBy = 'card',
+    products: PhotoProductLine[] = [],
   ): Promise<PlacedPhotoOrder> {
     const { data, error } = await supabase.functions.invoke('client-photo-shop', {
-      body: { action: 'order', engagementId, imageKeys, allPhotos, ...(payBy === 'cash' ? { payBy } : {}) },
+      body: {
+        action: 'order',
+        engagementId,
+        imageKeys,
+        allPhotos,
+        ...(payBy === 'cash' ? { payBy } : {}),
+        ...(products.length > 0 ? { products } : {}),
+      },
     });
     if (error) throw new ClientPhotoShopError((await errorCode(error)) ?? 'server_error');
     return data as PlacedPhotoOrder;

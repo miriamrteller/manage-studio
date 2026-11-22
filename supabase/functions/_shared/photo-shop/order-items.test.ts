@@ -11,7 +11,7 @@ import {
   SMUGMUG_OPEN_TO_CLIENTS,
   uploadedPhotoSource,
 } from "./gallery.ts";
-import { orderPersonId, photoOrderLabel, resolveOrderItems } from "./order-items.ts";
+import { orderPersonId, photoOrderLabel, resolveOrderItems, resolveProductItems } from "./order-items.ts";
 
 const gallery = mockGalleryPhotos("g");
 
@@ -152,6 +152,27 @@ Deno.test("all photos: everything not taken yet, whatever was picked", () => {
 Deno.test("receipt label in the studio's language", () => {
   assertEquals(photoOrderLabel(3, "en"), "Photos (3)");
   assertEquals(photoOrderLabel(3, "he"), "תמונות (3)");
+  assertEquals(photoOrderLabel(2, "en", 1), "Photos and prints (3)");
+  assertEquals(photoOrderLabel(0, "en", 2), "Photo prints (2)");
+  assertEquals(photoOrderLabel(0, "he", 2), "הדפסות תמונות (2)");
+});
+
+Deno.test("products: gallery photos only, file names from the gallery, same photo many times", () => {
+  const r = resolveProductItems(gallery, [
+    { imageKey: "g-0002", productId: "p1" },
+    { imageKey: "g-0002", productId: "p2" },
+  ]);
+  assertEquals(r, {
+    ok: true,
+    items: [
+      { image_key: "g-0002", file_name: "IMG_0002.jpg", product_id: "p1" },
+      { image_key: "g-0002", file_name: "IMG_0002.jpg", product_id: "p2" },
+    ],
+  });
+  assertEquals(resolveProductItems(gallery, undefined), { ok: true, items: [] });
+  assertEquals(resolveProductItems(gallery, [{ imageKey: "other", productId: "p1" }]), { ok: false, error: "not_in_gallery" });
+  assertEquals(resolveProductItems(gallery, [{ imageKey: "g-0001" }]), { ok: false, error: "bad_request" });
+  assertEquals(resolveProductItems(gallery, "p1"), { ok: false, error: "bad_request" });
 });
 
 Deno.test("order person: the caller's own record, else the shoot's client (family-account login)", async () => {

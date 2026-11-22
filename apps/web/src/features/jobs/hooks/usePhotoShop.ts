@@ -6,6 +6,7 @@ import {
   PhotoShopService,
   type JobPhotoShopPatch,
   type StudioPhotoShopDefaults,
+  type StudioPhotoProductInput,
 } from '../services/photoShopService';
 import { JobPaymentService } from '../services/jobPaymentService';
 
@@ -113,4 +114,21 @@ export function useStudioPhotoShopDefaults() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: defaultsKey(tenant?.id) }),
   });
   return { defaults, save };
+}
+
+/** The studio's products sold per photo (prints ...), Photo shop > Prices. */
+export function useStudioPhotoProducts() {
+  const tenant = useTenant();
+  const queryClient = useQueryClient();
+  const key = ['photo-shop-products', tenant?.id] as const;
+  const products = useQuery({
+    queryKey: key,
+    queryFn: () => PhotoShopService.listProducts(tenant!.id),
+    enabled: Boolean(tenant?.id),
+  });
+  const save = useMutation({
+    mutationFn: (rows: StudioPhotoProductInput[]) => PhotoShopService.saveProducts(tenant!.id, rows),
+    onSuccess: (fresh) => queryClient.setQueryData(key, fresh),
+  });
+  return { products, save };
 }
