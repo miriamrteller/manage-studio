@@ -72,7 +72,32 @@ export function useStudentsListColumns({
       }),
       columnHelper.accessor('name', {
         header: t('pages.people.name_label'),
-        cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+        cell: ({ row }) => {
+          const email = row.original.email?.trim();
+          return (
+            <>
+              <span className="font-medium">{row.original.name}</span>
+              {/* Phones: the email column is hidden, so show the email under the name. */}
+              {email && (
+                <span className="block break-all text-xs text-gray-500 sm:hidden" dir="ltr">
+                  {email}
+                </span>
+              )}
+            </>
+          );
+        },
+      }),
+      columnHelper.accessor('email', {
+        id: 'email',
+        header: t('pages.people.email_label'),
+        cell: (info) => {
+          const email = info.getValue()?.trim();
+          return email ? (
+            <span className="break-all" dir="ltr">{email}</span>
+          ) : (
+            <span className="text-gray-400 text-xs">—</span>
+          );
+        },
       }),
       columnHelper.accessor('id', {
         id: 'classes',

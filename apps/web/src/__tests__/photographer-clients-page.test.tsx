@@ -123,6 +123,13 @@ describe('Clients page (photographer)', () => {
     expect(screen.getByRole('link', { name: 'Wedding Full Day' })).toHaveAttribute('href', '/admin/projects/eng-1');
   });
 
+  it('shows each client’s email in its own column', async () => {
+    renderList();
+    expect(await screen.findByRole('columnheader', { name: 'Email' })).toBeInTheDocument();
+    const cells = screen.getAllByText('dana@example.com').map((el) => el.closest('td'));
+    expect(cells.some((td) => td?.className.includes('sm:table-cell'))).toBe(true);
+  });
+
   it('has no class, level, family or age filters', async () => {
     renderList();
     fireEvent.click(await screen.findByRole('button', { name: /filters/i }));

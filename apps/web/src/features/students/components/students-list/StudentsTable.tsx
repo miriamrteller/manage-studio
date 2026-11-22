@@ -52,6 +52,9 @@ export function StudentsTable({
               onSort={onSort}
               className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700"
             />
+            <th className="hidden sm:table-cell px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
+              {t('pages.people.email_label')}
+            </th>
             <th className="px-2 sm:px-3 py-3 text-start font-medium text-gray-700">
               {withoutClasses ? t('pages.people.projects_section') : t('pages.students.classes_column')}
             </th>
@@ -92,7 +95,7 @@ export function StudentsTable({
                   <td
                     key={cell.id}
                     className={`${cell.column.id === 'expander' ? 'px-1' : 'px-2'} sm:px-3 py-3${
-                      cell.column.id === 'notifications' ? ' hidden sm:table-cell' : ''
+                      cell.column.id === 'notifications' || cell.column.id === 'email' ? ' hidden sm:table-cell' : ''
                     }`}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
