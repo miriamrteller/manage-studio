@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { Button } from '@/components/ui/button';
+import { OPALSWIFT_SITE_URL } from '@/lib/opalswiftSite';
 import { useCaptcha } from '@/components/captcha/useCaptcha';
 import { useTenant } from '@/hooks/useTenant';
 import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
@@ -286,6 +287,18 @@ export function InquiryForm({
           {status === 'sending' ? t('common.loading') : t('pages.crm.inquire.submit')}
         </Button>
       </form>
+
+      <p className="text-center text-xs text-muted-foreground">
+        <a
+          href={OPALSWIFT_SITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {t('pages.crm.inquire.powered_by')}
+          <span className="sr-only"> {t('pages.crm.inquire.powered_by_new_tab')}</span>
+        </a>
+      </p>
     </div>
   );
 }
