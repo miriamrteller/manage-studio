@@ -390,3 +390,23 @@ export function suggestAlbum(albums: SmugMugAlbum[], hints: string[]): string | 
   }
   return best?.key ?? null;
 }
+
+/**
+ * Fresh preview links for a gallery that already passed "Check gallery". Links saved at
+ * the check can stop opening later, so the shop re-reads them from SmugMug instead of
+ * relying on stored ones. Only photos that passed the check (keepKeys) are returned, in
+ * gallery order; a photo since removed or hidden in SmugMug drops out. No public probe:
+ * the check already confirmed this gallery's previews open without signing in.
+ */
+export async function refreshCheckedPhotos(
+  reader: SmugMugReader,
+  albumKey: string,
+  keepKeys: ReadonlySet<string>,
+): Promise<SmugMugPhoto[]> {
+  const album = await getAlbum(reader, albumKey);
+  const { images } = await readImages(reader, album);
+  return images
+    .filter((im) => keepKeys.has(im.key))
+    .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: previewSizeUrl(im.sizes) }))
+    .filter((p): p is SmugMugPhoto => !!p.previewUrl);
+}

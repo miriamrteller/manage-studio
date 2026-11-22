@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,13 +25,23 @@ const galleryKey = (id: string) => ['client-photo-shop', id] as const;
  */
 export function ClientPhotoShop({ engagementId, caption }: { engagementId: string; caption?: ReactNode }) {
   const enabled = usePhotoShopEnabled();
+  // Once, when none of the photos load: ask for fresh links from the gallery.
+  const [refresh, setRefresh] = useState(false);
   const gallery = useQuery({
-    queryKey: galleryKey(engagementId),
-    queryFn: () => ClientPhotoShopService.gallery(engagementId),
+    queryKey: [...galleryKey(engagementId), refresh ? 'refresh' : 'saved'],
+    queryFn: () => ClientPhotoShopService.gallery(engagementId, refresh),
     enabled,
   });
   if (!enabled || !gallery.data) return null;
-  return <ShopBody engagementId={engagementId} data={gallery.data} caption={caption} />;
+  return (
+    <ShopBody
+      key={refresh ? 'refresh' : 'saved'}
+      engagementId={engagementId}
+      data={gallery.data}
+      caption={caption}
+      onNoPhotoLoaded={refresh ? undefined : () => setRefresh(true)}
+    />
+  );
 }
 
 /**
@@ -42,9 +52,10 @@ export function ClientPhotoShop({ engagementId, caption }: { engagementId: strin
  */
 export function PhotoShopPreview({ engagementId }: { engagementId: string }) {
   const { t } = useTranslation();
+  const [refresh, setRefresh] = useState(false);
   const preview = useQuery({
-    queryKey: ['photo-shop-preview', engagementId],
-    queryFn: () => ClientPhotoShopService.preview(engagementId),
+    queryKey: ['photo-shop-preview', engagementId, refresh ? 'refresh' : 'saved'],
+    queryFn: () => ClientPhotoShopService.preview(engagementId, refresh),
     retry: false,
   });
   if (preview.isLoading) return <p className="text-sm text-gray-600">{t('common.loading')}</p>;
@@ -59,14 +70,23 @@ export function PhotoShopPreview({ engagementId }: { engagementId: string }) {
   if (!preview.data) return null;
   return (
     <ShopBody
+      key={refresh ? 'refresh' : 'saved'}
       engagementId={engagementId}
       data={preview.data}
       preview
+      onNoPhotoLoaded={refresh ? undefined : () => setRefresh(true)}
       caption={
-        <p className="text-sm text-gray-600">
-          {t('photo_shop_admin.preview.note')}
-          {preview.data.sample ? ` ${t('photo_shop_admin.preview.sample')}` : ''}
-        </p>
+        <>
+          <p className="text-sm text-gray-600">
+            {t('photo_shop_admin.preview.note')}
+            {preview.data.sample ? ` ${t('photo_shop_admin.preview.sample')}` : ''}
+          </p>
+          {preview.data.smugmugConnection === 'lost' && (
+            <p role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              {t('photo_shop_admin.preview.smugmug_lost')}
+            </p>
+          )}
+        </>
       }
     />
   );
@@ -77,10 +97,13 @@ function ShopBody({
   data,
   caption,
   preview = false,
+  onNoPhotoLoaded,
 }: {
   engagementId: string;
   data: ClientPhotoGallery;
   caption?: ReactNode;
+  /** Called once when every photo failed to load (to ask for fresh links). */
+  onNoPhotoLoaded?: () => void;
   /** The studio's preview: everything works as for the client, but no order is placed. */
   preview?: boolean;
 }) {
@@ -112,6 +135,10 @@ function ShopBody({
   const [broken, setBroken] = useState<Set<string>>(new Set());
   const shown = photos.filter((p) => !broken.has(p.key));
   const available = shown.filter((p) => !bought.has(p.key) && !cashOrdered.has(p.key));
+  const noPhotoLoaded = photos.length > 0 && shown.length === 0;
+  useEffect(() => {
+    if (noPhotoLoaded) onNoPhotoLoaded?.();
+  }, [noPhotoLoaded, onNoPhotoLoaded]);
 
   const prices: PhotoShopPrices = {
     includedPhotos: shop.included_photos,
@@ -252,7 +279,7 @@ function ShopBody({
         })}
       </ul>
 
-      {photos.length > 0 && shown.length === 0 && (
+      {noPhotoLoaded && !onNoPhotoLoaded && (
         <p role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           {preview ? t('photo_shop_admin.preview.photos_failed') : t('pages.client_portal.photo_shop.photos_failed')}
         </p>

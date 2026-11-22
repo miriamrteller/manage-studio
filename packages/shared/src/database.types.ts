@@ -2526,6 +2526,7 @@ export type Database = {
           smugmug_check: Json | null
           smugmug_checked_at: string | null
           smugmug_photos: Json | null
+          smugmug_photos_refreshed_at: string | null
           tenant_id: string
           updated_at: string
         }
@@ -2544,6 +2545,7 @@ export type Database = {
           smugmug_check?: Json | null
           smugmug_checked_at?: string | null
           smugmug_photos?: Json | null
+          smugmug_photos_refreshed_at?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -2562,6 +2564,7 @@ export type Database = {
           smugmug_check?: Json | null
           smugmug_checked_at?: string | null
           smugmug_photos?: Json | null
+          smugmug_photos_refreshed_at?: string | null
           tenant_id?: string
           updated_at?: string
         }

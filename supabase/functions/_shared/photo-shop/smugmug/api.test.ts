@@ -4,6 +4,7 @@ import {
   checkGallery,
   linkPath,
   listAlbums,
+  refreshCheckedPhotos,
   type SmugMugReader,
   SmugMugShapeError,
   smugmugPath,
@@ -269,4 +270,19 @@ Deno.test("check gallery: a gallery page that is not https is not offered", asyn
   const reader = fakeReader(galleryRoutes({ ...safeAlbum, WebUri: "javascript:alert(1)" }));
   const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
   assertEquals(result.webUrl, null);
+});
+
+Deno.test("refresh: fresh links read from SmugMug, only for photos that passed the check", async () => {
+  const reader = fakeReader(galleryRoutes());
+  const photos = await refreshCheckedPhotos(reader, "abc123", new Set(["K1", "K3", "gone"]));
+  assertEquals(photos, [
+    { key: "K1", fileName: "IMG_0001.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" },
+    { key: "K3", fileName: "IMG_0003.jpg", previewUrl: "https://photos.smugmug.com/K3-L.jpg" },
+  ]);
+});
+
+Deno.test("refresh: a refused token is passed on, so the studio can be told to reconnect", async () => {
+  const reader: SmugMugReader = { get: () => Promise.reject(new SmugMugError(401, "refused")) };
+  const err = await assertRejects(() => refreshCheckedPhotos(reader, "abc123", new Set(["K1"])), SmugMugError);
+  assert((err as SmugMugError).rejected);
 });
