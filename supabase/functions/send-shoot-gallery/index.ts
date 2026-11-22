@@ -196,7 +196,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
       }
       const name = typeof engagement.people?.name === "string" ? engagement.people.name.trim() : "";
       const variables = galleryEmailVariables({
-        recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
+        recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "client"),
         galleryUrl: plan.galleryUrl,
         shopUrl: shopLink?.url ?? null,
         linkDays: LINK_DAYS,

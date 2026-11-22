@@ -9,6 +9,7 @@ import {
   cleanPhotoAlt,
   galleryEmailPhotoUrl,
   galleryEmailVariables,
+  isSmugMugLink,
   GALLERY_MESSAGE_MAX,
   planGallerySend,
   type SendGalleryShoot,
@@ -412,6 +413,22 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
       wording: en.gallery_ready, message: null, photo: null, signature: null,
     });
     expect(variables).toEqual({ recipientName: 'Pat', galleryUrl: 'https://pixies.test/g' });
+  });
+
+  it('no shop and only a SmugMug address: no email at all (never a SmugMug link)', () => {
+    expect(galleryEmailVariables({
+      recipientName: 'Pat', galleryUrl: 'https://studio.smugmug.com/Pat', shopUrl: null, linkDays: 3,
+      wording: en.gallery_ready, message: null, photo: null, signature: null,
+    })).toBeNull();
+  });
+
+  it('isSmugMugLink', () => {
+    expect(isSmugMugLink('https://studio.smugmug.com/Pat')).toBe(true);
+    expect(isSmugMugLink('https://smugmug.com/x')).toBe(true);
+    expect(isSmugMugLink('https://photos.smugmug.com/a.jpg')).toBe(true);
+    expect(isSmugMugLink('https://notsmugmug.com/x')).toBe(false);
+    expect(isSmugMugLink('https://pixies.test/g')).toBe(false);
+    expect(isSmugMugLink(null)).toBe(false);
   });
 
   it('nothing to link to: no email', () => {

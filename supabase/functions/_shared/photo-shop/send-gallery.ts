@@ -145,7 +145,8 @@ export function galleryEmailVariables(input: {
   /** "Sincerely," and this name under the closing line. */
   signature: string | null;
 }): Record<string, string> | null {
-  const button = input.shopUrl ?? input.galleryUrl;
+  // Never a SmugMug address: without a shop link there is then nothing to send.
+  const button = input.shopUrl ?? (isSmugMugLink(input.galleryUrl) ? null : input.galleryUrl);
   if (!button) return null;
   return {
     recipientName: input.recipientName,
@@ -159,4 +160,15 @@ export function galleryEmailVariables(input: {
       ? { signOff: input.wording.sign_off, signatureName: input.signature, signatureAfter: input.wording.closing }
       : {}),
   };
+}
+
+/** A SmugMug address (owner, 22 Nov 2026: no client email ever links to SmugMug). */
+export function isSmugMugLink(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const host = new URL(url.trim()).hostname.toLowerCase();
+    return host === "smugmug.com" || host.endsWith(".smugmug.com");
+  } catch {
+    return false;
+  }
 }
