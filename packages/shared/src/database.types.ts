@@ -1072,6 +1072,64 @@ export type Database = {
           },
         ]
       }
+      client_payment_proofs: {
+        Row: {
+          created_at: string
+          engagement_id: string | null
+          id: string
+          pay_method: string | null
+          payment_request_id: string | null
+          proof_path: string | null
+          proof_sent_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_id?: string | null
+          id?: string
+          pay_method?: string | null
+          payment_request_id?: string | null
+          proof_path?: string | null
+          proof_sent_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string | null
+          id?: string
+          pay_method?: string | null
+          payment_request_id?: string | null
+          proof_path?: string | null
+          proof_sent_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_payment_proofs_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_payment_proofs_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "job_payment_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_payment_proofs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_sign_in_links: {
         Row: {
           created_at: string
@@ -5345,6 +5403,53 @@ export type Database = {
             foreignKeyName: "tenant_notification_templates_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_pay_ways: {
+        Row: {
+          accepts_bank: boolean
+          accepts_bit: boolean
+          accepts_cash: boolean
+          accepts_cheque: boolean
+          bank_details: string | null
+          bit_phone: string | null
+          cash_instructions: string | null
+          cheque_instructions: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
+          bank_details?: string | null
+          bit_phone?: string | null
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
+          bank_details?: string | null
+          bit_phone?: string | null
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_pay_ways_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },

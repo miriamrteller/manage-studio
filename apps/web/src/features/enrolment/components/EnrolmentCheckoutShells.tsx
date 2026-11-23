@@ -267,7 +267,15 @@ export function ProviderCheckoutShell({
   const { t } = useTranslation();
 
   if (paymentProvider === 'offline') {
-    return <OfflinePaymentNotice instructions={offlineInstructions} notSetUp={onlinePaymentNotSetUp} />;
+    return (
+      <OfflinePaymentNotice
+        instructions={offlineInstructions}
+        notSetUp={onlinePaymentNotSetUp}
+        payDirectTarget={{
+          enrolment: { offering_id: classId, engagement_id: engagementId, ...(enrolmentToken ? { enrolment_token: enrolmentToken } : {}) },
+        }}
+      />
+    );
   }
 
   const isMockHostedPage = isMockHostedPaymentPage(paymentProvider, pageUrl);

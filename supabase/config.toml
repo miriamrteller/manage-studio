@@ -504,6 +504,12 @@ verify_jwt = false
 entrypoint = "./functions/photo-shop-link/index.ts"
 
 # Public pay page backend: the request's public_token is the capability.
+[functions.client-pay-direct]
+enabled = true
+# Public payment pages: the /pay token, or the enrolment token / sign-in (as create-checkout), checked in-function.
+verify_jwt = false
+entrypoint = "./functions/client-pay-direct/index.ts"
+
 [functions.job-payment-request-public]
 enabled = true
 # Public pay page: the payment request's token is the credential.
