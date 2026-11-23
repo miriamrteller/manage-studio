@@ -233,6 +233,8 @@ function Checkout({
         {t('public_shop.collect_note')}
         {payBy === 'card' ? ` ${t('public_shop.card_note')}` : ''}
       </p>
+      {/* Owner's returns policy (23 Nov 2026), lawyer list row 46. */}
+      <p className="text-sm text-muted-foreground">{t('public_shop.returns_note')}</p>
       {/* Honeypot: off-screen for people, filled by bots. */}
       <div className="sr-only" aria-hidden="true">
         <label htmlFor={`${id}-website`}>Website</label>

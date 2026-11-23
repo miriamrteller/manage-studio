@@ -108,6 +108,7 @@ describe('PublicShopPage', () => {
     expect(cart.textContent).toMatch(/Total: ₪\s?255/);
     expect(cart.textContent).toContain('kept for you for 48 hours');
     expect(cart.textContent).toContain('collect your order at the studio');
+    expect(cart.textContent).toContain('No returns. You can exchange an unused item within 2 weeks of collecting it.');
     expect((screen.getByRole('button', { name: 'Go to payment' }) as HTMLButtonElement).disabled).toBe(true);
     fill();
     fireEvent.click(screen.getByRole('button', { name: 'Go to payment' }));
@@ -166,5 +167,6 @@ describe('PublicShopPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'חנות' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'מעבר לתשלום' })).toBeTruthy();
     expect(screen.getByLabelText('תשלום ישירות לסטודיו (מזומן, העברה בנקאית או דרך אחרת)')).toBeTruthy();
+    expect(screen.getByText('אין החזרות. אפשר להחליף פריט שלא נעשה בו שימוש תוך שבועיים מיום האיסוף.')).toBeTruthy();
   });
 });
