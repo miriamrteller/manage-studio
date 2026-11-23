@@ -1073,6 +1073,9 @@ export type Database = {
                     pay_method: string | null;
                     payment_request_id: string | null;
                     proof_path: string | null;
+                    proof_reminded_at: string | null;
+                    proof_reminders_sent: number;
+                    proof_requested: boolean;
                     proof_sent_at: string | null;
                     tenant_id: string;
                     updated_at: string;
@@ -1084,6 +1087,9 @@ export type Database = {
                     pay_method?: string | null;
                     payment_request_id?: string | null;
                     proof_path?: string | null;
+                    proof_reminded_at?: string | null;
+                    proof_reminders_sent?: number;
+                    proof_requested?: boolean;
                     proof_sent_at?: string | null;
                     tenant_id: string;
                     updated_at?: string;
@@ -1095,6 +1101,9 @@ export type Database = {
                     pay_method?: string | null;
                     payment_request_id?: string | null;
                     proof_path?: string | null;
+                    proof_reminded_at?: string | null;
+                    proof_reminders_sent?: number;
+                    proof_requested?: boolean;
                     proof_sent_at?: string | null;
                     tenant_id?: string;
                     updated_at?: string;

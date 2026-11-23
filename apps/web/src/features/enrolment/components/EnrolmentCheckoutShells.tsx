@@ -15,6 +15,8 @@ import { TakbullBitButton } from './TakbullBitButton';
 import { YpayRedirectShell } from './YpayRedirectShell';
 import { isMockHostedPaymentPage } from '@/lib/tenantProviderRouting';
 import { OfflinePaymentNotice } from './OfflinePaymentNotice';
+import { PayDirectChoice } from '@/features/pay-direct/PayDirectChoice';
+import type { PayDirectTarget } from '@/features/pay-direct/payDirectService';
 
 function PaymentFormInner({
   onPaid,
@@ -226,7 +228,41 @@ export function StripeElementsShell({
   );
 }
 
-export function ProviderCheckoutShell({
+type ProviderCheckoutShellProps = Parameters<typeof ProviderCheckoutShellBody>[0];
+
+/**
+ * The enrolment / booking pay step. Below the card form, the studio's own ways to be paid
+ * directly (Bit, bank transfer, cash, cheque) so the client can pick one (owner, 23 Nov 2026:
+ * "yes" to showing them next to card). Paying at the studio shows them inside its notice.
+ * Not on the studio's own screens (an admin enrolling someone records the payment instead).
+ */
+export function ProviderCheckoutShell(props: ProviderCheckoutShellProps) {
+  const forClient = typeof window === 'undefined' || !window.location.pathname.startsWith('/admin');
+  const target: PayDirectTarget = {
+    enrolment: {
+      offering_id: props.classId,
+      engagement_id: props.engagementId,
+      ...(props.enrolmentToken ? { enrolment_token: props.enrolmentToken } : {}),
+    },
+  };
+  if (props.paymentProvider === 'offline') {
+    return (
+      <OfflinePaymentNotice
+        instructions={props.offlineInstructions}
+        notSetUp={props.onlinePaymentNotSetUp}
+        {...(forClient ? { payDirectTarget: target } : {})}
+      />
+    );
+  }
+  return (
+    <div className="space-y-4">
+      <ProviderCheckoutShellBody {...props} />
+      {forClient && <PayDirectChoice target={target} alsoOnline />}
+    </div>
+  );
+}
+
+function ProviderCheckoutShellBody({
   classId,
   engagementId,
   enrolmentToken,
@@ -267,15 +303,7 @@ export function ProviderCheckoutShell({
   const { t } = useTranslation();
 
   if (paymentProvider === 'offline') {
-    return (
-      <OfflinePaymentNotice
-        instructions={offlineInstructions}
-        notSetUp={onlinePaymentNotSetUp}
-        payDirectTarget={{
-          enrolment: { offering_id: classId, engagement_id: engagementId, ...(enrolmentToken ? { enrolment_token: enrolmentToken } : {}) },
-        }}
-      />
-    );
+    return <OfflinePaymentNotice instructions={offlineInstructions} notSetUp={onlinePaymentNotSetUp} />;
   }
 
   const isMockHostedPage = isMockHostedPaymentPage(paymentProvider, pageUrl);

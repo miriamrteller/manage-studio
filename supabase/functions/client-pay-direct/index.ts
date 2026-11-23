@@ -30,6 +30,8 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
  * Actions:
  *   get    → { ways, amountMinor, currency, payable, chosen, proofSentAt }
  *   method → the client picked a way (cash / cheque just confirm).          { method }
+ *   (get with Bit / bank transfer on offer starts the 1/3/7-day screenshot reminders:
+ *    _shared/pay-direct/reminders.ts, run by expire-scheduling-holds)
  *   proof  → the payment screenshot (PNG, JPEG or WebP, up to 5 MB, base64). { image, method? }
  *            Saved in the private bucket payment-proofs; the studio is emailed.
  *
@@ -45,6 +47,8 @@ type Subject = {
   amountMinor: number;
   currency: string;
   what: string;
+  /** /pay link for a studio shop order: paying the studio directly keeps the order. */
+  shopOrderId: string | null;
   key: { payment_request_id: string } | { engagement_id: string };
 };
 
@@ -56,6 +60,8 @@ async function resolveSubject(req: Request, service: SupabaseClient, body: Recor
     const { data: engagement } = await service
       .from("engagements").select("person_id, status").eq("id", request.engagement_id).maybeSingle();
     const cancelled = engagement?.status === "cancelled" || engagement?.status === "withdrawn";
+    const { data: link } = await service
+      .from("job_payment_requests").select("shop_order_id").eq("id", request.id).maybeSingle();
     return {
       tenantId: request.tenant_id,
       personId: (engagement?.person_id as string | undefined) ?? null,
@@ -63,6 +69,7 @@ async function resolveSubject(req: Request, service: SupabaseClient, body: Recor
       amountMinor: request.amount_minor,
       currency: request.currency,
       what: request.label,
+      shopOrderId: (link?.shop_order_id as string | null | undefined) ?? null,
       key: { payment_request_id: request.id },
     };
   }
@@ -83,6 +90,7 @@ async function resolveSubject(req: Request, service: SupabaseClient, body: Recor
       amountMinor: session.totalMinor,
       currency: session.currency,
       what: (offering?.name as string | undefined) ?? "",
+      shopOrderId: null,
       key: { engagement_id: session.engagement.id },
     };
   }
@@ -93,10 +101,31 @@ async function loadRow(service: SupabaseClient, s: Subject) {
   const [column, value] = Object.entries(s.key)[0] as [string, string];
   const { data } = await service
     .from("client_payment_proofs")
-    .select("id, pay_method, proof_path, proof_sent_at")
+    .select("id, pay_method, proof_path, proof_sent_at, proof_requested")
     .eq(column, value)
     .maybeSingle();
-  return data as { id: string; pay_method: string | null; proof_path: string | null; proof_sent_at: string | null } | null;
+  return data as {
+    id: string;
+    pay_method: string | null;
+    proof_path: string | null;
+    proof_sent_at: string | null;
+    proof_requested: boolean;
+  } | null;
+}
+
+/**
+ * A studio shop order paid by card is released after 48 hours unpaid (release_stale_shop_orders).
+ * Once the client says they pay the studio directly, it waits for the studio instead, like an
+ * order sent in to "pay the studio directly" (owner rule: nothing blocks payment).
+ */
+async function keepShopOrder(service: SupabaseClient, s: Subject) {
+  if (!s.shopOrderId) return;
+  const { error } = await service
+    .from("shop_orders")
+    .update({ pay_by_cash: true })
+    .eq("id", s.shopOrderId)
+    .eq("status", "awaiting_payment");
+  if (error) console.error("[client-pay-direct] keep shop order failed", error.message);
 }
 
 async function saveRow(service: SupabaseClient, s: Subject, values: Record<string, unknown>) {
@@ -170,6 +199,12 @@ Deno.serve(withMonitoring("client-pay-direct", async (req) => {
 
     if (action === "get") {
       const [pay, row] = await Promise.all([studioPayDirect(service, subject.tenantId), loadRow(service, subject)]);
+      // Bit / bank transfer on offer: a screenshot is asked for, and reminders follow at
+      // 1, 3 and 7 days from now (owner, 23 Nov 2026). Not again once cash / cheque was picked.
+      const asks = (pay?.ways ?? []).some((w) => PROOF_METHODS.includes(w.method));
+      if (subject.payable && asks && !row) {
+        await saveRow(service, subject, { proof_requested: true }).catch(() => undefined);
+      }
       return jsonResponse({
         ways: pay?.ways ?? [],
         amountMinor: subject.amountMinor,
@@ -184,8 +219,13 @@ Deno.serve(withMonitoring("client-pay-direct", async (req) => {
 
     if (action === "method") {
       if (!isPayDirectMethod(body.method)) return jsonResponse({ error: "bad_request" }, 400);
-      const saved = await saveRow(service, subject, { pay_method: body.method });
+      // Bit / bank transfer keep asking for the screenshot; cash / cheque stop the reminders.
+      const saved = await saveRow(service, subject, {
+        pay_method: body.method,
+        proof_requested: PROOF_METHODS.includes(body.method),
+      });
       if (saved.error) return jsonResponse({ error: "server_error" }, 500);
+      await keepShopOrder(service, subject);
       return jsonResponse({ ok: true });
     }
 
@@ -206,6 +246,7 @@ Deno.serve(withMonitoring("client-pay-direct", async (req) => {
     const saved = await saveRow(service, subject, {
       proof_path: path,
       proof_sent_at: sentAt,
+      proof_requested: true,
       ...(method ? { pay_method: method } : {}),
     });
     if (saved.error) {
@@ -215,6 +256,7 @@ Deno.serve(withMonitoring("client-pay-direct", async (req) => {
     // A new screenshot replaces the old one.
     const old = saved.previous?.proof_path;
     if (old) await service.storage.from(BUCKET).remove([old]).catch(() => undefined);
+    await keepShopOrder(service, subject);
     await notifyStudio(service, subject, saved.id, sentAt, method).catch((e) =>
       console.error("[client-pay-direct] studio email failed", e)
     );

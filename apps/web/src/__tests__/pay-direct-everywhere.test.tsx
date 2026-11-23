@@ -5,11 +5,13 @@
  * show on every payment page: /pay links (shop orders, class cards, deposits) and the
  * enrolment / booking pay step when paying at the studio. Bit / bank transfer take a
  * screenshot; cash / cheque confirm. Nothing is required; card stays offered.
+ * Owner, 23 Nov 2026 ("yes"): also next to card at class / booking checkout.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { PayDirectChoice } from '@/features/pay-direct/PayDirectChoice';
 import { OfflinePaymentNotice } from '@/features/enrolment/components/OfflinePaymentNotice';
+import { ProviderCheckoutShell } from '@/features/enrolment/components/EnrolmentCheckoutShells';
 import type { PayDirectView } from '@/features/pay-direct/payDirectService';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
@@ -95,6 +97,28 @@ describe('Pay the studio directly on every payment page', () => {
     );
     expect(await screen.findByRole('heading', { name: 'Pay the studio directly' })).toBeTruthy();
     expect(state.get).toHaveBeenCalledWith({ enrolment: { offering_id: 'c1', engagement_id: 'e1' } });
+  });
+
+  it('class booking with card (YPay): the ways show under the card step as "Or pay the studio directly"', async () => {
+    renderInApp(
+      <ProviderCheckoutShell
+        classId="c1"
+        engagementId="e1"
+        enrolmentToken="tok"
+        paymentProvider="ypay"
+        clientSecret={null}
+        publishableKey={null}
+        amountMinor={25000}
+        currency="ILS"
+        mockPaymentRef={null}
+        pageUrl="https://pay.example/page"
+        onPaid={() => {}}
+        onPrevious={() => {}}
+      />,
+      { path: '/enrol/pay' },
+    );
+    expect(await screen.findByRole('heading', { name: 'Or pay the studio directly' })).toBeTruthy();
+    expect(state.get).toHaveBeenCalledWith({ enrolment: { offering_id: 'c1', engagement_id: 'e1', enrolment_token: 'tok' } });
   });
 
   it('Hebrew', async () => {

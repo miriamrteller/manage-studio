@@ -13,7 +13,7 @@
 -- written (kept only so a rollback of the app still finds them; drop in a later migration).
 --
 -- client_payment_proofs: what a client picked on a payment page and, for Bit / bank
--- transfer, the screenshot of the payment. One row per payment request (/pay/:token) or
+-- transfer, the screenshot of the payment (reminders at 1, 3 and 7 days, as photo orders). One row per payment request (/pay/:token) or
 -- per enrolment (engagement) waiting for payment. Asked for, never required: nothing reads
 -- it to stop, hold or cancel anything. Only the service role writes (client-pay-direct);
 -- studio admins read their own studio's rows.
@@ -93,6 +93,12 @@ CREATE TABLE IF NOT EXISTS client_payment_proofs (
   pay_method         TEXT        CHECK (pay_method IS NULL OR pay_method IN ('bit', 'bank', 'cash', 'cheque')),
   proof_path         TEXT,
   proof_sent_at      TIMESTAMPTZ,
+  -- Bit / bank transfer were on offer when the client opened the payment page: a screenshot
+  -- is asked for, and reminder emails follow at 1, 3 and 7 days (owner, 23 Nov 2026) until
+  -- one arrives, the client picks cash / cheque, or the studio records the payment.
+  proof_requested      BOOLEAN     NOT NULL DEFAULT false,
+  proof_reminders_sent INT         NOT NULL DEFAULT 0 CHECK (proof_reminders_sent BETWEEN 0 AND 10),
+  proof_reminded_at    TIMESTAMPTZ,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT client_payment_proofs_one_subject
@@ -105,6 +111,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS client_payment_proofs_engagement_key
   ON client_payment_proofs (engagement_id) WHERE engagement_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS client_payment_proofs_tenant_sent
   ON client_payment_proofs (tenant_id, proof_sent_at DESC);
+-- The reminder job (expire-scheduling-holds) looks for these.
+CREATE INDEX IF NOT EXISTS client_payment_proofs_reminder_due
+  ON client_payment_proofs (created_at)
+  WHERE proof_requested AND proof_path IS NULL;
 
 COMMENT ON TABLE client_payment_proofs IS
   'A client''s chosen way to pay the studio directly and (Bit / bank transfer) the payment screenshot, per /pay request or enrolment. Never blocks anything.';
