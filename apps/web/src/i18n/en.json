@@ -5029,7 +5029,7 @@
       },
       "studio_shop": {
         "label": "Shop",
-        "hint": "Families buy the studio's uniforms and items, paid through their child's class."
+        "hint": "Anyone can buy the studio's uniforms and items on its Shop page, signed in or not."
       },
       "takbull_testing": {
         "label": "Takbull test keys",
@@ -5406,6 +5406,7 @@
     "pay_card": "By card, now",
     "pay_studio": "Pay the studio directly (cash, bank transfer or other)",
     "card_note": "Card orders are kept for you for 48 hours.",
+    "returns_note": "No returns. You can exchange an unused item within 2 weeks of collecting it.",
     "collect_note": "You collect your order at the studio. We'll email you when it's ready.",
     "place_order": "Place order",
     "place_order_card": "Go to payment",
