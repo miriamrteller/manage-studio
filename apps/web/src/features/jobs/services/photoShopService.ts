@@ -122,15 +122,8 @@ export interface StudioPhotoShopDefaults {
   gallery_open_days: number;
   /** Clients may also pay by card. Off: they only pay the studio directly. */
   card_payments: boolean;
-  /** Ways clients may pay the studio directly, each with its details (payment page). */
-  accepts_bit: boolean;
-  bit_phone: string | null;
-  accepts_bank: boolean;
-  bank_details: string | null;
-  accepts_cash: boolean;
-  cash_instructions: string | null;
-  accepts_cheque: boolean;
-  cheque_instructions: string | null;
+  // The ways to pay the studio directly (Bit, bank, cash, cheque) are studio-wide since
+  // 23 Nov 2026: tenant_pay_ways, features/pay-direct.
 }
 
 export const DEFAULT_GALLERY_OPEN_DAYS = 90;
@@ -295,7 +288,7 @@ export class PhotoShopService {
   static async getDefaults(tenantId: string): Promise<StudioPhotoShopDefaults> {
     const { data, error } = await supabase
       .from('tenant_photo_shop_settings')
-      .select('price_per_photo_minor, all_photos_price_minor, gallery_open_days, card_payments, accepts_bit, bit_phone, accepts_bank, bank_details, accepts_cash, cash_instructions, accepts_cheque, cheque_instructions')
+      .select('price_per_photo_minor, all_photos_price_minor, gallery_open_days, card_payments')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     if (error) throw error;
@@ -305,14 +298,6 @@ export class PhotoShopService {
         all_photos_price_minor: null,
         gallery_open_days: DEFAULT_GALLERY_OPEN_DAYS,
         card_payments: false,
-        accepts_bit: false,
-        bit_phone: null,
-        accepts_bank: false,
-        bank_details: null,
-        accepts_cash: false,
-        cash_instructions: null,
-        accepts_cheque: false,
-        cheque_instructions: null,
       }
     );
   }

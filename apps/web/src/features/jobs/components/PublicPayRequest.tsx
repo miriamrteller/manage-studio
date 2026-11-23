@@ -11,6 +11,7 @@ import { JobPaymentService } from '../services/jobPaymentService';
 import { BackToPortalButton } from './BackToPortalButton';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { isPhoneBrowser } from '@/lib/tenantProviderRouting';
+import { PayDirectChoice } from '@/features/pay-direct/PayDirectChoice';
 
 interface Props {
   token: string;
@@ -137,6 +138,8 @@ export function PublicPayRequest({ token, result }: Props) {
             </>
           )}
           {error && <p role="alert" className="text-sm text-error">{error}</p>}
+          {/* The studio's own ways (Bit, bank transfer, cash, cheque): the client picks one. */}
+          {collectable && !awaitingWebhook && <PayDirectChoice target={{ token }} alsoOnline={onlineAvailable} />}
           {signPath && (
             <p className="text-sm">
               <Link to={signPath} className="underline">{t('pages.public_quote.next_steps.sign_contract')}</Link>

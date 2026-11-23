@@ -10,23 +10,41 @@ import { usePhotoShopEnabled, useStudioPhotoShopDefaults } from '@/features/jobs
 import { PAY_TEXT_MAX, bitPhoneInput } from '@/features/jobs/services/photoShopService';
 import { PROOF_METHODS, type PayDirectWay } from '@/features/jobs/services/clientPhotoShopService';
 import { payWaysLabel } from '@/features/jobs/lib/payDirectLabel';
+import { useStudioPayWays } from '@/features/pay-direct/useStudioPayWays';
 
 /**
- * Settings › Online payments › Photo shop (owner, 22 Nov 2026): how clients pay for their
- * photos. One card per way (card, Bit, bank transfer, cash, cheque) with an on/off switch;
- * its details show only while it is on; "What your client sees" follows the switches.
- * Only for studios with the photo shop switched on. Saves only these fields.
+ * Settings › Online payments › "How clients can pay you" (owner, 22–23 Nov 2026): one card
+ * per way (Bit, bank transfer, cash, cheque) with an on/off switch; its details show only
+ * while it is on; "What your client sees" follows the switches. For EVERY studio: clients
+ * see these ways wherever they pay (classes, bookings, class cards, the shop, /pay links,
+ * photos). The "Card in the photo shop" switch shows only when the photo shop is on.
  */
-export function PhotoShopPayWaysSetting() {
-  const enabled = usePhotoShopEnabled();
-  if (!enabled) return null;
-  return <PayWaysForm />;
+export function PayWaysSetting() {
+  const photoShop = usePhotoShopEnabled();
+  return photoShop ? <PayWaysWithPhotoShopCard /> : <PayWaysForm />;
 }
 
-function PayWaysForm() {
+/** Studios with the photo shop also choose whether photo orders take card. */
+function PayWaysWithPhotoShopCard() {
+  const { defaults, save } = useStudioPhotoShopDefaults();
+  return (
+    <PayWaysForm
+      photoShopCard={{
+        loaded: defaults.data ? defaults.data.card_payments === true : null,
+        save: (on: boolean) => save.mutateAsync({ card_payments: on }),
+      }}
+    />
+  );
+}
+
+function PayWaysForm({
+  photoShopCard,
+}: {
+  photoShopCard?: { loaded: boolean | null; save: (on: boolean) => Promise<void> };
+}) {
   const { t } = useTranslation();
   const id = useId();
-  const { defaults, save } = useStudioPhotoShopDefaults();
+  const { ways: stored, save: saveWays } = useStudioPayWays();
   const [card, setCard] = useState(false);
   const [bit, setBit] = useState(false);
   const [bitPhone, setBitPhone] = useState('');
@@ -42,21 +60,54 @@ function PayWaysForm() {
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [cardLoaded, setCardLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (defaults.data && !loaded) {
-      setCard(defaults.data.card_payments === true);
-      setBit(defaults.data.accepts_bit === true);
-      setBitPhone(defaults.data.bit_phone ?? '');
-      setBankOn(defaults.data.accepts_bank === true);
-      setBank(defaults.data.bank_details ?? '');
-      setCashOn(defaults.data.accepts_cash === true);
-      setCash(defaults.data.cash_instructions ?? '');
-      setChequeOn(defaults.data.accepts_cheque === true);
-      setCheque(defaults.data.cheque_instructions ?? '');
+    if (stored.data && !loaded) {
+      setBit(stored.data.accepts_bit === true);
+      setBitPhone(stored.data.bit_phone ?? '');
+      setBankOn(stored.data.accepts_bank === true);
+      setBank(stored.data.bank_details ?? '');
+      setCashOn(stored.data.accepts_cash === true);
+      setCash(stored.data.cash_instructions ?? '');
+      setChequeOn(stored.data.accepts_cheque === true);
+      setCheque(stored.data.cheque_instructions ?? '');
       setLoaded(true);
     }
-  }, [defaults.data, loaded]);
+  }, [stored.data, loaded]);
+
+  useEffect(() => {
+    if (photoShopCard && photoShopCard.loaded !== null && !cardLoaded) {
+      setCard(photoShopCard.loaded);
+      setCardLoaded(true);
+    }
+  }, [photoShopCard, cardLoaded]);
+
+  const onSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveWays.mutateAsync({
+        accepts_bit: bit,
+        bit_phone: shownBitPhone.trim() || null,
+        accepts_bank: bankOn,
+        bank_details: bank.trim().slice(0, PAY_TEXT_MAX) || null,
+        accepts_cash: cashOn,
+        cash_instructions: cash.trim().slice(0, PAY_TEXT_MAX) || null,
+        accepts_cheque: chequeOn,
+        cheque_instructions: cheque.trim().slice(0, PAY_TEXT_MAX) || null,
+      });
+      if (photoShopCard) await photoShopCard.save(card);
+      setSaved(true);
+      setDirty(false);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const shownBitPhone = bitPhone || (bit ? businessPhone : '');
   const touch = <T,>(setter: (v: T) => void) => (v: T) => { setSaved(false); setDirty(true); setter(v); };
@@ -75,8 +126,10 @@ function PayWaysForm() {
         <p className="text-sm text-muted-foreground">{t('settings.photo_shop.pay_direct_intro')}</p>
       </div>
       <div className="space-y-3">
-        <PayWay id={`${id}-card`} icon={CreditCard} label={t('settings.photo_shop.way_card')}
-          hint={t('settings.photo_shop.card_payments_hint')} on={card} onToggle={touch(setCard)} />
+        {photoShopCard && (
+          <PayWay id={`${id}-card`} icon={CreditCard} label={t('settings.photo_shop.way_card')}
+            hint={t('settings.photo_shop.card_payments_hint')} on={card} onToggle={touch(setCard)} />
+        )}
         <PayWay id={`${id}-bit`} icon={Smartphone} label={t('settings.photo_shop.accepts_bit')}
           hint={t('settings.photo_shop.bit_hint')} on={bit} onToggle={touch(setBit)}>
           <label htmlFor={`${id}-bit-phone`} className="block text-sm font-medium">{t('settings.photo_shop.bit_phone')}</label>
@@ -115,30 +168,15 @@ function PayWaysForm() {
         </PayWay>
       </div>
       <ClientPreview
-        card={card}
+        card={Boolean(photoShopCard) && card}
         ways={previewWays}
       />
       <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="primary"
-          isLoading={save.isPending}
-          disabled={defaults.isLoading}
-          onClick={() =>
-            save.mutate(
-              {
-                card_payments: card,
-                accepts_bit: bit,
-                bit_phone: shownBitPhone.trim() || null,
-                accepts_bank: bankOn,
-                bank_details: bank.trim().slice(0, PAY_TEXT_MAX) || null,
-                accepts_cash: cashOn,
-                cash_instructions: cash.trim().slice(0, PAY_TEXT_MAX) || null,
-                accepts_cheque: chequeOn,
-                cheque_instructions: cheque.trim().slice(0, PAY_TEXT_MAX) || null,
-              },
-              { onSuccess: () => { setSaved(true); setDirty(false); } },
-            )
-          }
+          isLoading={saving}
+          disabled={stored.isLoading}
+          onClick={() => void onSave()}
         >
           {t('common.save')}
         </Button>
@@ -153,7 +191,7 @@ function PayWaysForm() {
           ) : ''}
         </span>
       </div>
-      {save.error && <p role="alert" className="text-sm text-error">{(save.error as Error).message}</p>}
+      {saveError && <p role="alert" className="text-sm text-error">{saveError}</p>}
     </section>
   );
 }

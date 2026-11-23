@@ -19,6 +19,8 @@ const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: { functions: { invoke } } }));
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn() }));
 vi.mock('@/features/scheduling/components/AddToCalendarActions', () => ({ AddToCalendarActions: () => null }));
+// The studio's pay-direct ways under the card step have their own tests (pay-direct-everywhere).
+vi.mock('@/features/pay-direct/PayDirectChoice', () => ({ PayDirectChoice: () => null }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,

@@ -1,8 +1,8 @@
 /**
- * How clients pay the studio directly in the photo shop (owner, 22 Nov 2026).
+ * How clients pay the studio directly (owner, 22 Nov 2026; every checkout since 23 Nov).
  *
- * The studio switches on the ways it takes on Settings > Payment > Photo shop
- * (tenant_photo_shop_settings): Bit (with its Bit phone), bank transfer (with its details),
+ * The studio switches on the ways it takes on Settings > Online payments
+ * (tenant_pay_ways, every checkout): Bit (with its Bit phone), bank transfer (with its details),
  * cash and cheque (each with optional instructions, e.g. "Pay at the studio"). Card is its
  * own switch (card_payments). Clients see only the ways that are on, on the order's payment
  * page and in the emails. None on: null, and the standard "Pay the studio directly" wording
@@ -87,10 +87,13 @@ export function isPayDirectMethod(v: unknown): v is PayDirectMethod {
   return typeof v === "string" && (PAY_DIRECT_METHODS as readonly string[]).includes(v);
 }
 
-/** The studio's pay-direct ways, read fresh for a page or an email. */
+/**
+ * The studio's pay-direct ways, read fresh for a page or an email. Studio-wide since 23 Nov
+ * 2026 (tenant_pay_ways): the same ways for every checkout, not only the photo shop.
+ */
 export async function studioPayDirect(service: SupabaseClient, tenantId: string): Promise<PayDirect | null> {
   const { data } = await service
-    .from("tenant_photo_shop_settings")
+    .from("tenant_pay_ways")
     .select(PAY_DIRECT_COLUMNS)
     .eq("tenant_id", tenantId)
     .maybeSingle();

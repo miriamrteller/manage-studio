@@ -1,14 +1,26 @@
 import type { ReactNode } from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render as baseRender, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter } from 'react-router-dom';
 import i18n from '@/i18n/i18n';
 import { ProviderCheckoutShell } from './EnrolmentCheckoutShells';
 
+// The notice also lists the studio's pay-direct ways (a query): none here.
+vi.mock('@/features/pay-direct/payDirectService', async (orig) => {
+  const real = await orig<typeof import('@/features/pay-direct/payDirectService')>();
+  return { ...real, PayDirectService: { ...real.PayDirectService, get: async () => null } };
+});
+
 // The component reads its words from i18n. Give it the app's own instance in English every time,
 // so the result never depends on which other test ran first (alone, it used to render bare keys).
-const render = (ui: ReactNode) => baseRender(<I18nextProvider i18n={i18n}>{ui}</I18nextProvider>);
+const render = (ui: ReactNode) =>
+  baseRender(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
+    </QueryClientProvider>,
+  );
 
 beforeEach(async () => {
   await i18n.changeLanguage('en');

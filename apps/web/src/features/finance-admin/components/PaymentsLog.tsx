@@ -19,6 +19,7 @@ import { CsvLanguageSelect } from './CsvLanguageSelect';
 import { RecordAnyPaymentForm } from '@/features/finance/components/RecordAnyPaymentForm';
 import { csvT, useCsvLanguage } from '../lib/csvLanguage';
 import { CashToConfirm } from './CashToConfirm';
+import { PaymentScreenshots } from '@/features/pay-direct/PaymentScreenshots';
 
 export function PaymentsLog() {
   const { t, i18n } = useTranslation();
@@ -94,6 +95,8 @@ export function PaymentsLog() {
       )}
 
       <CashToConfirm />
+
+      <PaymentScreenshots />
 
       <AccountantExportCard />
 

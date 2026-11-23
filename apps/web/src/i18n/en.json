@@ -4446,8 +4446,8 @@
       "all_photos_hint": "Leave empty to sell photos one by one only.",
       "open_days": "Days a gallery stays open for buying",
       "card_payments_hint": "Clients pay online by card. Leave this off until card payments work for your studio.",
-      "pay_direct_title": "Photo shop: how clients can pay you",
-      "pay_direct_intro": "Switch on each way you take. Clients see only the ways that are on.",
+      "pay_direct_title": "How clients can pay you",
+      "pay_direct_intro": "Switch on each way you take. Clients see the ways that are on wherever they pay you.",
       "accepts_bit": "Bit",
       "bit_phone": "Your Bit phone number",
       "accepts_bank": "Bank transfer",
@@ -4472,7 +4472,7 @@
         "remove_row": "Remove product {{number}}",
         "needs_price": "Products without a name and a price aren't saved."
       },
-      "way_card": "Card",
+      "way_card": "Card in the photo shop",
       "on": "On",
       "off": "Off",
       "bit_hint": "Clients pay to your Bit number, then send you a screenshot.",
@@ -5674,6 +5674,34 @@
           "For the review request, add your review link (for example your Google reviews). Without a link, that email isn't sent."
         ]
       }
+    }
+  },
+  "pay_direct": {
+    "title": "Pay the studio directly",
+    "title_or": "Or pay the studio directly",
+    "choose": "How will you pay?",
+    "amount": "Amount: {{price}}",
+    "bit_to": "Bit to {{phone}}",
+    "bank_to": "Bank transfer:",
+    "proof_ask": "Once you have paid, please send a screenshot of your payment.",
+    "proof_send": "Send payment screenshot",
+    "proof_replace": "Send a different screenshot",
+    "proof_sending": "Sending…",
+    "proof_sent": "Payment screenshot sent on {{date}}. The studio will check it.",
+    "confirm": "Confirm: I'll pay this way",
+    "confirmed": "Thank you. The studio knows you will {{how}}.",
+    "next": "The studio records your payment once it arrives.",
+    "errors": {
+      "proof_not_image": "Please choose a picture (PNG, JPEG or WebP).",
+      "proof_too_big": "This picture is too big. Please choose one under 5 MB.",
+      "already_paid": "The studio has already recorded this payment.",
+      "server_error": "Something went wrong. Please try again."
+    },
+    "studio": {
+      "title": "Payment screenshots and chosen ways",
+      "description": "What clients told you on a payment page. Once the money is in, record the payment as usual.",
+      "open_screenshot": "Open screenshot",
+      "no_screenshot": "No screenshot"
     }
   }
 }

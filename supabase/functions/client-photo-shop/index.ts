@@ -60,10 +60,8 @@ import { decodeProof, detectProofImageType, PROOF_BUCKET, PROOF_EXTENSION } from
 import {
   asksForProof,
   isPayDirectMethod,
-  PAY_DIRECT_COLUMNS,
-  payDirectFromSettings,
-  type PayDirectSettingsRow,
   PROOF_METHODS,
+  studioPayDirect,
 } from "../_shared/photo-shop/pay-direct.ts";
 
 const FEATURE = "billing:photo_shop";
@@ -134,13 +132,13 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
       const orders = Array.isArray(view.orders) ? (view.orders as Array<Record<string, unknown>>) : [];
       const mine = orders.find((o) => o.id === orderId);
       if (!mine) return jsonResponse({ error: "not_found" }, 404);
-      const [{ data: proofRow }, { data: settings }, { data: studio }] = await Promise.all([
+      const [{ data: proofRow }, { data: settings }, pay, { data: studio }] = await Promise.all([
         service.from("job_photo_orders").select("pay_method, proof_requested, proof_sent_at").eq("id", orderId).maybeSingle(),
-        service.from("tenant_photo_shop_settings").select(`card_payments, ${PAY_DIRECT_COLUMNS}`)
+        service.from("tenant_photo_shop_settings").select("card_payments")
           .eq("tenant_id", shopRow.tenant_id as string).maybeSingle(),
+        studioPayDirect(service, shopRow.tenant_id as string),
         service.from("tenants").select("name").eq("id", shopRow.tenant_id as string).maybeSingle(),
       ]);
-      const pay = payDirectFromSettings(settings as PayDirectSettingsRow | null);
       return jsonResponse({
         studioName: (studio?.name as string | undefined) ?? "",
         order: {
@@ -247,14 +245,16 @@ Deno.serve(withMonitoring("client-photo-shop", async (req) => {
 
     // Card payments are off until the studio switches them on (Settings > Payment > Photo
     // shop): clients then only pay the studio directly.
-    const { data: shopSettings } = await service
-      .from("tenant_photo_shop_settings")
-      .select(`card_payments, ${PAY_DIRECT_COLUMNS}`)
-      .eq("tenant_id", shopRow.tenant_id as string)
-      .maybeSingle();
+    const [{ data: shopSettings }, payDirect] = await Promise.all([
+      service
+        .from("tenant_photo_shop_settings")
+        .select("card_payments")
+        .eq("tenant_id", shopRow.tenant_id as string)
+        .maybeSingle(),
+      // How to pay the studio directly (Settings > Online payments, the same for every checkout).
+      studioPayDirect(service, shopRow.tenant_id as string),
+    ]);
     const cardPayments = shopSettings?.card_payments === true;
-    // How to pay the studio directly: Bit and/or bank transfer, as the studio filled them in.
-    const payDirect = payDirectFromSettings(shopSettings as PayDirectSettingsRow | null);
     const shopView = {
       ...view,
       card_payments: cardPayments,

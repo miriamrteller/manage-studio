@@ -16,6 +16,8 @@
  *      has reminders enabled.
  *   4. Studio shop: unpaid card orders older than 48 hours give their stock back
  *      (release_stale_shop_orders).
+ *   5./6. Payment screenshot reminders at 1, 3 and 7 days: photo orders, and every other
+ *      payment page where Bit / bank transfer was on offer (_shared/pay-direct/reminders.ts).
  *
  * Security: invoked via pg_cron net.http_post with x-cron-secret header.
  * Refuses every request when CRON_SECRET is not set.
@@ -23,6 +25,7 @@
 
 import { jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { remindPhotoOrderProofs } from "../_shared/photo-shop/emails.ts";
+import { remindClientPaymentProofs } from "../_shared/pay-direct/reminders.ts";
 import { rejectUnlessCron } from "../_shared/edge-runtime/cron-auth.ts";
 import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
@@ -290,6 +293,15 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
     proofRemindersSent = await remindPhotoOrderProofs(service);
   } catch (e) {
     console.error("[expire-scheduling-holds] payment screenshot reminders failed", String(e));
+  }
+
+  // 6. Every other payment page (/pay links, class and booking enrolments) where Bit or bank
+  //    transfer was on offer and no screenshot came yet: the same 1, 3 and 7-day reminders
+  //    (owner, 23 Nov 2026). Never cancels anything.
+  try {
+    proofRemindersSent += await remindClientPaymentProofs(service);
+  } catch (e) {
+    console.error("[expire-scheduling-holds] client payment screenshot reminders failed", String(e));
   }
 
   return jsonResponse({ ok: true, remindersSent, expired, bookingsKept, shopOrdersReleased, proofRemindersSent });
