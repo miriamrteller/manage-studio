@@ -10,7 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 
 const h = vi.hoisted(() => ({
-  create: vi.fn(async () => ({})),
+  create: vi.fn(async (_tenant: unknown, _input: Record<string, unknown>) => ({})),
   update: vi.fn(async () => ({})),
   list: [] as Array<Record<string, unknown>>,
   profile: { paymentFlow: 'project', teachesClasses: false, familyAccounts: false, clientBooking: false },
@@ -70,7 +70,7 @@ describe('Packages page', () => {
     fireEvent.change(screen.getByLabelText('How the price shows'), { target: { value: 'on_request' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save/ }));
     await waitFor(() => expect(h.create).toHaveBeenCalledTimes(1));
-    const input = h.create.mock.calls[0][1] as Record<string, unknown>;
+    const input = h.create.mock.calls[0][1];
     expect(input).toMatchObject({ price_minor: 100000, deposit_percent: 50, price_display: 'on_request', is_public: true });
     expect(input).not.toHaveProperty('online_booking');
   });
@@ -83,7 +83,7 @@ describe('Packages page', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Clients can book a time online' }));
     fireEvent.click(screen.getByRole('button', { name: /^Save/ }));
     await waitFor(() => expect(h.create).toHaveBeenCalledTimes(1));
-    const input = h.create.mock.calls[0][1] as Record<string, unknown>;
+    const input = h.create.mock.calls[0][1];
     expect(input).toMatchObject({ online_booking: false, price_display: 'show' });
     expect(input).not.toHaveProperty('deposit_percent');
   });
