@@ -462,6 +462,7 @@ export type Database = {
           id: string
           last_attempt_at: string | null
           last_error: string | null
+          last_period: string | null
           next_attempt_at: string | null
           next_billing_date: string
           payment_method_token_id: string | null
@@ -479,6 +480,7 @@ export type Database = {
           id?: string
           last_attempt_at?: string | null
           last_error?: string | null
+          last_period?: string | null
           next_attempt_at?: string | null
           next_billing_date: string
           payment_method_token_id?: string | null
@@ -496,6 +498,7 @@ export type Database = {
           id?: string
           last_attempt_at?: string | null
           last_error?: string | null
+          last_period?: string | null
           next_attempt_at?: string | null
           next_billing_date?: string
           payment_method_token_id?: string | null
@@ -1536,6 +1539,7 @@ export type Database = {
           google_event_id: string | null
           id: string
           offering_id: string
+          pay_plan: string | null
           payment_dunning_attempt_count: number
           payment_dunning_next_at: string | null
           payment_received_at: string | null
@@ -1546,6 +1550,7 @@ export type Database = {
           season_id: string | null
           status: string
           tenant_id: string
+          term_price: Json | null
           updated_at: string
           waiver_48h_reminded_at: string | null
           waiver_5d_reminded_at: string | null
@@ -1569,6 +1574,7 @@ export type Database = {
           google_event_id?: string | null
           id?: string
           offering_id: string
+          pay_plan?: string | null
           payment_dunning_attempt_count?: number
           payment_dunning_next_at?: string | null
           payment_received_at?: string | null
@@ -1579,6 +1585,7 @@ export type Database = {
           season_id?: string | null
           status?: string
           tenant_id: string
+          term_price?: Json | null
           updated_at?: string
           waiver_48h_reminded_at?: string | null
           waiver_5d_reminded_at?: string | null
@@ -1602,6 +1609,7 @@ export type Database = {
           google_event_id?: string | null
           id?: string
           offering_id?: string
+          pay_plan?: string | null
           payment_dunning_attempt_count?: number
           payment_dunning_next_at?: string | null
           payment_received_at?: string | null
@@ -1612,6 +1620,7 @@ export type Database = {
           season_id?: string | null
           status?: string
           tenant_id?: string
+          term_price?: Json | null
           updated_at?: string
           waiver_48h_reminded_at?: string | null
           waiver_5d_reminded_at?: string | null
@@ -3264,6 +3273,7 @@ export type Database = {
           day_of_week: number | null
           delivery_mode: string
           duration_mins: number | null
+          early_price_per_class_minor: number | null
           end_time: string | null
           id: string
           is_public: boolean
@@ -3275,6 +3285,7 @@ export type Database = {
           offering_type: string
           photos_included: number
           price_minor: number
+          price_per_class_minor: number | null
           renewal_policy: string
           season_id: string | null
           setup_fee_minor: number
@@ -3295,6 +3306,7 @@ export type Database = {
           day_of_week?: number | null
           delivery_mode?: string
           duration_mins?: number | null
+          early_price_per_class_minor?: number | null
           end_time?: string | null
           id?: string
           is_public?: boolean
@@ -3306,6 +3318,7 @@ export type Database = {
           offering_type?: string
           photos_included?: number
           price_minor?: number
+          price_per_class_minor?: number | null
           renewal_policy?: string
           season_id?: string | null
           setup_fee_minor?: number
@@ -3326,6 +3339,7 @@ export type Database = {
           day_of_week?: number | null
           delivery_mode?: string
           duration_mins?: number | null
+          early_price_per_class_minor?: number | null
           end_time?: string | null
           id?: string
           is_public?: boolean
@@ -3337,6 +3351,7 @@ export type Database = {
           offering_type?: string
           photos_included?: number
           price_minor?: number
+          price_per_class_minor?: number | null
           renewal_policy?: string
           season_id?: string | null
           setup_fee_minor?: number
@@ -5660,6 +5675,57 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: true
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_term_pricing: {
+        Row: {
+          early_enrol_by: string | null
+          early_until: string | null
+          round_minor: number
+          sibling_discount_pct: number
+          sibling_from: number
+          tenant_id: string
+          trial_offering_id: string | null
+          updated_at: string
+          upfront_discount_pct: number
+        }
+        Insert: {
+          early_enrol_by?: string | null
+          early_until?: string | null
+          round_minor?: number
+          sibling_discount_pct?: number
+          sibling_from?: number
+          tenant_id: string
+          trial_offering_id?: string | null
+          updated_at?: string
+          upfront_discount_pct?: number
+        }
+        Update: {
+          early_enrol_by?: string | null
+          early_until?: string | null
+          round_minor?: number
+          sibling_discount_pct?: number
+          sibling_from?: number
+          tenant_id?: string
+          trial_offering_id?: string | null
+          updated_at?: string
+          upfront_discount_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_term_pricing_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_term_pricing_trial_offering_id_fkey"
+            columns: ["trial_offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
             referencedColumns: ["id"]
           },
         ]

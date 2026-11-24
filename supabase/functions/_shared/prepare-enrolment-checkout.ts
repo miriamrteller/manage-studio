@@ -4,6 +4,8 @@ import { loadEnrolmentCompletionContext } from "./enrolment-completion-context.t
 import { createCheckoutCharge } from "./create-checkout-charge.ts";
 import { resolveOrCreateEngagement } from "./resolve-or-create-engagement.ts";
 import { resolveBootstrapBlockReason } from "./checkout-bootstrap-parse.ts";
+import { savedTermPrice } from "./payments/term-price.ts";
+import { termPriceView } from "./enrolment-completion-context.ts";
 import type {
   PrepareEnrolmentCheckoutBody,
   PrepareEnrolmentCheckoutResponse,
@@ -180,16 +182,23 @@ export async function prepareEnrolmentCheckout(
     ...(body.mode === "existing_engagement" && body.enrolment_token
       ? { enrolment_token: body.enrolment_token }
       : {}),
+    ...(body.pay_plan ? { pay_plan: body.pay_plan } : {}),
   });
 
   if (!chargeResult.ok) {
     return { ok: false, error: chargeResult.error, status: chargeResult.status };
   }
 
+  // The charge saved the plan: show the same calculation and amount the family is paying.
+  const saved = await savedTermPrice(service, engagementId);
+  const paidContext = saved
+    ? { ...context, termPrice: termPriceView(saved), amountMinor: saved.firstPaymentMinor[saved.plan] }
+    : context;
+
   return {
     ok: true,
     response: {
-      context,
+      context: paidContext,
       charge: chargeResult.charge,
     },
   };

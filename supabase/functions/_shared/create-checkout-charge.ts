@@ -15,6 +15,8 @@ export async function createCheckoutCharge(
     offering_id: string;
     engagement_id: string;
     enrolment_token?: string;
+    /** Term-priced class: monthly payments or the whole term up front. */
+    pay_plan?: "monthly" | "upfront";
     /** Takbull: pay with Bit; on a phone the answer opens the Bit app. */
     pay_with?: "card" | "bit";
     is_mobile?: boolean;

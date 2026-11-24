@@ -43,6 +43,7 @@ export function parsePrepareEnrolmentCheckoutBody(
         ...(typeof body.enrolment_token === "string"
           ? { enrolment_token: body.enrolment_token }
           : {}),
+        ...(body.pay_plan === "monthly" || body.pay_plan === "upfront" ? { pay_plan: body.pay_plan } : {}),
       },
     };
   }
@@ -83,6 +84,7 @@ export function parsePrepareEnrolmentCheckoutBody(
         body.age_override_reason === null
           ? { age_override_reason: body.age_override_reason as string | null }
           : {}),
+        ...(body.pay_plan === "monthly" || body.pay_plan === "upfront" ? { pay_plan: body.pay_plan } : {}),
       },
     };
   }

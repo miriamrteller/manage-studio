@@ -38,6 +38,8 @@ const ClassFormSchema = z.object({
   min_age: z.union([z.number().int().nonnegative(), z.nan()]).nullable().optional(),
   max_age: z.union([z.number().int().nonnegative(), z.nan()]).nullable().optional(),
   price_major: z.number().nonnegative('Price must be >= 0'),
+  price_per_class_major: z.union([z.number().positive(), z.nan()]).nullable().optional(),
+  early_price_per_class_major: z.union([z.number().positive(), z.nan()]).nullable().optional(),
   currency: z.string().optional(),
   day_of_week: z
     .union([z.number().int().min(0).max(6), z.nan()])
@@ -97,6 +99,9 @@ function toFormValues(
     min_age: classItem?.min_age ?? null,
     max_age: classItem?.max_age ?? null,
     price_major: classItem?.price_minor != null ? classItem.price_minor / 100 : 0,
+    price_per_class_major: classItem?.price_per_class_minor != null ? classItem.price_per_class_minor / 100 : null,
+    early_price_per_class_major:
+      classItem?.early_price_per_class_minor != null ? classItem.early_price_per_class_minor / 100 : null,
     currency: classItem?.currency || defaultCurrency,
     day_of_week: classItem?.day_of_week ?? null,
     start_time: classItem?.start_time || '09:00',
@@ -111,6 +116,11 @@ function toFormValues(
   };
 }
 
+/** Term pricing fields: empty = not set. */
+function majorToMinorOrNull(value: number | null | undefined): number | null {
+  return value == null || Number.isNaN(value) || value <= 0 ? null : Math.round(value * 100);
+}
+
 function toClassPayload(values: OfferingFormValues): Partial<Offering> {
   const billingMode = values.billing_mode ?? 'one_time';
 
@@ -123,6 +133,8 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     min_age: Number.isNaN(values.min_age) ? null : (values.min_age ?? null),
     max_age: Number.isNaN(values.max_age) ? null : (values.max_age ?? null),
     price_minor: Math.round(values.price_major * 100),
+    price_per_class_minor: majorToMinorOrNull(values.price_per_class_major),
+    early_price_per_class_minor: majorToMinorOrNull(values.early_price_per_class_major),
     currency: values.currency,
     day_of_week: Number.isNaN(values.day_of_week) ? null : values.day_of_week ?? null,
     start_time: values.start_time,
@@ -432,6 +444,28 @@ export function ClassForm({
               placeholder={t('form.class.age_placeholder')}
               error={form.formState.errors.max_age?.message}
               {...form.register('max_age', { valueAsNumber: true })}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormInput
+              htmlFor="price_per_class_major"
+              label={t('form.class.price_per_class')}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder={t('form.class.price_per_class_placeholder')}
+              error={form.formState.errors.price_per_class_major?.message}
+              {...form.register('price_per_class_major', { valueAsNumber: true })}
+            />
+            <FormInput
+              htmlFor="early_price_per_class_major"
+              label={t('form.class.early_price_per_class')}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder={t('form.class.price_per_class_placeholder')}
+              error={form.formState.errors.early_price_per_class_major?.message}
+              {...form.register('early_price_per_class_major', { valueAsNumber: true })}
             />
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

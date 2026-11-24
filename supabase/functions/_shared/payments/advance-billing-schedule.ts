@@ -13,7 +13,7 @@ export async function advanceBillingSchedule(
 ): Promise<void> {
   const { data: schedule, error } = await service
     .from("billing_schedules")
-    .select("id, next_billing_date, engagement_id")
+    .select("id, next_billing_date, engagement_id, last_period")
     .eq("id", billingScheduleId)
     .single();
 
@@ -35,9 +35,14 @@ export async function advanceBillingSchedule(
   current.setMonth(current.getMonth() + 1);
   const nextDate = current.toISOString().slice(0, 10);
 
+  // Term pricing: after the term's last monthly payment the plan is complete.
+  const lastPeriod = (schedule.last_period as string | null) ?? null;
+  const completed = lastPeriod !== null && nextDate.slice(0, 7) > lastPeriod;
+
   await service
     .from("billing_schedules")
     .update({
+      ...(completed ? { status: "completed" } : {}),
       next_billing_date: nextDate,
       next_attempt_at: null,
       attempt_count: 0,

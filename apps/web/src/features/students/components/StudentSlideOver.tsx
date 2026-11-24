@@ -24,6 +24,7 @@ import { AgeReviewAdminPanel } from './AgeReviewAdminPanel';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
 import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
+import { termFirstPaymentMinor } from '@/features/enrolment/lib/termFirstPayment';
 import { MonthlyPlanSection } from '@/features/finance/components/MonthlyPlanSection';
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
 import { formatCurrency } from '@shared/format';
@@ -395,7 +396,10 @@ export function StudentSlideOver({
                                   : undefined
                               }
                             />
-                            {engagement.status === 'active' && offering?.billing_mode === 'recurring' && (
+                            {engagement.status === 'active' && engagement.pay_plan === 'upfront' && (
+                              <p className="text-sm text-muted-foreground">{t('finance.monthly_plan.term_paid')}</p>
+                            )}
+                            {engagement.status === 'active' && offering?.billing_mode === 'recurring' && engagement.pay_plan !== 'upfront' && (
                               <MonthlyPlanSection
                                 engagementId={engagement.id}
                                 classPriceMinor={offering.price_minor}
@@ -408,7 +412,7 @@ export function StudentSlideOver({
                               recordingEngagementId === engagement.id ? (
                                 <RecordPaymentModal
                                   engagementId={engagement.id}
-                                  defaultAmountMinor={offering?.price_minor}
+                                  defaultAmountMinor={termFirstPaymentMinor(engagement) ?? offering?.price_minor}
                                   currency={offering?.currency}
                                   onRecorded={() => {
                                     invalidateFinanceCaches();

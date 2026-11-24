@@ -156,6 +156,11 @@ export function MonthlyPlanSection({
     );
   }
 
+  // Term pricing: every monthly payment of the term is paid.
+  if (schedule?.status === 'completed') {
+    return <p className="text-sm text-muted-foreground">{t('finance.monthly_plan.term_complete')}</p>;
+  }
+
   return (
     <div className="space-y-3 rounded-lg border border-border p-3" aria-label={t('finance.monthly_plan.title')}>
       {schedule && (

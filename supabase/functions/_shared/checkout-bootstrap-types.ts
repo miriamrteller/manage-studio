@@ -7,6 +7,8 @@ export type PrepareEnrolmentCheckoutBody =
       engagement_id: string;
       offering_id?: string;
       enrolment_token?: string;
+      /** Term-priced class: monthly payments or the whole term up front. */
+      pay_plan?: "monthly" | "upfront";
     }
   | {
       phase: "pay";
@@ -17,6 +19,7 @@ export type PrepareEnrolmentCheckoutBody =
       waiver_evidence_id?: string;
       age_override_confirmed?: boolean;
       age_override_reason?: string | null;
+      pay_plan?: "monthly" | "upfront";
     };
 
 export interface CheckoutChargePayload {
@@ -41,6 +44,22 @@ export interface CheckoutChargePayload {
    * connected it yet: parents see "the studio hasn't set up online payment yet", not an error.
    */
   onlinePaymentNotSetUp?: boolean;
+}
+
+export interface TermPriceView {
+  classCount: number;
+  listPerClassMinor: number;
+  perClassMinor: number;
+  early: boolean;
+  sisterPct: number;
+  termTotalMinor: number;
+  months: string[];
+  monthlyMinor: number;
+  upfrontPct: number;
+  upfrontMinor: number;
+  trialCreditMinor: number;
+  firstPaymentMinor: { monthly: number; upfront: number };
+  plan: "monthly" | "upfront";
 }
 
 export interface AppointmentCalendarDetails {
@@ -69,6 +88,11 @@ export interface EnrolmentCompletionContext {
   currency: string;
   billingMode?: string | null;
   billingInterval?: string | null;
+  /**
+   * Term-priced class: the calculation shown to the family (classes × price per class, the
+   * discounts, the monthly payment and the up-front total) and the plan picked so far.
+   */
+  termPrice?: TermPriceView | null;
   /** Set when this engagement is an appointment booking (booked_starts_at). */
   appointment?: AppointmentCalendarDetails | null;
 }

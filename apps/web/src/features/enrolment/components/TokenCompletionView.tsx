@@ -11,6 +11,8 @@ import { supabase } from '@/lib/supabase';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate } from '@shared/schemas';
 import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
+import { TermPriceSummary } from '@/features/enrolment/components/TermPriceSummary';
+import type { PayPlan } from '@/features/enrolment/lib/checkoutBootstrapTypes';
 
 interface TokenCompletionViewProps {
   engagementId: string;
@@ -30,10 +32,12 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   const tokenInUrl = searchParams.get('t');
   const tokenReturnPath = `/enrol/pay/${encodeURIComponent(engagementId)}?t=${encodeURIComponent(effectiveToken)}`;
 
+  const [payPlan, setPayPlan] = useState<PayPlan | null>(null);
   const bootstrap = useCheckoutBootstrap({
     phase: 'pay',
     mode: 'existing_engagement',
     engagementId,
+    payPlan,
     enrolmentToken: effectiveToken,
     enabled: Boolean(engagementId && effectiveToken),
   });
@@ -228,21 +232,32 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
     <div className="max-w-lg mx-auto space-y-6">
       <h1 className="text-2xl font-bold">{t('pages.enrol_pay.title')}</h1>
 
-      <div className="rounded-lg border border-gray-200 p-4 space-y-2">
-        <p className="font-medium">{context.className}</p>
-        <p className="text-sm text-gray-600">
-          {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatOfferingPrice(t, context.amountMinor, context.currency, i18n.language, {
-            billing_mode: context.billingMode,
-            billing_interval: context.billingInterval,
-          })}
-        </p>
-        {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
-          <p className="text-xs text-gray-500">{t(monthlyHintKey(charge?.paymentProvider))}</p>
-        )}
-      </div>
+      {context.termPrice ? (
+        <TermPriceSummary
+          className={context.className}
+          term={context.termPrice}
+          currency={context.currency}
+          busy={bootstrap.isFetching}
+          onChoose={(plan) => setPayPlan(plan)}
+        />
+      ) : (
+        <div className="rounded-lg border border-gray-200 p-4 space-y-2">
+          <p className="font-medium">{context.className}</p>
+          <p className="text-sm text-gray-600">
+            {t('pages.admin_enrol.amount_due')}:{' '}
+            {formatOfferingPrice(t, context.amountMinor, context.currency, i18n.language, {
+              billing_mode: context.billingMode,
+              billing_interval: context.billingInterval,
+            })}
+          </p>
+          {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
+            <p className="text-xs text-gray-500">{t(monthlyHintKey(charge?.paymentProvider))}</p>
+          )}
+        </div>
+      )}
 
       <CheckoutPaymentShell
+        key={context.termPrice?.plan ?? 'price'}
         classId={context.offeringId}
         engagementId={context.engagementId}
         enrolmentToken={effectiveToken}

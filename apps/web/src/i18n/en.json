@@ -304,7 +304,10 @@
       "ongoing_term_note": "Your studio has no terms yet, so this class runs with no end date (in a term called \"Ongoing\"). You can add terms later.",
       "ongoing_term_name": "Ongoing",
       "waiver_required": "Needs a signed form",
-      "waiver_required_help": "If yes, each person is asked to sign your form after paying. It never stops anyone paying, and a paid place is never cancelled for a missing form. Off unless you switch it on."
+      "waiver_required_help": "If yes, each person is asked to sign your form after paying. It never stops anyone paying, and a paid place is never cancelled for a missing form. Off unless you switch it on.",
+      "price_per_class": "Price per class (term pricing)",
+      "early_price_per_class": "Early enrolment price per class",
+      "price_per_class_placeholder": "Leave empty for a monthly price"
     },
     "requirement": {
       "type": "Requirement type",
@@ -3571,7 +3574,9 @@
       "error_note_required": "Add a reason for the different amount.",
       "error_amount_must_be_positive": "Enter an amount above zero.",
       "error_period_already_due": "That month is already due or past. Choose a coming month.",
-      "error_no_monthly_plan": "This enrolment has no monthly plan."
+      "error_no_monthly_plan": "This enrolment has no monthly plan.",
+      "term_paid": "The whole term is paid.",
+      "term_complete": "All the term's monthly payments are paid."
     },
     "card_link": {
       "send": "Send card link",
@@ -3762,7 +3767,23 @@
     "form_agree": "I have read and agree to this form, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
     "form_read": "Read the full form",
     "form_hide": "Hide the form",
-    "form_view_error": "Could not load the form. Please refresh the page and try again."
+    "form_view_error": "Could not load the form. Please refresh the page and try again.",
+    "term_price": {
+      "title": "Term price",
+      "calculation_one": "This term: {{count}} class × {{perClass}} = {{total}}",
+      "calculation_other": "This term: {{count}} classes × {{perClass}} = {{total}}",
+      "early": "Early enrolment price: {{price}} a class instead of {{usual}}.",
+      "sister": "Sister discount: {{pct}}% off.",
+      "choose": "How would you like to pay?",
+      "monthly_one": "{{count}} payment of {{amount}}",
+      "monthly_other": "{{count}} monthly payments of {{amount}}",
+      "monthly_detail": "Paid before the first class of each month.",
+      "upfront": "The whole term now: {{amount}}",
+      "upfront_detail": "{{pct}}% off for paying the term up front.",
+      "upfront_detail_plain": "One payment for the whole term.",
+      "trial": "Your trial class ({{amount}}) is taken off this payment.",
+      "pay_now": "To pay now: {{amount}}"
+    }
   },
   "settings": {
     "custom_domain": {
@@ -4632,6 +4653,24 @@
       "end_date_toggle": "Ends on a set date",
       "end_date_label": "Last day",
       "end_date_hint": "Every card of this kind lasts until this day, whenever it's bought (e.g. the end of term)."
+    },
+    "term_pricing": {
+      "title": "Paying by the term",
+      "intro": "For classes with a price per class: families pay for the term's classes (holidays and closed days left out), either up front or in equal monthly payments. These discounts are applied automatically.",
+      "upfront": "Discount for paying the term up front (%)",
+      "round": "Round monthly payments to",
+      "round_hint": "For example 5 rounds ₪204 to ₪205.",
+      "early_by": "Early enrolment price for families who enrol by",
+      "early_by_hint": "Uses each class's early price per class.",
+      "early_until": "Early price kept for terms starting until",
+      "early_until_hint": "For example one year later.",
+      "sister": "Sister discount (%)",
+      "sister_from": "Sister discount starts with girl number",
+      "sister_from_hint": "2 = from the second sister.",
+      "trial": "Trial class",
+      "trial_hint": "A paid trial class comes off the first payment.",
+      "trial_none": "None",
+      "saved": "Saved."
     }
   },
   "accessibility": {
