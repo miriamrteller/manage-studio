@@ -283,9 +283,9 @@ export declare const OfferingSchema: z.ZodObject<{
         annual: "annual";
     }>>>;
     status: z.ZodDefault<z.ZodEnum<{
+        full: "full";
         active: "active";
         cancelled: "cancelled";
-        full: "full";
     }>>;
     waiver_required: z.ZodDefault<z.ZodBoolean>;
     location: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -394,10 +394,10 @@ export declare const EngagementSchema: z.ZodObject<{
     coupon_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     discount_lines: z.ZodOptional<z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
+            client: "client";
             sibling: "sibling";
             extra_class: "extra_class";
             early_bird: "early_bird";
-            client: "client";
             coupon: "coupon";
         }>;
         amount_minor: z.ZodNumber;
@@ -604,11 +604,11 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     }>;
     provider: z.ZodString;
     payment_method: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        other: "other";
         card: "card";
         cash: "cash";
         bank_transfer: "bank_transfer";
         bit: "bit";
-        other: "other";
     }>>>;
     paid_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     created_at: z.ZodString;
@@ -711,10 +711,10 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version: z.ZodNumber;
     version_hash: z.ZodString;
     status: z.ZodEnum<{
+        draft: "draft";
         active: "active";
         archived: "archived";
         approved: "approved";
-        draft: "draft";
     }>;
     audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
         child: "child";
