@@ -17,6 +17,7 @@ import {
 import { sendHtmlEmail } from "./email-client.ts";
 import { signWaiverToken } from "./waiver-token.ts";
 import { tenantBaseUrlFor } from "./tenant-url.ts";
+import { clientSignInUrlFor } from "./client-login.ts";
 
 const APP_URL = getEnv("APP_URL") ?? "";
 
@@ -145,6 +146,17 @@ export async function sendAppointmentConfirmationEmails(
 
   if (!(await auditExists(service, params.tenantId, "payment_confirmation_email_sent", params.paymentId))) {
     try {
+      // Every booked client has a login: the email signs them straight in (3 days).
+      // Any failure: the email goes without the button.
+      const signInUrl = await (async () =>
+        clientSignInUrlFor(service, {
+          tenantId: params.tenantId,
+          email: payload.recipientEmail,
+          engagementId: params.engagementId,
+          tenantBase: await tenantBaseUrlFor(service, params.tenantId),
+        }))().catch(() => null);
+      if (signInUrl) payload.signInUrl = signInUrl;
+
       await sendHtmlEmail({
         to: payload.recipientEmail,
         from: sender.from,

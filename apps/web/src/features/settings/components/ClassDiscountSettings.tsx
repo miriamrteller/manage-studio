@@ -19,7 +19,7 @@ const QUERY_KEY = 'class-discount-settings';
 const COLUMNS = Object.keys(DEFAULT_CLASS_DISCOUNTS).join(', ');
 
 /**
- * Settings → Discounts: automatic class discounts (sibling, extra class, early bird).
+ * Classes → Discounts: automatic class discounts (sibling, extra class, early bird).
  * All come switched off with suggested amounts filled in. The discount is worked out
  * when a child is enrolled and shown to the parent before paying.
  */

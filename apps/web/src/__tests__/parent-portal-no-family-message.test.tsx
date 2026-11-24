@@ -12,6 +12,7 @@ vi.mock('@/components/Dashboard/useParentPortal', () => ({
   useParentPortal: () => ({ data: null, isLoading: false, error: portal.error }),
 }));
 vi.mock('@/hooks/useTenant', () => ({ useTenant: () => ({ id: 't1', subdomain: 'ballet' }) }));
+vi.mock('@/hooks/useWorkModes', () => ({ useWorkModes: () => ({ classes: true, projects: false, appointments: false, families: true }) }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key.split('.').reduce<unknown>((n, p) => (n as Record<string, unknown> | undefined)?.[p], en) ?? key,

@@ -15,7 +15,7 @@ Part of [scheduling/00-overview.md](00-overview.md). Normative: [SPEC §2.2.1](.
 | Public slot picker (`/book`) | ✅ | — |
 | Holds, conflict rules, Jerusalem TZ | ✅ | — |
 | Checkout + invoice | ✅ (existing finance) | — |
-| Block slots when provider busy elsewhere | Uses | ✅ `freebusy.query` (fail-closed on error) |
+| Block slots when provider busy elsewhere | Uses | ✅ `freebusy.query` (on error: keep the studio's own free times, never block booking) |
 | Show booking on **studio** calendar | Uses | ✅ `events.insert` / `delete` |
 | Client “Add to my calendar” after pay | ✅ Google template URL + `.ics` (no OAuth) | — |
 | Group class term enrolment | ✅ `/enrol` | Optional later |
@@ -31,6 +31,8 @@ We do **not** embed Google Appointment Schedule or use Google as the checkout ho
 **UI:** Booking Settings → Google Calendar connect (`/admin/setup/booking`).
 
 **Callback route:** `/admin/setup/integrations/google/callback` (behind `AdminRoute`; login redirect preserves `pathname + search` so `code`/`state` survive re-auth).
+
+**Return to the studio:** Google only returns to the one registered address, `{APP_URL}` = `https://app.opalswift.com`, where a studio admin is not signed in (sessions are per address). On `app.<root>` the callback page first calls `google-calendar-oauth-callback` with `{ action: "studio_url", state }` (no sign-in; checks the state's signature and expiry, builds the URL from the tenant row with `tenantBaseUrlFor`), then moves the browser to the same path and query on the studio's own address (subdomain or custom domain), where the code is exchanged as normal. The server still sends `redirect_uri = {APP_URL}/…` in the exchange, so Google needs only that one URI per environment.
 
 **Storage:** refresh/access tokens encrypted via `pgp_sym_encrypt` (`save_tenant_google_credentials` / `get_tenant_google_credentials`, `search_path = public, extensions`). Columns on `tenants` (and/or credentials RPCs from `03600`/`04000`).
 
@@ -62,7 +64,7 @@ Frontend Strict Mode: single in-flight exchange per `code`; `sessionStorage` suc
 1. Admin defines **working hours** + slot duration + buffer (`tenant_scheduling_*`).
 2. `get_available_slots` generates candidates in `Asia/Jerusalem`.
 3. Subtract open holds, blocks, and engagements in `pending_payment` | `active` | `pending_waiver`.
-4. If Google connected: Edge `get-available-slots` layers `freebusy.query` (fail-closed).
+4. If Google connected: Edge `get-available-slots` layers `freebusy.query` (on error the studio's own free times stay, flagged `freebusy_unavailable`).
 5. Client UI: FullCalendar + day slot buttons; “next available” search window.
 
 Hours replace-all uses RPC `replace_tenant_scheduling_hours` (single transaction).
@@ -131,5 +133,5 @@ Migrations: `03200`–`03600` (GCal + booking), `03700`–`04200` (offering_type
 - Feature gate on oauth start **and** callback
 - Minimal scopes: `calendar.events`, `calendar.readonly`, `userinfo.email`
 - Hold checkout bound to hold `client_email`
-- Free/busy fail-closed
+- Free/busy error never blocks booking (owner, 11 Nov 2026)
 - Disconnect revokes DB credentials

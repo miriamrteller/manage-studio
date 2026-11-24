@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
-import { engagementDiscountFromRow, priceAfterDiscount } from "./payments/class-discount.ts";
+import { engagementDiscountFromRow, firstPaymentDiscount, hasDiscount, priceAfterDiscount } from "./payments/class-discount.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
 import { pickActiveConsentTemplate } from "./studio-legal.ts";
 import type { EnrolmentCompletionContext } from "./checkout-bootstrap-types.ts";
@@ -51,7 +51,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at, discount_minor, discount_lines")
+    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at, discount_minor, first_discount_minor, discount_lines")
     .eq("id", engagementId)
     .eq("tenant_id", tenantId)
     .single();
@@ -109,7 +109,7 @@ export async function loadEnrolmentCompletionContext(
 
   const discount = engagementDiscountFromRow(engagement);
   const pricing = resolveOfferingPrice({
-    price_minor: priceAfterDiscount(offering.price_minor as number, discount.discountMinor),
+    price_minor: priceAfterDiscount(offering.price_minor as number, firstPaymentDiscount(discount)),
   });
 
   let template: WaiverTemplateRow | null = null;
@@ -204,7 +204,7 @@ export async function loadEnrolmentCompletionContext(
       template: template as Record<string, unknown> | null,
       isMinorStudent,
       amountMinor: pricing.totalMinor,
-      ...(discount.discountMinor > 0
+      ...(hasDiscount(discount)
         ? { listAmountMinor: offering.price_minor as number, discounts: discount.lines }
         : {}),
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),

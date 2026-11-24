@@ -5,6 +5,7 @@ import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useTenant } from '../hooks/useTenant';
 import {
   AppHeader,
+  AreaTabs,
   NavDrawer,
   NavDrawerProvider,
   useNavDrawer,
@@ -14,7 +15,7 @@ import { LegalFooterLinks } from '../components/LegalFooterLinks';
 import { ReportProblemProvider } from '../components/ReportProblem';
 import { currentStudioDisplayName } from '../lib/studioDisplayName';
 
-const PUBLIC_PATHS = new Set(['/', '/classes', '/login', '/signup', '/enrol']);
+const PUBLIC_PATHS = new Set(['/', '/classes', '/shop', '/login', '/signup', '/enrol']);
 
 function isPublicRoute(pathname: string): boolean {
   return (
@@ -25,6 +26,15 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith('/legal/') ||
     pathname.startsWith('/unsubscribe/')
   );
+}
+
+/**
+ * Google Calendar and SmugMug always return to app.<root>, where the studio admin is not
+ * signed in. Their callback pages carry on to the studio's own address (and guard
+ * themselves there), so they must not be sent to login first.
+ */
+export function isIntegrationCallbackPath(pathname: string): boolean {
+  return /^\/admin\/setup\/integrations\/[a-z-]+\/callback\/?$/.test(pathname);
 }
 
 function AppLayoutContent({ children }: { children: ReactNode }) {
@@ -49,6 +59,7 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
           className="flex-1 px-4 md:px-8 lg:px-12 xl:px-24 pt-6 md:pt-8 pb-6 md:pb-8"
           role="main"
         >
+          <AreaTabs />
           {children}
         </main>
 
@@ -88,7 +99,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const publicRoute = isPublicRoute(location.pathname);
 
   useEffect(() => {
-    if (!isLoading && !user && window.location.pathname.startsWith('/admin')) {
+    const path = window.location.pathname;
+    if (!isLoading && !user && path.startsWith('/admin') && !isIntegrationCallbackPath(path)) {
       navigate('/login', { replace: true });
     }
   }, [user, isLoading, navigate]);

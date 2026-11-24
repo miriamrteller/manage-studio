@@ -1,14 +1,18 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useJobPhotoShop, useJobPhotoShopPhotos, usePhotoShopEnabled } from '../hooks/usePhotoShop';
 import { JobPhotoShopSource } from './JobPhotoShopSource';
+import { PhotoShopLinkError, PhotoShopLinkService, shopLinkMessage, type PhotoShopLink } from '../services/photoShopLinkService';
 import {
   isDeliveryLink,
   majorToMinor,
   minorToMajor,
+  PhotoShopService,
   type JobPhotoShop,
   type PhotoOrder,
   type PhotoOrderStatus,
@@ -144,6 +148,14 @@ function PhotoShopCardBody({ engagementId }: { engagementId: string }) {
 
       <JobPhotoShopSource engagementId={engagementId} shop={data} />
 
+      <p className="text-sm">
+        <Link to={`/admin/projects/${engagementId}?tab=client`} className="font-medium underline">
+          {t('photo_shop_admin.preview.open_from_shoot')}
+        </Link>
+      </p>
+
+      {data.gallery_key && <SendShopLink engagementId={engagementId} />}
+
       <details className="rounded-md border p-3">
         <summary className="cursor-pointer text-sm font-medium">{t('studio_setup.filled_for_you')}</summary>
         <p className="mt-2 text-xs text-muted-foreground">{t('pages.jobs.photo_shop.filled_hint')}</p>
@@ -232,6 +244,8 @@ function PhotoOrders({
 }) {
   const { t } = useTranslation();
   if (loading) return null;
+  // The download link sent last for this shoot fills in the next order's (owner, 13 Nov 2026).
+  const lastLink = latestDeliveryLink(orders);
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold">{t('pages.jobs.photo_shop.orders')}</h3>
@@ -240,7 +254,7 @@ function PhotoOrders({
       ) : (
         <ul className="space-y-2">
           {orders.map((o) => (
-            <PhotoOrderRow key={o.id} engagementId={engagementId} order={o} thumbs={thumbs} />
+            <PhotoOrderRow key={o.id} engagementId={engagementId} order={o} thumbs={thumbs} lastLink={lastLink} />
           ))}
         </ul>
       )}
@@ -248,11 +262,29 @@ function PhotoOrders({
   );
 }
 
-function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; order: PhotoOrder; thumbs: Map<string, string> }) {
+/** The most recently sent download link among this shoot's orders, if any. */
+export function latestDeliveryLink(orders: PhotoOrder[]): string | null {
+  const sent = orders
+    .filter((o) => o.delivery_url && o.delivered_at)
+    .sort((a, b) => (b.delivered_at as string).localeCompare(a.delivered_at as string));
+  return sent[0]?.delivery_url ?? null;
+}
+
+function PhotoOrderRow({
+  engagementId,
+  order,
+  thumbs,
+  lastLink,
+}: {
+  engagementId: string;
+  order: PhotoOrder;
+  thumbs: Map<string, string>;
+  lastLink: string | null;
+}) {
   const { t, i18n } = useTranslation();
-  const { deliver, markSent } = useJobPhotoShop(engagementId, false);
+  const { deliver, markSent, recordCash } = useJobPhotoShop(engagementId, false);
   const linkId = useId();
-  const [link, setLink] = useState(order.delivery_url ?? '');
+  const [link, setLink] = useState(order.delivery_url ?? lastLink ?? '');
   const [editing, setEditing] = useState(order.status === 'paid');
   const canDeliver = order.status === 'paid' || order.status === 'delivered';
   const valid = isDeliveryLink(link);
@@ -262,7 +294,12 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
           {formatDueDate(order.created_at, i18n.language)} ·{' '}
-          {t('pages.jobs.photo_shop.order_photos', { count: order.photo_count })}
+          {[
+            order.photo_count > 0 ? t('pages.jobs.photo_shop.order_photos', { count: order.photo_count }) : null,
+            (order.product_count ?? 0) > 0 ? t('pages.jobs.photo_shop.order_prints', { count: order.product_count }) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
           {order.included_count > 0 && <> ({t('pages.jobs.photo_shop.order_included', { count: order.included_count })})</>}
           {' · '}
           {formatMinor(order.total_minor, order.currency, i18n.language)}
@@ -270,11 +307,31 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
         <Badge variant={ORDER_BADGE[order.status]}>{t(`pages.jobs.photo_shop.status.${order.status}`)}</Badge>
       </div>
 
-      <details open={order.status === 'paid'}>
+      {order.status === 'awaiting_payment' && order.pay_by_cash && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground">
+            {order.pay_method === 'bit'
+              ? t('pages.jobs.photo_shop.paying_bit')
+              : order.pay_method === 'bank'
+                ? t('pages.jobs.photo_shop.paying_bank')
+                : t('pages.jobs.photo_shop.paying_cash')}
+          </span>
+          {order.job_payment_request_id && (
+            <Button size="sm" variant="primary" isLoading={recordCash.isPending}
+              onClick={() => recordCash.mutate(order.job_payment_request_id as string)}>
+              {t('pages.jobs.photo_shop.record_cash')}
+            </Button>
+          )}
+          {recordCash.error && <p role="alert" className="w-full text-error">{(recordCash.error as Error).message}</p>}
+        </div>
+      )}
+      {order.status === 'awaiting_payment' && (order.proof_requested || order.proof_path) && <PaymentProofForStudio order={order} />}
+
+      <details open={order.status === 'paid' || (order.status === 'awaiting_payment' && order.pay_by_cash === true)}>
         <summary className="cursor-pointer text-muted-foreground">{t('pages.jobs.photo_shop.order_photos_list')}</summary>
         <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5" dir="ltr">
-          {order.items.map((i) => (
-            <li key={i.image_key} className="space-y-1">
+          {order.items.map((i, n) => (
+            <li key={`${i.image_key}-${n}`} className="space-y-1">
               {thumbs.get(i.image_key) ? (
                 <img src={thumbs.get(i.image_key)} alt={i.file_name} loading="lazy"
                   className="aspect-square w-full rounded object-cover" />
@@ -282,6 +339,15 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
                 <div aria-hidden="true" className="aspect-square w-full rounded bg-muted" />
               )}
               <p className="break-all text-xs">{i.file_name}</p>
+              {(order.product_count ?? 0) > 0 && (
+                <p className="text-xs font-medium" dir="auto">
+                  {i.kind === 'product'
+                    ? [i18n.language.startsWith('he') ? i.product_name_he : i.product_name_en, i.product_size]
+                        .filter(Boolean)
+                        .join(' · ')
+                    : t('pages.jobs.photo_shop.item_digital')}
+                </p>
+              )}
             </li>
           ))}
         </ul>
@@ -334,5 +400,107 @@ function PhotoOrderRow({ engagementId, order, thumbs }: { engagementId: string; 
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * "Email shop link to client" (owner, 13 Nov 2026: one button): OpalSwift makes the
+ * 3-day link and emails it from the studio. WhatsApp or copy stay as a smaller choice.
+ */
+function SendShopLink({ engagementId }: { engagementId: string }) {
+  const { t, i18n } = useTranslation();
+  const [link, setLink] = useState<(PhotoShopLink & { emailed?: boolean }) | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const run = async (how: 'email' | 'link') => {
+    setBusy(true);
+    setError(null);
+    setCopied(false);
+    try {
+      setLink(how === 'email' ? await PhotoShopLinkService.email(engagementId) : await PhotoShopLinkService.create(engagementId));
+    } catch (e) {
+      setError(e instanceof PhotoShopLinkError && e.code === 'no_email'
+        ? t('pages.jobs.photo_shop.link_no_email')
+        : t('pages.jobs.photo_shop.link_error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const message = link ? shopLinkMessage(t('pages.jobs.photo_shop.link_message'), link.url) : '';
+  const copy = async () => {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link.url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+  const until = link ? formatDueDate(link.expiresAt, i18n.language) : '';
+
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" variant="primary" isLoading={busy} onClick={() => void run('email')}>
+          {t('pages.jobs.photo_shop.email_link')}
+        </Button>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run('link')}>
+          {t('pages.jobs.photo_shop.link_other_way')}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">{t('pages.jobs.photo_shop.send_link_hint')}</p>
+      {link && (
+        <div className="space-y-2 rounded-md border p-3" aria-live="polite">
+          {link.emailed ? (
+            <p>{t('pages.jobs.photo_shop.link_emailed', { email: link.email, date: until })}</p>
+          ) : (
+            <p>
+              {link.emailed === false
+                ? t('pages.jobs.photo_shop.link_not_emailed')
+                : t('pages.jobs.photo_shop.link_ready', { email: link.email, date: until })}
+            </p>
+          )}
+          <p dir="ltr" className="break-all font-mono text-xs">{link.url}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={copy}>
+              {copied ? t('pages.jobs.photo_shop.link_copied') : t('pages.jobs.photo_shop.link_copy')}
+            </Button>
+            <Button size="sm" variant="secondary"
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')}>
+              {t('pages.jobs.photo_shop.link_whatsapp')}
+            </Button>
+          </div>
+        </div>
+      )}
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * Bit / bank transfer orders: the client's payment screenshot, opened through a short-lived
+ * link (private storage). None yet: the client is reminded by email at 1, 3 and 7 days.
+ */
+function PaymentProofForStudio({ order }: { order: PhotoOrder }) {
+  const { t, i18n } = useTranslation();
+  const open = useMutation({
+    mutationFn: () => PhotoShopService.proofUrl(order.proof_path as string),
+    onSuccess: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
+  });
+  if (!order.proof_path || !order.proof_sent_at) {
+    return <p className="text-muted-foreground">{t('pages.jobs.photo_shop.proof_waiting')}</p>;
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge variant="success">{t('pages.jobs.photo_shop.proof_sent')}</Badge>
+      <span className="text-muted-foreground">{formatDueDate(order.proof_sent_at, i18n.language)}</span>
+      <Button size="sm" variant="outline" isLoading={open.isPending} onClick={() => open.mutate()}>
+        {t('pages.jobs.photo_shop.proof_view')}
+      </Button>
+      {open.error && <p role="alert" className="w-full text-error">{t('pages.jobs.photo_shop.proof_failed')}</p>}
+    </div>
   );
 }

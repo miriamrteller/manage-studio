@@ -104,8 +104,16 @@
     "handoff_failed": "We couldn't sign you in on this address. Please sign in here.",
     "handoff_sign_in": "Sign in",
     "platform_owner_title": "You're signed in as the OpalSwift platform owner",
-    "platform_owner_body": "Studio admin pages are for the studio's own admins.",
+    "platform_owner_body": "Studio admin pages are for the studio's own admins. You can still go in to help them.",
     "platform_owner_back": "Back to app.opalswift.com",
+    "platform_owner_sign_out": "Sign out, so the studio's admin can sign in here",
+    "support_access_warning": "Everything is recorded. The studio sees each page you open and each change you make, under Settings → Sign-in & security → OpalSwift access.",
+    "support_access_confirm": "Yes, I want to enter {{studio}}'s admin",
+    "support_access_enter": "Enter the studio's admin",
+    "support_access_banner": "You're in {{studio}}'s admin as OpalSwift support. Everything you open or change is recorded.",
+    "support_access_leave": "Leave",
+    "support_access_two_step": "Sign in again with your two-step code on app.opalswift.com, then try again.",
+    "support_access_failed": "That didn't work. Please try again.",
     "set_password_prompt": {
       "title": "Set a password",
       "description": "Choose a password so you can sign in faster next time, with your email and password instead of waiting for a link.",
@@ -296,7 +304,7 @@
       "ongoing_term_note": "Your studio has no terms yet, so this class runs with no end date (in a term called \"Ongoing\"). You can add terms later.",
       "ongoing_term_name": "Ongoing",
       "waiver_required": "Needs a signed form",
-      "waiver_required_help": "If yes, each person signs your form before their place is confirmed. A place that is not signed within 7 days is cancelled. Choose No for plans and services that don't need a form."
+      "waiver_required_help": "If yes, each person is asked to sign your form after paying. It never stops anyone paying, and a paid place is never cancelled for a missing form. Off unless you switch it on."
     },
     "requirement": {
       "type": "Requirement type",
@@ -373,11 +381,11 @@
     },
     "booking_flow": {
       "after_sign": {
+        "redirecting_now": "Taking you to the payment…",
+        "pay_first": "Pay the deposit now (you can sign the contract later)",
         "pay_heading": "Next: pay the deposit",
         "pay_body": "The deposit of {{amount}} secures your date.",
         "pay_button": "Pay deposit",
-        "redirecting": "Taking you to the deposit payment in {{count}} seconds…",
-        "stay": "Stay on this page",
         "portal_body": "You are all set. You can see your booking at any time in your client portal.",
         "portal_button": "Go to your client portal",
         "error": "We could not load the next step. The payment link is also in your booking email."
@@ -423,6 +431,8 @@
       "edit_contact": "Contact preferences",
       "for_shoot": "For {{name}}",
       "photo_shop": {
+        "not_open": "This gallery isn't open yet. The studio will let you know when it is.",
+        "my_page": "Go to my page",
         "title": "Buy your photos",
         "included_left_one": "{{count}} photo included in your package",
         "included_left_other": "{{count}} photos included in your package",
@@ -430,8 +440,9 @@
         "open_until": "you can buy until {{date}}",
         "closed": "buying has closed",
         "photo_alt": "Preview of {{name}}",
-        "add": "Add to cart",
-        "in_cart": "In cart",
+        "photos_failed": "The photos can't be shown right now. Please try again later, or contact the studio.",
+        "add": "Choose",
+        "in_cart": "Chosen ✓",
         "bought": "Bought",
         "awaiting": "In an order waiting for payment",
         "cart_count_one": "{{count}} photo in your cart",
@@ -458,9 +469,78 @@
           "no_price": "The studio hasn't set a price for extra photos yet.",
           "no_all_photos_price": "The studio doesn't offer all photos at one price.",
           "no_photos": "Choose at least one photo.",
-          "server_error": "Something went wrong. Please try again."
-        }
-      }
+          "proof_not_image": "Please choose a picture (PNG, JPEG or WebP).",
+          "proof_too_big": "This picture is too big. Please choose one under 5 MB.",
+          "already_paid": "The studio has already recorded this payment.",
+          "server_error": "Something went wrong. Please try again.",
+          "product_not_found": "One of the prints you chose is no longer offered. Please refresh the page."
+        },
+        "link_opening": "Opening your photos…",
+        "link_expired": "This link has expired or doesn't work any more. Sign in with your email to see your photos, or ask the studio for a new link.",
+        "link_sign_in": "Sign in",
+        "pay_how": "How will you pay?",
+        "pay_card": "By card now",
+        "pay_cash": "Pay the studio directly (cash, bank transfer or other)",
+        "bit_to": "Bit to {{phone}}",
+        "bank_to": "Bank transfer:",
+        "pay_ways": "Pay {{ways}}",
+        "or": "or",
+        "by_bit": "by Bit",
+        "by_bank": "by bank transfer",
+        "by_cash": "in cash",
+        "by_cheque": "by cheque",
+        "payment_confirm": "Confirm: I'll pay this way",
+        "payment_confirmed": "Thank you. The studio knows you will {{how}}.",
+        "pay_direct_next": "Next you choose how to pay: {{how}}.",
+        "continue_payment": "Continue to payment ({{price}})",
+        "go_to_payment": "Pay and send the screenshot",
+        "payment_title": "Pay for your order",
+        "payment_choose": "How will you pay?",
+        "payment_amount": "Amount: {{price}}",
+        "proof_heading": "Send a screenshot of your payment",
+        "payment_next": "When the studio has your payment, they prepare your photos and email you a download link.",
+        "payment_recorded": "The studio has recorded your payment. Thank you.",
+        "payment_not_found": "We couldn't find this order. Please open it from your account.",
+        "payment_back": "Back to my photos",
+        "proof_ask": "Once you have paid, please send a screenshot of your payment.",
+        "proof_send": "Send payment screenshot",
+        "proof_replace": "Send a different screenshot",
+        "proof_sending": "Sending…",
+        "proof_sent": "Payment screenshot sent on {{date}}. The studio will check it.",
+        "ordered_direct": "Order sent. Next, choose Bit or bank transfer, pay, and send a screenshot of your payment.",
+        "pay_direct_only": "You pay the studio directly (cash, bank transfer or other).",
+        "send_cash": "Send order ({{price}}, pay the studio)",
+        "buy_all_cash": "Order all {{count}} photos ({{price}}, pay the studio)",
+        "ordered_cash": "Order sent. Pay the studio directly by cash, bank transfer or another way they accept. They will prepare your photos.",
+        "cash_ordered": "Ordered, paying the studio directly",
+        "cash_waiting": "Sent in, paying the studio directly.",
+        "pay_online_instead": "Pay by card instead",
+        "digital": "Digital file",
+        "digital_price": "Digital {{price}}",
+        "digital_chosen": "Digital ✓",
+        "cart_prints_one": "{{count}} print",
+        "cart_prints_other": "{{count}} prints",
+        "order_prints_one": "{{count}} print",
+        "order_prints_other": "{{count}} prints",
+        "preparing_prints": "The studio is preparing your order",
+        "buy_all_prints": "Buy all {{count}} photos and your prints for {{price}}",
+        "buy_all_prints_cash": "Order all {{count}} photos and your prints ({{price}}, pay the studio)",
+        "open_options": "Open {{name}} to see the ways to buy it",
+        "see_prints": "Prints and sizes",
+        "prints_chosen_one": "{{count}} print chosen",
+        "prints_chosen_other": "{{count}} prints chosen",
+        "options_title": "Buy this photo",
+        "previous_photo": "Previous",
+        "next_photo": "Next",
+        "add_one": "Add",
+        "added": "Added ✓",
+        "add_named": "Add {{name}}",
+        "remove_one": "Remove one {{name}}",
+        "options_done": "Done"
+      },
+      "bookings_heading": "My bookings",
+      "book_again": "Book a time",
+      "no_bookings": "No bookings yet."
     },
     "admin": {
       "setup": {
@@ -585,7 +665,33 @@
       "waiver_pending": "Not accepted",
       "empty_title": "No students yet",
       "empty_message": "Enrol your first student to start managing enrolments and family links.",
-      "delete_note": "To request data removal, please contact support. Hard deletion is not permitted under data retention policy."
+      "delete_client": {
+        "button": "Delete",
+        "title": "Delete {{name}}?",
+        "checking": "Checking what is linked…",
+        "confirm": "This can't be undone.",
+        "family_too": "Everyone else in their family account is deleted too.",
+        "shoots_too": "Their shoots and bookings are deleted too.",
+        "kept": "This client has payments, orders or signed forms, so the record is kept. You can set them to Inactive instead.",
+        "set_inactive": "Set to Inactive",
+        "delete_for_good": "Delete for good"
+      },
+      "back_to_list": "Back to the list",
+      "open_page": "Open full page",
+      "open_family": "Open family",
+      "bookings_section": "Bookings",
+      "open_calendar": "Calendar",
+      "no_bookings": "No bookings yet.",
+      "projects_section": "Projects",
+      "new_project": "New project",
+      "add_client": "Add client",
+      "no_projects": "No projects yet.",
+      "project_quote": "Quote",
+      "still_to_pay": "Still to pay",
+      "nothing_to_pay": "Nothing",
+      "signed_forms": "Signed forms",
+      "no_signed_forms": "No signed forms yet.",
+      "signed_on": "Signed {{date}}"
     },
     "families": {
       "email_family": "Email this family",
@@ -609,6 +715,7 @@
         "title": "Leads",
         "description": "Inquiries that are not enrolled yet — parties, trial classes, anything in the pipeline. Enrolled families live under Families.",
         "add": "New lead",
+        "email_all": "Email everyone on this list",
         "save": "Save lead",
         "name": "Name",
         "email": "Email",
@@ -672,8 +779,6 @@
         "capture_linkedin": "LinkedIn link",
         "empty_title": "No leads yet",
         "empty_message": "Share your capture links, or add a lead manually when someone calls or messages.",
-        "convert": "Convert to shoot",
-        "convert_hint": "Creates the client and a shoot from this lead. Pick a package and an optional date.",
         "open_job": "Open shoot",
         "empty_message_get": "Share your enquiry link or QR code, and new enquiries will appear here.",
         "empty_action": "Get leads",
@@ -685,7 +790,18 @@
         "delete_failed": "The lead couldn't be deleted. Please try again.",
         "delete_blocked_converted": "This lead became a client, so it can't be deleted.",
         "delete_blocked_has_quote_or_job": "This lead has a quote or a job. Delete those first.",
-        "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page."
+        "delete_blocked_not_deleted": "The lead couldn't be deleted. It may already be gone; refresh the page.",
+        "shoot_request": "Shoot request: {{day}}",
+        "confirm_shoot": "Confirm",
+        "confirm_hint": "Books the shoot on the day they asked for and emails the client the quote at the package price, to accept and pay the deposit.",
+        "send_quote": "Send quote",
+        "send_quote_hint": "Books it in and emails the client the quote at the package price, to accept and pay the deposit.",
+        "edit_before_sending": "Edit before sending",
+        "next_step": "Next step",
+        "send_class_link": "Send class link",
+        "send_booking_link": "Send booking link",
+        "link_sent": "Sent to {{email}}",
+        "link_needs_email": "Add an email to send the link"
       },
       "named_forms": {
         "title": "Forms",
@@ -772,11 +888,11 @@
       "help": {
         "link": "How leads work",
         "tip_label": "Help: {{topic}}",
-        "tip_get_leads": "Your enquiry form is a ready web page; you do not need a website. Each link below adds a tag, so every lead shows where it came from.",
+        "tip_get_leads": "Each link below adds a tag, so every lead shows where it came from.",
         "tip_lead_email": "Any email sent to this address becomes a lead on your Leads page. Forward enquiries here, or print it on flyers.",
         "tip_questions": "Extra questions appear on your enquiry form. Ready-made ones fill real fields (for example the class), so the pipeline can use them. Keep the form short.",
         "tip_digest": "Each morning, if any lead is due or overdue for follow-up, you get one email listing them. Set a follow-up date on a lead to use it.",
-        "tip_forms": "Make a separate form for a class, event or campaign, with its own link, QR code and questions. Leads show which form they came from.",
+        "tip_forms": "Every lead shows which form it came from, so you can see which class, event or campaign brought it in. Each form can also ask its own extra questions.",
         "tip_send": "We email this person a link to your form from your studio; replies go to you. It does not sign them up for anything.",
         "tip_website": "Only if you have your own website: paste this code into a page and your form appears there. Enquiries still land on your Leads page.",
         "title": "How leads work",
@@ -875,7 +991,10 @@
         "answer_required": "Please answer this question.",
         "answer_invalid": "Please check this answer.",
         "spam_error": "This looks like it was typed by mistake. Please check your name and message, then send again.",
+        "email_required_error": "Please add a valid email address so the studio can reply to you.",
         "own_email_error": "This email address belongs to the studio, so it isn't saved as an enquiry. Please send it from a different email address.",
+        "powered_by": "Powered by OpalSwift",
+        "powered_by_new_tab": "(opens in a new tab)",
         "answers_error": "Please check the highlighted questions.",
         "embed_title": "Get in touch with {{studio}}",
         "subtitle": "Leave your details and we'll get back to you.",
@@ -893,7 +1012,7 @@
       "tabs": {
         "label": "Leads sections",
         "leads": "Leads",
-        "get_leads": "Get leads",
+        "get_leads": "Lead forms",
         "more_title": "Forms and help",
         "forms_hint": "Make enquiry forms for different classes or events, each with its own link.",
         "help_hint": "Step by step: where leads come from and what to do with them.",
@@ -906,6 +1025,23 @@
       "title": "Notifications",
       "description": "Send email announcements and review delivery history for your studio.",
       "tab_compose": "Compose",
+      "tab_reminders": "Automatic emails",
+      "reminders": {
+        "title": "Automatic class emails",
+        "description": "Sent to enrolled families every morning, to the family's main contact, in their language.",
+        "morning_label": "Morning-of reminder",
+        "morning_hint": "On each class day: the time, where (the class's location) and what to wear.",
+        "wear_en": "What to wear (English)",
+        "wear_he": "What to wear (Hebrew)",
+        "no_class_label": "\"No class\" notice, the day after the previous class (6 days ahead)",
+        "no_class_hint": "When a class day falls on a holiday (skipped automatically, as on your timetable) or on one of your closed dates below.",
+        "closed_legend": "Your own closed dates",
+        "closed_hint": "Days with no class besides the holidays, for example Shushan Purim in Jerusalem or a day off.",
+        "add_date": "Add a date",
+        "remove_date": "Remove {{date}}",
+        "saved": "Saved.",
+        "error": "Could not save. Please try again."
+      },
       "tab_history": "History",
       "log_heading": "Delivery history",
       "log_channel": "Channel",
@@ -947,6 +1083,8 @@
       "scope_level": "By level",
       "scope_class": "By class",
       "scope_account": "By account",
+      "scope_leads": "Leads (not enrolled yet)",
+      "scope_leads_hint": "Everyone on your Leads list who hasn't enrolled yet, such as families waiting to hear when classes start. Untick anyone you'd rather leave out.",
       "level_label": "Level",
       "class_label": "Class",
       "account_label": "Account",
@@ -1074,7 +1212,10 @@
       "override_reason": "Reason for using a different email",
       "override_reason_placeholder": "Parent requested alternate email",
       "link_copied": "Link copied to clipboard.",
-      "link_copy_failed": "Could not copy automatically. Select and copy the link manually."
+      "link_copy_failed": "Could not copy automatically. Select and copy the link manually.",
+      "enrol_and_send_link": "Enrol and email the pay link to {{email}}",
+      "other_ways_to_pay": "Other ways to pay",
+      "link_not_emailed": "The pay link was made but the email did not go out. Copy the link below and send it yourself."
     },
     "enrol_pay": {
       "title": "Complete payment",
@@ -1575,6 +1716,7 @@
       "package": "Package",
       "when": "Date & time",
       "location": "Location",
+      "smugmug_gallery": "SmugMug gallery",
       "status": "Status",
       "notes": "Notes",
       "contract": "Contract",
@@ -1666,6 +1808,19 @@
       "status_editing": "Editing",
       "status_delivered": "Delivered",
       "status_cancelled": "Cancelled",
+      "cancel": {
+        "button": "Cancel shoot",
+        "title": "Cancel this shoot?",
+        "intro": "The time goes back on your calendar, so it can be booked again. Open pay links stop working and payment reminders stop.",
+        "paid": "{{amount}} has already been paid. It is not refunded automatically. To give money back, use Record refund on the payment.",
+        "notify": "Email {{name}} to let them know",
+        "no_email": "This client has no email address, so no email will be sent.",
+        "confirm": "Cancel shoot",
+        "keep": "Keep shoot",
+        "done": "Shoot cancelled.",
+        "done_emailed": "Shoot cancelled. We emailed the client.",
+        "done_not_emailed": "Shoot cancelled, but the email to the client was not sent."
+      },
       "existing_client": "Existing client",
       "new_client": "New client",
       "client_search": "Search clients",
@@ -1675,7 +1830,6 @@
       "starts_at": "Start",
       "ends_at": "End",
       "ends_hint": "Leave empty to use the package duration.",
-      "create": "Create shoot",
       "creating": "Creating…",
       "save": "Save",
       "saving": "Saving…",
@@ -1754,32 +1908,37 @@
           "connect_hint": "Already have the photos in SmugMug? Connect it in Photo shop > SmugMug and pick the gallery here instead of uploading.",
           "loading": "Reading your SmugMug galleries…",
           "gallery": "SmugMug gallery",
-          "choose": "Choose a gallery",
+          "search": "Type a gallery name to search",
+          "show_all": "Show all galleries",
+          "no_match": "No gallery matches that name",
           "album_one": "{{name}} ({{count}} photo)",
           "album_other": "{{name}} ({{count}} photos)",
           "check": "Check gallery",
           "check_again": "Check again",
           "check_hint": "We read the gallery's photo protection settings and its photos. Nothing is changed in SmugMug. Added photos to the gallery later? Press Check again.",
-          "passed": "Gallery checked on {{date}}. You can see its photos in Photo shop > Preview.",
-          "live_check": "Clients will see them once the first live check with SmugMug is done.",
-          "failed": "Change the settings marked ✗ in SmugMug, then press Check again. Until then clients don't see this gallery.",
+          "passed": "Gallery checked on {{date}}. Clients can now see its photos (Photo shop > Preview). Lines marked ⚠ are only tips.",
+          "failed": "We couldn't open this gallery's photos for clients yet (see ✗ above). Fix that in SmugMug, then press Check again. Lines marked ⚠ are only tips.",
           "item": {
             "watermark": {
               "ok": "Watermark on",
-              "fix": "Turn on the watermark: in the gallery, Settings > Photo Protection > Watermark Photos."
+              "fix": "Tip: no SmugMug watermark. If your photos aren't watermarked already, turn it on in the gallery: Settings > Photo Protection > Watermark Photos.",
+              "in_photos": "Watermark: already in your photos"
             },
             "largest_size": {
               "ok": "Largest display size: {{value}}",
-              "fix": "Set the largest display size to Large or XLarge: in the gallery, Settings > Photo Protection."
+              "fix": "Tip: largest display size is {{value}}. Large or XLarge makes copying harder (gallery Settings > Photo Protection)."
             },
             "downloads": {
               "ok": "Downloads off",
-              "fix": "Turn off Allow Downloads: in the gallery, Settings > Photo Protection."
+              "fix": "Tip: downloads are on. You can turn off Allow Downloads in the gallery: Settings > Photo Protection."
             },
             "photos": {
               "ok_one": "{{count}} photo read",
               "ok_other": "{{count}} photos read",
-              "fix": "We couldn't read the gallery's photos at a watermarked size."
+              "fix": "We couldn't read the gallery's photos at a preview size.",
+              "fix_empty": "This gallery has no photos in SmugMug yet. Add the shoot's photos to it, then press Check again.",
+              "fix_videos_only": "This gallery only has videos. The shop sells photos, so add the shoot's photos to the gallery, then press Check again.",
+              "fix_unreadable": "SmugMug listed this gallery's photos but didn't send their sizes. Please press Check again; if it still fails, we've logged it and will look."
             },
             "preview_public": {
               "ok": "Clients can open the watermarked photos",
@@ -1787,7 +1946,13 @@
             },
             "original_hidden": {
               "ok": "Full-size photos stay private",
-              "fix": "A full-size photo opened without signing in. Lower the largest display size and turn off downloads."
+              "fix": "Tip: a full-size photo opens without signing in. Lowering the largest display size keeps full-size photos private.",
+              "in_photos": "Bigger sizes carry your watermark too"
+            },
+            "some_private": {
+              "ok": "All photos open for clients",
+              "fix_one": "Tip: {{count}} photo is hidden or private in SmugMug, so clients won't see it. To sell it, unhide it or make it public in SmugMug, then press Check again.",
+              "fix_other": "Tip: {{count}} photos are hidden or private in SmugMug, so clients won't see them. To sell them, unhide them or make them public in SmugMug, then press Check again."
             }
           },
           "error": {
@@ -1798,7 +1963,8 @@
             "unreachable": "SmugMug couldn't be reached. Please try again.",
             "not_connected": "SmugMug isn't connected. Connect it in Photo shop > SmugMug.",
             "failed": "Something went wrong. Please try again."
-          }
+          },
+          "in_photos": "My photos already have my watermark in them"
         },
         "photos": {
           "title": "Photos",
@@ -1822,6 +1988,80 @@
           "delivered": "Delivered",
           "cancelled": "Cancelled",
           "refunded": "Refunded"
+        },
+        "send_link_hint": "The client opens their photos straight away, without signing in. The link works for 3 days.",
+        "link_ready": "Link for {{email}}, works until {{date}}:",
+        "link_copy": "Copy link",
+        "link_copied": "Copied",
+        "link_whatsapp": "WhatsApp",
+        "link_message": "Your photos are ready to choose. Open this link to see them and order (it works for 3 days):",
+        "link_error": "We couldn't make the link. Please try again.",
+        "link_no_email": "Add the client's email first, so the link can sign them in.",
+        "paying_cash": "The client will pay you directly (cash, bank transfer or other).",
+        "paying_bit": "The client will pay you by Bit.",
+        "paying_bank": "The client will pay you by bank transfer.",
+        "proof_waiting": "No payment screenshot yet. The client gets a reminder email 1, 3 and 7 days after ordering.",
+        "proof_sent": "Payment screenshot sent",
+        "proof_view": "View screenshot",
+        "proof_failed": "The screenshot didn't open. Please try again.",
+        "record_cash": "Record cash payment",
+        "email_link": "Email shop link to client",
+        "link_other_way": "WhatsApp or copy link",
+        "link_emailed": "Emailed to {{email}}. The link works until {{date}}.",
+        "link_not_emailed": "We couldn't email it. Copy the link or send it on WhatsApp:",
+        "order_prints_one": "{{count}} print",
+        "order_prints_other": "{{count}} prints",
+        "item_digital": "Digital file"
+      },
+      "tabs": {
+        "details": "Details",
+        "shop": "Photo shop",
+        "client": "What your client sees"
+      },
+      "create_and_quote": "Create and send quote",
+      "create_without_quote": "Create without a quote",
+      "status_auto_hint": "This moves on by itself: Shot the day after the shoot, and Delivered once your client has the photos. You can still change it.",
+      "use_shop_gallery": "Use the photo shop's SmugMug gallery",
+      "send_gallery": {
+        "button": "Send gallery",
+        "button_again": "Send gallery again",
+        "last_sent": "Last sent {{when}}",
+        "button_selected": "Send gallery to selected",
+        "hint": "Each client gets an email with one button to their gallery.",
+        "select": "Select",
+        "select_all": "Select all",
+        "select_row": "Select {{name}}",
+        "selected_one": "{{count}} selected",
+        "selected_other": "{{count}} selected",
+        "clear": "Clear selection",
+        "owing_one": "{{count}} of them still owes money. Sending opens the gallery for them too.",
+        "owing_other": "{{count}} of them still owe money. Sending opens the gallery for them too.",
+        "sent_one": "Sent to {{count}} client.",
+        "sent_other": "Sent to {{count}} clients.",
+        "sent_single": "Sent. The client has the gallery email.",
+        "skipped_one": "{{count}} not sent:",
+        "skipped_other": "{{count}} not sent:",
+        "error": "Could not send. Please try again.",
+        "message_edit": "Edit email text or add a photo",
+        "message_standard": "Use the standard email",
+        "message_label": "Your message to the client",
+        "message_hint": "The email starts with \"Dear\" and the client's name, then your message and one button to their photo shop. It ends with \"We hope you love them.\" and your signature.",
+        "signature_label": "Signed (after \"Sincerely,\")",
+        "signature_hint": "Kept for your next emails.",
+        "photo_add": "Add a photo",
+        "photo_remove": "Remove photo",
+        "photo_alt_label": "Describe the photo (read out for clients who cannot see images)",
+        "photo_alt_default": "A photo from {{studio}}",
+        "photo_same_for_all": "The same photo goes under your message, for every client in this send.",
+        "photo_failed": "Could not add this photo. Please try a JPEG or PNG.",
+        "reason": {
+          "no_email": "no client email",
+          "not_checked": "the SmugMug gallery has not passed Check gallery yet",
+          "no_gallery": "no gallery or photo shop yet",
+          "cancelled": "cancelled",
+          "not_found": "not found",
+          "failed": "the email did not go, please try again",
+          "already_sent": "already had the gallery email"
         }
       }
     },
@@ -1839,7 +2079,9 @@
       "installmentsAvailable": "Pay in up to {{count}} card installments.",
       "invoiceNote": "A tax invoice-receipt is issued automatically on payment.",
       "payStudioDirectly": "{{studio}} does not take card payments online for this request. Please pay {{studio}} directly, by bank transfer or as agreed.",
-      "jobDate": "Shoot {{date}}"
+      "pageUnavailable": "The card payment page couldn't open just now. Please try again in a few minutes, or contact {{studio}} to pay another way, for example by bank transfer, or as agreed.",
+      "jobDate": "Shoot {{date}}",
+      "sign_later": "now or later, whichever suits you"
     },
     "quotes": {
       "title": "Quotes",
@@ -1920,7 +2162,12 @@
         "shoot_thank_you": "Thank you",
         "shoot_thank_you_hint": "The day after the shoot.",
         "gallery_ready": "Gallery ready",
-        "gallery_ready_hint": "When you release the gallery."
+        "gallery_ready_hint": "When you release the gallery.",
+        "review_request": "Review request",
+        "review_request_hint": "Five days after you release the gallery. Asks the client for a review.",
+        "review_url_label": "Review link",
+        "review_url_hint": "Where clients leave a review, for example your Google reviews link. Without a link, this email isn't sent.",
+        "review_url_invalid": "Enter a full link starting with https://"
       },
       "errors": {
         "invalid": "Check the quote: each line needs a description and a valid price, and there must be at least one line.",
@@ -1932,12 +2179,17 @@
         "open_shoot": "Open the shoot",
         "send_contract": "Send contract",
         "contract_sent": "Contract link sent."
-      }
+      },
+      "open": "Open quote",
+      "save_and_email": "Save and email quote",
+      "saved_and_emailed": "Quote saved and emailed.",
+      "saved_not_emailed": "Quote saved. It was not emailed: {{reason}}"
     },
     "public_quote": {
       "next_steps": {
+        "intro_pay_and_sign": "To finish your booking, pay the deposit. You can sign the contract now or later.",
+        "sign_contract": "Sign the contract",
         "heading": "Next steps",
-        "intro_sign_then_pay": "Two quick steps to finish your booking: sign the contract, then pay the deposit.",
         "intro_sign": "One last step to finish your booking: sign the contract.",
         "intro_pay": "One last step to finish your booking: pay the deposit.",
         "continue_to_sign": "Continue to sign the contract",
@@ -1969,7 +2221,8 @@
         "invalid_request": "Something went wrong. Please refresh and try again.",
         "server_error": "Something went wrong on our side. Please try again in a moment.",
         "generic": "Something went wrong. Please try again."
-      }
+      },
+      "accept_and_pay": "Accept and pay deposit"
     },
     "new_password": {
       "title": "Choose a new password",
@@ -1979,6 +2232,12 @@
       "continue": "Continue",
       "no_session": "This link has expired or was already used. Ask for a new one from the sign-in page.",
       "back_to_login": "Back to sign in"
+    },
+    "sign_in_link": {
+      "title": "Signing you in",
+      "opening": "Opening your page…",
+      "expired": "This link has expired. Sign in with your email instead, no password needed.",
+      "sign_in": "Sign in"
     }
   },
   "signup": {
@@ -2015,11 +2274,82 @@
       "verify": "Verify"
     }
   },
+  "studio_shop": {
+    "title": "Shop",
+    "beta": "Beta",
+    "intro": "Uniforms, shoes and other items you sell to your families. Families order in their account, pay through their child's class and collect at the studio.",
+    "items": {
+      "add": "Add item",
+      "add_title": "New item",
+      "edit_title": "Change item",
+      "none": "No items yet.",
+      "name": "Name",
+      "price": "Price ({{currency}})",
+      "description": "Description (optional)",
+      "picture": "Picture",
+      "picture_add": "Add a picture",
+      "picture_change": "Change picture",
+      "picture_remove": "Remove picture",
+      "picture_hint": "A photo of the item itself. Your browser makes a small copy before upload.",
+      "picture_unreadable": "This picture couldn't be read. Save it as JPEG and try again.",
+      "sizes": "Sizes",
+      "sizes_hint": "One line per size. Leave stock empty if you don't count it; 0 means sold out.",
+      "size": "Size",
+      "stock": "In stock",
+      "stock_any": "Not counted",
+      "size_add": "Add size",
+      "size_remove": "Remove",
+      "size_remove_label": "Remove size {{size}}",
+      "one_size": "One size",
+      "size_stock_one": "{{size}} ({{count}} left)",
+      "size_stock_other": "{{size}} ({{count}} left)",
+      "size_sold_out": "{{size}} (sold out)",
+      "shown": "Show to families",
+      "hidden": "Hidden",
+      "edit": "Change",
+      "edit_label": "Change {{name}}",
+      "delete": "Delete",
+      "delete_label": "Delete {{name}}",
+      "delete_confirm": "Delete {{name}}?",
+      "title": "Items for sale",
+      "hidden_not_deleted": "Families have ordered this item, so it is hidden instead of deleted. Their orders stay complete."
+    },
+    "errors": {
+      "name_required": "Please give the item a name.",
+      "price_required": "Please give the item a price.",
+      "duplicate_size": "Two sizes have the same name.",
+      "size_label_required": "Every size needs a name.",
+      "bad_stock": "Stock can't be below 0.",
+      "failed": "Something went wrong. Please try again."
+    },
+    "orders": {
+      "title": "Orders",
+      "none": "No orders yet. Your shown items are on your Shop page and in families' accounts.",
+      "group": {
+        "paid": "Paid, to get ready",
+        "ready": "Ready to collect",
+        "awaiting_payment": "Waiting for payment",
+        "collected": "Collected",
+        "cancelled": "Cancelled"
+      },
+      "ordered_by": "ordered by {{name}}",
+      "refunded": "Refunded",
+      "mark_ready": "Ready to collect",
+      "mark_collected": "Collected",
+      "cancel": "Cancel order",
+      "cancel_confirm": "Cancel {{name}}'s unpaid order? Its items go back into stock.",
+      "not_emailed": "The order is marked ready, but we couldn't email the family (no email address on file). Please let them know.",
+      "paying_direct": "Paying you directly",
+      "record_cash": "Record cash payment",
+      "from_shop_page": "Shop page order"
+    }
+  },
   "photo_shop_admin": {
     "title": "Photo shop",
     "intro": "Each shoot's photos are sold privately to that shoot's own client, under \"My shoots\". Nobody else can see them.",
     "tabs": {
       "overview": "Overview",
+      "orders": "Orders",
       "prices": "Prices",
       "smugmug": "SmugMug",
       "preview": "Preview"
@@ -2031,14 +2361,30 @@
       "private": "Add each shoot's photos on its shoot page. Its own prices and orders are there too.",
       "shoots_link": "Go to Shoots"
     },
+    "orders": {
+      "intro": "Every photo order from all your shoots, newest first. Open the shoot to send the photos or record a cash payment.",
+      "none": "No photo orders yet.",
+      "failed": "The orders couldn't be loaded. Please try again.",
+      "open": "Open shoot",
+      "shoot_unknown": "Shoot",
+      "cash": "Paying you directly",
+      "bit": "Paying you by Bit",
+      "bank": "Paying you by bank transfer"
+    },
     "preview": {
-      "intro": "Choose a shoot to see its photo shop as that client sees it. You can't buy anything here.",
+      "intro": "Choose a shoot to see its photo shop exactly as that client sees it. You can pick photos and try the buttons; nothing is ordered or charged.",
       "shoot": "Shoot",
       "choose": "Choose a shoot",
-      "note": "Preview: this is what your client sees. Buying is switched off here.",
+      "note": "Preview: this is exactly what your client sees. You can try everything; nothing is ordered or charged.",
       "sample": "These are sample photos until you add this shoot's photos.",
+      "photos_failed": "None of this gallery's photos would load from SmugMug, even after fetching fresh links, so your client sees none either. Check in SmugMug that the gallery and its photos aren't hidden or private, then press \"Check gallery\" on the Photo shop tab.",
+      "smugmug_lost": "SmugMug has stopped accepting the connection, so photos can't be refreshed. Connect SmugMug again in Photo shop > SmugMug.",
       "no_shop": "This shoot has no photos yet. Open the shoot and add photos in its Photo shop card.",
-      "failed": "The preview couldn't be loaded. Please try again."
+      "failed": "The preview couldn't be loaded. Please try again.",
+      "tried": "Preview only: nothing was ordered or charged.",
+      "tried_card": "Your client would now go to the secure payment page.",
+      "tried_shows": "Your client would see: “{{message}}”",
+      "open_from_shoot": "See it as your client"
     }
   },
   "nav": {
@@ -2065,16 +2411,16 @@
     "my_account": "My Account",
     "portal": "Portal",
     "student_dashboard": "Student Dashboard",
-    "billing": "Billing Accounts",
+    "billing": "Payers",
     "manage": "Manage",
     "levels": "Class Levels",
     "terms": "Seasons",
     "manage_classes": "Manage Classes",
     "calendar": "Calendar",
     "booking_settings": "Booking Settings",
-    "booking_services": "Bookable Services",
-    "booking_disabled_hint": "Online booking is turned off. Enable it under Setup → Booking Settings.",
-    "waivers": "Forms",
+    "booking_services": "Services",
+    "booking_disabled_hint": "Online booking is turned off. Turn it on under Bookings → Availability.",
+    "waivers": "Forms to sign",
     "requirements": "Requirements",
     "section": {
       "browse": "Browse",
@@ -2085,16 +2431,73 @@
       "platform": "Platform",
       "portal": "My portal",
       "learning": "My learning",
-      "account": "Account"
+      "account": "Account",
+      "teaching": "Teaching"
     },
     "jobs": "Shoots",
     "contracts": "Contracts",
     "quotes": "Quotes",
     "photo_shop": "Photo shop",
+    "shop": "Shop",
     "platform_studios": "Studios",
     "platform_features": "Platform features",
     "platform_skins": "Skins",
-    "platform_feedback": "Feedback"
+    "platform_feedback": "Feedback",
+    "teachers": "Teachers",
+    "my_classes": "My classes",
+    "area": {
+      "bookings": "Bookings",
+      "settings": "Settings",
+      "projects": "Projects"
+    },
+    "tab": {
+      "calendar": "Calendar",
+      "availability": "Availability",
+      "overview": "Overview",
+      "studio_shop": "Studio shop",
+      "lead_settings": "Lead settings",
+      "diary": "Diary"
+    },
+    "full_menu": "Show full menu",
+    "icons_only_menu": "Show icons only",
+    "area_tabs": "{{area}} pages",
+    "hint": {
+      "leads": "Everyone who asked about you and hasn’t booked yet.",
+      "lead_forms": "Forms and links that bring you new leads.",
+      "lead_settings": "The questions on your enquiry form, and the daily follow-up email.",
+      "people": "Everyone who has booked with you, each with their own page.",
+      "families": "Parents and the children they pay for.",
+      "classes": "Your regular classes and who is in each one.",
+      "levels": "Groups for your classes, e.g. beginners or an age group.",
+      "seasons": "The dates of each season clients sign up for.",
+      "teachers": "Who teaches, and their sign-in.",
+      "class_cards": "Punch cards: a set number of classes paid up front.",
+      "projects": "Each job with its client, quote, contract and payments.",
+      "shoots": "Each shoot with its client, quote, contract, photos and payments.",
+      "diary": "Everything with a date: requests to confirm, what’s coming up, and days off.",
+      "packages": "What clients can book with you, each with its price.",
+      "quotes": "Price offers you’ve sent. Clients accept and pay online.",
+      "photo_shop": "Sell each shoot’s photos to its client.",
+      "studio_shop": "Items clients can buy from the studio, like uniforms.",
+      "finance": "Money in and out at a glance.",
+      "payments": "Every payment clients have made.",
+      "expenses": "What the business spends.",
+      "expense_categories": "Groups for your expenses, e.g. rent or equipment.",
+      "import": "Bring in your income and expenses from a spreadsheet.",
+      "payers": "Who pays for whom: each payer and the students they pay for.",
+      "settings_branding": "Your logo and colours.",
+      "settings_profile": "Your business name and contact email.",
+      "settings_business": "How clients work with you: classes, projects or appointments.",
+      "settings_features": "Switch extras on or off. Nothing is deleted.",
+      "settings_locale": "The main language of your pages and messages.",
+      "settings_payment": "Connect online card payments.",
+      "settings_invoicing": "How receipts and invoices are issued.",
+      "settings_legal": "Your terms, privacy policy and other legal documents.",
+      "settings_security": "How you sign in, and keeping your account safe.",
+      "forms": "Forms clients sign, like waivers or contracts.",
+      "payment_setup": "The provider that takes payments and issues invoices.",
+      "discounts": "Sibling, extra class, early bird and per-client discounts, and coupon codes."
+    }
   },
   "platform_billing": {
     "dev_only": "This page is on the dev website only.",
@@ -2524,10 +2927,24 @@
       "day_of_week": "Day",
       "start_time": "From",
       "end_time": "To",
+      "hours_default_note": "No hours saved yet, so clients can book Sunday to Thursday, 9:00 to 18:00. We filled these in for you. Change them if you like.",
+      "blocks_title": "Times you can't do",
+      "blocks_hint": "Clients can book any free time in your hours. Add the times you can't do and clients won't see them.",
+      "blocks_from_date": "First day",
+      "blocks_to_date": "Last day",
+      "blocks_all_day": "All day",
+      "blocks_from_time": "Start",
+      "blocks_to_time": "End",
+      "blocks_note": "Note (optional)",
+      "blocks_add": "Block this time",
+      "blocks_none": "No blocked times yet.",
+      "blocks_invalid": "The end must be after the start.",
+      "blocks_default_summary": "Not available",
       "saved": "Settings saved.",
       "save": "Save settings",
       "manage_services": "Manage bookable services",
-      "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page."
+      "manage_services_hint": "Add and edit the 1:1 services clients can book on your booking page.",
+      "availability_subtitle": "When clients can book: online booking on or off, the booking rules, your opening hours, times you are away, and your Google Calendar."
     },
     "services": {
       "photographer_note": "Photographers don’t use bookable services. Your clients enquire, you send a quote, and they accept it online.",
@@ -2552,10 +2969,14 @@
       "duration_suffix": "min",
       "settings_hint": "Add and manage your bookable services on this page. When clients can book them — availability hours and booking rules — is set under",
       "booking_disabled_warning": "Booking is disabled. Enable it in Booking Settings and save — otherwise clients will see an empty booking page even if services are listed here.",
-      "photos_included": "Photos included in the package"
+      "photos_included": "Photos included in the package",
+      "packages_subtitle": "What clients can book with you, each with its price. These show on your Book page.",
+      "add_named": "Add {{item}}",
+      "edit_named": "Edit {{item}}",
+      "none_named": "Nothing here yet. Press “Add {{item}}” to add your first one."
     },
     "book": {
-      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote.",
+      "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and you’ll get a quote back.",
       "photographer_enquire": "Send an enquiry",
       "title": "Book an appointment",
       "not_enabled": "Appointment booking is not currently available.",
@@ -2591,7 +3012,25 @@
       "duration_mins": "{{count}} minutes",
       "add_to_google_calendar": "Add to Google Calendar",
       "download_calendar_file": "Download calendar file (.ics)",
-      "calendar_event_description": "Appointment at {{schoolName}}"
+      "calendar_event_description": "Appointment at {{schoolName}}",
+      "request_title": "Request a shoot",
+      "request_intro": "Choose a package and a day. Nothing is charged now. {{studio}} will confirm the date and email you the details and how to pay.",
+      "request_intro_generic": "Choose a package and a day. Nothing is charged now. The photographer will confirm the date and email you the details and how to pay.",
+      "request_choose_package": "Choose a package",
+      "request_choose_day": "Choose a day",
+      "request_day_hint": "Greyed-out days are already taken.",
+      "request_prev_month": "Previous month",
+      "request_next_month": "Next month",
+      "request_day_taken": "Taken",
+      "request_selected_day": "Day: {{day}}",
+      "request_message": "Anything the photographer should know (optional)",
+      "request_message_placeholder": "For example where you would like the shoot, or a time that suits you.",
+      "request_send": "Send request",
+      "request_sent_title": "Request sent",
+      "request_sent_message": "Thank you. Nothing has been charged. {{studio}} will confirm {{day}} and email you the details and how to pay.",
+      "request_sent_message_generic": "Thank you. Nothing has been charged. The photographer will confirm {{day}} and email you the details and how to pay.",
+      "request_error": "Your request could not be sent. Please try again.",
+      "request_date_in_past": "That day has passed. Please choose another day."
     },
     "appointments": {
       "title": "Appointments",
@@ -2624,7 +3063,30 @@
       "disconnect": "Disconnect",
       "connected_as": "Connected as {{email}}",
       "not_connected": "Not connected",
-      "not_available": "Google Calendar integration is not available on your current plan."
+      "not_available": "Google Calendar integration is not available on your current plan.",
+      "returning": "Taking you back to your studio…",
+      "return_failed": "This Google link has expired. Go back to Booking Settings and press Connect Google Calendar again."
+    },
+    "diary": {
+      "title": "Diary",
+      "subtitle": "Everything with a date: requests to confirm, what’s coming up, and your days off.",
+      "not_used": "Your business doesn’t use this page. You can switch it on in Settings › Business.",
+      "requests_title": "Requests to confirm",
+      "confirm": "Confirm",
+      "upcoming_title": "Coming up",
+      "none_upcoming": "Nothing booked yet.",
+      "past_title_one": "Past ({{count}})",
+      "past_title_other": "Past ({{count}})",
+      "hours_title": "Booking hours",
+      "hours_hint": "When clients can book a time slot online. It’s already filled in, so open it only to change something.",
+      "book_for_client": "Book for a client",
+      "pick_a_time": "Pick a time",
+      "book_at": "Book {{when}}",
+      "booked_for_client": "Booked: {{name}}, {{when}}",
+      "booked_pay_hint": "It is in the Diary below, where you can record a payment. Or send them the pay link.",
+      "copy_pay_link": "Copy pay link",
+      "pay_link_copied": "Pay link copied",
+      "book_another": "Book another"
     }
   },
   "billing": {
@@ -2642,7 +3104,7 @@
       "title": "Import your income and expenses",
       "intro": "Bring in your own spreadsheet. OpalSwift reads the columns, matches the ones it knows, and keeps every other column under its own name.",
       "google_sheets_hint": "CSV or Excel (.xlsx). For a Google Sheet: File → Download → Microsoft Excel, then upload that file.",
-      "notice_history": "Income from the sheet is kept as payment history. OpalSwift does not issue receipts or invoices for it, and it is not in VAT reports. It does count in your Finance totals.",
+      "notice_history": "Income from the sheet is kept as payment history and counts in your Finance totals. To give a payment a receipt, press Send receipt next to it below. Rows that already have a receipt number from your old system never get a second one.",
       "notice_permission": "Only upload data you are allowed to use. Names and payment details from the sheet are stored in OpalSwift for your studio only.",
       "choose_file": "Spreadsheet file",
       "choose_sheet": "Tab to import",
@@ -2670,6 +3132,7 @@
         "exchange_rate": "Exchange rate",
         "category": "Expense category",
         "name": "Customer or supplier",
+        "email": "Payer's email",
         "payment_method": "Payment method",
         "job_name": "Job name",
         "description": "Notes",
@@ -2742,7 +3205,51 @@
       "history_line": "{{date}} · income {{income}} · expenses {{expenses}} · receipts {{receipts}}",
       "history_undone": "undone",
       "undo": "Undo this import",
-      "undo_confirm": "Undo this import? Its income rows are removed. Expenses can't be deleted, so each one gets a correction that brings it to zero."
+      "undo_confirm": "Undo this import? Its income rows are removed, except those you've sent a receipt for: they are real payments now, so they stay. Expenses can't be deleted, so each one gets a correction that brings it to zero.",
+      "receipts": {
+        "title": "Send receipts for imported payments",
+        "intro": "These payments came from your sheet and have no receipt yet. Send receipt records the payment on the day it was paid. Your invoicing service then issues the receipt, and it is emailed to the payer.",
+        "off_note": "Receipts are off, so none can be sent from here.",
+        "off_link": "Turn them on in Settings > Receipts & invoices",
+        "unavailable": "Your invoicing service can't issue receipts for payments recorded by hand. See Settings > Receipts & invoices.",
+        "summary_sent_one": "1 receipt is on its way.",
+        "summary_sent_other": "{{count}} receipts are on their way.",
+        "summary_failed_one": "1 couldn't be sent: see the note under it.",
+        "summary_failed_other": "{{count}} couldn't be sent: see the note under each one.",
+        "none_open": "Every imported payment has a receipt.",
+        "select_all_one": "Select the 1 ready to send",
+        "select_all_other": "Select all {{count}} ready to send",
+        "send_selected_one": "Send 1 receipt",
+        "send_selected_other": "Send {{count}} receipts",
+        "select_row": "Select {{name}}",
+        "no_name": "No name in the sheet",
+        "method": "Paid by",
+        "method_choose": "Choose (sheet says “{{value}}”)",
+        "methods": {
+          "cash": "Cash",
+          "bank_transfer": "Bank transfer",
+          "bit": "Bit"
+        },
+        "email": "Email for the receipt",
+        "send": "Send receipt",
+        "refusal": {
+          "not_found": "This row is no longer there.",
+          "already_sent": "A receipt was already sent for this payment.",
+          "has_old_receipt": "This payment already has a receipt from your old system.",
+          "not_positive": "Only payments above zero can get a receipt.",
+          "no_name": "The sheet has no payer name for this row.",
+          "no_email": "Add an email.",
+          "no_method": "Choose how it was paid.",
+          "failed": "Something went wrong. Try again in a minute."
+        },
+        "sent_title_one": "1 receipt sent",
+        "sent_title_other": "{{count}} receipts sent",
+        "receipt_number": "Receipt {{number}}",
+        "on_its_way": "receipt on its way",
+        "old_title_one": "1 payment with a receipt from your old system",
+        "old_title_other": "{{count}} payments with a receipt from your old system",
+        "old_number": "receipt {{number}}"
+      }
     },
     "no_document": {
       "send_label": "Email the payer a payment confirmation",
@@ -2787,7 +3294,7 @@
       "input_vat": "Expense VAT is recorded for bookkeeping; reclaim rules are your accountant's domain."
     },
     "payments": {
-      "title": "Payments log",
+      "title": "Payments received",
       "loading": "Loading payments…",
       "empty": "No payments match your filters.",
       "table_label": "Payments transaction log",
@@ -3113,6 +3620,21 @@
       "pending": "Pending",
       "failed": "Failed",
       "disputed": "Disputed"
+    },
+    "cash_notes": {
+      "title_one": "Cash collected by a teacher: 1 to confirm",
+      "title_other": "Cash collected by teachers: {{count}} to confirm",
+      "description": "Teachers noted these on the register. They don't count as paid until you record them.",
+      "line": "{{class}}, {{date}} · noted by {{teacher}}",
+      "a_teacher": "a teacher",
+      "mark_paid": "Mark as paid",
+      "not_received": "Not received",
+      "record_title": "Record {{name}}'s cash payment",
+      "collected_by": "Cash collected by {{teacher}}",
+      "cancel": "Cancel",
+      "notice_one": "A teacher noted 1 cash payment for you to confirm.",
+      "notice_other": "Teachers noted {{count}} cash payments for you to confirm.",
+      "notice_open": "Confirm cash"
     }
   },
   "enrolment": {
@@ -3224,6 +3746,10 @@
     "waiver_submit": "Sign and Continue",
     "waiver_token_expired": "Please scroll to the bottom again to re-confirm you have read the form.",
     "waiver_view_error": "Could not confirm reading. Please try scrolling again.",
+    "job_contract_agree": "I have read and agree to the contract, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
+    "job_contract_read": "Read the full contract",
+    "job_contract_hide": "Hide the contract",
+    "job_contract_view_error": "Could not load the contract. Please refresh the page and try again.",
     "waiver_already_signed": "Form signed",
     "waiver_continue_to_payment": "Continue to Payment",
     "waiver_loading": "Loading form…",
@@ -3233,7 +3759,11 @@
     "waiver_guardian_confirm": "I confirm I am the parent or legal guardian of {{studentName}} and am authorised to sign this form on their behalf.",
     "waiver_this_student": "the enrolled student",
     "waiver_minor_cannot_sign_title": "A parent or guardian must sign",
-    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment."
+    "waiver_minor_cannot_sign_body": "{{studentName}} is under 18. Israeli law requires a parent or legal guardian to sign the form. Please ask a parent or guardian to log in and complete the enrolment.",
+    "form_agree": "I have read and agree to this form, my details above are correct, and I understand that typing my name and ticking this box is my electronic signature.",
+    "form_read": "Read the full form",
+    "form_hide": "Hide the form",
+    "form_view_error": "Could not load the form. Please refresh the page and try again."
   },
   "settings": {
     "custom_domain": {
@@ -3448,7 +3978,7 @@
     },
     "business": {
       "title": "Your business",
-      "intro": "How you charge and which areas you use. Switch an area off and it is hidden: nothing is deleted, and you can switch it back on any time.",
+      "intro": "How clients work with you decides which pages you see. Untick something and it is hidden: nothing is deleted, and you can tick it again any time.",
       "flow_legend": "How do clients pay you?",
       "flow_recurring": "Monthly",
       "flow_project": "Per project",
@@ -3457,7 +3987,7 @@
       "classes_label": "I teach classes",
       "classes_hint": "Classes, levels, seasons and the timetable.",
       "families_label": "Parents pay for children",
-      "families_hint": "Family accounts.",
+      "families_hint": "One parent account pays for several children.",
       "booking_label": "Clients book time slots",
       "booking_hint": "Calendar booking, Google Calendar sync and no-show rules.",
       "classes_off_notice": "You still have active enrolments ({{count}}). They stay as they are and keep billing; only the class pages are hidden.",
@@ -3466,7 +3996,28 @@
       "saved": "Saved.",
       "error": "Could not save. Please try again.",
       "health_label": "Clients sign a health declaration",
-      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts."
+      "health_hint": "Before they start, clients (or a parent, for children) fill in a short health form. Usual for dance, fitness, yoga, swimming and martial arts.",
+      "work_legend": "How do clients work with you?",
+      "work_hint": "Tick all that fit.",
+      "work_classes_label": "Classes",
+      "work_classes_hint": "Regular weekly classes. Clients sign up for a season and pay monthly or for the whole season.",
+      "work_projects_label": "Projects",
+      "work_projects_hint": "Each job is tailor-made. The client sends a request and gets a quote, pays a deposit to book, and pays the balance later.",
+      "work_appointments_label": "Appointments",
+      "work_appointments_hint": "Clients pick a free time slot online, and it’s booked as soon as they pay."
+    },
+    "lead_thank_you": {
+      "title": "Thank-you email to new sign-ups",
+      "label": "Email each new sign-up from my website form straight away",
+      "hint": "Sent once, in the language they used on the form. {name} becomes their first name and {studio} your studio's name. Someone who signs up again with the same email doesn't get it twice.",
+      "subject_en": "Subject (English)",
+      "body_en": "Message (English)",
+      "subject_he": "Subject (Hebrew)",
+      "body_he": "Message (Hebrew)",
+      "saved": "Saved.",
+      "error": "Could not save. Please try again.",
+      "default_subject": "Thank you for your interest in {studio}",
+      "default_body": "Hi {name},\n\nThank you for getting in touch with {studio}! We've received your details and will be in touch soon with everything you need to know.\n\nIf you have any questions in the meantime, just reply to this email.\n\n{studio}"
     },
     "lead_digest": {
       "title": "Daily follow-up email",
@@ -3518,15 +4069,15 @@
     "title": "Settings",
     "navigation": "Settings navigation",
     "tabs": {
-      "branding": "Branding",
-      "profile": "Studio profile",
-      "business": "Your business",
-      "features": "Features",
-      "locale": "Language & Region",
-      "payment": "Payment Settings",
-      "invoicing": "Invoicing",
+      "branding": "Look & logo",
+      "profile": "Name & contact",
+      "business": "How you work",
+      "features": "Extra features",
+      "locale": "Language",
+      "payment": "Online payments",
+      "invoicing": "Receipts & invoices",
       "leads": "Leads",
-      "legal": "Legal",
+      "legal": "Legal documents",
       "security": "Sign-in & security",
       "class_cards": "Class cards",
       "discounts": "Discounts"
@@ -3896,7 +4447,51 @@
       "all_photos": "All photos price ({{currency}}, optional)",
       "all_photos_hint": "Leave empty to sell photos one by one only.",
       "open_days": "Days a gallery stays open for buying",
-      "saved": "Saved."
+      "card_payments_hint": "Clients pay online by card. Leave this off until card payments work for your studio.",
+      "pay_direct_title": "How clients can pay you",
+      "pay_direct_intro": "Switch on each way you take. Clients see the ways that are on wherever they pay you.",
+      "accepts_bit": "Bit",
+      "bit_phone": "Your Bit phone number",
+      "accepts_bank": "Bank transfer",
+      "bank_details": "Your bank details",
+      "accepts_cash": "Cash",
+      "cash_instructions": "Note for clients (optional)",
+      "cash_placeholder": "For example: pay at the studio when you collect",
+      "accepts_cheque": "Cheque",
+      "cheque_instructions": "Note for clients (optional)",
+      "cheque_placeholder": "For example: who to make the cheque out to",
+      "saved": "Saved.",
+      "products": {
+        "title": "Prints and other products",
+        "intro": "Sell prints of any photo as well as the digital file. Clients pick them under each photo. Rows without a price are not offered.",
+        "suggested": "We've added canvas and wood prints in two sizes. Type your prices, remove any you don't sell, then save.",
+        "name_en": "Name (English)",
+        "name_he": "Name (Hebrew)",
+        "size": "Size",
+        "price": "Price ({{currency}})",
+        "add": "Add a product",
+        "remove": "Remove",
+        "remove_row": "Remove product {{number}}",
+        "needs_price": "Products without a name and a price aren't saved."
+      },
+      "way_card": "Card in the photo shop",
+      "on": "On",
+      "off": "Off",
+      "bit_hint": "Clients pay to your Bit number, then send you a screenshot.",
+      "bit_phone_placeholder": "050-000-0000",
+      "bit_phone_prefilled": "Filled in from your business phone. Change it if your Bit number is different.",
+      "bit_phone_missing": "Add your Bit number so clients can see Bit.",
+      "bank_hint": "Clients transfer to your account, then send you a screenshot.",
+      "bank_details_placeholder": "Account name: Your Studio\nBank: 12  Branch: 345\nAccount number: 678901",
+      "bank_details_missing": "Add your bank details so clients can see bank transfer.",
+      "cash_hint": "Clients pay you in cash.",
+      "cheque_hint": "Clients pay you by cheque.",
+      "preview_title": "What your client sees",
+      "preview_proof": "For Bit and bank transfer, clients are asked for a screenshot of the payment.",
+      "pay_saved": "Saved. Clients see these from now on.",
+      "unsaved": "Changes not saved yet.",
+      "pay_ways_where": "How clients pay for photos (card, Bit, bank transfer, cash, cheque) is set in",
+      "pay_ways_link": "Settings › Online payments"
     },
     "smugmug": {
       "title": "SmugMug",
@@ -3931,7 +4526,6 @@
       "disconnected": "Disconnected. Your API Key and Secret are still saved.",
       "connected_since": "Connected to SmugMug since {{date}}.",
       "not_connected": "Connect SmugMug to open your shop.",
-      "shop_locked": "Clients can't buy photos from SmugMug galleries yet. This opens after a final check of SmugMug galleries.",
       "result": {
         "keys": "Your API Key and Secret work. Press Connect SmugMug to finish.",
         "account": "Connected and working.",
@@ -3946,7 +4540,9 @@
         "expired": "This SmugMug sign-in took too long or was started from another account. Please press Connect SmugMug again.",
         "refused": "SmugMug didn't allow the connection. Please press Connect SmugMug again.",
         "missing": "SmugMug didn't send back what we need. Please press Connect SmugMug again.",
-        "back": "Back to Settings"
+        "back": "Back to Settings",
+        "returning": "Taking you back to your studio…",
+        "return_failed": "This SmugMug link has expired. Go back to Photo shop > SmugMug and press Connect SmugMug again."
       }
     },
     "takbull_open": {
@@ -4033,7 +4629,11 @@
       "no_classes": "Add a class first, then choose it here.",
       "save_card": "Save card",
       "cancel": "Cancel",
-      "error": "Could not save. Please try again."
+      "error": "Could not save. Please try again.",
+      "valid_until": "Valid until {{date}}",
+      "end_date_toggle": "Ends on a set date",
+      "end_date_label": "Last day",
+      "end_date_hint": "Every card of this kind lasts until this day, whenever it's bought (e.g. the end of term)."
     },
     "class_discounts": {
       "title": "Class discounts",
@@ -4041,7 +4641,7 @@
       "classes_only": "Discounts are for classes. Switch on classes under Settings → Features to use them.",
       "sibling_title": "Siblings",
       "sibling_switch": "Give a sibling discount",
-      "sibling_hint": "For the 2nd child in a family who enrols this season, with a separate amount for the 3rd child and more. Children are linked through their family account.",
+      "sibling_hint": "For the 2nd child in a family who enrols this season, with a separate amount for the 3rd child and more. Children count as siblings when they are in the same family or share a parent's email.",
       "sibling_second": "2nd child",
       "sibling_more": "3rd child and more",
       "extra_class_title": "Extra class",
@@ -4065,7 +4665,38 @@
       "invalid_percent": "Enter a whole number from 1 to 90.",
       "invalid_amount": "Enter an amount above zero.",
       "invalid_days": "Enter a whole number from 0 to 365.",
-      "error": "Couldn't save the discounts. Please try again."
+      "error": "Couldn't save the discounts. Please try again.",
+      "percent_off": "{{value}}% off",
+      "amount_off": "{{amount}} off",
+      "note": "Note (only you see it)",
+      "remove": "Remove",
+      "clients_title": "Discounts for particular clients",
+      "clients_hint": "Give one family its own discount. It is matched by email (the child's or a parent's) when the child is enrolled, and counts with the other discounts, up to your maximum.",
+      "clients_email": "Email",
+      "clients_add": "Add client discount",
+      "clients_empty": "No client discounts yet.",
+      "invalid_email": "Enter an email address.",
+      "duplicate_email": "This email already has a discount.",
+      "coupons_title": "Coupon codes",
+      "coupons_hint": "Parents can type a code at checkout. Without a code they pay the usual price.",
+      "coupon_code": "Code",
+      "coupon_applies": "The discount comes off",
+      "coupon_first_payment": "The first payment only",
+      "coupon_every_month": "Every payment (every month for monthly classes)",
+      "coupon_more": "Expiry date and limit (optional)",
+      "coupon_valid_until": "Valid until",
+      "coupon_max_uses": "How many times it can be used",
+      "coupon_until": "until {{date}}",
+      "coupon_uses_one": "can be used once",
+      "coupon_uses_other": "can be used {{count}} times",
+      "coupon_turn_off": "Switch off",
+      "coupon_turn_on": "Switch on",
+      "coupons_add": "Add coupon",
+      "coupons_empty": "No coupon codes yet.",
+      "coupons_on_top": "A coupon comes on top of the other discounts, up to your maximum total discount.",
+      "invalid_code": "Use 2 to 40 letters or numbers, no spaces.",
+      "duplicate_code": "You already have this code.",
+      "invalid_uses": "Enter a whole number above zero, or leave it empty."
     }
   },
   "accessibility": {
@@ -4088,16 +4719,16 @@
       "confirm": "Confirm",
       "confirming": "Saving…",
       "confirmed_on": "Confirmed on {{date}}. Your legal pages and {{doc}} are live.",
-      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages and {{doc}} are not live.",
+      "owner_confirms": "The studio's owner confirms this when they sign in. Until then the studio's legal pages are not published. Clients can still book, sign and pay.",
       "error": "That didn't save. Please try again.",
       "error_form_missing": "Your {{doc}} is missing. Please try again; if it keeps happening, contact OpalSwift.",
       "signing_not_ready": "This studio isn't ready to collect signatures yet. Please try again later or contact the studio.",
       "sign_in_needed": "Please sign in to download the legal pack.",
       "print_hint": "Use your browser's Print and choose \"Save as PDF\".",
-      "admin_banner": "Confirm them in Settings → Legal to publish your legal pages and {{doc}}.",
+      "admin_banner": "Confirm them in Settings → Legal to publish your legal pages.",
       "admin_banner_link": "Open Settings → Legal",
-      "blocked_parents": "Parents can't sign up until you confirm your legal documents.",
-      "blocked_clients": "Clients can't sign up until you confirm your legal documents.",
+      "blocked_parents": "Your legal documents are still drafts. Parents can still sign up, sign and pay.",
+      "blocked_clients": "Your legal documents are still drafts. Clients can still book, sign and pay.",
       "doc": {
         "health": "health declaration",
         "contract": "contract",
@@ -4142,7 +4773,8 @@
       "enrolment": "We use these details to manage the enrolment, the class and payments.",
       "signup": "We use your details to create your account and send you service messages.",
       "quote": "We use your details to prepare your booking and contract.",
-      "policy_link": "Privacy policy"
+      "policy_link": "Privacy policy",
+      "order": "We use your details to manage your order and to email you about it."
     },
     "platform_gate": {
       "title": "Before you continue",
@@ -4285,6 +4917,7 @@
       "access_kind_view": "Viewed",
       "access_kind_change": "Changed",
       "access_area": {
+        "support-entry": "Entered the admin (support)",
         "tenants": "Studio settings",
         "tenant_feature_overrides": "Studio features",
         "user_profiles": "User accounts",
@@ -4459,6 +5092,10 @@
         "label": "Photo shop",
         "hint": "Clients buy photo downloads from the studio's SmugMug gallery."
       },
+      "studio_shop": {
+        "label": "Shop",
+        "hint": "Anyone can buy the studio's uniforms and items on its Shop page, signed in or not."
+      },
       "takbull_testing": {
         "label": "Takbull test keys",
         "hint": "The Takbull keys form and Test connection on Settings → Payments. Doesn't change how the studio is paid."
@@ -4620,6 +5257,37 @@
     "update_card": "Update your card",
     "dismiss": "Close"
   },
+  "attendance": {
+    "register": {
+      "button": "Register",
+      "title": "Register: {{name}}",
+      "date": "Class date",
+      "no_class_that_day": "This class does not run on that day.",
+      "nobody": "No students are enrolled in this class yet.",
+      "summary": "{{here}} here · {{away}} not here · {{unmarked}} not marked",
+      "everyone_here": "Mark the rest as here",
+      "here": "Here",
+      "not_here": "Not here",
+      "mark_for": "Attendance for {{name}}",
+      "left_class": "No longer in this class",
+      "load_error": "Could not load the register. Please try again.",
+      "error": "Could not save. Please try again."
+    },
+    "cash": {
+      "open": "Paid in cash",
+      "open_for": "{{name}} paid in cash",
+      "title": "{{name}} paid in cash",
+      "hint": "The office sees this and marks the payment. Until then it does not count as paid.",
+      "amount": "Amount ({{currency}})",
+      "note": "Note (optional)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "noted": "Cash noted, waiting for the office.",
+      "noted_amount": "Cash noted ({{amount}}), waiting for the office.",
+      "undo": "Undo",
+      "paid": "Paid"
+    }
+  },
   "class_cards": {
     "person": {
       "title": "Class cards",
@@ -4661,7 +5329,7 @@
       "card_option": "{{name}} · {{card}} · {{left}} left",
       "tick_in": "Tick in",
       "error": "Could not save. Please try again.",
-      "button": "Class cards"
+      "card_holders": "Class card holders"
     },
     "portal": {
       "title": "Your class cards",
@@ -4702,11 +5370,427 @@
       "pay_now": "Pay now"
     }
   },
+  "teachers": {
+    "title": "Teachers",
+    "description": "Add the people who teach at your studio. A teacher signs in with the email you enter here and sees the classes and the register.",
+    "add": "Add teacher",
+    "edit_title": "Edit teacher",
+    "name": "Name",
+    "email": "Email",
+    "email_help": "They sign in with this email. Leave it empty if they don't need to sign in.",
+    "phone": "Phone",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "remove": "Remove",
+    "remove_confirm": "Remove {{name}}? Their classes stay, without a teacher, and they can no longer sign in as a teacher.",
+    "sign_in": "Sign-in",
+    "status_linked": "Signed in",
+    "status_waiting": "Not signed in yet",
+    "status_no_email": "No email, so no sign-in",
+    "share_heading": "How {{name}} signs in",
+    "share_text": "Send them this link. They sign in with {{email}} and get a code by email.",
+    "copy_link": "Copy link",
+    "copied": "Link copied",
+    "whatsapp": "Send on WhatsApp",
+    "whatsapp_message": "Hi {{name}}, you can now sign in to {{studio}} to see your classes and take the register: {{url}} (sign in with {{email}})",
+    "empty_title": "No teachers yet",
+    "empty_message": "Add a teacher, then choose them on a class.",
+    "own_only_label": "Teachers see only their own classes",
+    "own_only_help": "On (the default): each teacher sees only the classes they teach. Off: every teacher sees all the studio's classes and can take any register, which helps with cover.",
+    "saved": "Saved",
+    "error": "Something went wrong. Please try again."
+  },
+  "my_classes": {
+    "title": "My classes",
+    "intro_all": "All the studio's classes. Yours come first.",
+    "intro_own": "The classes you teach.",
+    "mine": "Your class",
+    "taught_by": "Teacher: {{name}}",
+    "no_teacher": "No teacher chosen",
+    "enrolled_one": "{{count}} enrolled",
+    "enrolled_other": "{{count}} enrolled",
+    "empty_title": "No classes yet",
+    "empty_message": "The studio will add you to a class.",
+    "error": "Your classes didn't load. Please try again."
+  },
+  "portal_shop": {
+    "title": "Studio shop",
+    "intro": "Uniforms and items from the studio. Pay through your child's class and collect at the studio.",
+    "orders_title": "Your orders",
+    "order_for": "Order for {{name}}",
+    "status": {
+      "awaiting_payment": "Waiting for payment.",
+      "paid": "Paid. The studio is getting it ready.",
+      "ready": "Ready to collect at the studio.",
+      "collected": "Collected {{date}}."
+    },
+    "pay_now": "Pay now",
+    "cancel_order": "Cancel order",
+    "add": "Add to cart",
+    "add_label": "Add {{name}} to cart",
+    "quantity": "How many",
+    "sold_out": "Sold out",
+    "cart": "Your cart",
+    "remove": "Remove",
+    "remove_label": "Remove {{name}} from cart",
+    "for": "Who is it for?",
+    "for_one": "For {{name}}",
+    "needs_enrolment": "Orders are paid through a class, so ordering opens once someone in your family is enrolled. You can ask the studio in the meantime.",
+    "collect_note": "You'll get an email when your order is ready to collect at the studio.",
+    "total": "Total: {{total}}",
+    "pay": "Go to payment",
+    "errors": {
+      "sold_out": "Some of these sold out just now. Please check the sizes and try again.",
+      "item_not_found": "One of these items isn't on sale any more. Please check your cart.",
+      "needs_enrolment": "Orders are paid through a class. Please ask the studio, or enrol first.",
+      "failed": "Something went wrong. Please try again."
+    }
+  },
+  "public_shop": {
+    "title": "Shop",
+    "intro": "Uniforms and items from {{studio}}. Order here and collect at the studio.",
+    "intro_no_name": "Uniforms and items from the studio. Order here and collect at the studio.",
+    "empty": "Nothing is on sale right now.",
+    "sold_out": "Sold out",
+    "size_sold_out": "{{size}} (sold out)",
+    "error": "The shop didn't load. Please try again.",
+    "size": "Size",
+    "quantity": "How many",
+    "add": "Add to cart",
+    "add_label": "Add {{name}} to cart",
+    "cart": "Your cart",
+    "remove": "Remove",
+    "remove_label": "Remove {{name}} from cart",
+    "total": "Total: {{total}}",
+    "your_details": "Your details",
+    "name": "Full name",
+    "email": "Email",
+    "phone": "Phone (optional)",
+    "how_to_pay": "How will you pay?",
+    "pay_card": "By card, now",
+    "pay_studio": "Pay the studio directly (cash, bank transfer or other)",
+    "card_note": "Card orders are kept for you for 48 hours.",
+    "returns_note": "No returns. You can exchange an unused item within 2 weeks of collecting it.",
+    "collect_note": "You collect your order at the studio. We'll email you when it's ready.",
+    "place_order": "Place order",
+    "place_order_card": "Go to payment",
+    "sent_title": "Thank you, your order is in",
+    "sent_studio": "Pay the studio directly by cash, bank transfer or another way they accept. We've emailed you the details, and we'll email you again when it's ready to collect.",
+    "sent": "We've emailed you the details. We'll email you again when it's ready to collect.",
+    "shop_again": "Order something else",
+    "errors": {
+      "sold_out": "Some of these sold out just now. Please check the sizes and try again.",
+      "item_not_found": "One of these items isn't on sale any more. Please check your cart.",
+      "email_required": "Please enter a valid email address.",
+      "name_required": "Please enter your name.",
+      "captcha_failed": "The security check didn't pass. Please try again.",
+      "too_many": "Too many orders from this email just now. Please try again later.",
+      "switched_off": "The shop is closed right now.",
+      "failed": "Something went wrong. Please try again."
+    }
+  },
+  "clients_import": {
+    "title": "Import from a spreadsheet",
+    "back": "Back to {{noun}}",
+    "button": "Import from a spreadsheet",
+    "intro": "Bring in your client list. Each row becomes a client. We match your columns, check who is already here, then add the rest.",
+    "intro_families": "Bring in your client list. Each row becomes a client. A row with a student's name becomes a family: the parent and their students. We match your columns, check who is already here, then add the rest.",
+    "notice_permission": "Only upload details you are allowed to use. Names, emails and phone numbers from the sheet are stored in OpalSwift for your studio only.",
+    "notice_no_email": "Nothing is emailed to your clients. A client with an email can sign in on your studio's page with that email.",
+    "columns_hint": "We matched each column for you. Change any that are wrong. Columns set to \"Leave out\" are not imported.",
+    "need_name": "Choose the column with the client's name (or first and last name) to carry on.",
+    "family_name": "{{name}} family",
+    "field": {
+      "name": "Name",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "student_name": "Student's name",
+      "student_dob": "Student's date of birth",
+      "shoot_name": "Shoot name",
+      "shoot_date": "Shoot date",
+      "shoot_gallery": "SmugMug gallery",
+      "skip": "Leave out"
+    },
+    "check_title": "Check and import",
+    "checking": "Checking who is already a client…",
+    "check_failed": "We couldn't check for clients you already have: {{message}}",
+    "no_duplicates": "None of these are clients yet.",
+    "already_clients_one": "{{count}} is already a client: not added again. A missing email is filled in.",
+    "already_clients_other": "{{count}} are already clients: not added again. Missing emails are filled in.",
+    "match_email": "{{name}}: same email as {{existing}}",
+    "match_phone": "{{name}}: same phone as {{existing}}",
+    "match_name": "{{name}}: same name as {{existing}}",
+    "rows_label": "row {{rows}}",
+    "preview_clients_one": "{{count}} client will be added",
+    "preview_clients_other": "{{count}} clients will be added",
+    "preview_students_one": "with {{count}} student",
+    "preview_students_other": "with {{count}} students",
+    "import_button_one": "Import {{count}} client",
+    "import_button_other": "Import {{count}} clients",
+    "problem": {
+      "no_name": "no name, so it is left out",
+      "bad_email": "the email doesn't look right, so the client is added without it",
+      "repeat": "the same person as an earlier row, so it is left out",
+      "bad_dob": "the date of birth couldn't be read, so the student is added without it",
+      "bad_shoot_date": "the shoot date couldn't be read or is in the future, so the shoot is added without it"
+    },
+    "done_clients_one": "{{count}} client added",
+    "done_clients_other": "{{count}} clients added",
+    "done_students_one": "{{count}} student added",
+    "done_students_other": "{{count}} students added",
+    "done_skipped_one": "{{count}} left out: already a client",
+    "done_skipped_other": "{{count}} left out: already clients",
+    "see_clients": "Go to {{noun}}",
+    "history_line": "{{date}}: {{clients}} added, {{skipped}} already here",
+    "error_empty": "This file has no rows to import.",
+    "problems_one": "{{count}} row needs a look",
+    "problems_other": "{{count}} rows need a look",
+    "button_shoots": "Import past shoots",
+    "shoots_hint": "To add past shoots, add a \"Shoot\" column with the shoot name on each row, and a \"Shoot date\" column if you have the dates. Each client gets one shoot, marked Shot, on your package with that name. It moves to Delivered once you share the gallery. Clients already here are not added again. Nothing is emailed.",
+    "default_shoot_name": "Shoot",
+    "already_clients_shoots_one": "{{count}} is already a client: not added again, but their shoot is",
+    "already_clients_shoots_other": "{{count}} are already clients: not added again, but their shoots are",
+    "preview_shoots_one": "{{count}} past shoot will be added. A client who already has it won't get it twice.",
+    "preview_shoots_other": "{{count}} past shoots will be added. A client who already has one won't get it twice.",
+    "import_button_shoots_one": "Add {{count}} past shoot",
+    "import_button_shoots_other": "Add {{count}} past shoots",
+    "done_shoots_one": "{{count}} past shoot added",
+    "done_shoots_other": "{{count}} past shoots added",
+    "done_emails_one": "Email added to {{count}} client who had none",
+    "done_emails_other": "Emails added to {{count}} clients who had none",
+    "done_already_one": "{{count}} was already a client, not added again",
+    "done_already_other": "{{count}} were already clients, not added again",
+    "preview_galleries_one": "{{found}} of {{count}} gallery name found in SmugMug. Each shoot gets its gallery straight after the import.",
+    "preview_galleries_other": "{{found}} of {{count}} gallery names found in SmugMug. Each shoot gets its gallery straight after the import.",
+    "galleries_not_connected": "SmugMug isn't connected, so the galleries can't be linked yet. The clients and shoots are still imported. Connect SmugMug in Settings, then import the same sheet again to link them.",
+    "galleries_unreadable": "We couldn't read your SmugMug galleries just now. The clients and shoots are still imported, and you can import the same sheet again later to link the galleries.",
+    "galleries_missing_one": "{{count}} gallery name wasn't matched",
+    "galleries_missing_other": "{{count}} gallery names weren't matched",
+    "gallery_not_found": "\"{{name}}\": no SmugMug gallery has this name",
+    "gallery_several": "\"{{name}}\": more than one SmugMug gallery has this name, so pick it on the shoot",
+    "import_button_galleries_one": "Link {{count}} gallery",
+    "import_button_galleries_other": "Link {{count}} galleries",
+    "galleries_linking": "Linking galleries: {{done}} of {{total}}…",
+    "done_galleries_one": "{{count}} SmugMug gallery linked and checked",
+    "done_galleries_other": "{{count}} SmugMug galleries linked and checked",
+    "done_galleries_already_one": "{{count}} shoot already had a gallery, left as it is",
+    "done_galleries_already_other": "{{count}} shoots already had a gallery, left as they are",
+    "done_galleries_not_found_one": "{{count}} gallery wasn't found: choose it on the shoot",
+    "done_galleries_not_found_other": "{{count}} galleries weren't found: choose them on the shoot",
+    "done_galleries_failed_one": "{{count}} gallery couldn't be linked: choose it on the shoot",
+    "done_galleries_failed_other": "{{count}} galleries couldn't be linked: choose them on the shoot"
+  },
+  "help": {
+    "title": "Help",
+    "intro": "Short guides for the main jobs in OpalSwift. Each guide opens the right page for you.",
+    "ask_title": "Can't find the answer?",
+    "ask_text": "Send us your question. We read every one, and the answer becomes a new guide here.",
+    "ask_button": "Ask OpalSwift a question",
+    "open_page": "Open this page",
+    "contents": "Guides",
+    "none": "There are no guides for your kind of business yet. Send us your question and we'll help.",
+    "topics": {
+      "packages": {
+        "title": "Set up your packages",
+        "summary": "Packages are what clients can book with you, each with its price. They show on your Book page.",
+        "steps": [
+          "Open Packages.",
+          "Press Add package and give it a name, a price and how long the shoot takes.",
+          "Fill in how many photos are included. The photo shop uses this for every shoot with this package.",
+          "Save. The package now shows on your Book page and in your quotes."
+        ]
+      },
+      "contract": {
+        "title": "Set up your contract",
+        "summary": "One contract template is used for every new booking. The client's name, shoot date, location, package and price are filled in for each shoot.",
+        "steps": [
+          "Open Contracts.",
+          "Create a template and paste in your contract text.",
+          "Where the shoot details should go, type {{client_name}}, {{shoot_date}}, {{location}}, {{package}} or {{price}}.",
+          "Make it the active template. Contracts already signed are not changed."
+        ]
+      },
+      "shoot_requests": {
+        "title": "Confirm a shoot request",
+        "summary": "Clients can ask for a shoot on your Book page by choosing a package and a day. Nothing is charged until you confirm.",
+        "steps": [
+          "You get an email for each request. It also shows in the Diary under Requests to confirm.",
+          "Press Confirm, in the email or in the Diary.",
+          "Check the date, time and location, then press Confirm.",
+          "The shoot is booked on that day and the client is emailed a quote at the package price, to accept and pay the deposit."
+        ]
+      },
+      "new_shoot": {
+        "title": "Add a shoot and send a quote",
+        "summary": "Add a shoot yourself when a client gets in touch by phone, WhatsApp or email.",
+        "steps": [
+          "Open Shoots and press New shoot.",
+          "Choose an existing client or add a new one with their email.",
+          "Choose the package, the date and the location.",
+          "Press Create and send quote. The client gets the quote by email. Or press Create without a quote if you agreed the price another way."
+        ]
+      },
+      "quotes": {
+        "title": "How quotes work",
+        "summary": "A quote is a price offer the client accepts online. Accepting books the shoot and creates the deposit and balance payments.",
+        "steps": [
+          "Open Quotes to see every quote and whether it is a draft, sent, accepted, declined or expired.",
+          "Open a quote to change the price, add-ons, deposit percentage or how long it is valid.",
+          "Tick Send the contract when the client accepts if you want the contract to go out by itself.",
+          "Send it by email, on WhatsApp or copy the link. The client accepts and pays the deposit online."
+        ]
+      },
+      "payments": {
+        "title": "Payments for a shoot",
+        "summary": "Each shoot has its payments: usually a deposit and a balance due on the shoot date.",
+        "steps": [
+          "Open the shoot. Payments shows what is paid and what is still owed.",
+          "To ask for money, press Add payment request, choose a deposit and balance or a single amount, then send the pay link.",
+          "Paid in cash or by bank transfer? Press Record a payment on that request. The amount is filled in; change it if a different amount was paid.",
+          "Gave money back? Press Record refund on the payment, after you have refunded the client."
+        ]
+      },
+      "cancel_shoot": {
+        "title": "Cancel a shoot",
+        "summary": "Cancelling frees the date in your calendar and stops pay links and payment reminders.",
+        "steps": [
+          "Open the shoot and press Cancel shoot.",
+          "Choose whether to email the client to let them know.",
+          "Money already paid is not refunded by itself. To give money back, use Record refund on the payment."
+        ]
+      },
+      "smugmug": {
+        "title": "Connect SmugMug",
+        "summary": "Your photos stay on SmugMug. OpalSwift uses your own SmugMug API key to show your galleries in your photo shop.",
+        "steps": [
+          "Open Photo shop, then the SmugMug tab.",
+          "Follow the steps there to create an API key in your SmugMug account. The page gives you every value to copy.",
+          "Paste the API Key and API Secret and press Save.",
+          "Press Connect SmugMug and allow access in SmugMug."
+        ]
+      },
+      "check_gallery": {
+        "title": "Check a shoot's gallery",
+        "summary": "Before clients can see a SmugMug gallery in the photo shop, it must pass Check gallery. Nothing is changed in SmugMug.",
+        "steps": [
+          "Open the shoot, then the Photo shop tab.",
+          "Choose In a SmugMug gallery and pick the gallery. You can type its name to search.",
+          "Press Check gallery. Lines marked ✗ must be fixed in SmugMug; lines marked ⚠ are only tips.",
+          "Added photos to the gallery later? Press Check again."
+        ]
+      },
+      "send_gallery": {
+        "title": "Send a client their gallery",
+        "summary": "Send gallery emails the client their gallery and, when there is a photo shop, a button to choose their photos.",
+        "steps": [
+          "Open the shoot and press Send gallery. To send several at once, select shoots on the Shoots page and press Send gallery to selected.",
+          "The gallery must pass Check gallery first, and the client needs an email address.",
+          "On the client's page the gallery stays locked until every payment is made. To open it sooner, press Release anyway on the shoot's payments."
+        ]
+      },
+      "photo_prices": {
+        "title": "Set your photo prices",
+        "summary": "Your photo shop prices are the starting point for every shoot. You can change them for one shoot.",
+        "steps": [
+          "Open Photo shop, then the Prices tab, and set your price per photo.",
+          "Optional: set a price for all the photos together.",
+          "Each package can include a number of photos at no extra cost.",
+          "To change prices for one shoot, open the shoot, then the Photo shop tab, and change them there."
+        ]
+      },
+      "photo_orders": {
+        "title": "Deliver a photo order",
+        "summary": "When a client orders photos, the order shows on the shoot and in Photo shop, under Orders.",
+        "steps": [
+          "Open the order's shoot, then the Photo shop tab. The order lists the photos and their file names.",
+          "Put the finished photos in a download folder (for example Google Drive or WeTransfer).",
+          "Paste the folder's link and press Send. The client gets an email with the link.",
+          "Sent the photos another way? Press Mark as sent.",
+          "Client paying you directly? Press Record cash payment on the order."
+        ]
+      },
+      "client_view": {
+        "title": "See what your client sees",
+        "summary": "You can try the photo shop exactly as your client sees it. Nothing is ordered or charged.",
+        "steps": [
+          "Open Photo shop, then the Preview tab, and choose a shoot.",
+          "Or open a shoot and choose the What your client sees tab.",
+          "Pick photos and try the buttons. It is only a preview."
+        ]
+      },
+      "import_clients": {
+        "title": "Bring in your existing clients",
+        "summary": "Import your client list from a spreadsheet. Each row becomes a client, and can bring a past shoot with its SmugMug gallery.",
+        "steps": [
+          "Open Clients and press Import from a spreadsheet.",
+          "Upload your sheet. Each column is matched for you; change any that are wrong.",
+          "Add a SmugMug gallery column to link each shoot to its gallery. Connect SmugMug first.",
+          "Check the preview, which shows who is already here, then import the rest."
+        ]
+      },
+      "automatic_emails": {
+        "title": "Automatic emails to clients",
+        "summary": "Clients get some emails by themselves, in your studio's language. You can switch off any you don't want.",
+        "steps": [
+          "Open Quotes and scroll to the automatic emails.",
+          "They cover: quote sent, booking confirmed, a reminder two days before the shoot, gallery ready, and a review request five days after the gallery.",
+          "For the review request, add your review link (for example your Google reviews). Without a link, that email isn't sent."
+        ]
+      }
+    }
+  },
+  "pay_direct": {
+    "title": "Pay the studio directly",
+    "title_or": "Or pay the studio directly",
+    "choose": "How will you pay?",
+    "amount": "Amount: {{price}}",
+    "bit_to": "Bit to {{phone}}",
+    "bank_to": "Bank transfer:",
+    "proof_ask": "Once you have paid, please send a screenshot of your payment.",
+    "proof_send": "Send payment screenshot",
+    "proof_replace": "Send a different screenshot",
+    "proof_sending": "Sending…",
+    "proof_sent": "Payment screenshot sent on {{date}}. The studio will check it.",
+    "confirm": "Confirm: I'll pay this way",
+    "confirmed": "Thank you. The studio knows you will {{how}}.",
+    "next": "The studio records your payment once it arrives.",
+    "errors": {
+      "proof_not_image": "Please choose a picture (PNG, JPEG or WebP).",
+      "proof_too_big": "This picture is too big. Please choose one under 5 MB.",
+      "already_paid": "The studio has already recorded this payment.",
+      "server_error": "Something went wrong. Please try again."
+    },
+    "studio": {
+      "title": "Payment screenshots and chosen ways",
+      "description": "What clients told you on a payment page. Once the money is in, record the payment as usual.",
+      "open_screenshot": "Open screenshot",
+      "no_screenshot": "No screenshot"
+    }
+  },
   "class_discounts": {
     "class_price": "Class price",
     "line_sibling": "Sibling discount",
     "line_extra_class": "Extra class discount",
     "line_early_bird": "Early bird discount",
-    "every_month": "The discount applies every month."
+    "every_month": "The discount applies every month.",
+    "line_client": "Your discount",
+    "line_coupon": "Coupon",
+    "line_coupon_code": "Coupon {{code}}",
+    "first_payment_only": "{{label}} (first payment)",
+    "then_every_month": "After the first payment: {{amount}} a month.",
+    "coupon_open": "Have a coupon code?",
+    "coupon_label": "Coupon code",
+    "coupon_apply": "Apply",
+    "coupon_applied": "Coupon applied. The price is updated.",
+    "coupon_reason_not_found": "We couldn't find that code. Check it and try again, or just carry on and pay.",
+    "coupon_reason_expired": "This code has expired.",
+    "coupon_reason_used_up": "This code has already been used as many times as allowed.",
+    "coupon_reason_at_maximum": "Your discounts are already at the most this studio gives, so this code doesn't add anything.",
+    "coupon_reason_not_payable": "This enrolment is no longer waiting for payment.",
+    "coupon_reason_not_class": "Coupon codes are for classes.",
+    "coupon_reason_error": "Couldn't check the code just now. You can still pay as normal."
   }
 }

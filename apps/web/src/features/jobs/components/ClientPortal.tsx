@@ -1,15 +1,20 @@
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Tabs } from '@base-ui/react/tabs';
+import { DirectionProvider } from '@base-ui/react/direction-provider';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
-import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
-import { ChangeLoginEmailDialog } from '@/components/shared/ChangeLoginEmail';
+import { AccountMenu } from '@/components/shared/AccountMenu';
 import { useTenant } from '@/hooks/useTenant';
+import { useWorkModes } from '@/hooks/useWorkModes';
+import { formatAppointmentWhen } from '@/features/scheduling/lib/formatAppointmentWhen';
 import { useContactPreferences } from '@/features/notifications/hooks/useContactPreferences';
 import { useClientPortal } from '../hooks/useClientPortal';
-import { ClientPortalService, type ClientShoot } from '../services/clientPortalService';
+import { useClientPhotoShopOpen } from '../hooks/useClientPhotoShopOpen';
+import { ClientPortalService, type ClientBooking, type ClientShoot } from '../services/clientPortalService';
 import { JobPaymentService, type JobPaymentRequest } from '../services/jobPaymentService';
 import { formatDueDate, formatMinor, localeFor } from '../lib/jobPaymentFormat';
 import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
@@ -21,18 +26,25 @@ import { ClientPhotoShop } from './ClientPhotoShop';
  * children, no date of birth, no "enrol"). Rendered by PortalDashboard for
  * photographer tenants only; every other vertical keeps ParentPortal.
  *
- * Sections: My shoots, Contract, Payments, Gallery, Photo shop (beta), My details.
+ * Tabs: Photo shop (only when the photo shop feature is on and a shoot's gallery is
+ * open to the client; the page always opens on it then, with nothing else on it),
+ * My shoots (bookings, shoots, contract), Payments, Gallery, My details.
+ * Without an open shop the page opens on My shoots. ?tab= keeps the chosen tab.
  */
 export function ClientPortal() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const currency = tenant?.currency ?? 'ILS';
   const { data, isLoading, error } = useClientPortal();
+  const { projects, appointments } = useWorkModes();
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [loginEmailOpen, setLoginEmailOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  if (isLoading) {
+  const shoots = data?.shoots ?? [];
+  const liveShootIds = shoots.filter((shoot) => !isCancelled(shoot)).map((shoot) => shoot.engagementId);
+  const shop = useClientPhotoShopOpen(liveShootIds);
+
+  if (isLoading || shop.loading) {
     return (
       <div role="status" aria-live="polite">
         {t('common.loading')}
@@ -48,41 +60,56 @@ export function ClientPortal() {
     );
   }
 
-  const shoots = data?.shoots ?? [];
   const requests = data?.requests ?? [];
+  const bookings = data?.bookings ?? [];
   const multipleShoots = shoots.length > 1;
+  // Each part follows the ticks in "How do clients work with you?": an appointments-only
+  // client sees "My bookings", not an empty "My shoots".
+  const showShoots = projects || shoots.length > 0;
+  const showBookings = bookings.length > 0 || (appointments && !projects);
 
-  return (
-    <div className="space-y-8">
-      <section className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-primary mb-2">{t('pages.client_portal.title')}</h2>
-          <p className="text-gray-600">{t('pages.client_portal.subtitle')}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setPrefsOpen(true)}>
-            {t('pages.portal.notification_preferences')}
-          </Button>
-          <Button variant="outline" onClick={() => setPasswordOpen(true)}>
-            {t('pages.portal.login_password')}
-          </Button>
-          <Button variant="outline" onClick={() => setLoginEmailOpen(true)}>
-            {t('login_email.change_title')}
-          </Button>
-        </div>
-      </section>
-
-      <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
-      <SetPasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
-      <ChangeLoginEmailDialog open={loginEmailOpen} onOpenChange={setLoginEmailOpen} />
-
-      <ShootsSection shoots={shoots} />
-
-      {shoots.length > 0 && <ContractSection shoots={shoots} labelled={multipleShoots} />}
-
-      <PaymentsSection shoots={shoots} requests={requests} currency={currency} labelled={multipleShoots} />
-
-      {shoots.length > 0 && (
+  const tabs: { value: ClientPortalTab; label: string; panel: ReactNode }[] = [];
+  if (shop.open) {
+    tabs.push({
+      value: 'shop',
+      label: t('pages.jobs.tabs.shop'),
+      panel: liveShootIds.map((id) => {
+        const shoot = shoots.find((s) => s.engagementId === id) as ClientShoot;
+        return (
+          <ClientPhotoShop
+            key={`photo-shop-${id}`}
+            engagementId={id}
+            caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
+          />
+        );
+      }),
+    });
+  }
+  if (showShoots || showBookings) {
+    tabs.push({
+      value: 'shoots',
+      label: showShoots ? t('pages.client_portal.shoots_heading') : t('pages.client_portal.bookings_heading'),
+      panel: (
+        <>
+          {showBookings && <BookingsSection bookings={bookings} />}
+          {showShoots && <ShootsSection shoots={shoots} />}
+          {shoots.length > 0 && <ContractSection shoots={shoots} labelled={multipleShoots} />}
+        </>
+      ),
+    });
+  }
+  if (showShoots) {
+    tabs.push({
+      value: 'payments',
+      label: t('pages.client_portal.payments_heading'),
+      panel: <PaymentsSection shoots={shoots} requests={requests} currency={currency} labelled={multipleShoots} />,
+    });
+  }
+  if (shoots.length > 0) {
+    tabs.push({
+      value: 'gallery',
+      label: t('pages.client_portal.gallery_heading'),
+      panel: (
         <section aria-labelledby="client-gallery-heading" className="space-y-3">
           <h3 id="client-gallery-heading" className="text-lg font-semibold text-gray-900">
             {t('pages.client_portal.gallery_heading')}
@@ -96,33 +123,79 @@ export function ClientPortal() {
             ))}
           </ul>
         </section>
-      )}
-
-      {shoots
-        .filter((shoot) => !isCancelled(shoot))
-        .map((shoot) => (
-          <ClientPhotoShop
-            key={`photo-shop-${shoot.engagementId}`}
-            engagementId={shoot.engagementId}
-            caption={multipleShoots ? <ShootCaption shoot={shoot} /> : undefined}
+      ),
+    });
+  }
+  tabs.push({
+    value: 'details',
+    label: t('pages.client_portal.details_heading'),
+    panel: (
+      <>
+        <DetailsSection self={data?.self ?? null} onEditContact={() => setPrefsOpen(true)} />
+        {tenant && data?.self && (
+          <PersonConsentPanel
+            tenantId={tenant.id}
+            personId={data.self.personId}
+            personName={data.self.name}
+            studioName={tenant.name}
+            photographer
+            source="portal"
           />
-        ))}
+        )}
+      </>
+    ),
+  });
 
-      <DetailsSection self={data?.self ?? null} onEditContact={() => setPrefsOpen(true)} />
+  const asked = searchParams.get('tab');
+  const activeTab = tabs.some((tab) => tab.value === asked) ? (asked as ClientPortalTab) : tabs[0].value;
+  const selectTab = (value: unknown) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', String(value));
+    setSearchParams(next, { replace: true });
+  };
+  // DocumentLanguageSync keeps <html dir> in step with the chosen language.
+  const direction =
+    typeof document !== 'undefined' && document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr';
 
-      {tenant && data?.self && (
-        <PersonConsentPanel
-          tenantId={tenant.id}
-          personId={data.self.personId}
-          personName={data.self.name}
-          studioName={tenant.name}
-          photographer
-          source="portal"
-        />
-      )}
+  return (
+    <div className="space-y-8">
+      <section className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-primary mb-2">{t('pages.client_portal.title')}</h2>
+          <p className="text-gray-600">{t('pages.client_portal.subtitle')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <AccountMenu onPreferences={() => setPrefsOpen(true)} />
+        </div>
+      </section>
+
+      <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
+
+      <DirectionProvider direction={direction}>
+        <Tabs.Root value={activeTab} onValueChange={selectTab}>
+          <Tabs.List className="flex flex-wrap gap-1 border-b border-gray-200">
+            {tabs.map((tab) => (
+              <Tabs.Tab
+                key={tab.value}
+                value={tab.value}
+                className="-mb-px rounded-none border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-primary-ink)] data-[active]:border-[var(--color-primary-ink)] data-[active]:text-[var(--color-primary-ink)]"
+              >
+                {tab.label}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+          {tabs.map((tab) => (
+            <Tabs.Panel key={tab.value} value={tab.value} className="space-y-8 pt-6">
+              {tab.panel}
+            </Tabs.Panel>
+          ))}
+        </Tabs.Root>
+      </DirectionProvider>
     </div>
   );
 }
+
+type ClientPortalTab = 'shop' | 'shoots' | 'payments' | 'gallery' | 'details';
 
 function useShootDate() {
   const { t, i18n } = useTranslation();
@@ -146,6 +219,41 @@ function ShootCaption({ shoot }: { shoot: ClientShoot }) {
     <p className="mb-2 text-sm font-medium text-gray-700">
       {t('pages.client_portal.for_shoot', { name })}
     </p>
+  );
+}
+
+function BookingsSection({ bookings }: { bookings: ClientBooking[] }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <section aria-labelledby="client-bookings-heading">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id="client-bookings-heading" className="text-lg font-semibold text-gray-900">
+          {t('pages.client_portal.bookings_heading')}
+        </h3>
+        <Link to="/book" className="text-sm text-primary underline">
+          {t('pages.client_portal.book_again')}
+        </Link>
+      </div>
+      {bookings.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
+          {t('pages.client_portal.no_bookings')}
+        </div>
+      ) : (
+        <ul className="divide-y rounded-lg border border-gray-200 bg-white text-sm">
+          {bookings.map((booking) => (
+            <li key={booking.engagementId} className="flex flex-wrap justify-between gap-2 px-4 py-3">
+              <span className="font-medium text-gray-900">{formatAppointmentWhen(booking.startsAt, i18n.language)}</span>
+              <span className="text-gray-700">
+                <bdi>{booking.serviceName ?? '—'}</bdi>
+              </span>
+              <span className="text-gray-500">
+                {t(`scheduling.appointments.status_${booking.status}`, { defaultValue: booking.status })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

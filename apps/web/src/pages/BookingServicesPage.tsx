@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useHasFeature } from '@/hooks/useHasFeature';
+import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,7 +12,6 @@ import {
   ServicesService,
   type AppointmentService,
 } from '@/features/scheduling/servicesService';
-import { BookingSettingsService } from '@/features/scheduling/bookingSettingsService';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { usePhotoShopEnabled } from '@/features/jobs/hooks/usePhotoShop';
 
@@ -41,8 +40,11 @@ const EMPTY_FORM: ServiceFormState = {
 export default function BookingServicesPage() {
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
-  const { hasFeature, isLoading: gateLoading } = useFeatureGate();
-  const canManage = hasFeature(FEATURES.scheduling.adminBooking);
+  const { hasAnyFeature, isLoading: gateLoading } = useHasFeature();
+  // The same check as the Packages tab (navigationConfig): Projects or Appointments.
+  const canManage = hasAnyFeature([FEATURES.billing.quotes, FEATURES.scheduling.adminBooking]);
+  const { labels } = useEntityLabels();
+  const itemWord = i18n.language === 'en' ? labels.offering.singular.toLowerCase() : labels.offering.singular;
   const photoShop = usePhotoShopEnabled();
 
   const [form, setForm] = useState<ServiceFormState | null>(null);
@@ -57,17 +59,6 @@ export default function BookingServicesPage() {
     },
     enabled: !!tenant?.id && canManage,
   });
-
-  const bookingSettingsQuery = useQuery({
-    queryKey: ['bookingSettings', tenant?.id],
-    queryFn: async () => {
-      if (!tenant?.id) return null;
-      return BookingSettingsService.getSettings(tenant as never);
-    },
-    enabled: !!tenant?.id && canManage,
-  });
-
-  const bookingEnabled = bookingSettingsQuery.data?.is_booking_enabled ?? false;
 
   function startAdd() {
     setStatus(null);
@@ -134,19 +125,11 @@ export default function BookingServicesPage() {
   }
 
   if (!gateLoading && !canManage) {
+    // Reached only by an old link: the Packages tab is hidden for this studio.
     return (
       <div className="max-w-3xl space-y-2 p-2">
-        <h1 className="text-3xl font-bold">{t('scheduling.services.title')}</h1>
-        {tenant?.vertical === 'photographer' ? (
-          <>
-            <p className="text-gray-600">{t('scheduling.services.photographer_note')}</p>
-            <p>
-              <Link className="underline" to="/admin/quotes">{t('scheduling.services.photographer_quotes')}</Link>
-            </p>
-          </>
-        ) : (
-          <p className="text-gray-600">{t('scheduling.services.not_available')}</p>
-        )}
+        <h1 className="text-3xl font-bold">{labels.offering.plural}</h1>
+        <p className="text-gray-600">{t('scheduling.diary.not_used')}</p>
       </div>
     );
   }
@@ -155,15 +138,16 @@ export default function BookingServicesPage() {
 
   return (
     <div className="max-w-3xl space-y-6 p-2">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold">{t('scheduling.services.title')}</h1>
-        <p className="text-gray-600">{t('scheduling.services.subtitle')}</p>
-        <p className="text-sm text-gray-500">
-          {t('scheduling.services.settings_hint')}{' '}
-          <Link to="/admin/setup/booking" className="text-primary-600 underline">
-            {t('nav.booking_settings')}
-          </Link>
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold">{labels.offering.plural}</h1>
+          <p className="text-gray-600">{t('scheduling.services.packages_subtitle')}</p>
+        </div>
+        {!form && (
+          <Button variant="primary" onClick={startAdd}>
+            {t('scheduling.services.add_named', { item: itemWord })}
+          </Button>
+        )}
       </header>
 
       {status && (
@@ -179,18 +163,9 @@ export default function BookingServicesPage() {
         </div>
       )}
 
-      {!bookingEnabled && !bookingSettingsQuery.isLoading && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
-          {t('scheduling.services.booking_disabled_warning')}{' '}
-          <Link to="/admin/setup/booking" className="font-medium underline">
-            {t('nav.booking_settings')}
-          </Link>
-        </div>
-      )}
-
       <section className="space-y-3">
         {services.length === 0 && !servicesQuery.isLoading && (
-          <p className="text-gray-500">{t('scheduling.services.none')}</p>
+          <p className="text-gray-500">{t('scheduling.services.none_named', { item: itemWord })}</p>
         )}
         {services.map((svc) => (
           <div
@@ -225,7 +200,7 @@ export default function BookingServicesPage() {
       {form ? (
         <section className="card space-y-4 border border-gray-200 p-4">
           <h2 className="text-lg font-semibold">
-            {form.id ? t('scheduling.services.edit') : t('scheduling.services.add')}
+            {form.id ? t('scheduling.services.edit_named', { item: itemWord }) : t('scheduling.services.add_named', { item: itemWord })}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t('scheduling.services.name')}>
@@ -287,11 +262,7 @@ export default function BookingServicesPage() {
             </Button>
           </div>
         </section>
-      ) : (
-        <Button variant="primary" onClick={startAdd}>
-          {t('scheduling.services.add')}
-        </Button>
-      )}
+      ) : null}
     </div>
   );
 }

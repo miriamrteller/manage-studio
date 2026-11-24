@@ -40,7 +40,7 @@ export function QuotesList() {
               {quotes.map((quote) => (
                 <tr key={quote.id}>
                   <td className="px-3 py-2 font-medium">
-                    <Link to={`/admin/quotes/${quote.id}`} className="underline">
+                    <Link to={`/admin/projects/quotes/${quote.id}`} className="underline">
                       {quote.client_name ?? '—'}
                       {quote.title && <span className="ms-2 text-muted-foreground">· {quote.title}</span>}
                     </Link>

@@ -1,0 +1,123 @@
+{
+  "common": {
+    "no_families_yet": "No clients yet.",
+    "manage_families": "Manage clients",
+    "edit_family": "Edit client: {{name}}"
+  },
+  "errors": {
+    "no_family_account": "We couldn't find your account. Please sign in with the same email you used to sign up, or contact the studio."
+  },
+  "finance": {
+    "card_link": {
+      "hint": "Emails the client a link to pay the month that is due by card. The card is saved and later months are charged to it.",
+      "sent": "Card link sent to the client."
+    },
+    "payments": {
+      "family_payment": "Client payment"
+    }
+  },
+  "form": {
+    "class": {
+      "price_families_pay": "Amount clients pay"
+    }
+  },
+  "legal": {
+    "pack": {
+      "blocked_parents": "Clients can't sign up until you confirm your legal documents."
+    },
+    "no_insurance_send_reminder": {
+      "text": "Reminder: your studio has no insurance recorded. Clients will see this in the form. Consider getting liability and personal-accident insurance."
+    },
+    "no_insurance_form_update": {
+      "done": "Done. The new version with the insurance note is in use; clients will sign it next time."
+    },
+    "security": {
+      "access_area": {
+        "accounts": "Clients / accounts",
+        "account_members": "Account members"
+      }
+    }
+  },
+  "pages": {
+    "admin": {
+      "requirements": {
+        "display_text_help": "Shown to clients when they sign up, e.g. \"Ages 7 and up\""
+      }
+    },
+    "admin_enrol": {
+      "override_reason_placeholder": "Client asked for a different email",
+      "pay_now_desc": "Enter card details now, for when the client is here in person.",
+      "send_link_desc": "Create the booking and email the client a link to sign the form (if needed) and pay.",
+      "waiver_link_desc": "Email a secure link so the client can sign the form. The link is for the client, not the admin account."
+    },
+    "crm": {
+      "leads": {
+        "description": "Enquiries that have not booked yet. Anyone who has booked is under Clients."
+      }
+    },
+    "enrolment": {
+      "admin_badge_family": "Account",
+      "admin_search_label": "Search students or accounts",
+      "admin_select_desc": "Search for an existing student, or add a new one.",
+      "ineligible_account": "Not in the selected account",
+      "linked_family": "Linked account",
+      "change_family": "Change account",
+      "add_child_to_family": "Add a new student to an account",
+      "add_new_child_to_family": "Add a new student to this account",
+      "admin_existing_family_hint": "{{name}} is already registered. The new student will be added to their account.",
+      "admin_add_child_desc": "Enter the new student's details. They will be added to the linked account.",
+      "admin_new_family_hint": "No account for this email yet. Enter the contact details below.",
+      "admin_no_children": "No students found on this account.",
+      "new_adult_desc": "A new client record will be created.",
+      "select_student_desc": "Choose who you are signing up, or add someone new.",
+      "no_account_linked": "Your login is not linked to an account. Please contact the studio.",
+      "confirmation_portal_hint": "We will email {{email}} a link to your account."
+    },
+    "notifications": {
+      "scope_all": "All clients",
+      "account_search_placeholder": "Search by name, contact or email"
+    },
+    "people": {
+      "empty_message": "Add your first client to get started."
+    },
+    "students": {
+      "filter_by_family": "Account",
+      "family_search_placeholder": "Search account name or contact…",
+      "filter_by_family_selected": "Selected accounts",
+      "no_family": "No account linked"
+    }
+  },
+  "settings": {
+    "class_cards": {
+      "shared": "shared on the account",
+      "shareable_label": "People on the same account can use it"
+    },
+    "offline_payments": {
+      "description": "Choose whether clients pay online or at the studio.",
+      "enabled_label": "Clients pay at the studio (cash or bank transfer)",
+      "instructions_hint": "Shown on the booking page and in payment reminders. Write it in the language your clients read.",
+      "instructions_label": "Payment instructions shown to clients",
+      "title": "How clients pay"
+    },
+    "onboarding": {
+      "entity_account_desc": "Billing group",
+      "tax_price_hint": "Enter the amount clients pay. That is the amount charged at checkout."
+    },
+    "tax": {
+      "class_price_rule": "Enter each price as the amount clients pay. That is the amount charged at checkout.",
+      "what_we_do_charge": "Charges clients the price you enter.",
+      "what_we_dont_incl_excl": "Offer separate “incl. VAT” or “excl. VAT” price modes. Always enter the amount clients pay."
+    }
+  },
+  "setup_guide": {
+    "rows": {
+      "branding": {
+        "hint": "Clients see these on every page."
+      },
+      "test_enrolment": {
+        "hint": "Open your public page and go through a booking, to see what clients see.",
+        "title": "Try it as a client"
+      }
+    }
+  }
+}

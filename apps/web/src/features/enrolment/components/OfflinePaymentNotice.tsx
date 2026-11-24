@@ -3,20 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { clearEnrollmentIntent } from '@/lib/enrollment-intent';
 import queryClient from '@/lib/query-client';
+import { PayDirectChoice } from '@/features/pay-direct/PayDirectChoice';
+import type { PayDirectTarget } from '@/features/pay-direct/payDirectService';
 
 /**
  * Shown instead of a card form when the studio takes payment at the studio
  * (payment_provider = "offline"). The place is reserved as "pending payment";
  * an admin records the payment later (Students → Record a payment).
  * `instructions` is the studio's own text (tenants.offline_payment_instructions).
+ * Below it, the ways the studio takes (Bit, bank transfer, cash, cheque: Settings › Online
+ * payments): the client picks one and can send a payment screenshot. Never required.
  */
 export function OfflinePaymentNotice({
   instructions,
   notSetUp = false,
+  payDirectTarget,
 }: {
   instructions?: string | null;
   /** The studio chose online payment but has not connected it yet. */
   notSetUp?: boolean;
+  /** This enrolment, so the client can pick a way to pay and send a screenshot. */
+  payDirectTarget?: PayDirectTarget;
 }) {
   const { t } = useTranslation();
   const trimmed = instructions?.trim() || null;
@@ -41,6 +48,7 @@ export function OfflinePaymentNotice({
           <p className="text-sm text-foreground whitespace-pre-line">{trimmed}</p>
         </div>
       )}
+      {payDirectTarget && <PayDirectChoice target={payDirectTarget} />}
       <p className="text-sm text-muted-foreground">{t('enrolment.offline_payment_next')}</p>
       <Link to="/dashboard" className="inline-block text-sm font-medium text-primary underline">
         {t('enrolment.offline_payment_portal_link')}

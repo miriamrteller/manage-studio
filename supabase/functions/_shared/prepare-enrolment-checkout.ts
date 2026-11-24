@@ -159,9 +159,9 @@ export async function prepareEnrolmentCheckout(
   if (!contextResult.ok) return contextResult;
 
   const context = contextResult.context;
-  const waiverBlocksPayment =
-    context.waiverRequired && !context.waiverAlreadySigned;
-  const blockReason = resolveBootstrapBlockReason(context.status, waiverBlocksPayment);
+  // Owner rule: nothing ever blocks payment. An unsigned form is signed after
+  // paying (finalise-payment moves the booking to pending_waiver and emails the link).
+  const blockReason = resolveBootstrapBlockReason(context.status);
 
   if (body.phase === "load" || blockReason) {
     return {

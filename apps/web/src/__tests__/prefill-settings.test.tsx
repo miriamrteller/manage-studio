@@ -250,6 +250,14 @@ describe('Email announcement: presets and greeting', () => {
     expect(screen.getByRole('combobox', { name: i18n.t('pages.notifications.class_label') })).toHaveValue(CLASS_ID);
   });
 
+  it('?scope=leads (from the Leads page) picks the leads audience, with no marketing option', async () => {
+    setTenant('dance');
+    renderInApp(<NotificationBlastForm />, { path: '/admin/notifications', initialEntry: '/admin/notifications?scope=leads' });
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Leads (not enrolled yet)' })).toBeChecked());
+    expect(screen.getByText(i18n.t('pages.notifications.scope_leads_hint'))).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: new RegExp(i18n.t('legal.blast.marketing')) })).toBeNull();
+  });
+
   it('ignores an unknown class id', async () => {
     setTenant('dance');
     renderInApp(<NotificationBlastForm />, {

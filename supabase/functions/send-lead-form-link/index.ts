@@ -4,7 +4,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../_shared/notification-from.ts";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
-import { formLinkEmail, websiteInstructionsEmail } from "../_shared/email-dist/leadShare.js";
+import { formLinkEmail, STUDIO_LINK_PATHS, studioLinkEmail, websiteInstructionsEmail } from "../_shared/email-dist/leadShare.js";
 import { FORM_TIME_ZONE, leadFormIsOpen, todayIn } from "../_shared/email-dist/leadForm.js";
 import {
   LEAD_LINK_ACTIONS,
@@ -18,6 +18,8 @@ import { INVITE_TTL_DAYS, inviteTokenHash, inviteUrl, newInviteToken } from "../
  * send-lead-form-link — a studio admin emails, from the studio:
  *   kind "form":             its enquiry form link to one person (tagged src=direct)
  *   kind "web_instructions": the embed code + steps to whoever runs its website
+ *   kind "class_link":       its class list (/classes) to a lead, the next step for class studios
+ *   kind "booking_link":     its booking page (/book) to a lead, the next step for appointments
  * (docs/plans/LEADS.md, 2c-ii).
  *
  * The email is built here from fixed templates (packages/shared/src/leadShare.ts):
@@ -29,7 +31,7 @@ import { INVITE_TTL_DAYS, inviteTokenHash, inviteUrl, newInviteToken } from "../
  */
 
 const bodySchema = z.object({
-  kind: z.enum(["form", "web_instructions"]),
+  kind: z.enum(["form", "web_instructions", "class_link", "booking_link"]),
   email: z.string().max(254),
   name: z.string().max(80).nullable().optional(),
   lang: z.enum(["en", "he"]).nullable().optional(),
@@ -141,11 +143,23 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
     else formUrl = inviteUrl(formUrl, token);
   }
 
+  const studioLinkUrl = body.kind === "class_link" || body.kind === "booking_link"
+    ? `${formOrigin}${STUDIO_LINK_PATHS[body.kind]}`
+    : null;
   const email = body.kind === "form"
     ? formLinkEmail({
       studio,
       recipientName: body.name ?? null,
       formUrl,
+      lang,
+      colour: tenant.primary_color as string | null,
+    })
+    : body.kind === "class_link" || body.kind === "booking_link"
+    ? studioLinkEmail({
+      studio,
+      recipientName: body.name ?? null,
+      url: studioLinkUrl as string,
+      kind: body.kind,
       lang,
       colour: tenant.primary_color as string | null,
     })
@@ -182,6 +196,7 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
       outcome,
       src: body.kind === "form" ? "direct" : null,
       form: body.kind === "form" ? formPath : null,
+      link: studioLinkUrl,
     },
   });
   if (outcome === "sent") {
@@ -189,7 +204,11 @@ Deno.serve(withMonitoring("send-lead-form-link", async (req) => {
       tenant_id: tenantId,
       recipient_email: recipient,
       channel: "email",
-      template_name: body.kind === "form" ? "lead_form_link" : "lead_form_web_instructions",
+      template_name: body.kind === "form"
+        ? "lead_form_link"
+        : body.kind === "web_instructions"
+        ? "lead_form_web_instructions"
+        : `lead_${body.kind}`,
       subject: email.subject,
       external_msg_id: externalId,
       status: "sent",

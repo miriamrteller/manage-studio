@@ -44,6 +44,7 @@ import { buildEmbedSnippet, readEmbedLanguage, readInquiryTags } from '@/feature
 import { WebsiteFormSettings } from '@/features/settings/components/WebsiteFormSettings';
 import {
   leadCaptchaPasses,
+  leadEmailProblem,
   normaliseCampaign,
 } from '../../../../supabase/functions/_shared/crm-contract/lead-capture-guard.ts';
 
@@ -57,6 +58,7 @@ function renderAt(url: string, ui: ReactNode) {
 
 function fillName() {
   fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+  fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: 'dana@example.com' } });
 }
 
 function sentBody(): Record<string, unknown> {
@@ -89,6 +91,24 @@ describe('InquiryForm without Turnstile', () => {
     });
   });
 
+  it('embedded: once sent, tells the host page so it can scroll the thank-you into view', async () => {
+    const postMessage = vi.fn();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const parent = Object.getOwnPropertyDescriptor(window, 'parent');
+    Object.defineProperty(window, 'parent', { value: { postMessage }, configurable: true });
+    try {
+      renderAt('/embed/inquire', <InquiryForm embedded />);
+      fillName();
+      fireEvent.click(screen.getByRole('button', { name: 'pages.crm.inquire.submit' }));
+      await screen.findByRole('status');
+      await waitFor(() => expect(postMessage).toHaveBeenCalledWith({ type: 'opalswift:form-sent' }, '*'));
+      expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    } finally {
+      if (parent) Object.defineProperty(window, 'parent', parent);
+      scrollTo.mockRestore();
+    }
+  });
+
   it('accepts UTM names for the tags', async () => {
     renderAt('/inquire?utm_source=instagram&utm_campaign=spring', <InquiryForm />);
     fillName();
@@ -109,6 +129,52 @@ describe('InquiryForm without Turnstile', () => {
     const consent = sentBody().marketingConsent as { version: string; items: Array<{ kind: string; wording: string }> };
     expect(consent.items).toHaveLength(1);
     expect(consent.items[0].wording.length).toBeGreaterThan(0);
+  });
+});
+
+describe('email is required (name too; phone stays optional)', () => {
+  it('marks the email field required with an asterisk, and phone optional', () => {
+    renderAt('/inquire', <InquiryForm />);
+    const email = screen.getByLabelText(/pages.crm.inquire.email/) as HTMLInputElement;
+    expect(email.required).toBe(true);
+    expect(email.type).toBe('email');
+    expect(screen.getByText(/pages.crm.inquire.email \*/)).toBeTruthy();
+    expect((screen.getByLabelText(/pages.crm.inquire.phone/) as HTMLInputElement).required).toBe(false);
+  });
+
+  it('without an email nothing is sent and the visitor is told why', async () => {
+    renderAt('/inquire', <InquiryForm />);
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.phone/), { target: { value: '050-0000000' } });
+    fireEvent.submit(screen.getByRole('form'));
+    expect((await screen.findByRole('alert')).textContent).toBe('pages.crm.inquire.email_required_error');
+    expect(h.invoke).not.toHaveBeenCalled();
+  });
+
+  it('an invalid email is not sent either', async () => {
+    renderAt('/inquire', <InquiryForm />);
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: 'dana-at-example' } });
+    fireEvent.submit(screen.getByRole('form'));
+    expect((await screen.findByRole('alert')).textContent).toBe('pages.crm.inquire.email_required_error');
+    expect(h.invoke).not.toHaveBeenCalled();
+  });
+
+  it('the server refusing the email shows the same message', async () => {
+    h.invoke.mockResolvedValueOnce({ data: { error: 'email_required' }, error: null });
+    renderAt('/inquire', <InquiryForm />);
+    fillName();
+    fireEvent.click(screen.getByRole('button', { name: 'pages.crm.inquire.submit' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('pages.crm.inquire.email_required_error');
+  });
+
+  it('sends the trimmed email', async () => {
+    renderAt('/inquire', <InquiryForm />);
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.name/), { target: { value: 'Dana' } });
+    fireEvent.change(screen.getByLabelText(/pages.crm.inquire.email/), { target: { value: '  dana@example.com ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'pages.crm.inquire.submit' }));
+    await screen.findByRole('status');
+    expect(sentBody()).toMatchObject({ email: 'dana@example.com', phone: null });
   });
 });
 
@@ -169,7 +235,7 @@ describe('tags and snippet', () => {
   });
 
   it('Settings shows the snippet and updates it with the campaign', () => {
-    renderAt('/admin/setup/settings', <WebsiteFormSettings />);
+    renderAt('/admin/settings', <WebsiteFormSettings />);
     const code = screen.getByLabelText('settings.website_form.snippet_label') as HTMLTextAreaElement;
     expect(code.value).toContain('/embed/inquire?src=website');
     fireEvent.change(screen.getByLabelText('settings.website_form.campaign_label'), { target: { value: 'flyer' } });
@@ -191,6 +257,14 @@ describe('server guards (crm-lead-capture)', () => {
     expect(normaliseCampaign('  open\nday ')).toBe('open day');
     expect(normaliseCampaign('')).toBeNull();
     expect(normaliseCampaign('x'.repeat(300))).toHaveLength(100);
+  });
+
+  it('email: required and must look like an address', () => {
+    expect(leadEmailProblem(null)).toBe('email_required');
+    expect(leadEmailProblem('  ')).toBe('email_required');
+    expect(leadEmailProblem('nope')).toBe('email_invalid');
+    expect(leadEmailProblem(`${'a'.repeat(320)}@x.com`)).toBe('email_invalid');
+    expect(leadEmailProblem(' dana@example.com ')).toBeNull();
   });
 });
 

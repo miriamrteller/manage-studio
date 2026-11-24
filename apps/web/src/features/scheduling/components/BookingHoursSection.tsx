@@ -1,0 +1,248 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { FEATURES } from '@shared/index';
+import { useTenant } from '@/hooks/useTenant';
+import { useHasFeature } from '@/hooks/useHasFeature';
+import queryClient from '@/lib/query-client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  BookingSettingsService,
+  DEFAULT_BOOKING_SETTINGS,
+  DEFAULT_BOOKING_HOURS,
+  HOLD_EXPIRY_OPTIONS,
+  EXPIRY_REMINDER_OPTIONS,
+  type BookingSettings,
+  type BookingHours,
+} from '@/features/scheduling/bookingSettingsService';
+import { BookingPenaltySettingsFields } from './BookingPenaltySettingsFields';
+import { BookingHoursEditor } from './BookingHoursEditor';
+
+const DAY_LABELS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Booking hours (Appointments businesses): when clients can book a time slot online, and the
+ * booking rules. Lives folded at the bottom of the Diary (owner, 13 Nov 2026); everything is
+ * prefilled, so it is opened only to change something.
+ */
+export function BookingHoursSection() {
+  const { t, i18n } = useTranslation();
+  const tenant = useTenant();
+  const { hasFeature } = useHasFeature();
+  const dayLabels = i18n.language === 'en' ? DAY_LABELS_EN : DAY_LABELS_HE;
+  const canManage = hasFeature(FEATURES.scheduling.adminBooking);
+
+  const [settings, setSettings] = useState<BookingSettings>(DEFAULT_BOOKING_SETTINGS);
+  const [hours, setHours] = useState<BookingHours[]>([]);
+  // No hours saved: booking is open on the default hours, shown prefilled.
+  const [hoursAreDefault, setHoursAreDefault] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<{ kind: 'ok' | 'error'; msg: string } | null>(null);
+
+  const penaltiesEnabled = hasFeature(FEATURES.scheduling.penalties);
+
+  const settingsQuery = useQuery({
+    // Not ['bookingSettings', id]: BookingServicesPage and useBookingEnabled cache
+    // the bare settings object under that key, and this query caches {s, h} —
+    // sharing the key serves the wrong shape from cache and crashes the page.
+    queryKey: ['bookingSettings', tenant?.id, 'withHours'],
+    queryFn: async () => {
+      if (!tenant?.id) return null;
+      const [s, h] = await Promise.all([
+        BookingSettingsService.getSettings(tenant as never),
+        BookingSettingsService.getHours(tenant as never),
+      ]);
+      return { s, h };
+    },
+    enabled: !!tenant?.id && canManage,
+  });
+
+  useEffect(() => {
+    if (settingsQuery.data) {
+      setSettings(settingsQuery.data.s ?? DEFAULT_BOOKING_SETTINGS);
+      const saved = settingsQuery.data.h ?? [];
+      const noneSaved = !saved.some((h) => h.is_active);
+      setHoursAreDefault(noneSaved);
+      setHours(noneSaved ? DEFAULT_BOOKING_HOURS.map((h) => ({ ...h })) : saved);
+    }
+  }, [settingsQuery.data]);
+
+  function update<K extends keyof BookingSettings>(key: K, value: BookingSettings[K]) {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function addHours() {
+    setHours((prev) => [...prev, { day_of_week: 0, start_time: '09:00', end_time: '17:00', is_active: true }]);
+  }
+
+  function updateHour(index: number, patch: Partial<BookingHours>) {
+    setHours((prev) => prev.map((h, i) => (i === index ? { ...h, ...patch } : h)));
+  }
+
+  function removeHour(index: number) {
+    setHours((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSave() {
+    if (!tenant?.id) return;
+    setSaving(true);
+    setStatus(null);
+    try {
+      await BookingSettingsService.saveSettings(tenant as never, settings);
+      await BookingSettingsService.saveHours(tenant as never, hours);
+      setHoursAreDefault(false);
+      // Prefix match also refreshes the services page and the nav drawer's
+      // booking-enabled state, which cache under ['bookingSettings', id].
+      await queryClient.invalidateQueries({ queryKey: ['bookingSettings', tenant.id] });
+      setStatus({ kind: 'ok', msg: t('scheduling.booking.saved') });
+    } catch (e) {
+      setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!canManage) return null;
+
+  return (
+    <>
+      <section className="card border border-gray-200 space-y-4 p-4">
+        {!settings.is_booking_enabled && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+            {t('scheduling.booking.enable_required')}
+          </div>
+        )}
+        <label className="flex items-center gap-2">
+          <Checkbox
+            checked={settings.is_booking_enabled}
+            onCheckedChange={(c) => update('is_booking_enabled', c)}
+          />
+          <span className="font-medium">{t('scheduling.booking.enable')}</span>
+        </label>
+        <p className="text-sm text-gray-500">{t('scheduling.booking.enable_hint')}</p>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={t('scheduling.booking.slot_duration')}>
+            <Input
+              type="number"
+              min={5}
+              value={settings.slot_duration_mins}
+              onChange={(e) => update('slot_duration_mins', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('scheduling.booking.buffer')}>
+            <Input
+              type="number"
+              min={0}
+              value={settings.buffer_mins}
+              onChange={(e) => update('buffer_mins', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('scheduling.booking.max_per_day')}>
+            <Input
+              type="number"
+              min={0}
+              value={settings.max_per_day ?? ''}
+              onChange={(e) =>
+                update('max_per_day', e.target.value === '' ? null : Number(e.target.value))
+              }
+            />
+          </Field>
+          <Field label={t('scheduling.booking.advance_notice')}>
+            <Input
+              type="number"
+              min={0}
+              value={settings.advance_notice_hrs}
+              onChange={(e) => update('advance_notice_hrs', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('scheduling.booking.booking_window')}>
+            <Input
+              type="number"
+              min={1}
+              value={settings.booking_window_days}
+              onChange={(e) => update('booking_window_days', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('scheduling.booking.hold_expiry')}>
+            <Select
+              value={settings.hold_expiry_mins}
+              onChange={(e) => update('hold_expiry_mins', Number(e.target.value))}
+            >
+              {HOLD_EXPIRY_OPTIONS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('scheduling.booking.expiry_reminder')}>
+            <Select
+              value={settings.expiry_reminder_mins ?? ''}
+              onChange={(e) =>
+                update('expiry_reminder_mins', e.target.value === '' ? null : Number(e.target.value))
+              }
+            >
+              <option value="">{t('scheduling.booking.expiry_reminder_off')}</option>
+              {EXPIRY_REMINDER_OPTIONS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {penaltiesEnabled && (
+            <BookingPenaltySettingsFields settings={settings} onUpdate={update} />
+          )}
+        </div>
+      </section>
+
+      {hoursAreDefault && (
+        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" role="status">
+          {t('scheduling.booking.hours_default_note')}
+        </p>
+      )}
+      <BookingHoursEditor
+        hours={hours}
+        dayLabels={dayLabels}
+        onAdd={addHours}
+        onUpdate={updateHour}
+        onRemove={removeHour}
+      />
+
+      <div>
+        <Button variant="primary" isLoading={saving} onClick={handleSave}>
+          {t('scheduling.booking.save')}
+        </Button>
+      </div>
+      <StatusNote status={status} />
+    </>
+  );
+}
+
+function StatusNote({ status }: { status: { kind: 'ok' | 'error'; msg: string } | null }) {
+  if (!status) return null;
+  return (
+    <div
+      className={`rounded-md border p-3 text-sm ${
+        status.kind === 'ok' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'
+      }`}
+      role={status.kind === 'error' ? 'alert' : 'status'}
+    >
+      {status.msg}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      {children}
+    </label>
+  );
+}

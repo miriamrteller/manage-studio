@@ -19,6 +19,7 @@ vi.mock('../hooks/useCurrentUser', () => ({ useCurrentUser: () => ({ user: null,
 vi.mock('../components/Navigation', () => ({
   AppHeader: () => null,
   NavDrawer: () => null,
+  AreaTabs: () => null,
   NavDrawerProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useNavDrawer: () => ({ isPinned: false }),
 }));

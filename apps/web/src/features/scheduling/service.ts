@@ -58,6 +58,17 @@ export class ScheduleService extends BaseService {
     }, 'ScheduleService.listPublicEvents');
   }
 
+  /** Blocks that have not ended yet, soonest first (admin booking settings). */
+  static async listUpcomingBlocks(tenant: Tenant): Promise<SchedulingBlock[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await TenantDB.selectFor('scheduling_blocks', tenant)
+        .gt('end_time', new Date().toISOString())
+        .order('start_time', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as SchedulingBlock[];
+    }, 'ScheduleService.listUpcomingBlocks');
+  }
+
   static async createBlock(
     tenant: Tenant,
     block: { summary: string; start_time: string; end_time: string },

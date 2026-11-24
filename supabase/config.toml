@@ -246,6 +246,14 @@ entrypoint = "./functions/check-invoicing-auth/index.ts"
 
 # --- Scheduling (native booking + Google Calendar) ---------------------------
 # Public / anon-callable booking endpoints (no user session).
+[functions.client-sign-in]
+enabled = true
+# Booked clients sign in without a password: "open" (the email link's token is the
+# credential) and "prepare" (makes a booked client's login before the login page sends
+# the sign-in email; same answer for everyone). Public, checked in-function.
+verify_jwt = false
+entrypoint = "./functions/client-sign-in/index.ts"
+
 [functions.prepare-booking-checkout]
 enabled = true
 # Public booking checkout: needs a live scheduling hold (hold_id) for that studio, checked in-function.
@@ -408,6 +416,25 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/smugmug-connection/index.ts"
 
+# OpalSwift support: the platform owner (super_admin only, checked in-function)
+# opens a studio's support login after the confirm step. Logged for the studio.
+[functions.platform-support-session]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/platform-support-session/index.ts"
+
+# Studio shop: the studio marks a paid order ready to collect (emails the family) or collected.
+[functions.studio-shop-order]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/studio-shop-order/index.ts"
+
+[functions.studio-shop-checkout]
+enabled = true
+# Public Shop page checkout: anyone can buy. Turnstile captcha, honeypot and rate limit checked in-function.
+verify_jwt = false
+entrypoint = "./functions/studio-shop-checkout/index.ts"
+
 [functions.verify-takbull-credentials]
 enabled = true
 verify_jwt = true
@@ -461,8 +488,28 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/run-lead-followup-digest/index.ts"
 
+# Cron: morning-of class reminders and "no class" notices to enrolled families. CRON_SECRET auth.
+[functions.run-class-reminders]
+enabled = true
+# Scheduled job: CRON_SECRET checked in-function (rejectUnlessCron), refused when unset.
+verify_jwt = false
+entrypoint = "./functions/run-class-reminders/index.ts"
+
 # --- Photographer beta: job (shoot) deposit/balance payments ---------------
+[functions.photo-shop-link]
+# Photo shop "Send shop link": "open" is public (the link's token is the credential);
+# "create" checks the studio admin's JWT in-function.
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/photo-shop-link/index.ts"
+
 # Public pay page backend: the request's public_token is the capability.
+[functions.client-pay-direct]
+enabled = true
+# Public payment pages: the /pay token, or the enrolment token / sign-in (as create-checkout), checked in-function.
+verify_jwt = false
+entrypoint = "./functions/client-pay-direct/index.ts"
+
 [functions.job-payment-request-public]
 enabled = true
 # Public pay page: the payment request's token is the credential.
@@ -475,6 +522,18 @@ enabled = true
 # Sign-in checked in-function (requireAuthUser / auth.getUser).
 verify_jwt = false
 entrypoint = "./functions/send-job-payment-link/index.ts"
+
+[functions.cancel-job]
+enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
+verify_jwt = false
+entrypoint = "./functions/cancel-job/index.ts"
+
+[functions.send-imported-receipts]
+enabled = true
+# Sign-in checked in-function (requireAuthUser / auth.getUser).
+verify_jwt = false
+entrypoint = "./functions/send-imported-receipts/index.ts"
 
 [functions.record-job-payment]
 enabled = true

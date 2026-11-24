@@ -92,3 +92,22 @@ export function useAutomaticEmails() {
   });
   return { settings: query.data, isLoading: query.isLoading, error: query.error, toggle };
 }
+
+export function useReviewUrl() {
+  const tenant = useTenant();
+  const queryClient = useQueryClient();
+  const key = ['review-url', tenant?.id];
+  const query = useQuery({
+    queryKey: key,
+    queryFn: () => (tenant ? QuoteService.reviewUrl(tenant.id) : Promise.reject(new Error('No tenant'))),
+    enabled: !!tenant?.id,
+  });
+  const save = useMutation({
+    mutationFn: (url: string) => {
+      if (!tenant) throw new Error('Tenant not initialized');
+      return QuoteService.setReviewUrl(tenant.id, url);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: key }),
+  });
+  return { reviewUrl: query.data ?? null, isLoading: query.isLoading, save };
+}

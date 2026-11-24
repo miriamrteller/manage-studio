@@ -30,7 +30,7 @@ export interface AcceptQuoteResult {
 
 /** Row of list_due_shoot_emails(). */
 export interface DueShootEmail {
-  email_key: "shoot_reminder" | "shoot_thank_you" | "gallery_ready";
+  email_key: "shoot_reminder" | "shoot_thank_you" | "gallery_ready" | "review_request";
   tenant_id: string;
   engagement_id: string;
   recipient_email: string;
@@ -51,6 +51,8 @@ export function bookingConfirmedVariables(
     signUrl?: string | null;
     /** Absolute deposit pay link (step 2), while the deposit is unpaid. */
     payUrl?: string | null;
+    /** 3-day sign-in link to the client's page (client-login.ts), with its wording. */
+    signIn?: { url: string | null; body: string; cta: string; before: string } | null;
   },
 ): Record<string, string> {
   const currency = result.currency ?? "ILS";
@@ -67,10 +69,23 @@ export function bookingConfirmedVariables(
     // Only safe http(s) links; an absent step drops out of the email (render.ts).
     ...(isSafeLink(input.signUrl) ? { signUrl: input.signUrl as string } : {}),
     ...(isSafeLink(input.payUrl) ? { payUrl: input.payUrl as string } : {}),
+    ...(input.signIn && isSafeLink(input.signIn.url)
+      ? {
+        signInUrl: input.signIn.url as string,
+        signInBody: input.signIn.body,
+        signInCta: input.signIn.cta,
+        signInBefore: input.signIn.before,
+      }
+      : {}),
   };
 }
 
-export function dueShootEmailVariables(row: DueShootEmail, language: EmailLanguage): Record<string, string> {
+export function dueShootEmailVariables(
+  row: DueShootEmail,
+  language: EmailLanguage,
+  /** The studio's review link (tenants.review_url); used by review_request only. */
+  reviewUrl?: string | null,
+): Record<string, string> {
   const recipientName = row.recipient_name?.trim() || (language === "he" ? "לקוח/ה יקר/ה" : "there");
   switch (row.email_key) {
     case "shoot_reminder":
@@ -84,11 +99,25 @@ export function dueShootEmailVariables(row: DueShootEmail, language: EmailLangua
       return { recipientName };
     case "gallery_ready":
       return { recipientName, galleryUrl: row.gallery_url ?? "" };
+    case "review_request":
+      return { recipientName, reviewUrl: reviewUrl ?? "" };
     default: {
       const exhaustive: never = row.email_key;
       throw new Error(`Unknown shoot email ${String(exhaustive)}`);
     }
   }
+}
+
+/** Shoot cancelled email: who, and the date/time that no longer goes ahead. */
+export function shootCancelledVariables(
+  input: { recipientName: string | null; startsAt: string | null },
+  language: EmailLanguage,
+): Record<string, string> {
+  return {
+    recipientName: input.recipientName?.trim() || (language === "he" ? "לקוח/ה יקר/ה" : "there"),
+    shootDate: formatInstantDate(input.startsAt, language),
+    shootTime: formatInstantTime(input.startsAt, language),
+  };
 }
 
 /** Only http(s) links may go into an email button. */

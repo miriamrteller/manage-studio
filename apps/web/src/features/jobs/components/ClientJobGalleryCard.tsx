@@ -1,9 +1,11 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useJobGallery, useJobPaymentRequests } from '../hooks/useJobPaymentRequests';
 import { formatDueDate, formatMinor } from '../lib/jobPaymentFormat';
 import { JobPaymentService } from '../services/jobPaymentService';
-import { safeGalleryUrl } from '../lib/galleryUrl';
+import { isSmugMugUrl, safeGalleryUrl } from '../lib/galleryUrl';
+import { useClientPhotoShopOpen } from '../hooks/useClientPhotoShopOpen';
 
 interface Props {
   engagementId: string;
@@ -26,9 +28,24 @@ export function ClientJobGalleryCard({ engagementId, currency, mode = 'full' }: 
   return <FullCard engagementId={engagementId} currency={currency} />;
 }
 
-function GalleryLink({ gallery }: { gallery: ReturnType<typeof useJobGallery>['gallery'] }) {
+/**
+ * The gallery opens the shoot's photo shop page (/photos/:id) when it has one, like the
+ * gallery email's button; otherwise the studio's own gallery link, but never SmugMug
+ * (owner, 22 Nov 2026).
+ */
+function GalleryLink({ engagementId, gallery }: { engagementId: string; gallery: ReturnType<typeof useJobGallery>['gallery'] }) {
   const { t } = useTranslation();
-  const href = gallery?.released ? safeGalleryUrl(gallery.gallery_url) : null;
+  const shop = useClientPhotoShopOpen([engagementId]);
+  if (shop.loading) return null;
+  if (shop.open) {
+    return (
+      <Link className="inline-block text-sm font-medium underline text-primary" to={`/photos/${encodeURIComponent(engagementId)}`}>
+        {t('pages.jobs.client_portal.openGallery')}
+      </Link>
+    );
+  }
+  const link = gallery?.released ? safeGalleryUrl(gallery.gallery_url) : null;
+  const href = link && !isSmugMugUrl(link) ? link : null;
   if (href) {
     return (
       <a className="inline-block text-sm font-medium underline text-primary" href={href} target="_blank" rel="noopener noreferrer">
@@ -49,7 +66,7 @@ function GalleryOnly({ engagementId }: { engagementId: string }) {
   if (!gallery?.has_gallery) {
     return <p className="text-sm text-muted-foreground">{t('pages.client_portal.gallery_not_ready')}</p>;
   }
-  return <GalleryLink gallery={gallery} />;
+  return <GalleryLink engagementId={engagementId} gallery={gallery} />;
 }
 
 function FullCard({ engagementId, currency }: { engagementId: string; currency: string }) {
@@ -83,7 +100,7 @@ function FullCard({ engagementId, currency }: { engagementId: string; currency: 
           ))}
         </ul>
       )}
-      <GalleryLink gallery={gallery} />
+      <GalleryLink engagementId={engagementId} gallery={gallery} />
     </section>
   );
 }

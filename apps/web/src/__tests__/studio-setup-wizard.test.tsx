@@ -183,7 +183,7 @@ describe('studio setup wizard', () => {
     });
     expect(screen.getByRole('status')).toHaveTextContent('We emailed an invitation to owner@example.com');
     expect(screen.getByRole('link', { name: 'creativeballet.opalswift.com' })).toHaveAttribute('href', 'https://creativeballet.opalswift.com');
-    expect(screen.getByRole('link', { name: "Open the studio's settings" })).toHaveAttribute('href', 'https://creativeballet.opalswift.com/admin/setup');
+    expect(screen.getByRole('link', { name: "Open the studio's settings" })).toHaveAttribute('href', 'https://creativeballet.opalswift.com/admin');
     expect(screen.getByText('Have a lawyer review the legal documents.')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(6);
   });

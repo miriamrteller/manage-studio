@@ -243,9 +243,6 @@ export function PersonDetail({ id, onClose }: PersonDetailProps) {
           {t('common.edit')}
         </Button>
       </div>
-
-      {/* Data removal note — hard delete is not permitted per SPEC §D / migration 039 */}
-      <p className="text-xs text-gray-400 pt-2">{t('pages.people.delete_note')}</p>
     </div>
   );
 }

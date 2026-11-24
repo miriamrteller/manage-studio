@@ -81,6 +81,8 @@ export type EnrolmentConfirmationEmailVariables = {
   location?: string;
   pendingWaiver: boolean;
   signUrl?: string;
+  /** 3-day sign-in link to the client's page (client-login.ts). */
+  signInUrl?: string;
   deadlineDate?: string;
   paymentSummary: {
     amountFormatted: string;

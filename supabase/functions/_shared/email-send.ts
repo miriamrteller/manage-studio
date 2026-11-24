@@ -119,6 +119,7 @@ export async function sendRenderedEmail(
       pendingWaiver: Boolean(variables.pendingWaiver),
       vertical: renderInput.vertical ?? null,
       signUrl: str(variables.signUrl) || undefined,
+      signInUrl: str(variables.signInUrl) || undefined,
       deadlineDate: str(variables.deadlineDate) || undefined,
       primaryColor: renderInput.tenantColors?.primary_color ?? "#2563eb",
       accentColor: renderInput.tenantColors?.accent_color ?? "#dc2626",

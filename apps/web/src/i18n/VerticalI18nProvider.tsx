@@ -10,14 +10,17 @@ import { overlayNamespaceFor } from './verticalNamespace';
  * back to the base 'translation' namespace (fallbackNS in i18n.ts), so
  * existing t('...') calls pick up overrides with no component changes.
  *
- * Verticals without an overlay (dance, generic, unknown) keep the parent's
- * defaultNS, i.e. exactly the base wording.
+ * Verticals without an overlay (generic, unknown) keep the parent's
+ * defaultNS, i.e. exactly the base wording, unless family accounts are off.
  */
 export function VerticalI18nProvider({
   vertical,
+  familyAccounts,
   children,
 }: {
   vertical: VerticalId | null | undefined;
+  /** false = the studio has family accounts switched off: no family wording. */
+  familyAccounts?: boolean;
   children: ReactNode;
 }) {
   // I18nContext also carries the defaultNS of an enclosing I18nextProvider at
@@ -27,7 +30,7 @@ export function VerticalI18nProvider({
   // No i18next instance (isolated unit renders): nothing to switch.
   if (!instance) return <>{children}</>;
 
-  const overlay = overlayNamespaceFor(vertical);
+  const overlay = overlayNamespaceFor(vertical, { familyAccounts });
   return (
     <I18nextProvider i18n={instance} defaultNS={overlay ?? parent?.defaultNS}>
       {children}

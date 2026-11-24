@@ -23,19 +23,23 @@ export interface AppointmentRow {
   currency: string | null;
   client_name: string | null;
   client_email: string | null;
+  /** The client, for a link to their page. */
+  person_id: string | null;
 }
 
 export class AppointmentsService extends BaseService {
-  static async list(tenant: Tenant): Promise<AppointmentRow[]> {
+  /** Every booking, newest first; with `personId`, only that person's. */
+  static async list(tenant: Tenant, personId?: string): Promise<AppointmentRow[]> {
     return this.withRetry(async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('engagements')
         .select(
-          'id, status, booked_starts_at, booked_ends_at, google_event_id, payment_received_at, cancellation_reason, penalty_applied_at, offerings(name, price_minor, currency), people(name, email)',
+          'id, status, person_id, booked_starts_at, booked_ends_at, google_event_id, payment_received_at, cancellation_reason, penalty_applied_at, offerings(name, price_minor, currency), people(name, email)',
         )
         .eq('tenant_id', tenant.id)
-        .not('booked_starts_at', 'is', null)
-        .order('booked_starts_at', { ascending: false });
+        .not('booked_starts_at', 'is', null);
+      if (personId) query = query.eq('person_id', personId);
+      const { data, error } = await query.order('booked_starts_at', { ascending: false });
       if (error) throw error;
       return (data ?? []).map((row: Record<string, unknown>) => {
         const offering = row.offerings as { name?: string; price_minor?: number; currency?: string } | null;
@@ -54,6 +58,7 @@ export class AppointmentsService extends BaseService {
           currency: offering?.currency ?? null,
           client_name: person?.name ?? null,
           client_email: person?.email ?? null,
+          person_id: (row.person_id as string | null) ?? null,
         };
       });
     }, 'AppointmentsService.list');

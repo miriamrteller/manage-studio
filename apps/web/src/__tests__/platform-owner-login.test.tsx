@@ -22,7 +22,7 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('@/hooks/useAuth', () => ({ useAuthSession: () => ({ session: { user: { id: 'u' } }, isLoading: false }) }));
 vi.mock('@/hooks/useCurrentUser', () => ({ useCurrentUser: () => ({ user: h.user, isLoading: false }) }));
-vi.mock('@/hooks/useTenant', () => ({ useTenantQuery: () => ({ tenant: null, isLoading: false }) }));
+vi.mock('@/hooks/useTenant', () => ({ useTenantQuery: () => ({ tenant: null, isLoading: false }), useTenant: () => null }));
 vi.mock('@/hooks/useEntityLabels', () => ({ useEntityLabels: () => ({ vertical: 'generic' }) }));
 
 import { loginOtpOptions } from '@/lib/loginOtpOptions';

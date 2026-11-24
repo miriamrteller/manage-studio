@@ -283,9 +283,9 @@ export declare const OfferingSchema: z.ZodObject<{
         annual: "annual";
     }>>>;
     status: z.ZodDefault<z.ZodEnum<{
-        full: "full";
         active: "active";
         cancelled: "cancelled";
+        full: "full";
     }>>;
     waiver_required: z.ZodDefault<z.ZodBoolean>;
     location: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -390,13 +390,19 @@ export declare const EngagementSchema: z.ZodObject<{
     payment_dunning_next_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     waiver_evidence_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     discount_minor: z.ZodOptional<z.ZodNumber>;
+    first_discount_minor: z.ZodOptional<z.ZodNumber>;
+    coupon_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     discount_lines: z.ZodOptional<z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
             sibling: "sibling";
             extra_class: "extra_class";
             early_bird: "early_bird";
+            client: "client";
+            coupon: "coupon";
         }>;
         amount_minor: z.ZodNumber;
+        first_only: z.ZodOptional<z.ZodBoolean>;
+        code: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>>>;
     created_at: z.ZodString;
     updated_at: z.ZodOptional<z.ZodString>;
@@ -419,14 +425,11 @@ export type OfferingSession = z.infer<typeof OfferingSessionSchema>;
 export declare const StaffSchema: z.ZodObject<{
     id: z.ZodString;
     tenant_id: z.ZodString;
-    user_profile_id: z.ZodString;
+    user_profile_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     name: z.ZodString;
     email: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     phone: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    contract_type: z.ZodDefault<z.ZodEnum<{
-        employee: "employee";
-        contractor: "contractor";
-    }>>;
+    contract_type: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     hourly_rate_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     created_at: z.ZodString;
 }, z.core.$strip>;
@@ -601,11 +604,11 @@ export declare const PaymentLogRowSchema: z.ZodObject<{
     }>;
     provider: z.ZodString;
     payment_method: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
-        other: "other";
         card: "card";
         cash: "cash";
         bank_transfer: "bank_transfer";
         bit: "bit";
+        other: "other";
     }>>>;
     paid_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     created_at: z.ZodString;
@@ -708,10 +711,10 @@ export declare const ConsentTemplateSchema: z.ZodObject<{
     version: z.ZodNumber;
     version_hash: z.ZodString;
     status: z.ZodEnum<{
-        draft: "draft";
         active: "active";
         archived: "archived";
         approved: "approved";
+        draft: "draft";
     }>;
     audience: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
         child: "child";

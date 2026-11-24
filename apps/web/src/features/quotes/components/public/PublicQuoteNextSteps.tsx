@@ -13,9 +13,10 @@ interface PublicQuoteNextStepsProps {
 }
 
 /**
- * After acceptance: one primary button straight to the next step — sign the
- * contract, or pay the deposit when there is nothing to sign. The same links
- * were emailed, so the client can stop here and come back later.
+ * After acceptance: one primary button straight to payment (owner rule: nothing
+ * ever blocks payment). Signing the contract is offered alongside, never as a
+ * step before paying. The same links were emailed, so the client can stop here
+ * and come back later.
  */
 export function PublicQuoteNextSteps({ result, busy, onResume }: PublicQuoteNextStepsProps) {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ export function PublicQuoteNextSteps({ result, busy, onResume }: PublicQuoteNext
   if (!signPath && !payPath) return null;
 
   const intro = signPath && payPath
-    ? t('pages.public_quote.next_steps.intro_sign_then_pay')
+    ? t('pages.public_quote.next_steps.intro_pay_and_sign')
     : signPath
       ? t('pages.public_quote.next_steps.intro_sign')
       : t('pages.public_quote.next_steps.intro_pay');
@@ -48,9 +49,16 @@ export function PublicQuoteNextSteps({ result, busy, onResume }: PublicQuoteNext
         {t('pages.public_quote.next_steps.heading')}
       </h2>
       <p>{intro}</p>
-      <Button variant="primary" size="lg" onClick={() => navigate((signPath ?? payPath) as string)}>
-        {signPath ? t('pages.public_quote.next_steps.continue_to_sign') : t('pages.public_quote.next_steps.continue_to_pay')}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="primary" size="lg" onClick={() => navigate((payPath ?? signPath) as string)}>
+          {payPath ? t('pages.public_quote.next_steps.continue_to_pay') : t('pages.public_quote.next_steps.continue_to_sign')}
+        </Button>
+        {payPath && signPath && (
+          <Button variant="outline" size="lg" onClick={() => navigate(signPath)}>
+            {t('pages.public_quote.next_steps.sign_contract')}
+          </Button>
+        )}
+      </div>
       <p className="text-sm text-muted-foreground">{t('pages.public_quote.next_steps.emailed')}</p>
     </section>
   );

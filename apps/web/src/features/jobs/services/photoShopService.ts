@@ -9,6 +9,8 @@ import { supabase } from '@/lib/supabase';
  */
 
 export const PHOTO_SHOP_BUCKET = 'photo-shop-photos';
+/** Clients' payment screenshots (private; studio admins read their own studio's). */
+export const PHOTO_ORDER_PROOF_BUCKET = 'photo-order-proofs';
 /** How long the studio's own thumbnail links work. */
 const THUMB_URL_SECONDS = 60 * 60;
 /** Register uploads in small batches so a long upload keeps what's done. */
@@ -28,6 +30,8 @@ export interface JobPhotoShop {
   provider: 'smugmug' | 'mock' | 'upload';
   gallery_key: string | null;
   gallery_name: string | null;
+  /** The chosen SmugMug gallery's own page, saved by Check gallery. */
+  gallery_web_url?: string | null;
   included_photos: number;
   price_per_photo_minor: number | null;
   all_photos_price_minor: number | null;
@@ -37,7 +41,7 @@ export interface JobPhotoShop {
   smugmug_check?: {
     album_key: string;
     passed: boolean;
-    items: { code: string; ok: boolean; value?: string }[];
+    items: { code: string; ok: boolean; value?: string; detail?: string }[];
   } | null;
   /** Photos read at the last passed check (watermarked Large size). */
   smugmug_photos?: { key: string; fileName: string; previewUrl: string }[] | null;
@@ -61,12 +65,31 @@ export interface PhotoOrderItem {
   file_name: string;
   included: boolean;
   price_minor: number;
+  /** digital: the photo file. product: a print (or other product) of the photo. */
+  kind?: 'digital' | 'product';
+  product_name_en?: string | null;
+  product_name_he?: string | null;
+  product_size?: string | null;
 }
+
+/** A product the studio sells per photo (Photo shop > Prices). */
+export interface StudioPhotoProduct {
+  id: string;
+  name_en: string;
+  name_he: string;
+  size_label: string | null;
+  price_minor: number;
+  position: number;
+}
+
+export type StudioPhotoProductInput = Omit<StudioPhotoProduct, 'id'> & { id?: string };
 
 export interface PhotoOrder {
   id: string;
   status: PhotoOrderStatus;
   photo_count: number;
+  /** Product lines (prints ...) in the order. */
+  product_count?: number;
   included_count: number;
   total_minor: number;
   currency: string;
@@ -75,22 +98,64 @@ export interface PhotoOrder {
   created_at: string;
   paid_at: string | null;
   delivered_at: string | null;
+  /** Sent in by the client to pay in cash; the studio records the cash on the order. */
+  pay_by_cash?: boolean;
+  /** A payment screenshot is asked for (the studio had Bit / bank transfer details). */
+  proof_requested?: boolean;
+  /** What the client picked on the payment page: Bit or bank transfer. */
+  pay_method?: 'bit' | 'bank' | null;
+  /** The client's payment screenshot (private bucket), and when it came. */
+  proof_path?: string | null;
+  proof_sent_at?: string | null;
+  job_payment_request_id?: string | null;
   items: PhotoOrderItem[];
+}
+
+/** An order with the shoot it belongs to, for the studio-wide list. */
+export interface StudioPhotoOrder extends PhotoOrder {
+  engagement_id: string;
 }
 
 export interface StudioPhotoShopDefaults {
   price_per_photo_minor: number | null;
   all_photos_price_minor: number | null;
   gallery_open_days: number;
+  /** Clients may also pay by card. Off: they only pay the studio directly. */
+  card_payments: boolean;
+  // The ways to pay the studio directly (Bit, bank, cash, cheque) are studio-wide since
+  // 23 Nov 2026: tenant_pay_ways, features/pay-direct.
 }
 
 export const DEFAULT_GALLERY_OPEN_DAYS = 90;
+
+const ORDER_ITEM_COLUMNS =
+  'image_key, file_name, included, price_minor, kind, product_name_en, product_name_he, product_size';
 
 export class PhotoShopService {
   static async getShop(engagementId: string): Promise<JobPhotoShop> {
     const { data, error } = await supabase.rpc('get_job_photo_shop', { p_engagement_id: engagementId });
     if (error) throw error;
     return data as unknown as JobPhotoShop;
+  }
+
+  /**
+   * engagement id -> name of the SmugMug gallery picked for that shoot, for the
+   * Shoots list (owner, 19 Nov 2026). Shoots with no SmugMug gallery are left out.
+   */
+  static async smugmugGalleryNames(tenantId: string): Promise<Map<string, string>> {
+    const { data, error } = await supabase
+      .from('job_photo_shops')
+      .select('engagement_id, gallery_name')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'smugmug')
+      .not('gallery_key', 'is', null);
+    if (error) throw error;
+    const map = new Map<string, string>();
+    for (const row of (data ?? []) as Array<{ engagement_id: string; gallery_name: string | null }>) {
+      const name = row.gallery_name?.trim();
+      if (name) map.set(row.engagement_id, name);
+    }
+    return map;
   }
 
   static async saveShop(engagementId: string, patch: JobPhotoShopPatch): Promise<JobPhotoShop> {
@@ -107,13 +172,35 @@ export class PhotoShopService {
     const { data, error } = await supabase
       .from('job_photo_orders')
       .select(
-        'id, status, photo_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, items:job_photo_order_items(image_key, file_name, included, price_minor)',
+        `id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, pay_method, proof_requested, proof_path, proof_sent_at, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
       )
       .eq('engagement_id', engagementId)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data ?? []) as unknown as PhotoOrder[];
+  }
+
+  /** Every shoot's orders for the studio, newest first (Photo shop > Orders). Cancelled ones are left out. */
+  static async listStudioOrders(tenantId: string): Promise<StudioPhotoOrder[]> {
+    const { data, error } = await supabase
+      .from('job_photo_orders')
+      .select(
+        `id, engagement_id, status, photo_count, product_count, included_count, total_minor, currency, all_photos, delivery_url, created_at, paid_at, delivered_at, pay_by_cash, pay_method, proof_requested, proof_path, proof_sent_at, job_payment_request_id, items:job_photo_order_items(${ORDER_ITEM_COLUMNS})`,
+      )
+      .eq('tenant_id', tenantId)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return (data ?? []) as unknown as StudioPhotoOrder[];
+  }
+
+  /** A short-lived link to an order's payment screenshot, for the studio. */
+  static async proofUrl(path: string): Promise<string> {
+    const { data, error } = await supabase.storage.from(PHOTO_ORDER_PROOF_BUCKET).createSignedUrl(path, 600);
+    if (error || !data?.signedUrl) throw error ?? new Error('no_url');
+    return data.signedUrl;
   }
 
   /** Saves the download link and emails the client (deliver-photo-order). */
@@ -201,14 +288,68 @@ export class PhotoShopService {
   static async getDefaults(tenantId: string): Promise<StudioPhotoShopDefaults> {
     const { data, error } = await supabase
       .from('tenant_photo_shop_settings')
-      .select('price_per_photo_minor, all_photos_price_minor, gallery_open_days')
+      .select('price_per_photo_minor, all_photos_price_minor, gallery_open_days, card_payments')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     if (error) throw error;
-    return data ?? { price_per_photo_minor: null, all_photos_price_minor: null, gallery_open_days: DEFAULT_GALLERY_OPEN_DAYS };
+    return (
+      data ?? {
+        price_per_photo_minor: null,
+        all_photos_price_minor: null,
+        gallery_open_days: DEFAULT_GALLERY_OPEN_DAYS,
+        card_payments: false,
+      }
+    );
   }
 
-  static async saveDefaults(tenantId: string, values: StudioPhotoShopDefaults): Promise<void> {
+  /** The studio's products (prints ...), in the order it set. */
+  static async listProducts(tenantId: string): Promise<StudioPhotoProduct[]> {
+    const { data, error } = await supabase
+      .from('tenant_photo_products')
+      .select('id, name_en, name_he, size_label, price_minor, position')
+      .eq('tenant_id', tenantId)
+      .eq('active', true)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as StudioPhotoProduct[];
+  }
+
+  /**
+   * Saves the studio's product list as shown: rows with an id are updated, new rows are
+   * added, and products no longer in the list are removed (orders keep their own copy of
+   * the name, size and price).
+   */
+  static async saveProducts(tenantId: string, rows: StudioPhotoProductInput[]): Promise<StudioPhotoProduct[]> {
+    const current = await PhotoShopService.listProducts(tenantId);
+    const keep = new Set(rows.map((r) => r.id).filter((id): id is string => Boolean(id)));
+    const removed = current.filter((p) => !keep.has(p.id)).map((p) => p.id);
+    if (removed.length > 0) {
+      const { error } = await supabase.from('tenant_photo_products').delete().in('id', removed);
+      if (error) throw error;
+    }
+    const clean = rows.map((r, i) => ({
+      tenant_id: tenantId,
+      name_en: r.name_en.trim(),
+      name_he: r.name_he.trim(),
+      size_label: r.size_label?.trim() || null,
+      price_minor: r.price_minor,
+      position: i,
+    }));
+    const updates = rows.flatMap((r, i) => (r.id ? [{ id: r.id, ...clean[i] }] : []));
+    const inserts = rows.flatMap((r, i) => (r.id ? [] : [clean[i]]));
+    if (updates.length > 0) {
+      const { error } = await supabase.from('tenant_photo_products').upsert(updates, { onConflict: 'id' });
+      if (error) throw error;
+    }
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('tenant_photo_products').insert(inserts);
+      if (error) throw error;
+    }
+    return PhotoShopService.listProducts(tenantId);
+  }
+
+  static async saveDefaults(tenantId: string, values: Partial<StudioPhotoShopDefaults>): Promise<void> {
     const { error } = await supabase
       .from('tenant_photo_shop_settings')
       .upsert({ tenant_id: tenantId, ...values }, { onConflict: 'tenant_id' });
@@ -226,6 +367,15 @@ export function majorToMinor(value: string): number | null {
 export function minorToMajor(value: number | null): string {
   if (value == null) return '';
   return (value / 100).toFixed(value % 100 === 0 ? 0 : 2);
+}
+
+export const BIT_PHONE_MAX = 30;
+/** Bank details and cash / cheque instructions, like the database check. */
+export const PAY_TEXT_MAX = 500;
+
+/** Keeps only what a phone number may hold (digits, spaces, + - ( )), like the database check. */
+export function bitPhoneInput(value: string): string {
+  return value.replace(/[^0-9+\-() ]/g, '').slice(0, BIT_PHONE_MAX);
 }
 
 /** https only, like deliver_job_photo_order(). */

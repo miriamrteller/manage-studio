@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useTenant } from '@/hooks/useTenant';
+import { sendShootRequestQuote } from '@/features/quotes/services/sendShootRequestQuote';
 import { useConvertLead, useJobPackages } from '../hooks/useJobs';
 import { fromDateTimeLocal } from '../lib/jobStatus';
 import { PackageSelect } from './PackageSelect';
@@ -16,6 +18,8 @@ interface ConvertLeadPanelProps {
   defaultLocation?: string | null;
   /** Event date from the enquiry form: prefills the date (10:00, editable) and shows as a hint. */
   eventDate?: string | null;
+  /** A shoot request (package + day from the Book page): worded as Confirm. */
+  confirming?: boolean;
   onClose: () => void;
 }
 
@@ -26,20 +30,144 @@ export function eventDateToLocal(eventDate: string | null | undefined): string {
 }
 
 /**
- * Inline "convert lead → job" form: pick the package, optional date/location,
- * then one RPC (convert_lead_to_job) creates client + engagement + job_details
- * and marks the lead converted. Navigates to the new job on success.
+ * "Send quote" (or "Confirm" for a shoot request) on a lead row: one click when
+ * the lead names a package or the studio has only one (owner, 15 Nov 2026), with
+ * the date and place from the enquiry, else the package's place. Otherwise, or
+ * if sending fails, the prefilled form opens instead.
  */
-export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultLocation, eventDate, onClose }: ConvertLeadPanelProps) {
+export function SendLeadQuoteButton({
+  leadId,
+  leadName,
+  offeringId,
+  eventDate,
+  location,
+  onNeedsForm,
+  label,
+}: {
+  leadId: string;
+  leadName: string;
+  offeringId: string | null | undefined;
+  eventDate: string | null | undefined;
+  location: string | null;
+  onNeedsForm: () => void;
+  /** Button text; "Send quote" by default. */
+  label?: string;
+}) {
   const { t } = useTranslation();
+  const packagesQuery = useJobPackages();
+  const { send, busy } = useSendLeadQuote();
+  const packages = packagesQuery.data ?? [];
+  const pkg = packages.find((p) => p.id === offeringId) ?? (packages.length === 1 ? packages[0] : undefined);
+
+  const onClick = async () => {
+    if (!pkg) {
+      onNeedsForm();
+      return;
+    }
+    try {
+      await send({
+        leadId,
+        leadName,
+        offeringId: pkg.id,
+        startsAt: eventDateToLocal(eventDate),
+        location: location || pkg.location || null,
+      });
+    } catch {
+      onNeedsForm();
+    }
+  };
+
+  return (
+    <Button variant="primary" size="sm" isLoading={busy} disabled={busy || packagesQuery.isLoading} onClick={() => void onClick()}>
+      {label ?? t('pages.crm.leads.send_quote')}
+    </Button>
+  );
+}
+
+/**
+ * Inline "Send quote" / "Confirm" form for a lead: package, optional date and
+ * place (all prefilled), then the shoot is booked and the quote is emailed.
+ */
+export interface SendLeadQuoteInput {
+  leadId: string;
+  leadName: string;
+  offeringId: string;
+  /** datetime-local value, or '' for no time yet. */
+  startsAt: string;
+  location: string | null;
+}
+
+/**
+ * Lead → shoot → quote emailed, in one go (owner, 13 Nov 2026: "Send quote" is one
+ * button). The shoot is booked, the quote goes out at the package price with the
+ * deposit, and its page opens. If it cannot be emailed (no address), the saved
+ * quote opens so the studio can send it another way; if no quote could be made,
+ * a new one opens for the shoot.
+ */
+export function useSendLeadQuote() {
   const navigate = useNavigate();
+  const tenant = useTenant();
+  const convert = useConvertLead();
+  const [sendingQuote, setSendingQuote] = useState(false);
+
+  const send = async ({ leadId, leadName, offeringId, startsAt, location }: SendLeadQuoteInput) => {
+    const bookedStartsAt = fromDateTimeLocal(startsAt);
+    const engagementId = await convert.mutateAsync({
+      lead_id: leadId,
+      offering_id: offeringId,
+      booked_starts_at: bookedStartsAt,
+      location: location || null,
+    });
+    if (tenant) {
+      setSendingQuote(true);
+      try {
+        const { quoteId } = await sendShootRequestQuote({
+          tenantId: tenant.id,
+          emailLanguage: tenant.language_default ?? 'he',
+          engagementId,
+          offeringId,
+          clientName: leadName,
+          bookedStartsAt,
+        });
+        if (quoteId) {
+          navigate(`/admin/projects/quotes/${quoteId}`);
+          return;
+        }
+      } catch {
+        // Fall through to a new quote for this shoot.
+      } finally {
+        setSendingQuote(false);
+      }
+    }
+    navigate(`/admin/projects/quotes/new?engagement=${engagementId}`);
+  };
+
+  return { send, busy: convert.isPending || sendingQuote };
+}
+
+export function ConvertLeadPanel({
+  leadId,
+  leadName,
+  defaultOfferingId,
+  defaultLocation,
+  eventDate,
+  confirming = false,
+  onClose,
+}: ConvertLeadPanelProps) {
+  const { t } = useTranslation();
   const { labels } = useEntityLabels();
   const packagesQuery = useJobPackages();
-  const convert = useConvertLead();
+  const { send, busy } = useSendLeadQuote();
 
   const [offeringId, setOfferingId] = useState(defaultOfferingId ?? '');
   const [startsAt, setStartsAt] = useState(() => eventDateToLocal(eventDate));
   const [location, setLocation] = useState(defaultLocation ?? '');
+
+  // No package picked yet: start from the studio's first one (still editable), so the button is never stuck.
+  const firstPackageId = packagesQuery.data?.[0]?.id ?? '';
+  useEffect(() => {
+    if (firstPackageId) setOfferingId((current) => current || firstPackageId);
+  }, [firstPackageId]);
 
   // No location from the enquiry: use the package's own, when it has one.
   const packageLocation = (packagesQuery.data ?? []).find((p) => p.id === offeringId)?.location ?? '';
@@ -47,30 +175,27 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
     if (packageLocation) setLocation((current) => current || packageLocation);
   }, [packageLocation]);
   const [error, setError] = useState<string | null>(null);
+  const actionLabel = confirming ? t('pages.crm.leads.confirm_shoot') : t('pages.crm.leads.send_quote');
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!offeringId) return;
     setError(null);
     try {
-      const engagementId = await convert.mutateAsync({
-        lead_id: leadId,
-        offering_id: offeringId,
-        booked_starts_at: fromDateTimeLocal(startsAt),
-        location: location || null,
-      });
-      navigate(`/admin/jobs/${engagementId}`);
+      await send({ leadId, leadName, offeringId, startsAt, location });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pages.jobs.error_generic'));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card p-4 space-y-3 bg-muted" aria-label={t('pages.crm.leads.convert')}>
+    <form onSubmit={handleSubmit} className="card p-4 space-y-3 bg-muted" aria-label={actionLabel}>
       <h3 className="font-semibold">
-        {t('pages.crm.leads.convert')}: {leadName}
+        {actionLabel}: {leadName}
       </h3>
-      <p className="text-sm text-muted-foreground">{t('pages.crm.leads.convert_hint')}</p>
+      <p className="text-sm text-muted-foreground">
+        {confirming ? t('pages.crm.leads.confirm_hint') : t('pages.crm.leads.send_quote_hint')}
+      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <PackageSelect
           id={`convert-package-${leadId}`}
@@ -116,8 +241,8 @@ export function ConvertLeadPanel({ leadId, leadName, defaultOfferingId, defaultL
         </div>
       )}
       <div className="flex gap-2">
-        <Button type="submit" variant="primary" disabled={!offeringId || convert.isPending}>
-          {convert.isPending ? t('pages.jobs.creating') : t('pages.crm.leads.convert')}
+        <Button type="submit" variant="primary" disabled={!offeringId || busy}>
+          {busy ? t('pages.jobs.creating') : actionLabel}
         </Button>
         <Button type="button" variant="outline" onClick={onClose}>
           {t('common.cancel')}

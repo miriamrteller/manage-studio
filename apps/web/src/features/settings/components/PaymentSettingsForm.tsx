@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BitPaymentSetting } from './BitPaymentSetting';
+import { PayWaysSetting } from './PayWaysSetting';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -34,6 +35,7 @@ export function PaymentSettingsForm() {
   return (
     <div className="space-y-8">
       <PaymentSettingsBody />
+      <PayWaysSetting />
       <BitPaymentSetting />
       <TakbullOpenAccountForm />
       <TakbullTestingForm />

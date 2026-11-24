@@ -81,6 +81,8 @@ interface SignerDetailsFormProps {
   errors: SignerDetailsErrors;
   /** True when the form is for a minor: asks for the child's name and date of birth. */
   showChild: boolean;
+  /** The form's own single tick also confirms the details (one-tick contracts), so hide this one. */
+  hideConfirm?: boolean;
 }
 
 const inputClass =
@@ -119,7 +121,7 @@ function Field({
   );
 }
 
-export function SignerDetailsForm({ draft, onChange, errors, showChild }: SignerDetailsFormProps) {
+export function SignerDetailsForm({ draft, onChange, errors, showChild, hideConfirm }: SignerDetailsFormProps) {
   const { t } = useTranslation();
   const set = <K extends keyof SignerDraft>(key: K, value: SignerDraft[K]) => onChange({ ...draft, [key]: value });
   const err = (key: keyof SignerDetailsErrors) => (errors[key] ? t(`enrolment.signer.error.${errors[key]}`) : undefined);
@@ -234,6 +236,7 @@ export function SignerDetailsForm({ draft, onChange, errors, showChild }: Signer
         </div>
       )}
 
+      {!hideConfirm && (
       <div className="space-y-1">
         <label className="flex items-start gap-2 cursor-pointer">
           <input
@@ -253,6 +256,7 @@ export function SignerDetailsForm({ draft, onChange, errors, showChild }: Signer
           </p>
         )}
       </div>
+      )}
     </fieldset>
   );
 }

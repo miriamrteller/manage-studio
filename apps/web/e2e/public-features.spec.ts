@@ -42,7 +42,7 @@ test.describe('Public features', () => {
   });
 
   test('protected admin route redirects to login', async ({ page }) => {
-    await page.goto('/admin/students');
+    await page.goto('/admin/people');
     await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
   });
 

@@ -38,10 +38,10 @@ describe('ballet demo: enrol, sign, pay at the studio', () => {
       body: { phase: 'pay', mode: 'create_engagement', person_id: tamar.id, offering_id: CLASS.grade2Sun, season_id: SEASON_ID },
     });
     expect(error).toBeNull();
-    // Unsigned: the place is reserved but payment is blocked on the declaration.
+    // Unsigned: payment is still offered straight away (an unsigned form never blocks payment).
     const res = data as { context: Row; charge: Row | null; blockReason?: string };
-    expect(res.charge).toBeNull();
-    expect(res.blockReason).toBe('waiver_required');
+    expect(res.blockReason).toBeUndefined();
+    expect(res.charge?.paymentProvider).toBe('offline');
     const eng = latest(tables);
     expect(eng).toMatchObject({ person_id: tamar.id, offering_id: CLASS.grade2Sun, status: 'pending_payment' });
     expect(eng.billing_account_id).toBeTruthy();

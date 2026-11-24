@@ -1,15 +1,14 @@
 import { Navigate } from 'react-router-dom';
 import EnrolPage from '@/pages/EnrolPage';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 
 /**
- * /enrol entry. Photographer clients have no class enrolment (and no child /
- * DOB guardian setup): their bookings are shoots, so /enrol sends them to
- * /dashboard, which routes account holders to their client portal.
- * Every other vertical renders the dance enrolment flow unchanged.
+ * /enrol entry. Class sign-up only exists with Classes ticked in "How do clients work with
+ * you?" (owner, 13 Nov 2026). Without it, /enrol sends clients to /dashboard, which routes
+ * account holders to their client page.
  */
 export function EnrolEntryRoute() {
-  const { vertical } = useEntityLabels();
-  if (vertical === 'photographer') return <Navigate to="/dashboard" replace />;
+  const { classes } = useWorkModes();
+  if (!classes) return <Navigate to="/dashboard" replace />;
   return <EnrolPage />;
 }

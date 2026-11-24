@@ -57,7 +57,9 @@ Checks: POST only (405 otherwise), FormData or urlencoded only, same-site
 
 Spam traps (answer success, send nothing, file nothing):
 - a hidden `website` field on the form (also `company` and `url`), which bots fill in;
-- `shown_at`, set by the page when the form appears: sent less than 3 seconds later is a script.
+- `shown_at`, set by the page when the form appears: missing or unreadable (a script posting
+  straight to `/api/contact`), or sent less than 3 seconds later, is a script. The page always
+  sets it, so the form needs JavaScript; a visitor without it is treated as a bot.
 
 Then `crm-lead-ingest` runs the shared spam check
 (`supabase/functions/_shared/crm-contract/lead-spam.ts`, the same one the

@@ -40,6 +40,19 @@ export const GoogleCalendarService = {
     window.location.href = url;
   },
 
+  /**
+   * The studio address a signed state belongs to (no sign-in needed). Google returns to
+   * the one registered address on app.<root>; the page carries on at this address.
+   */
+  async studioUrl(state: string): Promise<string> {
+    const { data, error } = await supabase.functions.invoke('google-calendar-oauth-callback', {
+      body: { action: 'studio_url', state },
+    });
+    const url = (data as { studio_url?: string } | null)?.studio_url;
+    if (error || !url) throw new Error('studio_url');
+    return url;
+  },
+
   async complete(code: string, state: string): Promise<{ email: string | null }> {
     const { data, error } = await supabase.functions.invoke('google-calendar-oauth-callback', {
       body: { code, state },

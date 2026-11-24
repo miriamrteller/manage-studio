@@ -181,6 +181,7 @@ function clientData(): ClientPortalData {
         payment: null,
       },
     ],
+    bookings: [],
   };
 }
 
@@ -193,7 +194,8 @@ beforeEach(async () => {
   sessionStorage.clear();
 });
 
-describe.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])(
+// Studios with Classes ticked (the beautician fixture has Classes off: see the tests below).
+describe.each<FakeTenantKind>(['dance', 'generic', 'none'])(
   'PortalDashboard — %s tenant renders the dance ParentPortal unchanged',
   (kind) => {
     beforeEach(() => setTenant(kind));
@@ -231,6 +233,9 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
   it('shows shoots, contract, payments, gallery and details — no children / DOB / enrol', () => {
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
 
+    // No photo shop for this studio: the page opens on My shoots; the rest sit in their own tabs.
+    expect(screen.getByRole('tab', { name: 'My shoots' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('tab', { name: 'Photo shop' })).toBeNull();
     const shoots = screen.getByRole('region', { name: 'My shoots' });
     expect(within(shoots).getByText('Wedding Gold')).toBeInTheDocument();
     expect(within(shoots).getByText('Jaffa Port')).toBeInTheDocument();
@@ -240,20 +245,24 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
     expect(within(contract).getByText('Not signed yet')).toBeInTheDocument();
     expect(within(contract).getByRole('button', { name: 'Sign now' })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Payments' }));
     const payments = screen.getByRole('region', { name: 'Payments' });
     expect(within(payments).getByRole('link', { name: 'Receipt' })).toHaveAttribute('href', 'https://docs.example/r1');
     expect(within(payments).getByRole('button', { name: baseValue('pages.jobs.client_portal.pay') })).toBeInTheDocument();
     expect(within(payments).getByText('Paid')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Gallery' }));
     const gallery = screen.getByRole('region', { name: 'Gallery' });
     expect(within(gallery).getByTestId('gallery-card').textContent).toBe('eng-shoot-1:gallery');
 
+    fireEvent.click(screen.getByRole('tab', { name: 'My details' }));
     const details = screen.getByRole('region', { name: 'My details' });
     expect(within(details).getByText('Pat Client')).toBeInTheDocument();
     expect(within(details).getByText('pat@example.com')).toBeInTheDocument();
     expect(within(details).getByText('+972501234567')).toBeInTheDocument();
 
     expect(screen.queryByText(baseValue('pages.portal.children_heading'))).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'My shoots' }));
     expect(screen.queryByRole('button', { name: baseValue('pages.portal.add_child') })).toBeNull();
     expect(screen.queryByRole('button', { name: baseValue('pages.portal.enrol_new') })).toBeNull();
     expect(screen.queryByText(baseValue('pages.portal.myself_dob_missing'))).toBeNull();
@@ -287,7 +296,7 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
   });
 
   it('no shoots yet: friendly empty state, still no child setup', () => {
-    portal.client = { self: clientData().self, shoots: [], requests: [] };
+    portal.client = { self: clientData().self, shoots: [], requests: [], bookings: [] };
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
     expect(screen.getByText(baseValue('pages.client_portal.no_shoots'))).toBeInTheDocument();
     expect(screen.queryByText(baseValue('pages.portal.myself_setup_cta'))).toBeNull();
@@ -314,14 +323,14 @@ describe('DashboardRedirectPage', () => {
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/enrol'));
   });
 
-  it('dance: account holder without intent → /dashboard/portal; admin → /admin/setup', async () => {
+  it('dance: account holder without intent → /dashboard/portal; admin → /admin', async () => {
     setTenant('dance');
     const first = run();
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/dashboard/portal'));
     first.unmount();
     auth.user = { ...auth.user, role: ['tenant_admin'] };
     run();
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/admin/setup'));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/admin'));
   });
 
   it('photographer: a class enrolment intent never reaches /enrol — the client goes to the portal', async () => {
@@ -334,15 +343,16 @@ describe('DashboardRedirectPage', () => {
 });
 
 describe('/enrol entry', () => {
-  it.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])('%s: renders the dance enrolment flow', (kind) => {
+  it.each<FakeTenantKind>(['dance', 'generic', 'none'])('%s: renders the dance enrolment flow', (kind) => {
     setTenant(kind);
     renderInApp(<EnrolEntryRoute />, { path: '/enrol' });
     expect(screen.getByText('DANCE ENROL FLOW')).toBeInTheDocument();
     expect(screen.getByTestId('location').textContent).toBe('/enrol');
   });
 
-  it('photographer: redirects to /dashboard (→ client portal) without the guardian / child setup', () => {
-    setTenant('photographer');
+  // Follows the Classes tick, not the business type (owner, 13 Nov 2026).
+  it.each<FakeTenantKind>(['photographer', 'beautician'])('%s (Classes off): redirects to /dashboard (→ client portal) without the guardian / child setup', (kind) => {
+    setTenant(kind);
     renderInApp(<EnrolEntryRoute />, { path: '/enrol' });
     expect(screen.queryByText('DANCE ENROL FLOW')).toBeNull();
     expect(screen.getByTestId('location').textContent).toBe('/dashboard');

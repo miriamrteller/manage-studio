@@ -5,8 +5,9 @@ import { isLegalPackLive, useTenantLegalProfile } from '@/legal/useLegalDocument
 import { legalBlockedKey, signedDocNoun } from '@/legal/packWording';
 
 /**
- * For a new studio's admin: nobody can sign up (or sign the studio's health
- * declaration / contract) until the draft legal pack is confirmed in Settings → Legal.
+ * For a new studio's admin: the legal pages are not published until the draft
+ * legal pack is confirmed in Settings → Legal. A reminder only: clients can
+ * still book, sign and pay.
  */
 export function LegalPackBanner() {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export function LegalPackBanner() {
         <strong className="font-semibold">{t(legalBlockedKey(legal.vertical))}</strong>{' '}
         {t('legal.pack.admin_banner', { doc: t(`legal.pack.doc.${signedDocNoun(legal.vertical)}`) })}
       </p>
-      <Link to="/admin/setup/settings?tab=legal" className="text-sm font-medium underline">
+      <Link to="/admin/settings?tab=legal" className="text-sm font-medium underline">
         {t('legal.pack.admin_banner_link')}
       </Link>
     </Alert>

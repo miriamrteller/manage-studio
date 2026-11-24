@@ -18,6 +18,15 @@ import {
   resolveSoloStudentPersonIds,
 } from '@/features/students/lib/resolveEnrolledPersonIds';
 
+const DeleteClientResultSchema = z.object({
+  can_delete: z.boolean(),
+  deleted: z.boolean(),
+  blockers: z.array(z.string()),
+  people: z.number(),
+  shoots: z.number(),
+});
+export type DeleteClientResult = z.infer<typeof DeleteClientResultSchema>;
+
 export interface ListPeopleFilters {
   page?: number;
   pageSize?: number;
@@ -247,13 +256,23 @@ export class PersonService extends BaseService {
     }, 'PersonService.updateForParent');
   }
 
-  static async delete(tenant: Tenant, id: string) {
-    return this.withRetry(async () => {
-      const { error } = await TenantDB.delete('people', tenant, id);
-      if (error) throw error;
+  /**
+   * Delete a client (delete_client RPC). confirm=false only checks: what would go, and
+   * whether payments, orders or signed forms keep the record. Money and signed records
+   * are never deleted; when any exist nothing is deleted.
+   */
+  static async deleteClient(personId: string, confirm: boolean): Promise<DeleteClientResult> {
+    const { data, error } = await supabase.rpc('delete_client', {
+      p_person_id: personId,
+      p_confirm: confirm,
+    });
+    if (error) throw error;
+    return DeleteClientResultSchema.parse(data);
+  }
 
-      await this.logAudit(tenant, 'DELETE', 'people', id);
-    }, 'PersonService.delete');
+  static async delete(_tenant: Tenant, id: string) {
+    const result = await this.deleteClient(id, true);
+    if (!result.deleted) throw new Error(`delete_client: kept (${result.blockers.join(', ')})`);
   }
 
   /** Admin people search — rich rows for disambiguation (name, parent, email, phone, age, class). */

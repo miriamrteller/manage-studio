@@ -4,7 +4,7 @@ import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useTenant } from '@/hooks/useTenant';
 import { Select } from '@/components/ui/select';
 import { FormInput } from '@/components/ui/form';
@@ -67,10 +67,11 @@ interface NotificationBlastFormProps {
 
 export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormProps = {}) {
   const { t } = useTranslation();
-  // Photographers have no levels or classes: audiences are all clients or one account.
-  const { vertical } = useEntityLabels();
-  const scopeOptions =
-    vertical === 'photographer' ? (['all', 'account'] as const) : (['all', 'level', 'class', 'account'] as const);
+  // Levels and classes are part of Classes: without it, audiences are all clients or one account.
+  const { classes: teachesClasses } = useWorkModes();
+  const scopeOptions = teachesClasses
+    ? (['all', 'level', 'class', 'account', 'leads'] as const)
+    : (['all', 'account', 'leads'] as const);
   const { explainAccountExclusion, previewRecipients, isPreviewing, sendBlast, isSending } = useNotificationBlast();
   const { levels, isLoading: levelsLoading } = useLevels({ page: 1 });
   const { classes, isLoading: classesLoading } = useClasses({ page: 1, publicOnly: false });
@@ -142,6 +143,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
   }, []);
   const offeringParam = searchParams.get('offering');
   const accountParam = searchParams.get('account');
+  const scopeParam = searchParams.get('scope');
   useEffect(() => {
     if (presetApplied.current) return;
     const canClass = (scopeOptions as readonly string[]).includes('class');
@@ -155,6 +157,13 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
       }
       return;
     }
+    if (scopeParam === 'leads') {
+      // From the Leads page: "Email everyone on this list".
+      presetApplied.current = true;
+      form.setValue('scope', 'leads');
+      form.setValue('purpose', 'service');
+      return;
+    }
     const accountId = presetId(accountParam);
     presetApplied.current = true;
     if (!accountId) return;
@@ -166,7 +175,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
       setSelectedAccountLabel(formatAccountLabel(account));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form and scopeOptions are stable per render
-  }, [offeringParam, accountParam, classesLoading, classes]);
+  }, [offeringParam, accountParam, scopeParam, classesLoading, classes]);
 
   const resetPreview = () => {
     setPreviewRows(null);
@@ -366,6 +375,12 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
             <p className="text-sm text-destructive">{form.formState.errors.accountId.message}</p>
           )}
 
+          {scope === 'leads' && (
+            <p className="text-sm text-muted-foreground">{t('pages.notifications.scope_leads_hint')}</p>
+          )}
+
+          {/* Leads asked to hear about classes: a service email. An advertisement needs a recorded opt-in. */}
+          {scope !== 'leads' && (
           <fieldset className="space-y-2 rounded-md border p-3">
             <legend className="text-sm font-medium px-1">{t('legal.blast.purpose_legend')}</legend>
             <label className="flex items-start gap-2 text-sm">
@@ -383,6 +398,7 @@ export function NotificationBlastForm({ onSentSuccess }: NotificationBlastFormPr
               </span>
             </label>
           </fieldset>
+          )}
 
           <FormInput
             htmlFor="blast-subject"

@@ -33,7 +33,7 @@ export function ClientShootList({ jobs, compact = false }: ClientShootListProps)
           }
         >
           <span className={compact ? 'text-xs' : 'text-sm'}>
-            <Link to={`/admin/jobs/${job.engagement_id}`} className="font-medium underline">
+            <Link to={`/admin/projects/${job.engagement_id}`} className="font-medium underline">
               {job.package_name ?? t('pages.jobs.title')}
             </Link>
             {!compact && (

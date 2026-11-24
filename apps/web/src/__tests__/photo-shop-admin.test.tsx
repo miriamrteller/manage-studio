@@ -4,6 +4,7 @@
  * prices behind "Details we filled in for you"; saving sends the edits; a paid
  * order is delivered with an https link only. EN + HE text present.
  */
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { JobPhotoShopCard } from '@/features/jobs/components/JobPhotoShopCard';
@@ -22,12 +23,15 @@ const state = vi.hoisted(() => ({
   saveShop: vi.fn(),
   deliver: vi.fn(),
   markSent: vi.fn(),
+  recordCash: vi.fn(),
   photos: [] as { id: string; file_name: string; storage_path: string; url: string | null }[],
   upload: vi.fn(async (_t: string, _e: string, previews: unknown[]) => previews.length),
   deletePhoto: vi.fn(async (_id: string) => undefined),
   smugmugConnected: false,
   listAlbums: vi.fn(),
   checkGallery: vi.fn(),
+  emailLink: vi.fn(),
+  createLink: vi.fn(),
 }));
 
 vi.mock('@/features/settings/services/smugmugService', async (orig) => {
@@ -57,6 +61,25 @@ vi.mock('@/features/jobs/lib/photoPreview', async (orig) => {
 vi.mock('@/hooks/useFeatureGate', () => ({
   useFeatureGate: () => ({ hasFeature: (k: string) => state.flag && k === 'billing:photo_shop', isLoading: false }),
 }));
+vi.mock('@/features/jobs/services/jobPaymentService', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/services/jobPaymentService')>();
+  return {
+    ...real,
+    JobPaymentService: { recordManualPayment: (id: string, method: string) => state.recordCash(id, method) },
+  };
+});
+
+vi.mock('@/features/jobs/services/photoShopLinkService', async (orig) => {
+  const real = await orig<typeof import('@/features/jobs/services/photoShopLinkService')>();
+  return {
+    ...real,
+    PhotoShopLinkService: {
+      email: (id: string) => state.emailLink(id),
+      create: (id: string) => state.createLink(id),
+    },
+  };
+});
+
 vi.mock('@/features/jobs/services/photoShopService', async (orig) => {
   const real = await orig<typeof import('@/features/jobs/services/photoShopService')>();
   return {
@@ -144,6 +167,8 @@ describe('JobPhotoShopCard', () => {
       suggested: 'a2',
     });
     state.checkGallery.mockReset();
+    state.emailLink.mockReset();
+    state.createLink.mockReset();
   });
 
   it('is hidden without the photo shop flag', () => {
@@ -191,6 +216,19 @@ describe('JobPhotoShopCard', () => {
     await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/Alice-download'));
   });
 
+  it('a new paid order starts from the download link sent last for this shoot', async () => {
+    state.orders = [
+      paidOrder,
+      { ...paidOrder, id: 'o0', status: 'delivered', delivery_url: 'https://studio.smugmug.com/old', delivered_at: '2026-11-03T10:00:00Z' },
+      { ...paidOrder, id: 'o00', status: 'delivered', delivery_url: 'https://studio.smugmug.com/newest', delivered_at: '2026-11-04T09:00:00Z' },
+    ];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('Paid, to deliver')).toBeTruthy();
+    expect(screen.getByLabelText('Download gallery link')).toHaveProperty('value', 'https://studio.smugmug.com/newest');
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(state.deliver).toHaveBeenCalledWith('o1', 'https://studio.smugmug.com/newest'));
+  });
+
   it('a paid order shows each photo\'s thumbnail and file name, and can be marked as sent', async () => {
     state.shop = shop({
       provider: 'smugmug',
@@ -207,6 +245,16 @@ describe('JobPhotoShopCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mark as sent' }));
     await waitFor(() => expect(state.markSent).toHaveBeenCalledWith('o1'));
     expect(state.deliver).not.toHaveBeenCalled();
+  });
+
+  it('an order sent in to pay in cash shows its photos and records the cash', async () => {
+    state.recordCash.mockReset().mockResolvedValue({ paymentId: 'pay1' });
+    state.orders = [{ ...paidOrder, status: 'awaiting_payment', paid_at: null, pay_by_cash: true, job_payment_request_id: 'r1' }];
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    expect(await screen.findByText('The client will pay you directly (cash, bank transfer or other).')).toBeTruthy();
+    expect(screen.getByText('IMG_0002.jpg')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Record cash payment' }));
+    await waitFor(() => expect(state.recordCash).toHaveBeenCalledWith('r1', 'cash'));
   });
 
   it('uploads picked photos as previews, keeps file names, and says which could not be read', async () => {
@@ -256,18 +304,18 @@ describe('JobPhotoShopCard', () => {
       ],
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
-    await waitFor(() => expect(select.value).toBe('a2'));
+    const picker = (await screen.findByRole('combobox', { name: 'SmugMug gallery' })) as HTMLInputElement;
+    await waitFor(() => expect(picker.value).toBe('Cohen family (40 photos)'));
     expect(screen.getByRole('radio', { name: 'In a SmugMug gallery' })).toHaveProperty('checked', true);
     expect(screen.queryByRole('button', { name: 'Add photos' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    // Checked straight away: no button press needed (fewest steps, 13 Nov 2026).
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
     expect(await screen.findByText('Watermark on')).toBeTruthy();
     expect(screen.getByText('40 photos read')).toBeTruthy();
-    expect(screen.getByText(/Clients will see them once the first live check/)).toBeTruthy();
+    expect(screen.queryByText(/first live check/)).toBeNull();
   });
 
-  it('a failed check says what to change in SmugMug; uploading stays one click away', async () => {
+  it('protection settings show as ⚠ tips, never as blockers; uploading stays one click away', async () => {
     state.smugmugConnected = true;
     state.checkGallery.mockResolvedValue({
       passed: false,
@@ -283,14 +331,85 @@ describe('JobPhotoShopCard', () => {
       ],
     });
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    const select = (await screen.findByLabelText('SmugMug gallery')) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: 'a1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Check gallery' }));
+    await screen.findByRole('combobox', { name: 'SmugMug gallery' });
+    // The gallery named like the shoot is checked first; choosing another checks that one at once.
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
+    await pickGallery('Levi', 'Levi bar mitzvah (12 photos)');
     await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
     expect(await screen.findByText(/Settings > Photo Protection > Watermark Photos/)).toBeTruthy();
-    expect(screen.getByText(/Until then clients don't see this gallery/)).toBeTruthy();
+    expect(screen.getByText(/Lines marked ⚠ are only tips/)).toBeTruthy();
+    expect(screen.getAllByText('⚠')).toHaveLength(3);
     fireEvent.click(screen.getByRole('radio', { name: 'Upload them here' }));
     expect(await screen.findByRole('button', { name: 'Add photos' })).toBeTruthy();
+  });
+
+  it('one button emails the shop link to the client from OpalSwift', async () => {
+    state.shop = shop({ provider: 'upload', gallery_key: 'upload' });
+    state.emailLink.mockResolvedValue({
+      url: 'https://lens.example/shop/tok', email: 'client@example.test', expiresAt: '2026-11-16T10:00:00Z', emailed: true,
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Email shop link to client' }));
+    expect(await screen.findByText(/Emailed to client@example.test/)).toBeTruthy();
+    expect(state.emailLink).toHaveBeenCalledWith('e1');
+    expect(state.createLink).not.toHaveBeenCalled();
+  });
+
+  it('if the email cannot go, the link is shown to copy or send on WhatsApp', async () => {
+    state.shop = shop({ provider: 'upload', gallery_key: 'upload' });
+    state.emailLink.mockResolvedValue({
+      url: 'https://lens.example/shop/tok', email: 'client@example.test', expiresAt: '2026-11-16T10:00:00Z', emailed: false,
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Email shop link to client' }));
+    expect(await screen.findByText(/We couldn't email it/)).toBeTruthy();
+    expect(screen.getByText('https://lens.example/shop/tok')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'WhatsApp' })).toBeTruthy();
+  });
+
+  it('links to the client view of this shoot', async () => {
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const link = await screen.findByRole('link', { name: 'See it as your client' });
+    expect(link.getAttribute('href')).toBe('/admin/projects/e1?tab=client');
+  });
+
+  it('typing filters the galleries by name; no match says so', async () => {
+    state.smugmugConnected = true;
+    state.checkGallery.mockResolvedValue({ passed: true, albumName: 'Cohen family', photoCount: 40, items: [] });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    const picker = await screen.findByRole('combobox', { name: 'SmugMug gallery' });
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
+    const user = userEvent.setup();
+    await user.clear(picker);
+    await user.type(picker, 'mitz');
+    expect(await screen.findByRole('option', { name: 'Levi bar mitzvah (12 photos)' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Cohen family (40 photos)' })).toBeNull();
+    await user.clear(picker);
+    await user.type(picker, 'zzz');
+    expect(await screen.findByText('No gallery matches that name')).toBeTruthy();
+  });
+
+  it('a gallery with only videos says so, in one line', async () => {
+    state.smugmugConnected = true;
+    state.checkGallery.mockResolvedValue({
+      passed: false,
+      albumName: 'Slideshow',
+      photoCount: 0,
+      items: [
+        { code: 'watermark', ok: true, value: 'in_photos' },
+        { code: 'largest_size', ok: true, value: '5K' },
+        { code: 'downloads', ok: false, value: 'true' },
+        { code: 'photos', ok: false, value: '1', detail: 'videos_only' },
+      ],
+    });
+    renderInApp(<JobPhotoShopCard engagementId="e1" />);
+    await screen.findByRole('combobox', { name: 'SmugMug gallery' });
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a2'));
+    await pickGallery('levi', 'Levi bar mitzvah (12 photos)');
+    await waitFor(() => expect(state.checkGallery).toHaveBeenCalledWith('e1', 'a1'));
+    expect(await screen.findByText(/This gallery only has videos/)).toBeTruthy();
+    expect(screen.getAllByText('✗')).toHaveLength(1);
+    expect(screen.queryByText(/Clients couldn't open the watermarked photos/)).toBeNull();
   });
 
   it('has Hebrew text', async () => {
@@ -307,11 +426,21 @@ describe('JobPhotoShopCard', () => {
     await setLanguage('he');
     state.smugmugConnected = true;
     renderInApp(<JobPhotoShopCard engagementId="e1" />);
-    expect(await screen.findByLabelText('גלריה ב-SmugMug')).toBeTruthy();
+    expect(await screen.findByRole('combobox', { name: 'גלריה ב-SmugMug' })).toBeTruthy();
+    expect(screen.getByPlaceholderText('אפשר להקליד שם גלריה לחיפוש')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'בדיקת הגלריה' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'להעלות אותן כאן' })).toBeTruthy();
   });
 });
+
+/** Types into the gallery picker and picks the matching gallery from the list. */
+async function pickGallery(query: string, option: string) {
+  const user = userEvent.setup();
+  const picker = screen.getByRole('combobox', { name: 'SmugMug gallery' });
+  await user.clear(picker);
+  await user.type(picker, query);
+  await user.click(await screen.findByRole('option', { name: option }));
+}
 
 describe('photo previews', () => {
   it('shrinks to at most 1200px on the longest edge, never enlarges, and names the studio', async () => {

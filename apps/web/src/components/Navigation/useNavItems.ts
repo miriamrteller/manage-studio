@@ -46,6 +46,9 @@ export function useNavItems({
       (item) =>
         (item.moduleKey === undefined || modules?.[item.moduleKey] !== false) &&
         (item.featureKey === undefined || hasFeature === undefined || hasFeature(item.featureKey)) &&
+        (item.anyFeatureKeys === undefined ||
+          hasFeature === undefined ||
+          item.anyFeatureKeys.some((key) => hasFeature(key))) &&
         matchesTenantFilter(item, tenant) &&
         matchesProfile(item, profile) &&
         // Platform pages are for the OpalSwift HQ address only, never a studio's menu,

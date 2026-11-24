@@ -22,8 +22,8 @@ test.describe('Booking features', () => {
     );
 
     test('services admin can open add/edit affordance', async ({ page }) => {
-      await loginAsAdmin(page, '/admin/packages');
-      await expect(page.getByRole('heading', { level: 1 })).toContainText(/Service/i);
+      await loginAsAdmin(page, '/admin/bookings/packages');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(/Service|Package/i);
       const add = page.getByRole('button', { name: /Add service|Add/i }).first();
       if (await add.isVisible().catch(() => false)) {
         await add.click();
@@ -34,8 +34,8 @@ test.describe('Booking features', () => {
     });
 
     test('booking settings can save buffer field', async ({ page }) => {
-      await loginAsAdmin(page, '/admin/setup/booking');
-      await expect(page.getByRole('heading', { level: 1 })).toContainText(/Booking|Availability/i);
+      await loginAsAdmin(page, '/admin/bookings/diary');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(/Diary/i);
       const buffer = page.getByRole('spinbutton').first();
       if (await buffer.isVisible().catch(() => false)) {
         await expect(buffer).toBeEnabled();

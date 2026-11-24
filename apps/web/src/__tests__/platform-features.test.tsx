@@ -92,7 +92,7 @@ describe('rules', () => {
 
   it('lists the whole features, never superadmin or Grow, Takbull testing only on dev', () => {
     const live = listedFeatures(false).map((f) => f.id);
-    expect(live).toEqual(['classes', 'families', 'monthly', 'projects', 'booking', 'google_calendar', 'photo_shop']);
+    expect(live).toEqual(['classes', 'families', 'monthly', 'projects', 'booking', 'google_calendar', 'photo_shop', 'studio_shop']);
     expect(listedFeatures(true).map((f) => f.id)).toContain('takbull_testing');
     const keys = WHOLE_FEATURES.map((f) => f.featureKey ?? '');
     expect(keys.some((k) => k.includes('admin.super') || k.includes('grow'))).toBe(false);
@@ -159,6 +159,6 @@ describe('TenantFeatureManager', () => {
   it('the live site has no Takbull testing tick', () => {
     render(wrap(<FeatureTogglePanel profile={profile()} features={[]} tenantId="t1" devSite={false} />));
     expect(screen.queryByRole('switch', { name: 'platform_features.whole.takbull_testing.label' })).toBeNull();
-    expect(screen.getAllByRole('switch')).toHaveLength(7);
+    expect(screen.getAllByRole('switch')).toHaveLength(8);
   });
 });

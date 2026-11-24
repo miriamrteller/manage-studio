@@ -80,7 +80,7 @@ export default function HomePage() {
       {(isAdmin || portalPath) && (
         <nav aria-label={t('pages.home.your_area')} className="flex flex-wrap items-center gap-3 text-sm">
           {isAdmin && (
-            <Link to="/admin/setup" className="font-medium underline">
+            <Link to="/admin" className="font-medium underline">
               {t('pages.home.open_dashboard')}
             </Link>
           )}

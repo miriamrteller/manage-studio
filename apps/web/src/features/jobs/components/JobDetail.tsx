@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { personPagePath } from '@/features/people/lib/personPagePath';
 import { useEntityLabels } from '@/hooks/useEntityLabels';
 import { useTenant } from '@/hooks/useTenant';
 import { formatCurrency } from '@shared/format';
@@ -11,18 +13,34 @@ import { JobContractCard } from './JobContractCard';
 import { JobBookingProgress } from './JobBookingProgress';
 import { JobPaymentsPanel } from './JobPaymentsPanel';
 import { JobPhotoShopCard } from './JobPhotoShopCard';
-import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
+import { PhotoShopPreview } from './ClientPhotoShop';
+import { usePhotoShopEnabled } from '../hooks/usePhotoShop';
+import { CancelShootButton } from './CancelShootButton';
+import { SendGalleryButton } from './SendGallery';
+import { useGalleryLastSent } from '../hooks/useSendShootGallery';
+import { ProjectQuoteButton } from '@/features/quotes/components/ProjectQuoteButton';
 
 /**
  * Admin job ("Shoot") detail: client, package, date/time, location, status,
  * notes, contract status, and the payments slot owned by the payment-requests
  * work (<JobPaymentsPanel engagementId />).
+ *
+ * With the photo shop on, tabs at the top (owner, 13 Nov 2026: no scrolling to find it):
+ * Details | Photo shop | What your client sees. The tab is kept in the address (?tab=).
  */
+const SHOOT_TABS = ['details', 'shop', 'client'] as const;
+type ShootTab = (typeof SHOOT_TABS)[number];
+
 export function JobDetail({ engagementId }: { engagementId: string }) {
   const { t, i18n } = useTranslation();
   const { labels } = useEntityLabels();
   const tenant = useTenant();
   const { job, isLoading, error } = useJob(engagementId);
+  const shopOn = usePhotoShopEnabled();
+  const lastSent = useGalleryLastSent([engagementId]);
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('tab');
+  const tab: ShootTab = (SHOOT_TABS as readonly string[]).includes(asked ?? '') ? (asked as ShootTab) : 'details';
 
   if (isLoading) return <p role="status">{t('common.loading')}</p>;
   if (error) {
@@ -38,36 +56,24 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
   const price =
     job.price_minor !== null ? formatCurrency(job.price_minor, job.currency ?? 'ILS', locale) : '—';
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <Link to="/admin/jobs" className="text-sm underline">
-          ← {t('pages.jobs.back')}
-        </Link>
-      </div>
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">
-            {labels.engagement.singular}: {job.client_name ?? '—'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {job.package_name ?? '—'} · {price}
-            {job.lead_id && <> · {t('pages.jobs.created_from_lead')}</>}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {job.job_status !== 'cancelled' && <CreateQuoteButton engagementId={job.engagement_id} />}
-          <JobStatusBadge status={job.job_status} />
-        </div>
-      </header>
-
+  // An element, not a component: a component made here would remount its forms on each render.
+  const details = (
+    <>
       <section className="card p-4 space-y-2" aria-labelledby="job-client-heading">
         <h2 id="job-client-heading" className="font-semibold">
           {labels.account.singular}
         </h2>
         <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-sm">
           <dt className="text-muted-foreground">{t('pages.jobs.client_name')}</dt>
-          <dd>{job.client_name ?? '—'}</dd>
+          <dd>
+            {job.person_id && job.client_name ? (
+              <Link to={personPagePath(job.person_id)} className="underline">
+                {job.client_name}
+              </Link>
+            ) : (
+              (job.client_name ?? '—')
+            )}
+          </dd>
           <dt className="text-muted-foreground">{t('pages.jobs.client_email')}</dt>
           <dd dir="ltr">{job.client_email ?? '—'}</dd>
           <dt className="text-muted-foreground">{t('pages.jobs.client_phone')}</dt>
@@ -87,14 +93,58 @@ export function JobDetail({ engagementId }: { engagementId: string }) {
 
       <JobContractCard job={job} />
 
-      <section className="card p-4 space-y-2" aria-labelledby="job-payments-heading">
-        <h2 id="job-payments-heading" className="font-semibold">
-          {t('pages.jobs.payments.title')}
-        </h2>
-        <JobPaymentsPanel engagementId={job.engagement_id} packagePriceMinor={job.price_minor} />
-      </section>
+      {/* The panel is its own "Payments" card (one heading, not two). */}
+      <JobPaymentsPanel engagementId={job.engagement_id} packagePriceMinor={job.price_minor} />
+    </>
+  );
 
-      <JobPhotoShopCard engagementId={job.engagement_id} />
+  return (
+    <div className="space-y-6">
+      <div>
+        <Link to="/admin/projects" className="text-sm underline">
+          ← {t('pages.jobs.back')}
+        </Link>
+      </div>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">
+            {labels.engagement.singular}: {job.client_name ?? '—'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {job.package_name ?? '—'} · {price}
+            {job.lead_id && <> · {t('pages.jobs.created_from_lead')}</>}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {job.job_status !== 'cancelled' && <ProjectQuoteButton engagementId={job.engagement_id} />}
+          {job.job_status !== 'cancelled' && (
+            <SendGalleryButton engagementId={job.engagement_id} lastSentAt={lastSent.get(job.engagement_id)} />
+          )}
+          <CancelShootButton job={job} />
+          <JobStatusBadge status={job.job_status} />
+        </div>
+      </header>
+
+      {shopOn ? (
+        <Tabs value={tab} onValueChange={(next) => setParams(next === 'details' ? {} : { tab: next }, { replace: true })}>
+          <TabsList>
+            {SHOOT_TABS.map((k) => (
+              <TabsTrigger key={k} value={k}>{t(`pages.jobs.tabs.${k}`)}</TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value="details" className="space-y-6 pt-4">
+            {tab === 'details' && details}
+          </TabsContent>
+          <TabsContent value="shop" className="pt-4">
+            {tab === 'shop' && <JobPhotoShopCard engagementId={job.engagement_id} />}
+          </TabsContent>
+          <TabsContent value="client" className="pt-4">
+            {tab === 'client' && <PhotoShopPreview engagementId={job.engagement_id} />}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        details
+      )}
     </div>
   );
 }

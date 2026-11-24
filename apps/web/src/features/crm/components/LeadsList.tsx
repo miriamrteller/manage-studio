@@ -1,17 +1,18 @@
-﻿import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useWorkModes } from '@/hooks/useWorkModes';
+import { SendLeadLinkButton } from './SendLeadLinkButton';
 import { followUpState } from '../lib/followUp';
 import { lastLeadChannel, rememberLeadChannel, tomorrowLocal } from '../lib/leadFormDefaults';
-import { useNavigate } from 'react-router-dom';
-import { LeadsTabs } from './LeadsTabs';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNamedForms } from '../hooks/useNamedForms';
-import { answerText, FORM_TIME_ZONE, todayIn } from '@shared/index';
+import { answerText, FEATURES, FORM_TIME_ZONE, todayIn } from '@shared/index';
 import { answerFilterOptions, filterByAnswer } from '../lib/leadAnswers';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/shared';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useHasFeature } from '@/hooks/useHasFeature';
 import { useLeads } from '../hooks/useLeads';
-import { ConvertLeadPanel } from '@/features/jobs/components/ConvertLeadPanel';
+import { ConvertLeadPanel, SendLeadQuoteButton } from '@/features/jobs/components/ConvertLeadPanel';
 import { CreateQuoteButton } from '@/features/quotes/components/CreateQuoteButton';
 import {
   LEAD_CHANNELS,
@@ -46,12 +47,20 @@ function formatDate(value: string | null, locale: string): string {
 
 
 interface LeadRowGroupProps {
-  lead: Pick<Lead, 'id' | 'name' | 'offering_id' | 'answers' | 'event_date'>;
+  lead: Pick<Lead, 'id' | 'name' | 'offering_id' | 'answers' | 'event_date' | 'converted_account_id'>;
   converting: boolean;
   canConvert: boolean;
   onConvert: () => void;
   onClose: () => void;
   children: ReactNode;
+}
+
+/**
+ * A shoot request from the Book page (or any enquiry naming a package and a
+ * day): the photographer confirms it, which converts it on that day.
+ */
+export function isShootRequest(lead: Pick<Lead, 'offering_id' | 'event_date' | 'converted_account_id'>): boolean {
+  return !!lead.offering_id && !!lead.event_date && !lead.converted_account_id;
 }
 
 /** A lead row plus, when converting, the inline convert panel beneath it. */
@@ -68,6 +77,7 @@ function LeadRowGroup({ lead, converting, canConvert, onClose, children }: LeadR
               defaultOfferingId={lead.offering_id}
               defaultLocation={answerPlain(lead.answers?.event_location)}
               eventDate={lead.event_date}
+              confirming={isShootRequest(lead)}
               onClose={onClose}
             />
           </td>
@@ -113,9 +123,20 @@ function LeadAnswers({ lead, lang }: { lead: Lead; lang: 'en' | 'he' }) {
 
 export function LeadsList() {
   const { t, i18n } = useTranslation();
-  const { vertical } = useEntityLabels();
-  const canConvert = vertical === 'photographer';
+  // Send quote / Confirm wherever Projects (quotes) is on, in any industry (owner, 13 Nov 2026).
+  const { hasFeature } = useHasFeature();
+  const canConvert = hasFeature(FEATURES.billing.quotes);
+  // Without quotes, the next step emails the class list (Classes) or the booking page (Appointments).
+  const { classes, appointments } = useWorkModes();
+  const linkKind: 'class_link' | 'booking_link' | null = canConvert
+    ? null
+    : classes
+      ? 'class_link'
+      : appointments
+        ? 'booking_link'
+        : null;
   const [convertingId, setConvertingId] = useState<string | null>(null);
+
   const {
     leads: allLeads,
     isLoading,
@@ -134,6 +155,19 @@ export function LeadsList() {
     isDeleting,
   } = useLeads();
   const navigate = useNavigate();
+  // The Confirm button in a shoot request email: ?lead=<id>&confirm=1 opens
+  // that lead's Confirm panel once the list has loaded.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedLeadId = searchParams.get('lead');
+  useEffect(() => {
+    if (!linkedLeadId || !canConvert || isLoading) return;
+    const linked = allLeads.find((l) => l.id === linkedLeadId);
+    if (linked && !linked.converted_account_id && searchParams.get('confirm') === '1') setConvertingId(linked.id);
+    const next = new URLSearchParams(searchParams);
+    next.delete('lead');
+    next.delete('confirm');
+    setSearchParams(next, { replace: true });
+  }, [linkedLeadId, canConvert, isLoading, allLeads, searchParams, setSearchParams]);
   const [deleted, setDeleted] = useState<string | null>(null);
   const handleDelete = (lead: Lead) => {
     if (isConvertedLead(lead)) return;
@@ -231,11 +265,16 @@ export function LeadsList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('pages.crm.leads.title')}</h1>
-        <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
-          {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* e.g. "Enrolment is open" to everyone waiting to hear when classes start. */}
+          <Button variant="secondary" onClick={() => navigate('/admin/notifications?scope=leads')}>
+            {t('pages.crm.leads.email_all')}
+          </Button>
+          <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
+            {showForm ? t('common.cancel') : t('pages.crm.leads.add')}
+          </Button>
+        </div>
       </div>
-      <LeadsTabs />
       <p className="text-sm text-muted-foreground">{t('pages.crm.leads.description')}</p>
       {(followUps.overdue > 0 || followUps.dueToday > 0) && (
         <p role="status" className="text-sm font-medium">
@@ -467,7 +506,9 @@ export function LeadsList() {
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.stage')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.last_contacted')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.crm.leads.follow_up')}</th>
-                {canConvert && <th className="px-3 py-2 text-start">{t('pages.crm.leads.convert')}</th>}
+                {(canConvert || linkKind) && (
+                  <th className="px-3 py-2 text-start">{t('pages.crm.leads.next_step')}</th>
+                )}
                 <th className="px-3 py-2 text-start">
                   <span className="sr-only">{t('pages.crm.leads.actions')}</span>
                 </th>
@@ -489,6 +530,11 @@ export function LeadsList() {
                     {lead.converted_account_id && (
                       <span className="ms-2 text-xs text-muted-foreground">
                         {t('pages.crm.leads.converted')}
+                      </span>
+                    )}
+                    {canConvert && isShootRequest(lead) && (
+                      <span className="block text-xs font-medium text-amber-800">
+                        {t('pages.crm.leads.shoot_request', { day: formatDate(lead.event_date, i18n.language) })}
                       </span>
                     )}
                     {!canConvert && (
@@ -538,7 +584,7 @@ export function LeadsList() {
                         updateStage({ id: lead.id, stage: e.target.value as LeadStage })
                       }
                     >
-                      {stagesFor(vertical, lead.stage).map((stage) => (
+                      {stagesFor(classes, lead.stage).map((stage) => (
                         <option key={stage} value={stage}>
                           {t(`pages.crm.leads.stage_${stage}`)}
                         </option>
@@ -561,11 +607,33 @@ export function LeadsList() {
                         <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setConvertingId(lead.id)}>
-                            {t('pages.crm.leads.convert')}
-                          </Button>
-                          {lead.stage !== 'lost' && <CreateQuoteButton leadId={lead.id} />}
+                          {/* A shoot request names its package and day: Confirm books and quotes in one click. */}
+                          <SendLeadQuoteButton
+                            leadId={lead.id}
+                            leadName={lead.name}
+                            offeringId={lead.offering_id}
+                            eventDate={lead.event_date}
+                            location={answerPlain(lead.answers?.event_location)}
+                            onNeedsForm={() => setConvertingId(lead.id)}
+                            label={isShootRequest(lead) ? t('pages.crm.leads.confirm_shoot') : undefined}
+                          />
+                          {lead.stage !== 'lost' && (
+                            <CreateQuoteButton leadId={lead.id} label={t('pages.crm.leads.edit_before_sending')} />
+                          )}
                         </div>
+                      )}
+                    </td>
+                  )}
+                  {linkKind && (
+                    <td className="px-3 py-2">
+                      {lead.converted_account_id || lead.stage === 'won' || lead.stage === 'lost' ? null : (
+                        <SendLeadLinkButton
+                          kind={linkKind}
+                          lead={lead}
+                          onSent={() => {
+                            if (lead.stage === 'new') updateStage({ id: lead.id, stage: 'contacted' });
+                          }}
+                        />
                       )}
                     </td>
                   )}

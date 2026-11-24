@@ -1,7 +1,8 @@
 /**
- * Settings → Discounts: the studio's automatic class discounts (class_discount_settings,
- * migration 20261111075000_class_discounts.sql). The database applies them when a child
- * is enrolled; this file only maps the row to the form and back.
+ * Classes → Discounts: the studio's automatic class discounts (class_discount_settings),
+ * discounts for particular clients (class_discount_clients) and coupon codes
+ * (class_discount_coupons), migration 20261124140000_class_discounts.sql. The database
+ * applies them; this file only maps rows to forms and back.
  */
 export type DiscountUnit = 'percent' | 'amount';
 export type CombineMode = 'add_up' | 'biggest';
@@ -56,7 +57,7 @@ export interface ClassDiscountForm {
   early_bird_days_before: string;
 }
 
-function valueToText(unit: DiscountUnit, value: number): string {
+export function valueToText(unit: DiscountUnit, value: number): string {
   if (unit === 'percent') return String(value);
   const major = value / 100;
   return Number.isInteger(major) ? String(major) : major.toFixed(2);
@@ -128,4 +129,99 @@ export function formToRow(
     ),
   };
   return invalid.length > 0 ? { ok: false, invalid } : { ok: true, row };
+}
+
+/** A discount for one client, matched by email. */
+export interface ClientDiscountInput {
+  email: string;
+  unit: DiscountUnit;
+  value: string;
+  note: string;
+}
+
+export const DEFAULT_CLIENT_DISCOUNT_INPUT: ClientDiscountInput = { email: '', unit: 'percent', value: '10', note: '' };
+
+export interface ClientDiscountRowInput {
+  email: string;
+  unit: DiscountUnit;
+  value: number;
+  note: string | null;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Pure: the client discount row to save (email in lower case), or the fields that need fixing. */
+export function clientDiscountToRow(
+  input: ClientDiscountInput,
+): { ok: true; row: ClientDiscountRowInput } | { ok: false; invalid: Array<'email' | 'value'> } {
+  const email = input.email.trim().toLowerCase();
+  const value = textToValue(input.unit, input.value);
+  const invalid: Array<'email' | 'value'> = [];
+  if (!EMAIL_RE.test(email)) invalid.push('email');
+  if (value === null) invalid.push('value');
+  if (invalid.length > 0 || value === null) return { ok: false, invalid };
+  return { ok: true, row: { email, unit: input.unit, value, note: input.note.trim() || null } };
+}
+
+export type CouponAppliesTo = 'first_payment' | 'every_month';
+
+/** A coupon code parents type at checkout. */
+export interface CouponInput {
+  code: string;
+  unit: DiscountUnit;
+  value: string;
+  applies_to: CouponAppliesTo;
+  valid_until: string;
+  max_uses: string;
+  note: string;
+}
+
+/** Prefilled: 10% off the first payment only (owner decision, 24 Nov 2026). */
+export const DEFAULT_COUPON_INPUT: CouponInput = {
+  code: '',
+  unit: 'percent',
+  value: '10',
+  applies_to: 'first_payment',
+  valid_until: '',
+  max_uses: '',
+  note: '',
+};
+
+export interface CouponRowInput {
+  code: string;
+  unit: DiscountUnit;
+  value: number;
+  applies_to: CouponAppliesTo;
+  valid_until: string | null;
+  max_uses: number | null;
+  note: string | null;
+}
+
+const CODE_RE = /^[\p{L}\p{N}_-]{2,40}$/u;
+
+/** Pure: the coupon row to save (code in capitals), or the fields that need fixing. */
+export function couponToRow(
+  input: CouponInput,
+): { ok: true; row: CouponRowInput } | { ok: false; invalid: Array<'code' | 'value' | 'max_uses'> } {
+  const code = input.code.trim().toUpperCase();
+  const value = textToValue(input.unit, input.value);
+  const usesText = input.max_uses.trim();
+  const uses = usesText === '' ? null : Number(usesText);
+  const invalid: Array<'code' | 'value' | 'max_uses'> = [];
+  if (!CODE_RE.test(code)) invalid.push('code');
+  if (value === null) invalid.push('value');
+  if (uses !== null && !(Number.isInteger(uses) && uses > 0)) invalid.push('max_uses');
+  if (invalid.length > 0 || value === null) return { ok: false, invalid };
+  return {
+    ok: true,
+    row: {
+      code,
+      unit: input.unit,
+      value,
+      applies_to: input.applies_to,
+      valid_until: input.valid_until.trim() || null,
+      max_uses: uses,
+      note: input.note.trim() || null,
+    },
+  };
 }

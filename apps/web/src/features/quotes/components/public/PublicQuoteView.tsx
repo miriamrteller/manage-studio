@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { computeQuoteTotals } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
+import { safePayPath, safeSignPath } from '@/features/jobs/lib/bookingFlowPaths';
 import { QuoteTotalsSummary } from '../QuoteTotalsSummary';
 import { formatQuoteDate } from '../../lib/quoteFormat';
 import {
@@ -44,6 +46,7 @@ interface QuoteBodyProps {
 
 function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(quote.lines.filter((l) => l.is_optional && l.is_selected).map((l) => l.id)),
   );
@@ -53,9 +56,16 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
     [quote.lines, quote.deposit_percent, selected],
   );
 
+  // "Accept and pay deposit" is one button (owner, 13 Nov 2026): accepting goes straight
+  // on to the pay page. Signing the contract is offered there, never in the way.
+  const withDeposit = totals.depositMinor > 0;
   const accept = useMutation<AcceptQuoteResponse>({
     mutationFn: () => acceptPublicQuote({ token, tenantId, selectedLineIds: [...selected] }),
-    onSuccess: onSettled,
+    onSuccess: (result) => {
+      onSettled();
+      const payPath = withDeposit && result.ok ? safePayPath(result.depositPayPath) : null;
+      if (payPath) navigate(payPath, { state: { signPath: safeSignPath(result.contractSignPath) } });
+    },
   });
   const decline = useMutation({
     mutationFn: (reason: string | null) => declinePublicQuote(token, tenantId, reason),
@@ -105,7 +115,7 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
       {quote.status === 'accepted' && <BackToPortalButton />}
       {open && <PrivacyNotice purpose="quote" />}
       {open && (
-        <PublicQuoteActions busy={accept.isPending || decline.isPending}
+        <PublicQuoteActions busy={accept.isPending || decline.isPending} withDeposit={withDeposit}
           onAccept={() => accept.mutate()} onDecline={(reason) => decline.mutate(reason)} />
       )}
     </article>

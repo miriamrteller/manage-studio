@@ -6,10 +6,13 @@ import { useTenantQuery } from '../hooks/useTenant';
 import { isMemberOfTenant } from '@/lib/tenantMembership';
 import { usePlatformViewLog } from '@/hooks/usePlatformViewLog';
 import { hasParentRole } from '@/lib/parentRoles';
+import { hasTeacherRole } from '@/lib/teacherRoles';
 import { PlatformTermsGate } from '@/components/legal/PlatformTermsGate';
 import { MfaChallengeGate } from '@/components/legal/MfaChallengeGate';
-import { PlatformOwnerNotice, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
+import { PlatformOwnerNotice, SupportAccessBanner, isPlatformOwnerOnly } from '@/components/PlatformOwnerNotice';
+import { isSupportLogin } from '@/lib/supportAccess';
 import { SetPasswordPrompt } from '@/features/auth/components/SetPasswordPrompt';
+import { HiddenPageGuard } from './HiddenPageGuard';
 
 /**
  * useCurrentUser, scoped to the tenant of the current subdomain: a signed-in
@@ -67,8 +70,20 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   }
 
   if (isPlatformOwnerOnly(user)) {
-    // Studio pages are for the studio's own people, not the platform owner.
+    // The platform owner enters a studio's admin only through the confirm step,
+    // which signs in as the studio's OpalSwift support login (logged).
     return <PlatformOwnerNotice />;
+  }
+
+  if (user && isSupportLogin(user)) {
+    // OpalSwift support: the studio's own two-step and terms steps are for the
+    // studio's people, and this login never gets a password.
+    return (
+      <>
+        <SupportAccessBanner />
+        <HiddenPageGuard>{children}</HiddenPageGuard>
+      </>
+    );
   }
 
   if (!user || !user.role.includes('tenant_admin')) {
@@ -78,7 +93,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   return (
     <MfaChallengeGate>
       <PlatformTermsGate>
-        {children}
+        <HiddenPageGuard>{children}</HiddenPageGuard>
         <SetPasswordPrompt />
       </PlatformTermsGate>
     </MfaChallengeGate>
@@ -86,7 +101,8 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 }
 
 /**
- * TeacherRoute: requires role to include 'teacher'
+ * TeacherRoute: requires the teacher role ('staff', given when a teacher the
+ * studio added signs in with their email; see link_my_teacher_login).
  */
 export function TeacherRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useTenantScopedUser();
@@ -101,7 +117,7 @@ export function TeacherRoute({ children }: { children: ReactNode }) {
     return <PlatformOwnerNotice />;
   }
 
-  if (!user || !user.role.includes('teacher')) {
+  if (!user || !hasTeacherRole(user.role)) {
     return <Navigate to="/login" state={{ from: returnToFromLocation(location) }} replace />;
   }
 

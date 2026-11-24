@@ -11,7 +11,7 @@ import {
   SMUGMUG_OPEN_TO_CLIENTS,
   uploadedPhotoSource,
 } from "./gallery.ts";
-import { photoOrderLabel, resolveOrderItems } from "./order-items.ts";
+import { orderPersonId, photoOrderLabel, resolveOrderItems, resolveProductItems } from "./order-items.ts";
 
 const gallery = mockGalleryPhotos("g");
 
@@ -22,7 +22,7 @@ Deno.test("mock gallery: camera-like names, abstract previews", () => {
   assert(decodeURIComponent(gallery[0].previewUrl).includes("SAMPLE"));
 });
 
-Deno.test("SmugMug stays locked until the live check", async () => {
+Deno.test("SmugMug: a gallery without a passed check stays locked", async () => {
   for (const [shop, code] of [
     [{ provider: "smugmug", gallery_key: "abc" }, "provider_locked"],
     [{ provider: "mock", gallery_key: null }, "no_gallery"],
@@ -39,7 +39,7 @@ Deno.test("SmugMug stays locked until the live check", async () => {
   assertEquals((await listGalleryPhotos({ provider: "mock", gallery_key: "g" })).length, MOCK_PHOTO_COUNT);
 });
 
-Deno.test("SmugMug: a checked gallery shows only in the studio's preview, never to clients yet", async () => {
+Deno.test("SmugMug: only a gallery with a passed check shows, to the studio and to clients", async () => {
   const photos = [{ key: "K1", fileName: "IMG_1.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" }];
   const checked = {
     provider: "smugmug",
@@ -48,8 +48,9 @@ Deno.test("SmugMug: a checked gallery shows only in the studio's preview, never 
     smugmug_photos: photos,
     smugmug_checked_at: "2026-11-10T12:00:00Z",
   };
-  assertEquals(SMUGMUG_OPEN_TO_CLIENTS, false);
+  assertEquals(SMUGMUG_OPEN_TO_CLIENTS, true);
   assertEquals(await listGalleryPhotos(checked, { adminPreview: true }), photos);
+  assertEquals(await listGalleryPhotos(checked, { adminPreview: false }), photos);
   const locked = async (shop: typeof checked, adminPreview: boolean) => {
     try {
       await listGalleryPhotos(shop, { adminPreview });
@@ -59,12 +60,13 @@ Deno.test("SmugMug: a checked gallery shows only in the studio's preview, never 
       assertEquals(e.code, "provider_locked");
     }
   };
-  await locked(checked, false);
-  // A check for another gallery, a failed check, or no check: locked even for the studio.
-  await locked({ ...checked, gallery_key: "other" }, true);
-  await locked({ ...checked, smugmug_check: { album_key: "abc", passed: false, items: [] } }, true);
-  await locked({ ...checked, smugmug_checked_at: null } as unknown as typeof checked, true);
-  await locked({ ...checked, smugmug_photos: [{ key: "K", fileName: "a", previewUrl: "http://x" }] }, true);
+  // A check for another gallery, a failed check, or no check: locked for clients and the studio.
+  for (const adminPreview of [false, true]) {
+    await locked({ ...checked, gallery_key: "other" }, adminPreview);
+    await locked({ ...checked, smugmug_check: { album_key: "abc", passed: false, items: [] } }, adminPreview);
+    await locked({ ...checked, smugmug_checked_at: null } as unknown as typeof checked, adminPreview);
+    await locked({ ...checked, smugmug_photos: [{ key: "K", fileName: "a", previewUrl: "http://x" }] }, adminPreview);
+  }
   assertEquals(checkedSmugMugPhotos(checked), photos);
 });
 
@@ -150,4 +152,35 @@ Deno.test("all photos: everything not taken yet, whatever was picked", () => {
 Deno.test("receipt label in the studio's language", () => {
   assertEquals(photoOrderLabel(3, "en"), "Photos (3)");
   assertEquals(photoOrderLabel(3, "he"), "תמונות (3)");
+  assertEquals(photoOrderLabel(2, "en", 1), "Photos and prints (3)");
+  assertEquals(photoOrderLabel(0, "en", 2), "Photo prints (2)");
+  assertEquals(photoOrderLabel(0, "he", 2), "הדפסות תמונות (2)");
+});
+
+Deno.test("products: gallery photos only, file names from the gallery, same photo many times", () => {
+  const r = resolveProductItems(gallery, [
+    { imageKey: "g-0002", productId: "p1" },
+    { imageKey: "g-0002", productId: "p2" },
+  ]);
+  assertEquals(r, {
+    ok: true,
+    items: [
+      { image_key: "g-0002", file_name: "IMG_0002.jpg", product_id: "p1" },
+      { image_key: "g-0002", file_name: "IMG_0002.jpg", product_id: "p2" },
+    ],
+  });
+  assertEquals(resolveProductItems(gallery, undefined), { ok: true, items: [] });
+  assertEquals(resolveProductItems(gallery, [{ imageKey: "other", productId: "p1" }]), { ok: false, error: "not_in_gallery" });
+  assertEquals(resolveProductItems(gallery, [{ imageKey: "g-0001" }]), { ok: false, error: "bad_request" });
+  assertEquals(resolveProductItems(gallery, "p1"), { ok: false, error: "bad_request" });
+});
+
+Deno.test("order person: the caller's own record, else the shoot's client (family-account login)", async () => {
+  const service = (personId: string | null) => ({
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: personId ? { person_id: personId } : null }) }) }) }),
+  });
+  const caller = (mine: string | null) => ({ rpc: () => Promise.resolve({ data: mine }) });
+  assertEquals(await orderPersonId(caller("p-me"), service("p-shoot"), "e1"), "p-me");
+  assertEquals(await orderPersonId(caller(null), service("p-shoot"), "e1"), "p-shoot");
+  assertEquals(await orderPersonId(caller(null), service(null), "e1"), null);
 });

@@ -136,7 +136,7 @@ describe('the documents list', () => {
     renderList(legal({ packAcknowledgedAt: '2026-11-02T11:00:00Z', packAckDrafts: ['enrolment-terms', 'accessibility', 'cookies', 'signed-forms'] }));
     expect(await screen.findByText(/Lawyer-reviewed \(uploaded 2 Nov 2026\)/)).toBeInTheDocument();
     expect(screen.getByTestId('status-cookies')).toHaveTextContent('Draft (acknowledged)');
-    expect(screen.getByRole('link', { name: 'Open the Forms editor' })).toHaveAttribute('href', '/admin/setup/waivers');
+    expect(screen.getByRole('link', { name: 'Open the Forms editor' })).toHaveAttribute('href', '/admin/settings/waivers');
   });
 
   it('uploads a PDF into the studio\'s folder, then records it', async () => {

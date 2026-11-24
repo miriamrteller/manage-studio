@@ -70,7 +70,7 @@ Deno.serve(withMonitoring("run-lead-followup-digest", async (req) => {
 
   const [{ data: tenants }, { data: admins }, { data: optouts }] = await Promise.all([
     service.from("tenants").select(`id, name, language_default, ${TENANT_SENDER_COLUMNS}`).in("id", tenantIds),
-    service.from("user_profiles").select("id, tenant_id, email, language").in("tenant_id", tenantIds).contains("role", ["tenant_admin"]),
+    service.from("user_profiles").select("id, tenant_id, email, language").in("tenant_id", tenantIds).contains("role", ["tenant_admin"]).eq("is_platform_support", false),
     service.from("lead_digest_optouts").select("user_id").in("tenant_id", tenantIds),
   ]);
   const optedOut = new Set(((optouts ?? []) as Array<{ user_id: string }>).map((o) => o.user_id));

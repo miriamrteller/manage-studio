@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 /**
- * Settings → Class cards: off by default, the studio admin switches it on, adult classes are
+ * Classes → Class cards (was a Settings tab): off by default, the studio admin switches it on, adult classes are
  * ticked on a new card, and studios that don't teach classes don't see the tab.
  * Run: pnpm -C apps/web test class-card-settings.test.tsx
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import TenantSettingsPage from '@/pages/TenantSettingsPage';
+import ClassCardsSettingsPage from '@/pages/ClassCardsSettingsPage';
+import { matchesProfile, navigationConfig } from '@/components/Navigation/navigationConfig';
+import { profileForSkin } from './helpers/skinProfiles';
 import { defaultCoveredClasses } from '@/features/class-cards/service';
 import { renderInApp, setLanguage, setTenant } from './helpers/verticalHarness';
 
@@ -59,8 +61,6 @@ beforeEach(async () => {
   await setLanguage('en');
 });
 
-const openTab = (name: RegExp) => fireEvent.click(screen.getAllByRole('tab', { name })[0]);
-
 describe('defaultCoveredClasses', () => {
   it('ticks the 18+ classes, or every class when none are marked 18+', () => {
     expect(defaultCoveredClasses(db.classes)).toEqual(['o-adult']);
@@ -68,10 +68,9 @@ describe('defaultCoveredClasses', () => {
   });
 });
 
-describe('Settings → Class cards', () => {
+describe('Classes → Class cards', () => {
   it('is off to start with, and the admin switches it on', async () => {
-    renderInApp(<TenantSettingsPage />);
-    openTab(/^Class cards$/);
+    renderInApp(<ClassCardsSettingsPage />, { path: '/admin/classes/cards' });
     const toggle = await screen.findByRole('checkbox', { name: 'Sell class cards' });
     expect(toggle).not.toBeChecked();
     expect(screen.queryByRole('heading', { name: 'Your cards' })).not.toBeInTheDocument();
@@ -83,8 +82,7 @@ describe('Settings → Class cards', () => {
 
   it('a new card is prefilled: 10 classes, 3 months, personal, adult classes ticked', async () => {
     db.settings = { tenant_id: 't', enabled: true, cancel_cutoff_hours: 12, extension_months: 3 };
-    renderInApp(<TenantSettingsPage />);
-    openTab(/^Class cards$/);
+    renderInApp(<ClassCardsSettingsPage />, { path: '/admin/classes/cards' });
     fireEvent.click(await screen.findByRole('button', { name: 'Add a 10-class card' }));
     expect(screen.getByLabelText('Number of classes')).toHaveValue(10);
     expect(screen.getByLabelText('Name clients see')).toHaveValue('10 classes');
@@ -95,8 +93,8 @@ describe('Settings → Class cards', () => {
   });
 
   it('is not shown to studios that do not teach classes', () => {
-    setTenant('photographer');
-    renderInApp(<TenantSettingsPage />);
-    expect(screen.queryByRole('tab', { name: /^Class cards$/ })).not.toBeInTheDocument();
+    const cards = navigationConfig.find((item) => item.path === '/admin/classes/cards')!;
+    expect(matchesProfile(cards, profileForSkin('photographer'))).toBe(false);
+    expect(matchesProfile(cards, profileForSkin('dance-studio'))).toBe(true);
   });
 });

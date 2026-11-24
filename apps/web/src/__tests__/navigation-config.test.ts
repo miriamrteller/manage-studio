@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildNavSections,
+  groupNavEntries,
+  resolveActiveTab,
   matchesTenantFilter,
   matchesProfile,
   navigationConfig,
@@ -17,9 +19,10 @@ describe('navigationConfig', () => {
     const sections = buildNavSections(navigationConfig, ['tenant_admin']);
     const paths = sections.flatMap((section) => section.items.map((item) => item.path));
 
-    expect(paths).toContain('/admin/students');
-    expect(paths).toContain('/admin/families');
-    expect(paths).toContain('/admin/notifications');
+    expect(paths).toContain('/admin/people');
+    expect(paths).toContain('/admin/people/families');
+    // Notifications open from the bell in the top bar, not the menu.
+    expect(paths).not.toContain('/admin/notifications');
     expect(paths).toContain('/admin/finance');
     expect(paths).toContain('/admin/finance/payments');
     expect(paths).toContain('/admin/finance/expenses');
@@ -29,14 +32,14 @@ describe('navigationConfig', () => {
   it('shows bundled payments setup for grow slug (generic nav, not grow-only path)', () => {
     const growTenant = { country: 'IL', payment_provider: 'grow' as const };
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, growTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, growTenant) && item.area === 'settings',
     );
     const setupPaths = setupItems.map((item) => item.path);
 
     expect(setupPaths).toContain(BUNDLED_PAYMENTS_SETUP_PATH);
     expect(setupPaths).not.toContain('/admin/setup/grow');
-    expect(setupPaths).not.toContain('/admin/setup/payments');
-    expect(setupPaths).not.toContain('/admin/setup/invoicing');
+    expect(setupPaths).not.toContain('/admin/settings/payments');
+    expect(setupPaths).not.toContain('/admin/settings/invoicing');
   });
 
   it('IL tenant with icount slug is not treated as Grow (I3-T1)', () => {
@@ -45,19 +48,19 @@ describe('navigationConfig', () => {
     expect(tenantUsesIcount(icountTenant)).toBe(true);
 
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, icountTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, icountTenant) && item.area === 'settings',
     );
     const setupPaths = setupItems.map((item) => item.path);
 
     expect(setupPaths).toContain(BUNDLED_PAYMENTS_SETUP_PATH);
     expect(setupPaths).not.toContain('/admin/setup/grow');
-    expect(setupPaths).not.toContain('/admin/setup/payments');
+    expect(setupPaths).not.toContain('/admin/settings/payments');
   });
 
   it('grow slug tenant uses same bundled nav as icount (I3-T2)', () => {
     const growTenant = { country: 'IL', payment_provider: 'grow' as const };
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, growTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, growTenant) && item.area === 'settings',
     );
     const setupPaths = setupItems.map((item) => item.path);
 
@@ -68,10 +71,10 @@ describe('navigationConfig', () => {
   it('split payment/invoicing nav matches non-bundled tenants but requires stripe feature (dormant)', () => {
     const usTenant = { country: 'US', payment_provider: 'stripe' as const };
     const setupItems = navigationConfig.filter(
-      (item) => matchesTenantFilter(item, usTenant) && item.sectionKey === 'setup',
+      (item) => matchesTenantFilter(item, usTenant) && item.area === 'settings',
     );
-    const payments = setupItems.find((item) => item.path === '/admin/setup/payments');
-    const invoicing = setupItems.find((item) => item.path === '/admin/setup/invoicing');
+    const payments = setupItems.find((item) => item.path === '/admin/settings/payments');
+    const invoicing = setupItems.find((item) => item.path === '/admin/settings/invoicing');
 
     expect(payments?.featureKey).toBe('billing:payments.stripe');
     expect(invoicing?.featureKey).toBe('billing:payments.stripe');
@@ -110,28 +113,28 @@ describe('profile nav visibility (menu per existing skin)', () => {
 
   it('photographer hides class-only pages and shows jobs', () => {
     const paths = adminPaths('photographer');
-    expect(paths).toContain('/admin/jobs');
+    expect(paths).toContain('/admin/projects');
     expect(paths).toContain('/admin/leads');
-    expect(paths).not.toContain('/admin/families');
+    expect(paths).not.toContain('/admin/people/families');
     expect(paths).not.toContain('/classes');
-    expect(paths).not.toContain('/admin/setup/levels');
-    expect(paths).not.toContain('/admin/setup/terms');
+    expect(paths).not.toContain('/admin/classes/levels');
+    expect(paths).not.toContain('/admin/classes/seasons');
     expect(paths).not.toContain('/admin/classes');
   });
 
   it('dance and generic tenants are unchanged (no jobs, class pages intact)', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
       const paths = adminPaths(vertical);
-      expect(paths).not.toContain('/admin/jobs');
+      expect(paths).not.toContain('/admin/projects');
       expect(paths).not.toContain('/classes'); // the public pages are not in the admin menu
-      expect(paths).toContain('/admin/setup/levels');
-      expect(paths).toContain('/admin/setup/terms');
+      expect(paths).toContain('/admin/classes/levels');
+      expect(paths).toContain('/admin/classes/seasons');
       expect(paths).toContain('/admin/classes');
     }
   });
 
   it('treats a missing profile as an existing class studio', () => {
-    const jobs = navigationConfig.find((item) => item.path === '/admin/jobs');
+    const jobs = navigationConfig.find((item) => item.path === '/admin/projects');
     const classes = navigationConfig.find((item) => item.path === '/classes');
     expect(jobs && matchesProfile(jobs, null)).toBe(false);
     expect(classes && matchesProfile(classes, undefined)).toBe(true);
@@ -154,91 +157,88 @@ describe('menu follows the switches, not the skin', () => {
 
   it('a new general studio sees projects and quotes but no class pages or families', () => {
     const paths = menu(general);
-    expect(paths).toEqual(expect.arrayContaining(['/admin/jobs', '/admin/quotes', '/admin/leads']));
-    for (const gone of ['/admin/classes', '/admin/setup/levels', '/admin/setup/terms', '/admin/families']) {
+    expect(paths).toEqual(expect.arrayContaining(['/admin/projects', '/admin/projects/quotes', '/admin/leads']));
+    for (const gone of ['/admin/classes', '/admin/classes/levels', '/admin/classes/seasons', '/admin/people/families']) {
       expect(paths).not.toContain(gone);
     }
   });
 
   it('each switch brings back exactly its pages', () => {
     expect(menu({ ...general, teachesClasses: true })).toEqual(
-      expect.arrayContaining(['/admin/classes', '/admin/setup/levels', '/admin/setup/terms']),
+      expect.arrayContaining(['/admin/classes', '/admin/classes/levels', '/admin/classes/seasons']),
     );
-    expect(menu({ ...general, teachesClasses: true })).not.toContain('/admin/families');
-    expect(menu({ ...general, familyAccounts: true })).toContain('/admin/families');
+    expect(menu({ ...general, teachesClasses: true })).not.toContain('/admin/people/families');
+    expect(menu({ ...general, familyAccounts: true })).toContain('/admin/people/families');
   });
 
   it('a monthly-only studio has no jobs or quotes; per-project and both studios do', () => {
-    expect(menu({ ...general, paymentFlow: 'recurring' })).not.toContain('/admin/jobs');
-    expect(menu({ ...general, paymentFlow: 'project' })).toContain('/admin/quotes');
-    expect(menu({ ...general, paymentFlow: 'both' })).toContain('/admin/jobs');
+    expect(menu({ ...general, paymentFlow: 'recurring' })).not.toContain('/admin/projects');
+    expect(menu({ ...general, paymentFlow: 'project' })).toContain('/admin/projects/quotes');
+    expect(menu({ ...general, paymentFlow: 'both' })).toContain('/admin/projects');
   });
 });
 
-describe('admin menu: working pages at the top level', () => {
+describe('admin menu: one flat list of areas, pages are tabs', () => {
   const adminMenu = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
     buildNavSections(
       navigationConfig.filter((item) => matchesProfile(item, profileForSkin(vertical))),
       ['tenant_admin'],
     );
-  const paths = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
-    adminMenu(vertical).flatMap((section) => section.items.map((item) => item.path));
+  const lines = (vertical: 'photographer' | 'dance-studio' | 'generic' | 'beautician') =>
+    adminMenu(vertical).flatMap((s) => groupNavEntries(s.items).map((e) => e.area ?? e.path));
 
-  it('has no Browse or Administration group to open: the working pages are one flat list, Leads first', () => {
+  it('has one section and no groups to open', () => {
     for (const vertical of ['dance-studio', 'generic', 'photographer', 'beautician'] as const) {
-      const sections = adminMenu(vertical);
-      expect(sections.map((s) => s.sectionKey)).toEqual(['main', 'finance', 'setup']);
-      expect(sections[0].items[0].path).toBe('/admin/leads');
+      expect(adminMenu(vertical).map((s) => s.sectionKey)).toEqual(['main']);
     }
   });
 
-  it('dance and generic: Leads, Students, Families, Classes, Appointments, Notifications', () => {
+  it('dance and generic: Home, Leads, Students, Classes, Bookings, Shop, Finance, Settings', () => {
     for (const vertical of ['dance-studio', 'generic'] as const) {
-      expect(adminMenu(vertical)[0].items.map((i) => i.path)).toEqual([
-        '/admin/leads', '/admin/students', '/admin/families', '/admin/classes',
-        '/admin/appointments', '/admin/notifications',
-      ]);
+      expect(lines(vertical)).toEqual(['home', 'leads', 'people', 'classes', 'bookings', 'shop', 'finance', 'settings']);
     }
   });
 
-  it('photographer: Leads, Clients, Shoots, Quotes, Photo shop, Appointments, Notifications (no families or classes)', () => {
-    expect(adminMenu('photographer')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/jobs', '/admin/quotes', '/admin/photo-shop', '/admin/appointments', '/admin/notifications',
-    ]);
+  it('photographer: Home, Leads, Clients, Shoots, Bookings, Shop, Finance, Settings', () => {
+    expect(lines('photographer')).toEqual(['home', 'leads', 'people', 'projects', 'bookings', 'shop', 'finance', 'settings']);
   });
 
-  it('beautician: Leads, Clients, Appointments, Notifications (only what fits an appointment business)', () => {
-    expect(adminMenu('beautician')[0].items.map((i) => i.path)).toEqual([
-      '/admin/leads', '/admin/students', '/admin/appointments', '/admin/notifications',
-    ]);
+  it('beautician: no classes, shoots or shop', () => {
+    expect(lines('beautician')).toEqual(['home', 'leads', 'people', 'bookings', 'finance', 'settings']);
   });
 
-  it('"Manage classes" moved out of Setup (it is Classes at the top now), no duplicate entry', () => {
-    for (const vertical of ['dance-studio', 'generic'] as const) {
-      const all = paths(vertical);
-      expect(all.filter((p) => p === '/admin/classes')).toHaveLength(1);
-      const setup = adminMenu(vertical).find((s) => s.sectionKey === 'setup')!;
-      expect(setup.items.map((i) => i.path)).not.toContain('/admin/classes');
-    }
+  it('Bookings: Packages first, then the Diary (owner, 13 Nov 2026)', () => {
+    const bookings = groupNavEntries(adminMenu('photographer')[0].items).find((e) => e.area === 'bookings')!;
+    expect(bookings.items.map((i) => i.path)).toEqual(['/admin/bookings/packages', '/admin/bookings/diary']);
+    expect(bookings.path).toBe('/admin/bookings/packages');
   });
 
-  it('Finance and Setup stay as groups', () => {
-    for (const vertical of ['dance-studio', 'photographer']) {
-      const sections = adminMenu(vertical as 'dance-studio' | 'photographer');
-      expect(sections.find((s) => s.sectionKey === 'finance')!.items.length).toBeGreaterThan(1);
-      expect(sections.find((s) => s.sectionKey === 'setup')!.items.length).toBeGreaterThan(1);
-    }
+  it('a menu line opens its first page', () => {
+    const entries = groupNavEntries(adminMenu('dance-studio')[0].items);
+    expect(entries.find((e) => e.area === 'classes')!.path).toBe('/admin/classes');
+    expect(entries.find((e) => e.area === 'settings')!.path).toBe('/admin/settings');
+  });
+
+  it('finds the current tab: most specific page, sub-pages, and Settings ?tab=', () => {
+    const items = adminMenu('dance-studio')[0].items;
+    const area = (key: string) => groupNavEntries(items).find((e) => e.area === key)!.items;
+    expect(resolveActiveTab('/admin/bookings/diary', '', area('bookings'))?.path).toBe('/admin/bookings/diary');
+    expect(resolveActiveTab('/admin/leads/forms', '', area('leads'))?.path).toBe('/admin/leads/get');
+    expect(resolveActiveTab('/admin/people/families/f1', '', area('people'))?.path).toBe('/admin/people/families');
+    expect(resolveActiveTab('/admin/settings', '?tab=legal', area('settings'))?.path).toBe('/admin/settings?tab=legal');
+    expect(resolveActiveTab('/admin/settings', '', area('settings'))?.path).toBe('/admin/settings');
+    expect(resolveActiveTab('/admin/settings', '?tab=nope', area('settings'))?.path).toBe('/admin/settings');
   });
 
   it('other roles are unchanged: parents and students keep Browse and their own page', () => {
     const parent = buildNavSections(navigationConfig, ['account_holder']).flatMap((s) => s.items.map((i) => i.path));
-    expect(parent).toEqual(['/', '/classes', '/book', '/dashboard/portal']);
+    expect(parent).toEqual(['/', '/classes', '/book', '/shop', '/dashboard/portal']);
     const student = buildNavSections(navigationConfig, ['student']).flatMap((s) => s.items.map((i) => i.path));
-    expect(student).toEqual(['/', '/classes', '/book', '/dashboard/student']);
+    expect(student).toEqual(['/', '/classes', '/book', '/shop', '/dashboard/student']);
   });
 
-  it('the public menu (signed out) is unchanged', () => {
+  it('the public menu (signed out) adds only the Shop page', () => {
     const sections = buildNavSections(publicNavigationConfig, []);
-    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/', '/classes', '/book', '/login', '/signup']);
+    expect(sections.flatMap((s) => s.items.map((i) => i.path))).toEqual(['/', '/classes', '/book', '/shop', '/login', '/signup']);
   });
 });

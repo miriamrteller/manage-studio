@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 
-type Kind = 'form' | 'web_instructions';
+export type Kind = 'form' | 'web_instructions' | 'class_link' | 'booking_link';
 
 /** wa.me wants an international number in digits only; a local Israeli 0… number gets 972. */
 export function whatsappNumber(raw: string, country?: string | null): string | null {
@@ -16,7 +16,7 @@ export function whatsappNumber(raw: string, country?: string | null): string | n
   return digits;
 }
 
-async function sendLink(
+export async function sendLink(
   kind: Kind,
   email: string,
   name: string | null,
@@ -39,7 +39,7 @@ async function sendLink(
   return code ?? 'failed';
 }
 
-function errorKey(code: string): string {
+export function errorKey(code: string): string {
   switch (code) {
     case 'invalid_email':
     case 'tenant_limit':

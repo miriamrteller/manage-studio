@@ -414,10 +414,20 @@ export const EngagementSchema = z.object({
   payment_dunning_attempt_count: z.number().int().nonnegative().default(0).optional(),
   payment_dunning_next_at: TimestampSchema.nullable().optional(),
   waiver_evidence_id: UUIDSchema.nullable().optional(),
-  /** Automatic class discount off the class price, set by the database at enrolment (per month for monthly classes). */
+  /** Class discount off the class price, set by the database at enrolment (per month for monthly classes). */
   discount_minor: z.number().int().nonnegative().optional(),
+  /** A first-payment coupon: comes off the first payment only. */
+  first_discount_minor: z.number().int().nonnegative().optional(),
+  coupon_id: UUIDSchema.nullable().optional(),
   discount_lines: z
-    .array(z.object({ kind: z.enum(['sibling', 'extra_class', 'early_bird']), amount_minor: z.number().int().positive() }))
+    .array(
+      z.object({
+        kind: z.enum(['sibling', 'extra_class', 'early_bird', 'client', 'coupon']),
+        amount_minor: z.number().int().positive(),
+        first_only: z.boolean().optional(),
+        code: z.string().optional(),
+      }),
+    )
     .optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema.optional(),
@@ -447,11 +457,13 @@ export type OfferingSession = z.infer<typeof OfferingSessionSchema>;
 export const StaffSchema = z.object({
   id: UUIDSchema,
   tenant_id: UUIDSchema,
-  user_profile_id: UUIDSchema,
+  /** The teacher's login, once they have signed in with this email (set by link_my_teacher_login). */
+  user_profile_id: UUIDSchema.nullable().optional(),
   name: z.string().min(1, 'Teacher name required'),
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
-  contract_type: z.enum(['employee', 'contractor']).default('contractor'),
+  /** The database CHECK allows 'hourly', 'salary' or 'freelance'; not used by the app yet. */
+  contract_type: z.string().nullable().optional(),
   hourly_rate_minor: z.number().nonnegative().nullable().optional(),
   created_at: TimestampSchema,
 });

@@ -17,6 +17,7 @@ export type WholeFeatureId =
   | 'booking'
   | 'google_calendar'
   | 'photo_shop'
+  | 'studio_shop'
   | 'takbull_testing';
 
 export interface WholeFeature {
@@ -45,6 +46,7 @@ export const WHOLE_FEATURES: readonly WholeFeature[] = [
     section: 'features',
   },
   { id: 'photo_shop', kind: 'override', featureKey: FEATURES.billing.photoShop, section: 'beta' },
+  { id: 'studio_shop', kind: 'override', featureKey: FEATURES.billing.studioShop, section: 'beta' },
   {
     id: 'takbull_testing',
     kind: 'override',

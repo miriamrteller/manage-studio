@@ -40,6 +40,18 @@ export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   retain_payment_on_penalty: true,
 };
 
+/**
+ * Hours clients can book when the studio has saved none: Sunday to Thursday,
+ * 09:00 to 18:00. get_available_slots uses the same default
+ * (20261111101700_default_booking_hours.sql); the page shows them prefilled.
+ */
+export const DEFAULT_BOOKING_HOURS: BookingHours[] = [0, 1, 2, 3, 4].map((day) => ({
+  day_of_week: day,
+  start_time: '09:00',
+  end_time: '18:00',
+  is_active: true,
+}));
+
 export const HOLD_EXPIRY_OPTIONS = [15, 20, 25, 30, 45, 60, 90, 120] as const;
 export const EXPIRY_REMINDER_OPTIONS = [5, 10, 15] as const;
 

@@ -14,6 +14,9 @@ export type CreateRequestChargeResult =
 /** Error code when the studio's payment provider cannot settle a job request online. */
 export const ONLINE_PAYMENT_UNAVAILABLE = "online_payment_unavailable";
 
+/** Error code when the provider refused to open its hosted card page for this charge. */
+export const PAYMENT_PAGE_UNAVAILABLE = "payment_page_unavailable";
+
 /**
  * Create a hosted-page charge (YPay) for a job payment request.
  *
@@ -90,22 +93,43 @@ export async function createJobPaymentRequestCharge(
   const payUrl = `${base}/pay/${encodeURIComponent(request.public_token)}`;
 
   const provider = await getPaymentProviderForTenant(service, request.tenant_id);
-  const result = await provider.createCharge({
-    amountMinor: request.amount_minor,
-    currency: request.currency,
-    idempotencyKey: `jpr_${request.id}_${Date.now()}`,
-    metadata,
-    installments: request.max_installments > 1 ? request.max_installments : undefined,
-    ...(options.payWith === "bit" ? { payWith: "bit" as const, isMobile: options.isMobile === true } : {}),
-    lineItem: {
-      name: request.label,
-      description: options.tenantLabel ? `${options.tenantLabel} — ${request.label}` : request.label,
-    },
-    returnUrls: {
-      success: `${payUrl}?result=success`,
-      failure: `${payUrl}?result=failed`,
-    },
-  });
+  let result: Awaited<ReturnType<typeof provider.createCharge>>;
+  try {
+    result = await provider.createCharge({
+      amountMinor: request.amount_minor,
+      currency: request.currency,
+      idempotencyKey: `jpr_${request.id}_${Date.now()}`,
+      metadata,
+      installments: request.max_installments > 1 ? request.max_installments : undefined,
+      ...(options.payWith === "bit" ? { payWith: "bit" as const, isMobile: options.isMobile === true } : {}),
+      lineItem: {
+        name: request.label,
+        description: options.tenantLabel ? `${options.tenantLabel} — ${request.label}` : request.label,
+      },
+      returnUrls: {
+        success: `${payUrl}?result=success`,
+        failure: `${payUrl}?result=failed`,
+      },
+    });
+  } catch (error) {
+    // The provider refused the charge (e.g. YPay clearing error 4004). Tell the client
+    // plainly and let them pay the studio another way, instead of a bare "Internal error".
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error("[createJobPaymentRequestCharge] provider refused the charge", provider.slug, reason);
+    await service.from("audit_log").insert({
+      tenant_id: request.tenant_id,
+      action: "job_payment_request.charge_failed",
+      entity_type: "job_payment_request",
+      entity_id: request.id,
+      after_state: {
+        provider: provider.slug,
+        reason: reason.slice(0, 300),
+        amount_minor: request.amount_minor,
+        currency: request.currency,
+      },
+    });
+    return { ok: false, error: PAYMENT_PAGE_UNAVAILABLE, status: 502 };
+  }
 
   if (!result.pageUrl) {
     return {

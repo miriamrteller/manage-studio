@@ -194,7 +194,7 @@ describe('the charge', () => {
 
 describe('the decline email', () => {
   it('says when we try again, in Hebrew and English', () => {
-    const he = declineEmail({ language: 'he', studioName: 'Lens', amountAgorot: 100, nextTryOn: '2026-12-04', settingsUrl: 'https://x/admin/setup/payments' });
+    const he = declineEmail({ language: 'he', studioName: 'Lens', amountAgorot: 100, nextTryOn: '2026-12-04', settingsUrl: 'https://x/admin/settings/payments' });
     expect(he.html).toContain('04/12/2026');
     expect(he.html).toContain('dir="rtl"');
     const en = declineEmail({ language: 'en', studioName: 'A <b>', amountAgorot: 9900, nextTryOn: null, settingsUrl: 'https://x' });

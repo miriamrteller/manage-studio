@@ -10,9 +10,13 @@ import {
   writeInboundLead,
 } from "../_shared/crm-contract/lead-ingest-core.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { buildLeadThankYou, parseLeadThankYou } from "../_shared/crm-contract/lead-thank-you.ts";
+import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../_shared/email-send.ts";
+import { getTenantEmailConfig } from "../_shared/tenant-email.ts";
+import { resolveTenantSender } from "../_shared/notification-from.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { cleanInviteToken, inviteTokenHash } from "../_shared/lead-form-invite.ts";
-import { leadCaptchaPasses, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
+import { leadCaptchaPasses, leadEmailProblem, normaliseCampaign } from "../_shared/crm-contract/lead-capture-guard.ts";
 import { assessLeadSpam, filledTooFast } from "../_shared/crm-contract/lead-spam.ts";
 import { enquiryUsesStudioEmail } from "../_shared/crm-contract/studio-own-email.ts";
 import {
@@ -61,7 +65,8 @@ import {
 const payloadSchema = z.object({
   tenantSubdomain: z.string().min(1).max(63),
   name: z.string().min(1).max(200),
-  email: z.string().email().max(320).nullable().optional(),
+  /** Required (checked below with a clear refusal code); nullable so a missing one gets email_required, not a generic 400. */
+  email: z.string().max(320).nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
   message: z.string().max(5000).nullable().optional(),
   interest: z.string().max(200).nullable().optional(),
@@ -76,6 +81,20 @@ const payloadSchema = z.object({
   formSlug: z.string().max(40).nullable().optional(),
   /** Token from an admin's "Send form" link (#invite=…): links the lead to that invite. */
   invite: z.string().max(128).nullable().optional(),
+  /**
+   * Photographer Book page: a shoot request (package + day). Nothing is
+   * charged; it lands as a lead with offering_id + event_date, and the
+   * studio confirms it from the leads list (Convert to shoot, prefilled).
+   */
+  shootRequest: z
+    .object({
+      offeringId: z.string().guid(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    })
+    .nullable()
+    .optional(),
+  /** The language the visitor used the form in (for the thank-you email). */
+  lang: z.enum(["en", "he"]).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
   website: z.string().max(200).nullable().optional(),
   /** Time trap: milliseconds the form was open before sending (absent = not checked). */
@@ -179,6 +198,12 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     return json({ outcome: "created" });
   }
 
+  // Email is required so the studio can always reply (phone stays optional).
+  const emailProblem = leadEmailProblem(payload.email);
+  if (emailProblem) {
+    return json({ error: emailProblem }, 400);
+  }
+
   const spamCheck = assessLeadSpam({ name: payload.name, email: payload.email, message: payload.message });
   if (spamCheck.spam) {
     console.warn(`crm-lead-capture: refused as spam (${spamCheck.reasons.join(", ")})`);
@@ -201,7 +226,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
 
     const { data: tenant, error: tenantError } = await service
       .from("tenants")
-      .select(`${LEAD_TENANT_COLUMNS}, skin, business_preset, lead_form`)
+      .select(`${LEAD_TENANT_COLUMNS}, skin, business_preset, lead_form, lead_thank_you`)
       .eq("subdomain", payload.tenantSubdomain.toLowerCase())
       .single();
     if (tenantError || !tenant) {
@@ -211,6 +236,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       skin: string | null;
       business_preset: string | null;
       lead_form: unknown;
+      lead_thank_you: unknown;
     };
 
     if (await enquiryUsesStudioEmail(service, leadTenant.id, payload.email)) {
@@ -276,12 +302,40 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       return json({ error: "Too many requests. Please try again later." }, 429);
     }
 
+    // Shoot request from the Book page: a day in the past is refused (the
+    // calendar never offers one); a package that is not the studio's own is
+    // dropped, never the request.
+    let shoot: { offeringId: string | null; packageName: string | null; date: string } | null = null;
+    if (payload.shootRequest) {
+      if (payload.shootRequest.date < todayIn(FORM_TIME_ZONE)) {
+        return json({ error: "date_in_past" }, 400);
+      }
+      const { data: pkg } = await service
+        .from("offerings")
+        .select("id, name")
+        .eq("tenant_id", leadTenant.id)
+        .eq("id", payload.shootRequest.offeringId)
+        .eq("status", "active")
+        .maybeSingle();
+      shoot = {
+        offeringId: (pkg?.id as string | undefined) ?? null,
+        packageName: (pkg?.name as string | undefined) ?? null,
+        date: payload.shootRequest.date,
+      };
+    }
+
     const fields = {
       name: payload.name.trim(),
       email,
       phone: nonEmpty(payload.phone),
-      interest: nonEmpty(payload.interest),
+      interest: nonEmpty(payload.interest) ?? shoot?.packageName ?? null,
       lastCommunicationNote: nonEmpty(payload.message),
+    };
+
+    const formColumns = {
+      ...(namedForm?.offering_id && !checked.columns.offering_id ? { offering_id: namedForm.offering_id } : {}),
+      ...checked.columns,
+      ...(shoot ? { event_date: shoot.date, ...(shoot.offeringId ? { offering_id: shoot.offeringId } : {}) } : {}),
     };
 
     const result = await writeInboundLead(service, leadTenant, fields, {
@@ -289,14 +343,10 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       sourceRef: null,
       receivedAt: new Date().toISOString(),
       campaign: normaliseCampaign(payload.campaign),
-      form: questions.length > 0 || namedForm?.offering_id
-        ? {
-          // The form's own class/package applies unless the visitor picked one.
-          columns: namedForm?.offering_id && !checked.columns.offering_id
-            ? { ...checked.columns, offering_id: namedForm.offering_id }
-            : checked.columns,
-          answers: checked.answers,
-        }
+      // The form's own class/package applies unless the visitor picked one;
+      // a shoot request's package and day win over both.
+      form: questions.length > 0 || Object.keys(formColumns).length > 0
+        ? { columns: formColumns, answers: checked.answers }
         : null,
       formId: namedForm?.id ?? null,
     });
@@ -327,7 +377,19 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     }
 
     if (result.outcome !== "duplicate") {
-      await notifyTenantOfLead(service, leadTenant, fields, result.outcome);
+      await notifyTenantOfLead(
+        service,
+        leadTenant,
+        fields,
+        result.outcome,
+        shoot && result.leadId ? { leadId: result.leadId, packageName: shoot.packageName, date: shoot.date } : null,
+      );
+    }
+
+    // A new sign-up gets the studio's own thank-you email, when it is on.
+    // A repeat sign-up (same email) does not get it again.
+    if (result.outcome === "created" && fields.email && !shoot) {
+      await sendLeadThankYou(service, leadTenant, fields.email, fields.name, payload.lang ?? null);
     }
 
     return json({ outcome: result.outcome }, result.outcome === "created" ? 201 : 200);
@@ -336,3 +398,49 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
     return json({ error: "Internal error" }, 500);
   }
 }));
+
+/** Never fails the capture: the lead is already saved. */
+async function sendLeadThankYou(
+  service: ReturnType<typeof createServiceClient>,
+  tenant: LeadTenant & { lead_thank_you: unknown },
+  email: string,
+  name: string,
+  lang: "en" | "he" | null,
+): Promise<void> {
+  try {
+    const email_ = buildLeadThankYou(
+      parseLeadThankYou(tenant.lead_thank_you),
+      lang ?? (tenant.language_default === "he" ? "he" : "en"),
+      { name, studio: tenant.name },
+    );
+    if (!email_) return;
+    const config = await getTenantEmailConfig(service, tenant.id);
+    const sender = resolveTenantSender(tenant);
+    const sent = await sendRenderedEmail({
+      to: email,
+      from: sender.from,
+      replyTo: sender.replyTo,
+      subject: email_.subject,
+      renderInput: {
+        templateName: EMAIL_TEMPLATE_NAMES.ADMIN_ANNOUNCEMENT,
+        language: email_.language,
+        schoolName: tenant.name,
+        tenantColors: { primary_color: config.primary_color, accent_color: config.accent_color },
+        variables: { subject: email_.subject, body: email_.body },
+      },
+    });
+    await service.from("notification_log").insert({
+      tenant_id: tenant.id,
+      recipient_email: email,
+      channel: "email",
+      template_name: "crm_lead_thank_you",
+      subject: email_.subject,
+      body_preview: email_.body.slice(0, 200),
+      external_msg_id: sent.id,
+      status: "sent",
+      sent_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("crm-lead-capture: thank-you email failed (lead saved)", err);
+  }
+}

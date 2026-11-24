@@ -82,6 +82,8 @@ export type UserProfile = {
   language?: 'he' | 'en';
   tenant_id?: string;
   person_id?: string;
+  /** The studio's "OpalSwift support" login (platform owner after the confirm step). */
+  is_platform_support?: boolean;
   created_at?: string;
   updated_at?: string;
 };

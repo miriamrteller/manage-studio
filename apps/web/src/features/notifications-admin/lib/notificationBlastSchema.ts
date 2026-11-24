@@ -69,7 +69,8 @@ export type NotificationBlastFormValues = z.infer<typeof notificationBlastSchema
 export interface BlastRecipientPreview {
   recipient_email: string;
   recipient_name: string | null;
-  person_id: string;
+  /** Null for a lead (scope 'leads'): leads have no person record. */
+  person_id: string | null;
   account_member_id: string | null;
   account_name: string | null;
   class_names: string | null;

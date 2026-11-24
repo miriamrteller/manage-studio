@@ -4,7 +4,14 @@
  * Sends the time-based photographer emails returned by list_due_shoot_emails():
  *   shoot_reminder  — 1–2 days before a booked shoot
  *   shoot_thank_you — 1–3 days after the shoot
- *   gallery_ready   — within 7 days of job_details.gallery_released_at (Thread A)
+ *   gallery_ready   — within 7 days of the client first seeing the gallery
+ *                     (released by hand, or everything paid: gallery_shared_at).
+ *                     Built like Send gallery: one button, to the photo shop when
+ *                     the shoot has one, never to SmugMug (skipped if that is all).
+ *   review_request  — 5–12 days after the gallery is shared, when the studio
+ *                     has a review link (tenants.review_url)
+ * First it moves project statuses on (advance_job_statuses: booked → shot the
+ * day after the shoot, → delivered once the gallery or photos reach the client).
  * Windows tolerate missed runs; claim_automatic_email() makes each send happen
  * once and skips tenants that switched an email off.
  *
@@ -22,6 +29,7 @@ import {
 } from "../_shared/photographer-emails/send.ts";
 import { type DueShootEmail, dueShootEmailVariables, isSafeLink } from "../_shared/photographer-emails/variables.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { hourlyGalleryEmailVariables } from "../_shared/photo-shop/hourly-gallery-email.ts";
 
 Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -30,6 +38,11 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (denied) return denied;
 
   const service = createServiceClient();
+  // Statuses first; a failure here never stops the emails.
+  const { data: moved, error: moveError } = await service.rpc("advance_job_statuses", {});
+  if (moveError) console.error("[run-shoot-emails] advance_job_statuses:", moveError.message);
+  else console.log("[run-shoot-emails] statuses moved", JSON.stringify(moved));
+
   const { data, error } = await service.rpc("list_due_shoot_emails", {});
   if (error) {
     console.error("[run-shoot-emails] list_due_shoot_emails:", error.message);
@@ -49,17 +62,30 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   const counts: Record<AutomaticEmailOutcome | "invalid", number> = { sent: 0, skipped: 0, failed: 0, invalid: 0 };
   for (const row of rows) {
     const tenant = tenantById.get(row.tenant_id);
-    if (!tenant || (row.email_key === "gallery_ready" && !isSafeLink(row.gallery_url))) {
+    if (
+      !tenant ||
+      (row.email_key === "gallery_ready" && !isSafeLink(row.gallery_url)) ||
+      (row.email_key === "review_request" && !isSafeLink(tenant.review_url))
+    ) {
       counts.invalid += 1;
       continue;
     }
     try {
+      const language = tenant.language_default === "he" ? "he" : "en";
+      // gallery_ready: one button to the photo shop, never SmugMug (Send gallery's rules).
+      const variables = row.email_key === "gallery_ready"
+        ? await hourlyGalleryEmailVariables(service, row, tenant, language)
+        : dueShootEmailVariables(row, language, tenant.review_url);
+      if (!variables) {
+        counts.invalid += 1;
+        continue;
+      }
       const outcome = await sendAutomaticEmail(service, {
         tenant,
         key: row.email_key,
         engagementId: row.engagement_id,
         to: row.recipient_email,
-        variables: dueShootEmailVariables(row, tenant.language_default === "he" ? "he" : "en"),
+        variables,
       });
       counts[outcome] += 1;
     } catch (sendError) {

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { Link, useNavigate } from 'react-router-dom';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useJobs } from '@/features/jobs/hooks/useJobs';
-import { ClientShootList } from '@/features/jobs/components/ClientShootList';
+import { PersonProjects } from '@/features/people/components/PersonProjects';
+import { openAmountMinor, useProjectRequests } from '@/features/jobs/lib/projectSummary';
+import { PersonSignedForms } from '@/features/people/components/PersonSignedForms';
 import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
 import { Button } from '@/components/ui/button';
 import { PersonForm } from '@/features/people/components/PersonForm';
@@ -29,11 +31,16 @@ import { formatCurrency } from '@shared/format';
 import { formatSavedCard } from '../lib/studentBillingAccount';
 import { invalidateAfterOfflinePayment } from '../lib/offlinePaymentCaches';
 import { PersonClassCards } from '@/features/class-cards/components/PersonClassCards';
+import { personPagePath } from '@/features/people/lib/personPagePath';
+import { PersonBookings } from './PersonBookings';
+import { DeleteClientDialog } from '@/features/people/components/DeleteClientDialog';
 
 interface StudentSlideOverProps {
   personId: string;
   highlightEngagementId?: string | null;
   onClose: () => void;
+  /** 'page': the person's own page (/admin/people/:personId), not a panel over the list. */
+  variant?: 'panel' | 'page';
 }
 
 interface CancelTarget {
@@ -51,20 +58,36 @@ export function StudentSlideOver({
   personId,
   highlightEngagementId = null,
   onClose,
+  variant = 'panel',
 }: StudentSlideOverProps) {
+  const asPage = variant === 'page';
   const { t, i18n } = useTranslation();
   const tenant = useTenant();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // Photographers: a client's bookings are shoots (/admin/jobs), and there's
-  // no class enrolment, age review or guardian/family record.
-  const { vertical } = useEntityLabels();
-  const isPhotographer = vertical === 'photographer';
-  const { jobs } = useJobs({ enabled: isPhotographer });
+  // What the page shows follows "How do clients work with you?" (owner, 13 Nov 2026):
+  // projects with Projects, classes (age, class cards, enrol) with Classes, the family with
+  // Parents pay for children, bookings with Appointments. A studio can have several.
+  const modes = useWorkModes();
+  const { jobs } = useJobs({ enabled: modes.projects });
   const clientShoots = jobs.filter((job) => job.person_id === personId);
+  const shootIds = new Set(clientShoots.map((job) => job.engagement_id));
 
   const { person, family, guardian, members, contactPrefs, enrolments, engagementRecords, offerings, payments, isLoading, error } =
     useStudentDetail(personId);
+  // Class enrolments only: projects and bookings have their own sections.
+  const classEngagements = engagementRecords.filter(
+    (engagement) =>
+      !shootIds.has(engagement.id) &&
+      (offerings.find((item) => item.id === engagement.offering_id)?.offering_type ?? 'class') === 'class',
+  );
+  // "Still to pay" at the top: open payment requests on projects + class places waiting for payment.
+  const { data: projectRequests = [] } = useProjectRequests(clientShoots.map((job) => job.engagement_id));
+  const toPayMinor =
+    openAmountMinor(projectRequests) +
+    classEngagements
+      .filter((engagement) => engagement.status === 'pending_payment')
+      .reduce((sum, engagement) => sum + (offerings.find((item) => item.id === engagement.offering_id)?.price_minor ?? 0), 0);
 
   const [recordingEngagementId, setRecordingEngagementId] = useState<string | null>(null);
   const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
@@ -80,6 +103,7 @@ export function StudentSlideOver({
   const [contactSaving, setContactSaving] = useState(false);
   const [enrolModalOpen, setEnrolModalOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!highlightEngagementId) return;
@@ -135,54 +159,94 @@ export function StudentSlideOver({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-40 z-40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      {!asPage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-40"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Panel */}
+      {/* Panel, or the person's own page */}
       <div
-        className="fixed top-0 end-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col"
-        role="dialog"
-        aria-modal="true"
-        aria-label={person?.name ?? t('pages.students.title')}
+        className={
+          asPage
+            ? 'max-w-3xl flex flex-col'
+            : 'fixed top-0 end-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col'
+        }
+        role={asPage ? undefined : 'dialog'}
+        aria-modal={asPage ? undefined : true}
+        aria-label={asPage ? undefined : person?.name ?? t('pages.students.title')}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b flex-shrink-0">
+        <div className={asPage ? 'flex items-start justify-between pb-4 border-b' : 'flex items-start justify-between p-5 border-b flex-shrink-0'}>
           <div>
-            <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
-            {!isPhotographer && age !== undefined && age !== null && (
+            {asPage ? (
+              <h1 className="text-3xl font-bold">{person?.name ?? '...'}</h1>
+            ) : (
+              <h2 className="text-xl font-bold">{person?.name ?? '...'}</h2>
+            )}
+            {modes.classes && age !== undefined && age !== null && (
               <p className="text-sm text-gray-500">
                 {t('pages.people.age_label')}: {formatPersonAgeLabel(age, t)}
                 {dobSuffix}
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            aria-label={t('common.close')}
-          >
-            ✕
-          </button>
+          {asPage ? (
+            <Button variant="outline" size="sm" onClick={onClose}>
+              {t('pages.people.back_to_list')}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1">
+              {/* The person's own page, with room for everything about them. */}
+              <Button variant="ghost" size="sm" onClick={() => navigate(personPagePath(personId))}>
+                {t('pages.people.open_page')}
+              </Button>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label={t('common.close')}
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className={asPage ? 'py-5 space-y-6' : 'flex-1 overflow-y-auto p-5 space-y-6'}>
           {isLoading && <p className="text-center py-8 text-gray-500">{t('common.loading')}</p>}
           {error && <p className="text-red-600">{t('errors.server_error')}</p>}
 
           {person && !isLoading && (
             <>
+              {toPayMinor > 0 && (
+                <p
+                  className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900"
+                  role="status"
+                >
+                  {t('pages.people.still_to_pay')}: {formatCurrency(toPayMinor, tenant?.currency ?? 'ILS', i18n.language)}
+                </p>
+              )}
               {/* ── 1. Student info ── */}
               <section className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold text-gray-700">{t('pages.people.detail_title')}</h3>
                   {!isEditingPerson && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditingPerson(true)}>
-                      {t('common.edit')}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingPerson(true)}>
+                        {t('common.edit')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-700 hover:text-red-800"
+                        onClick={() => setDeleteOpen(true)}
+                      >
+                        {t('pages.people.delete_client.button')}
+                      </Button>
+                    </div>
                   )}
                 </div>
 
@@ -245,11 +309,11 @@ export function StudentSlideOver({
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-              {/* ── 2. Enrolments (photographer: shoots) ── */}
-              {isPhotographer ? (
+              {/* ── 2. Projects ── */}
+              {modes.projects && (
                 <section className="space-y-2">
                   <div className="flex flex-wrap justify-between items-center gap-2">
-                    <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
+                    <h3 className="font-semibold text-gray-700">{t('pages.people.projects_section')}</h3>
                     <Button
                       variant="primary"
                       size="sm"
@@ -259,12 +323,15 @@ export function StudentSlideOver({
                         })
                       }
                     >
-                      {t('pages.students.enrol_button')}
+                      {t('pages.people.new_project')}
                     </Button>
                   </div>
-                  <ClientShootList jobs={clientShoots} />
+                  <PersonProjects jobs={clientShoots} />
                 </section>
-              ) : (
+              )}
+
+              {/* ── 3. Classes ── */}
+              {modes.classes && (
                 <section className="space-y-2">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-gray-700">{t('pages.students.enrolments_section')}</h3>
@@ -272,21 +339,25 @@ export function StudentSlideOver({
                       {t('pages.students.enrol_button')}
                     </Button>
                   </div>
-                  {enrolments.length === 0 ? (
+                  {classEngagements.length === 0 ? (
                     <p className="text-sm text-gray-400">{t('pages.students.no_enrolments')}</p>
                   ) : (
                     <ul className="divide-y text-sm" style={{ borderColor: 'var(--color-border-default)' }}>
-                      {engagementRecords.map((engagement) => {
+                      {classEngagements.map((engagement) => {
                         const summary = enrolments.find((entry) => entry.id === engagement.id);
                         const className = summary?.className ?? engagement.offering_id;
                         const offering = offerings.find((item) => item.id === engagement.offering_id);
                         const classAges = offering
                           ? formatAgeRange(offering.min_age ?? null, offering.max_age ?? null)
                           : null;
-                        // Class price less the automatic class discount set at enrolment.
+                        // Class price less the class discount set at enrolment (every payment), and
+                        // the first payment also less a first-payment coupon.
                         const discountMinor = engagement.discount_minor ?? 0;
+                        const firstDiscountMinor = engagement.first_discount_minor ?? 0;
                         const pricedMinor =
                           offering ? Math.max(0, offering.price_minor - discountMinor) : undefined;
+                        const firstPricedMinor =
+                          pricedMinor === undefined ? undefined : Math.max(0, pricedMinor - firstDiscountMinor);
                         return (
                           <li key={engagement.id} className="space-y-2 py-1">
                             {engagement.status === 'admin_review' && person && (
@@ -333,7 +404,7 @@ export function StudentSlideOver({
                                   : undefined
                               }
                             />
-                            {offering && discountMinor > 0 && (
+                            {offering && (discountMinor > 0 || firstDiscountMinor > 0) && (
                               <ClassDiscountLines
                                 listAmountMinor={offering.price_minor}
                                 discounts={discountLinesFromRow(engagement.discount_lines)}
@@ -354,7 +425,7 @@ export function StudentSlideOver({
                               recordingEngagementId === engagement.id ? (
                                 <RecordPaymentModal
                                   engagementId={engagement.id}
-                                  defaultAmountMinor={pricedMinor}
+                                  defaultAmountMinor={firstPricedMinor}
                                   currency={offering?.currency}
                                   onRecorded={() => {
                                     invalidateFinanceCaches();
@@ -379,22 +450,27 @@ export function StudentSlideOver({
                 </section>
               )}
 
-              {!isPhotographer && <PersonClassCards personId={person.id} />}
+              {modes.classes && <PersonClassCards personId={person.id} />}
 
-              {!isPhotographer && (
+              {modes.families && (
                 <>
                   <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-                  {/* ── 3. Guardian / Family ── */}
+                  {/* ── 4. Guardian / Family ── */}
                   <section className="space-y-2">
                     <div className="flex justify-between items-center">
                       <h3 className="font-semibold text-gray-700">
                         {t('pages.students.contact_section_guardian')}
                       </h3>
                       {family && !isEditingContact && (
-                        <Button variant="ghost" size="sm" onClick={startEditContact}>
-                          {t('common.edit')}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/people/families/${family.id}`)}>
+                            {t('pages.people.open_family')}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={startEditContact}>
+                            {t('common.edit')}
+                          </Button>
+                        </div>
                       )}
                     </div>
 
@@ -476,7 +552,13 @@ export function StudentSlideOver({
                         <ul className="divide-y text-sm">
                           {members.map((m) => (
                             <li key={m.id} className="py-1.5 flex justify-between">
-                              <span>{m.name}</span>
+                              {m.person_id && m.person_id !== personId ? (
+                                <Link to={personPagePath(m.person_id)} className="underline">
+                                  {m.name}
+                                </Link>
+                              ) : (
+                                <span>{m.name}</span>
+                              )}
                               <span className="text-xs text-gray-400">{m.role}</span>
                             </li>
                           ))}
@@ -489,7 +571,19 @@ export function StudentSlideOver({
 
               <hr style={{ borderColor: 'var(--color-border-default)' }} />
 
-              {/* ── 4. Notification preferences ── */}
+              {/* ── Bookings (Appointments; projects are listed above, not again here) ── */}
+              {modes.appointments && (
+                <>
+                  <PersonBookings personId={personId} excludeIds={shootIds} />
+                  <hr style={{ borderColor: 'var(--color-border-default)' }} />
+                </>
+              )}
+
+              <PersonSignedForms personId={personId} />
+
+              <hr style={{ borderColor: 'var(--color-border-default)' }} />
+
+              {/* ── Notification preferences ── */}
               <section className="space-y-2">
                 <h3 className="font-semibold text-gray-700">{t('pages.students.notifications_section')}</h3>
                 {!contactPrefs ? (
@@ -618,6 +712,16 @@ export function StudentSlideOver({
         </div>
       </div>
 
+      {person && (
+        <DeleteClientDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          personId={personId}
+          personName={person.name}
+          onDeleted={onClose}
+        />
+      )}
+
       {person && cancelTarget && (
         <CancelEnrolmentDialog
           open={!!cancelTarget}
@@ -632,7 +736,7 @@ export function StudentSlideOver({
         />
       )}
 
-      {person && !isPhotographer && (
+      {person && modes.classes && (
         <AdminEnrolStudentModal
           isOpen={enrolModalOpen}
           personId={personId}

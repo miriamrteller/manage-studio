@@ -5,16 +5,18 @@ import type { ManualPaymentMethod } from '../lib/manualPaymentMethods';
 
 /** Something a payment can be for. Picking it records the payment the way its own screen does. */
 export type PayableItem =
-  | { kind: 'first'; key: string; engagementId: string; name: string; amountMinor: number | null }
-  | { kind: 'monthly'; key: string; engagementId: string; name: string; amountMinor: number | null }
+  | { kind: 'first'; key: string; engagementId: string; offeringId?: string; name: string; amountMinor: number | null }
+  | { kind: 'monthly'; key: string; engagementId: string; offeringId?: string; name: string; amountMinor: number | null }
   | { kind: 'job'; key: string; requestId: string; name: string; amountMinor: number }
   | { kind: 'offering'; key: string; offeringId: string; name: string; amountMinor: number | null };
 
 interface EngagementRow {
   id: string;
   status: string;
-  /** Automatic class discount off the class price (sibling, extra class, early bird). */
+  /** Class discount off the class price, every payment (sibling, extra class, early bird, client, coupon). */
   discount_minor?: number | null;
+  /** Extra discount off the first payment only (a first-payment coupon). */
+  first_discount_minor?: number | null;
   offering: { id: string; name: string; price_minor: number | null; billing_mode: string | null } | null;
 }
 
@@ -32,10 +34,13 @@ export function openItemsFrom(
     const name = e.offering?.name ?? '';
     const price = e.offering?.price_minor ?? null;
     const amountMinor = price === null ? null : Math.max(0, price - (e.discount_minor ?? 0));
+    const firstAmountMinor =
+      amountMinor === null ? null : Math.max(0, amountMinor - (e.first_discount_minor ?? 0));
+    const offeringId = e.offering?.id;
     if (e.status === 'pending_payment') {
-      items.push({ kind: 'first', key: `first:${e.id}`, engagementId: e.id, name, amountMinor });
+      items.push({ kind: 'first', key: `first:${e.id}`, engagementId: e.id, offeringId, name, amountMinor: firstAmountMinor });
     } else if (e.status === 'active' && e.offering?.billing_mode === 'recurring') {
-      items.push({ kind: 'monthly', key: `monthly:${e.id}`, engagementId: e.id, name, amountMinor });
+      items.push({ kind: 'monthly', key: `monthly:${e.id}`, engagementId: e.id, offeringId, name, amountMinor });
     }
   }
   for (const r of requests) {
@@ -55,7 +60,7 @@ export function useOpenItems(personId: string | null) {
     queryFn: async () => {
       const { data: engagements, error } = await supabase
         .from('engagements')
-        .select('id, status, discount_minor, offering:offerings(id, name, price_minor, billing_mode)')
+        .select('id, status, discount_minor, first_discount_minor, offering:offerings(id, name, price_minor, billing_mode)')
         .eq('tenant_id', tenant!.id)
         .eq('person_id', personId!)
         .in('status', ['pending_payment', 'active']);

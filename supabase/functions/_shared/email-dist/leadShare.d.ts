@@ -31,6 +31,22 @@ export declare function formLinkEmail(input: {
     lang: ShareLang;
     colour?: string | null;
 }): BuiltEmail;
+/** The page a lead is sent to after an enquiry: the class list or the booking page. */
+export type StudioLinkKind = 'class_link' | 'booking_link';
+export declare const STUDIO_LINK_PATHS: Record<StudioLinkKind, '/classes' | '/book'>;
+/**
+ * "<Studio>: our classes" / "<Studio>: book a time": the lead's next step for class
+ * studios and appointment businesses (13 Nov 2026, fewer steps), the way photographers
+ * send a quote. Fixed text; the admin supplies only the recipient and a first name.
+ */
+export declare function studioLinkEmail(input: {
+    studio: string;
+    recipientName?: string | null;
+    url: string;
+    kind: StudioLinkKind;
+    lang: ShareLang;
+    colour?: string | null;
+}): BuiltEmail;
 /** "How to add <Studio>'s enquiry form to the website": the code plus steps per builder. */
 export declare function websiteInstructionsEmail(input: {
     studio: string;

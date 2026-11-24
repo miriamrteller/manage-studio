@@ -90,13 +90,10 @@ export function parsePrepareEnrolmentCheckoutBody(
   return { ok: false, error: "mode must be existing_engagement or create_engagement" };
 }
 
-export function resolveBootstrapBlockReason(
-  status: string,
-  waiverBlocksPayment: boolean,
-): BootstrapBlockReason | undefined {
+/** Why payment cannot start. An unsigned form is never a reason (owner rule: nothing blocks payment). */
+export function resolveBootstrapBlockReason(status: string): BootstrapBlockReason | undefined {
   if (status === "active") return "already_complete";
   if (status === "pending_waiver") return "pending_waiver";
   if (status !== "pending_payment") return "not_payable";
-  if (waiverBlocksPayment) return "waiver_required";
   return undefined;
 }

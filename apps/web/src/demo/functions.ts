@@ -165,13 +165,12 @@ export const baseFunctions: Record<string, FunctionHandler> = {
     };
   },
 
-  // After signing: the unpaid deposit, else the client portal (mirrors job-next-step).
+  // Signed or not (signing never blocks payment): the unpaid deposit, else the client portal (mirrors job-next-step).
   'job-next-step': (body, ctx) => {
     const engagementId = engagementFromToken(body.__authorization as string | undefined);
     if (!engagementId || body.engagementId !== engagementId) throw new DemoRpcError('token_mismatch');
     const eng = rows(ctx, 'engagements').find((e) => e.id === engagementId);
     if (!eng) throw new DemoRpcError('not_job');
-    if (!eng.waiver_evidence_id) throw new DemoRpcError('not_signed');
     const deposit = demoDepositRequest(ctx, engagementId);
     if (deposit && (deposit.status === 'pending' || deposit.status === 'sent')) {
       return { next: 'pay_deposit', payPath: `/pay/${String(deposit.public_token)}`, amountMinor: deposit.amount_minor, currency: deposit.currency };

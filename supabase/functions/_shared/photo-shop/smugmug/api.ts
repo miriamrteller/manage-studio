@@ -30,6 +30,8 @@ const CONCURRENCY = 6;
  * (smugmughelp.com/hc/en-us/articles/18212632250644). Clients are shown the Large size.
  */
 export const SAFE_LARGEST_SIZES = ["Large", "XLarge"] as const;
+/** Check lines that are tips only: they never stop a gallery opening (owner, 11 Nov 2026). */
+export const TIP_CODES: readonly string[] = ["watermark", "largest_size", "downloads", "original_hidden", "some_private"];
 /** Sizes that must not be reachable without signing in. */
 const UNSAFE_SIZE_KEYS = ["ImageSizeOriginal", "ImageSizeX5Large", "ImageSizeX4Large", "ImageSizeX3Large", "ImageSizeX2Large"];
 
@@ -165,10 +167,12 @@ export async function getAlbum(reader: SmugMugReader, albumKey: string): Promise
 
 /** One gallery setting the check looked at. `ok` false keeps the gallery locked. */
 export interface GalleryCheckItem {
-  code: "watermark" | "largest_size" | "downloads" | "photos" | "preview_public" | "original_hidden";
+  code: "watermark" | "largest_size" | "downloads" | "photos" | "preview_public" | "original_hidden" | "some_private";
   ok: boolean;
   /** What SmugMug reported, e.g. "Large" (never a URL). */
   value?: string;
+  /** photos only: why none could be read ("empty", "videos_only" or "unreadable"). */
+  detail?: "empty" | "videos_only" | "unreadable";
 }
 
 export interface SmugMugPhoto {
@@ -182,16 +186,28 @@ export interface GalleryCheck {
   passed: boolean;
   albumKey: string;
   albumName: string;
+  /** The gallery's page on SmugMug (Album.WebUri), https only; null when absent. */
+  webUrl: string | null;
   items: GalleryCheckItem[];
   photos: SmugMugPhoto[];
 }
 
-/** The album's own Photo Protection settings. */
-export function checkAlbumSettings(album: Json): GalleryCheckItem[] {
+/**
+ * The album's own Photo Protection settings (tips only, see TIP_CODES).
+ * watermarkInPhotos: the photographer's watermark is already in the photo files (owner
+ * decision, 11 Nov 2026), so SmugMug's own watermark and size cap aren't needed.
+ */
+export function checkAlbumSettings(album: Json, watermarkInPhotos = false): GalleryCheckItem[] {
   const largest = str(album.LargestSize);
   return [
-    { code: "watermark", ok: album.Watermark === true, value: typeof album.Watermark === "boolean" ? String(album.Watermark) : undefined },
-    { code: "largest_size", ok: !!largest && (SAFE_LARGEST_SIZES as readonly string[]).includes(largest), value: largest ?? undefined },
+    watermarkInPhotos
+      ? { code: "watermark", ok: true, value: "in_photos" }
+      : { code: "watermark", ok: album.Watermark === true, value: typeof album.Watermark === "boolean" ? String(album.Watermark) : undefined },
+    {
+      code: "largest_size",
+      ok: watermarkInPhotos || (!!largest && (SAFE_LARGEST_SIZES as readonly string[]).includes(largest)),
+      value: largest ?? undefined,
+    },
     { code: "downloads", ok: album.AllowDownloads === false, value: typeof album.AllowDownloads === "boolean" ? String(album.AllowDownloads) : undefined },
   ];
 }
@@ -215,12 +231,34 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return out;
 }
 
-async function readImages(reader: SmugMugReader, album: Json): Promise<ImageWithSizes[]> {
+interface ReadImages {
+  images: ImageWithSizes[];
+  /** Items SmugMug listed in the gallery, and how many of them were videos. */
+  listed: number;
+  videos: number;
+  hidden: number;
+}
+
+async function readImages(reader: SmugMugReader, album: Json): Promise<ReadImages> {
   const imagesPath = linkPath(album, "AlbumImages");
   if (!imagesPath) throw new SmugMugShapeError("photos_unavailable");
   const rows = await readAll(reader, imagesPath, "AlbumImage", MAX_ALBUM_PHOTOS);
-  const usable = rows.filter((r) => r.IsVideo !== true && str(r.ImageKey) && linkPath(r, "ImageSizeDetails"));
-  return mapLimit(usable, CONCURRENCY, async (r) => {
+  const videos = rows.filter((r) => r.IsVideo === true).length;
+  // Hidden photos (Image.Hidden, SmugMug reference) don't open for visitors, so clients can't see them.
+  const hidden = rows.filter((r) => r.IsVideo !== true && r.Hidden === true).length;
+  const usable = rows.filter((r) => r.IsVideo !== true && r.Hidden !== true && str(r.ImageKey) && linkPath(r, "ImageSizeDetails"));
+  if (usable.length < rows.length - videos - hidden) {
+    // Shape only (field and link names, never values), so a live mismatch can be read in the logs.
+    const first = rows.find((r) => r.IsVideo !== true);
+    console.warn("[smugmug] gallery items skipped", JSON.stringify({
+      listed: rows.length,
+      videos,
+      usable: usable.length,
+      fields: first ? Object.keys(first).sort() : [],
+      links: first ? Object.keys(obj(first.Uris) ?? {}).sort() : [],
+    }));
+  }
+  const images = await mapLimit(usable, CONCURRENCY, async (r) => {
     const res = await reader.get(linkPath(r, "ImageSizeDetails") as string);
     return {
       key: str(r.ImageKey) as string,
@@ -228,6 +266,7 @@ async function readImages(reader: SmugMugReader, album: Json): Promise<ImageWith
       sizes: obj(res.ImageSizeDetails) ?? {},
     };
   });
+  return { images, listed: rows.length, videos, hidden };
 }
 
 function sizeUrl(sizes: Json, key: string): string | null {
@@ -238,6 +277,19 @@ function sizeUrl(sizes: Json, key: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The size clients see: Large, or the biggest smaller size when SmugMug has no Large
+ * (it lists only sizes up to the photo's own, so a small photo has no Large).
+ */
+const PREVIEW_SIZE_KEYS = ["ImageSizeLarge", "ImageSizeMedium", "ImageSizeSmall"];
+function previewSizeUrl(sizes: Json): string | null {
+  for (const k of PREVIEW_SIZE_KEYS) {
+    const url = sizeUrl(sizes, k);
+    if (url) return url;
+  }
+  return null;
 }
 
 /** Fetches a URL WITHOUT signing in, as a client's browser would. True when it loads. */
@@ -258,40 +310,54 @@ export const publicProbe: PublicProbe = async (url) => {
 };
 
 /**
- * "Check gallery": the album's Photo Protection settings, then its photos. Passes only when
- * the watermark is on, the largest size is capped, downloads are off, every photo has a
- * Large size that loads without signing in, and no bigger size of the first photo does.
+ * "Check gallery": reads the gallery's photos and its Photo Protection settings. Passes when
+ * every photo has a Large size and it loads without signing in (clients must see the
+ * previews). Watermark, size cap, downloads and bigger sizes opening are tips only.
  */
 export async function checkGallery(
   reader: SmugMugReader,
   albumKey: string,
   probe: PublicProbe = publicProbe,
+  watermarkInPhotos = false,
 ): Promise<GalleryCheck> {
   const album = await getAlbum(reader, albumKey);
-  const items = checkAlbumSettings(album);
+  const items = checkAlbumSettings(album, watermarkInPhotos);
   const albumName = (str(album.Name) ?? str(album.Title) ?? albumKey).slice(0, 200);
-  const settingsOk = items.every((i) => i.ok);
+  const webUri = str(album.WebUri);
+  const webUrl = webUri && /^https:\/\//i.test(webUri) && webUri.length <= 500 ? webUri : null;
 
-  let photos: SmugMugPhoto[] = [];
-  let images: ImageWithSizes[] = [];
-  if (settingsOk) {
-    images = await readImages(reader, album);
-    photos = images
-      .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: sizeUrl(im.sizes, "ImageSizeLarge") }))
-      .filter((p): p is SmugMugPhoto => !!p.previewUrl);
+  // Owner (11 Nov 2026): nothing blocks. The protection settings are tips only
+  // (TIP_CODES); a gallery opens once its photos can be read and the Large preview loads.
+  const { images, listed, videos, hidden } = await readImages(reader, album);
+  const withSize = images
+    .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: previewSizeUrl(im.sizes) }))
+    .filter((p): p is SmugMugPhoto => !!p.previewUrl);
+  if (withSize.length === 0) {
+    // Nothing to sell yet, so the client-side checks below can't run: say only why.
+    const detail = listed === 0 || listed === hidden ? "empty" : videos === listed ? "videos_only" : "unreadable";
+    items.push({ code: "photos", ok: false, value: String(listed), detail });
+    return { passed: false, albumKey, albumName, webUrl, items, photos: [] };
   }
-  const allHaveLarge = images.length > 0 && photos.length === images.length;
-  items.push({ code: "photos", ok: settingsOk && allHaveLarge, value: settingsOk ? String(images.length) : undefined });
 
-  let previewPublic = false;
+  // Every preview must load without signing in, as in a client's browser. A photo that
+  // doesn't (hidden or private in SmugMug, or without a preview size) is left out of the
+  // shop and counted in one tip; the gallery still opens with the rest (never block).
+  const loads = await mapLimit(withSize, CONCURRENCY, (p) => probe(p.previewUrl));
+  const photos = withSize.filter((_, i) => loads[i]);
+  const leftOut = hidden + (images.length - withSize.length) + (withSize.length - photos.length);
+  if (leftOut > 0) {
+    console.warn("[smugmug] photos left out of the shop", JSON.stringify({ listed, hidden, noSize: images.length - withSize.length, notPublic: withSize.length - photos.length }));
+  }
+  items.push({ code: "photos", ok: true, value: String(photos.length || withSize.length) });
+
+  const previewPublic = photos.length > 0;
   let originalHidden = false;
-  if (settingsOk && allHaveLarge) {
-    const first = images[0];
+  if (previewPublic) {
+    const first = images.find((im) => im.key === photos[0].key) as ImageWithSizes;
     const bigger = UNSAFE_SIZE_KEYS.map((k) => sizeUrl(first.sizes, k)).filter((u): u is string => !!u);
-    // The Large size must load for clients; nothing bigger may.
-    previewPublic = await probe(photos[0].previewUrl);
     originalHidden = true;
-    for (const url of bigger) {
+    // Watermark in the photo files: bigger sizes carry it too, so they may open.
+    for (const url of watermarkInPhotos ? [] : bigger) {
       if (await probe(url)) {
         originalHidden = false;
         break;
@@ -299,10 +365,11 @@ export async function checkGallery(
     }
   }
   items.push({ code: "preview_public", ok: previewPublic });
-  items.push({ code: "original_hidden", ok: originalHidden });
+  if (previewPublic && leftOut > 0) items.push({ code: "some_private", ok: false, value: String(leftOut) });
+  items.push({ code: "original_hidden", ok: originalHidden, value: watermarkInPhotos && originalHidden ? "in_photos" : undefined });
 
-  const passed = items.every((i) => i.ok);
-  return { passed, albumKey, albumName, items, photos: passed ? photos : [] };
+  const passed = items.every((i) => i.ok || TIP_CODES.includes(i.code));
+  return { passed, albumKey, albumName, webUrl, items, photos: passed ? photos : [] };
 }
 
 /** A gallery name close to the shoot's, for prefilling the picker. */
@@ -322,4 +389,24 @@ export function suggestAlbum(albums: SmugMugAlbum[], hints: string[]): string | 
     if (score > 0 && (!best || score > best.score)) best = { key: a.key, score };
   }
   return best?.key ?? null;
+}
+
+/**
+ * Fresh preview links for a gallery that already passed "Check gallery". Links saved at
+ * the check can stop opening later, so the shop re-reads them from SmugMug instead of
+ * relying on stored ones. Only photos that passed the check (keepKeys) are returned, in
+ * gallery order; a photo since removed or hidden in SmugMug drops out. No public probe:
+ * the check already confirmed this gallery's previews open without signing in.
+ */
+export async function refreshCheckedPhotos(
+  reader: SmugMugReader,
+  albumKey: string,
+  keepKeys: ReadonlySet<string>,
+): Promise<SmugMugPhoto[]> {
+  const album = await getAlbum(reader, albumKey);
+  const { images } = await readImages(reader, album);
+  return images
+    .filter((im) => keepKeys.has(im.key))
+    .map((im) => ({ key: im.key, fileName: im.fileName, previewUrl: previewSizeUrl(im.sizes) }))
+    .filter((p): p is SmugMugPhoto => !!p.previewUrl);
 }

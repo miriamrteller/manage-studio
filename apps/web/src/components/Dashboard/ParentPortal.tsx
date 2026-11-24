@@ -1,3 +1,4 @@
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +16,7 @@ import { EnrolmentRow } from './EnrolmentRow';
 import { GuardianSelfSection, GuardianSetupRequiredCard } from './GuardianSelfSection';
 import { UpcomingSessionsSection } from './UpcomingSessionsSection';
 import { ContactPreferencesEditor } from '@/components/shared/ContactPreferencesEditor';
-import { SetPasswordDialog } from '@/components/shared/SetPasswordDialog';
-import { ChangeLoginEmailDialog } from '@/components/shared/ChangeLoginEmail';
+import { AccountMenu } from '@/components/shared/AccountMenu';
 import { buildUpcomingSessions } from '@/features/enrolment/lib/upcomingSessions';
 import { formatPersonDateOfBirthDisplay } from '@/lib/personAge';
 import { readPortalHighlightState } from '@/lib/portalHighlight';
@@ -24,6 +24,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { calculateAge } from '@/lib/utils';
 import { PersonConsentPanel } from '@/components/legal/PersonConsentPanel';
 import { PortalClassCards } from '@/features/class-cards/components/PortalClassCards';
+import { PortalShop, type ShopPerson } from '@/features/shop/components/PortalShop';
 
 function formatMoney(amountMinor: number, currency: string): string {
   return (amountMinor / 100).toLocaleString(undefined, {
@@ -35,6 +36,8 @@ function formatMoney(amountMinor: number, currency: string): string {
 
 export function ParentPortal() {
   const tenant = useTenant();
+  // "Add child" only when parents pay for children (Settings › Business).
+  const { families } = useWorkModes();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,8 +46,6 @@ export function ParentPortal() {
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [showAddChild, setShowAddChild] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [loginEmailOpen, setLoginEmailOpen] = useState(false);
   const [selectedEnrolmentStatuses, setSelectedEnrolmentStatuses] = useState<FilterOption[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(Boolean(portalHighlight?.enrolmentSuccess));
   const scrolledRef = useRef(false);
@@ -85,6 +86,14 @@ export function ParentPortal() {
   );
 
   const showPersonNameOnUpcoming = Object.keys(personNames).length > 1;
+
+  // Shop orders are for one person and paid through an active class enrolment: children first.
+  const shopPeople = useMemo<ShopPerson[]>(() => {
+    const isEnrolled = (id: string) => (enrolmentsByPerson?.[id] ?? []).some((e) => e.status === 'active');
+    const list = (children ?? []).map((c) => ({ id: c.id, name: c.name, enrolled: isEnrolled(c.id) }));
+    if (guardian) list.push({ id: guardian.personId, name: guardian.name, enrolled: isEnrolled(guardian.personId) });
+    return list;
+  }, [children, guardian, enrolmentsByPerson]);
 
   const highlightPersonId = useMemo(() => {
     if (portalHighlight?.highlightPersonId) return portalHighlight.highlightPersonId;
@@ -168,15 +177,7 @@ export function ParentPortal() {
           <p className="text-gray-600">{t('pages.portal.subtitle')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setPrefsOpen(true)}>
-            {t('pages.portal.notification_preferences')}
-          </Button>
-          <Button variant="outline" onClick={() => setPasswordOpen(true)}>
-            {t('pages.portal.login_password')}
-          </Button>
-          <Button variant="outline" onClick={() => setLoginEmailOpen(true)}>
-            {t('login_email.change_title')}
-          </Button>
+          <AccountMenu onPreferences={() => setPrefsOpen(true)} />
           <Button variant="primary" onClick={() => navigate('/enrol')}>
             {t('pages.portal.enrol_new')}
           </Button>
@@ -184,8 +185,6 @@ export function ParentPortal() {
       </section>
 
       <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
-      <SetPasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
-      <ChangeLoginEmailDialog open={loginEmailOpen} onOpenChange={setLoginEmailOpen} />
 
       {guardian && (
         <GuardianSelfSection
@@ -214,6 +213,8 @@ export function ParentPortal() {
 
       <PortalClassCards myPersonId={guardian?.personId ?? null} />
 
+      <PortalShop people={shopPeople} />
+
       <section aria-labelledby="portal-children-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <h3 id="portal-children-heading" className="text-lg font-semibold text-gray-900">
@@ -228,9 +229,11 @@ export function ParentPortal() {
               onChange={setSelectedEnrolmentStatuses}
               className="min-w-48"
             />
-            <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
-              {t('pages.portal.add_child')}
-            </Button>
+            {families && (
+              <Button variant="outline" size="sm" onClick={() => setShowAddChild(true)}>
+                {t('pages.portal.add_child')}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -238,9 +241,11 @@ export function ParentPortal() {
           <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
             <p>{t('pages.portal.no_children')}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button variant="outline" onClick={() => setShowAddChild(true)}>
-                {t('pages.portal.add_child')}
-              </Button>
+              {families && (
+                <Button variant="outline" onClick={() => setShowAddChild(true)}>
+                  {t('pages.portal.add_child')}
+                </Button>
+              )}
               <Button variant="primary" onClick={() => navigate('/enrol')}>
                 {t('pages.portal.enrol_new')}
               </Button>

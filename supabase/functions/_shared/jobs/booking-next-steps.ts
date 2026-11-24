@@ -1,6 +1,7 @@
 /**
- * Client booking flow after a quote is accepted: sign the contract, then pay
- * the deposit, with no waiting for the photographer in between.
+ * Client booking flow after a quote is accepted: pay the deposit, and sign the
+ * contract before or after (owner rule: nothing ever blocks payment), with no
+ * waiting for the photographer in between.
  *
  *   accept-quote   → resolveQuoteNextSteps()  → { contractSignPath?, depositPayPath? }
  *   job-next-step  → resolveJobNextStep()     → pay the deposit, or go to the portal
@@ -104,7 +105,7 @@ export async function resolveQuoteNextSteps(
 // ---------------------------------------------------------------------------
 
 export interface JobNextStepDeps {
-  loadJob(engagementId: string): Promise<{ personId: string; waiverEvidenceId: string | null } | null>;
+  loadJob(engagementId: string): Promise<{ personId: string } | null>;
   allowedEmails(engagementId: string, personId: string): Promise<Set<string>>;
   /** accepted_result of the job's accepted quote, if any. */
   loadAcceptedQuoteResult(engagementId: string): Promise<{ deposit_minor?: number | null; payment_request_ids?: unknown } | null>;
@@ -114,10 +115,11 @@ export interface JobNextStepDeps {
 export type JobNextStep =
   | { ok: true; next: "pay_deposit"; payPath: string; amountMinor: number; currency: string }
   | { ok: true; next: "portal"; portalPath: string; reason: "deposit_paid" | "no_deposit" }
-  | { ok: false; status: 403 | 404 | 409; code: "token_mismatch" | "not_job" | "email_mismatch" | "not_signed" };
+  | { ok: false; status: 403 | 404; code: "token_mismatch" | "not_job" | "email_mismatch" };
 
 /**
- * Where the client goes once the contract is signed. Everything comes from
+ * Where the client goes next from the signing link: the deposit, whether or not
+ * the contract is signed yet (signing never blocks payment). Everything comes from
  * the verified WaiverToken: the requested engagement must be the token's own
  * (a token for another job is refused), and the pay link is looked up here,
  * never taken from the URL.
@@ -136,7 +138,6 @@ export async function resolveJobNextStep(
   const email = input.token.em.trim().toLowerCase();
   const allowed = await deps.allowedEmails(engagementId, job.personId);
   if (!email || !allowed.has(email)) return { ok: false, status: 403, code: "email_mismatch" };
-  if (!job.waiverEvidenceId) return { ok: false, status: 409, code: "not_signed" };
 
   const [accepted, requests] = await Promise.all([
     deps.loadAcceptedQuoteResult(engagementId),

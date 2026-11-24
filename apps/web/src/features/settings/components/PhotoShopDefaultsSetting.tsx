@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTenant } from '@/hooks/useTenant';
@@ -7,7 +8,7 @@ import { usePhotoShopEnabled, useStudioPhotoShopDefaults } from '@/features/jobs
 import { DEFAULT_GALLERY_OPEN_DAYS, majorToMinor, minorToMajor } from '@/features/jobs/services/photoShopService';
 
 /**
- * Settings → Payment: photo shop defaults, copied into each new shoot's shop
+ * Photo shop › Prices: photo shop defaults, copied into each new shoot's shop
  * (and editable there). Only for studios with the photo shop switched on.
  */
 export function PhotoShopDefaultsSetting() {
@@ -70,6 +71,12 @@ function PhotoShopDefaultsForm() {
             onChange={(e) => touch(setDays)(e.target.value)} />
         </div>
       </div>
+      <p className="text-sm text-muted-foreground">
+        {t('settings.photo_shop.pay_ways_where')}{' '}
+        <Link to="/admin/settings?tab=payment" className="font-medium text-primary underline underline-offset-2">
+          {t('settings.photo_shop.pay_ways_link')}
+        </Link>
+      </p>
       <div className="flex flex-wrap items-center gap-3">
         <Button
           size="sm"

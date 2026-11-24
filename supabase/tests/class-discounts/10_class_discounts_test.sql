@@ -117,6 +117,132 @@ BEGIN
 END;
 $$;
 
+-- Siblings by shared parent email, a discount for one client, and coupon codes.
+CREATE TEMP TABLE mids AS SELECT
+  gen_random_uuid() AS studio, gen_random_uuid() AS season, gen_random_uuid() AS o1,
+  gen_random_uuid() AS p1, gen_random_uuid() AS p2, gen_random_uuid() AS fam1, gen_random_uuid() AS fam2,
+  gen_random_uuid() AS a, gen_random_uuid() AS b, gen_random_uuid() AS c, gen_random_uuid() AS d,
+  gen_random_uuid() AS welcome, gen_random_uuid() AS monthly;
+
+INSERT INTO tenants (id, name, subdomain, contact_email, payment_provider, invoicing_provider)
+SELECT studio, 'Mail', 'cd-m-' || substr(md5(random()::text), 1, 8), 'm@example.test', 'grow', 'grow' FROM mids;
+INSERT INTO seasons (id, tenant_id, name, start_date, end_date)
+SELECT season, studio, 'Season', current_date + 5, current_date + 200 FROM mids;
+INSERT INTO offerings (id, tenant_id, season_id, name, offering_type, price_minor, start_time, end_time)
+SELECT o1, studio, season, 'Ballet', 'class', 20000, '16:00'::time, '17:00'::time FROM mids;
+-- Two separate family records whose parents share one email (in different case).
+INSERT INTO people (id, tenant_id, name, email) SELECT p1, studio, 'Parent one', 'Parent@Example.test' FROM mids
+UNION ALL SELECT p2, studio, 'Parent two', ' parent@example.test' FROM mids
+UNION ALL SELECT a, studio, 'Kid A', NULL FROM mids
+UNION ALL SELECT b, studio, 'Kid B', NULL FROM mids
+UNION ALL SELECT c, studio, 'Kid C', 'c@example.test' FROM mids
+UNION ALL SELECT d, studio, 'Kid D', NULL FROM mids;
+INSERT INTO accounts (id, tenant_id, name, person_id) SELECT fam1, studio, 'One', p1 FROM mids
+UNION ALL SELECT fam2, studio, 'Two', p2 FROM mids;
+UPDATE people SET account_id = (SELECT fam1 FROM mids) WHERE id IN (SELECT a FROM mids UNION SELECT p1 FROM mids);
+UPDATE people SET account_id = (SELECT fam2 FROM mids) WHERE id IN (SELECT b FROM mids UNION SELECT p2 FROM mids);
+
+INSERT INTO class_discount_settings (tenant_id, sibling_enabled) SELECT studio, true FROM mids;
+INSERT INTO class_discount_clients (tenant_id, email, unit, value) SELECT studio, 'c@example.test', 'amount', 5000 FROM mids;
+INSERT INTO class_discount_coupons (id, tenant_id, code, unit, value) SELECT welcome, studio, 'WELCOME', 'percent', 10 FROM mids;
+INSERT INTO class_discount_coupons (id, tenant_id, code, unit, value, applies_to, max_uses)
+SELECT monthly, studio, 'MONTHLY', 'amount', 2000, 'every_month', 1 FROM mids;
+INSERT INTO class_discount_coupons (tenant_id, code, unit, value, valid_until) SELECT studio, 'OLD', 'percent', 10, current_date - 1 FROM mids;
+INSERT INTO class_discount_coupons (tenant_id, code, unit, value, active) SELECT studio, 'OFF', 'percent', 10, false FROM mids;
+
+CREATE FUNCTION pg_temp.expect_first(p_label text, p_id uuid, p_first int, p_coupon uuid) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE e engagements%ROWTYPE;
+BEGIN
+  SELECT * INTO e FROM engagements WHERE id = p_id;
+  IF e.first_discount_minor <> p_first OR e.coupon_id IS DISTINCT FROM p_coupon THEN
+    RAISE EXCEPTION 'FAIL %: first % coupon %, expected % %', p_label, e.first_discount_minor, e.coupon_id, p_first, p_coupon;
+  END IF;
+END;
+$$;
+
+CREATE FUNCTION pg_temp.expect_reason(p_label text, p_result jsonb, p_reason text) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  IF COALESCE(p_result->>'reason', 'ok') <> p_reason THEN
+    RAISE EXCEPTION 'FAIL %: got %, expected %', p_label, p_result, p_reason;
+  END IF;
+END;
+$$;
+
+DO $$
+DECLARE
+  v mids%ROWTYPE;
+  ea engagements%ROWTYPE;
+  eb engagements%ROWTYPE;
+  ec engagements%ROWTYPE;
+  ed engagements%ROWTYPE;
+  e engagements%ROWTYPE;
+BEGIN
+  SELECT * INTO v FROM mids;
+
+  ea := pg_temp.enrol(v.a, v.o1, 1);
+  PERFORM pg_temp.expect('email: first child', ea, 0, '');
+  -- Different family record, same parent email: a sibling.
+  eb := pg_temp.enrol(v.b, v.o1, 2);
+  PERFORM pg_temp.expect('email: sibling by shared email', eb, 2000, 'sibling:2000');
+  -- Own email, no shared family: not a sibling, but the studio gave this client 50.00 off.
+  ec := pg_temp.enrol(v.c, v.o1, 3);
+  PERFORM pg_temp.expect('client discount', ec, 5000, 'client:5000');
+
+  -- First-payment coupon on top, held to the 30% maximum (60.00, 50.00 already used).
+  PERFORM pg_temp.expect_reason('welcome on c', public.apply_class_coupon(ec.id, ' welcome '), 'ok');
+  SELECT * INTO e FROM engagements WHERE id = ec.id;
+  PERFORM pg_temp.expect('first-payment coupon keeps monthly discount', e, 5000, 'client:5000,coupon:1000');
+  PERFORM pg_temp.expect_first('first-payment coupon', ec.id, 1000, v.welcome);
+
+  -- Every-month coupon: part of the monthly discount.
+  PERFORM pg_temp.expect_reason('monthly on b', public.apply_class_coupon(eb.id, 'MONTHLY'), 'ok');
+  SELECT * INTO e FROM engagements WHERE id = eb.id;
+  PERFORM pg_temp.expect('every-month coupon', e, 4000, 'sibling:2000,coupon:2000');
+  PERFORM pg_temp.expect_first('every-month coupon', eb.id, 0, v.monthly);
+
+  -- Used once already, expired, switched off, unknown.
+  ed := pg_temp.enrol(v.d, v.o1, 4);
+  PERFORM pg_temp.expect_reason('used up', public.apply_class_coupon(ed.id, 'MONTHLY'), 'used_up');
+  PERFORM pg_temp.expect_reason('expired', public.apply_class_coupon(ed.id, 'OLD'), 'expired');
+  PERFORM pg_temp.expect_reason('switched off', public.apply_class_coupon(ed.id, 'OFF'), 'not_found');
+  PERFORM pg_temp.expect_reason('unknown', public.apply_class_coupon(ed.id, 'NOPE'), 'not_found');
+  PERFORM pg_temp.expect_reason('empty', public.apply_class_coupon(ed.id, '  '), 'not_found');
+  PERFORM pg_temp.expect_first('bad codes change nothing', ed.id, 0, NULL);
+
+  -- A new code replaces the old one, which frees its use.
+  PERFORM pg_temp.expect_reason('welcome replaces monthly', public.apply_class_coupon(eb.id, 'WELCOME'), 'ok');
+  SELECT * INTO e FROM engagements WHERE id = eb.id;
+  PERFORM pg_temp.expect('replaced coupon', e, 2000, 'sibling:2000,coupon:2000');
+  PERFORM pg_temp.expect_first('replaced coupon', eb.id, 2000, v.welcome);
+  PERFORM pg_temp.expect_reason('monthly free again', public.apply_class_coupon(ed.id, 'MONTHLY'), 'ok');
+
+  -- Nobody changes the coupon by editing the enrolment.
+  UPDATE engagements SET first_discount_minor = 0, coupon_id = NULL, discount_minor = 0 WHERE id = eb.id;
+  SELECT * INTO e FROM engagements WHERE id = eb.id;
+  PERFORM pg_temp.expect('coupon kept on update', e, 2000, 'sibling:2000,coupon:2000');
+  PERFORM pg_temp.expect_first('coupon kept on update', eb.id, 2000, v.welcome);
+
+  -- Only enrolments still waiting for payment take a coupon.
+  UPDATE engagements SET status = 'active' WHERE id = ea.id;
+  PERFORM pg_temp.expect_reason('paid already', public.apply_class_coupon(ea.id, 'WELCOME'), 'not_payable');
+
+  -- A coupon sent with a new enrolment is ignored.
+  UPDATE engagements SET status = 'cancelled' WHERE id = ed.id;
+  INSERT INTO engagements (tenant_id, person_id, offering_id, season_id, status, coupon_id, first_discount_minor)
+  VALUES (v.studio, v.d, v.o1, v.season, 'pending_payment', v.welcome, 9999) RETURNING * INTO e;
+  PERFORM pg_temp.expect_first('caller coupon ignored', e.id, 0, NULL);
+END;
+$$;
+
+-- A client email must be lower case; a coupon code upper case.
+DO $$
+BEGIN
+  INSERT INTO class_discount_clients (tenant_id, email, value) SELECT studio, 'Mixed@Example.test', 10 FROM mids;
+  RAISE EXCEPTION 'FAIL mixed-case email accepted';
+EXCEPTION WHEN check_violation THEN NULL;
+END;
+$$;
+
 -- Percent rules over 90% are refused.
 DO $$
 BEGIN
@@ -138,6 +264,7 @@ UNION ALL SELECT 'aaaaaaaa-0000-0000-0000-000000000002'::uuid, plain_studio, ARR
 UNION ALL SELECT 'aaaaaaaa-0000-0000-0000-000000000003'::uuid, studio, ARRAY['parent'], 'cd-parent@example.test' FROM ids
 ON CONFLICT (id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, role = EXCLUDED.role, email = EXCLUDED.email;
 GRANT SELECT ON ids TO authenticated;
+GRANT SELECT ON mids TO authenticated;
 
 CREATE FUNCTION pg_temp.act_as(p_user uuid) RETURNS void LANGUAGE sql AS $$
   SELECT set_config('request.jwt.claims', json_build_object('sub', p_user, 'role', 'authenticated')::text, false);
@@ -155,10 +282,17 @@ BEGIN
   PERFORM pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000003');
   SELECT count(*) INTO n FROM class_discount_settings;
   IF n <> 0 THEN RAISE EXCEPTION 'FAIL parent reads settings'; END IF;
+  SELECT count(*) INTO n FROM class_discount_coupons;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL parent reads coupons'; END IF;
+  SELECT count(*) INTO n FROM class_discount_clients;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL parent reads client discounts'; END IF;
   PERFORM pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000001');
   UPDATE class_discount_settings SET sibling_value = 12;
   GET DIAGNOSTICS n = ROW_COUNT;
   IF n <> 1 THEN RAISE EXCEPTION 'FAIL admin cannot update own settings'; END IF;
+  INSERT INTO class_discount_coupons (tenant_id, code, value) SELECT studio, 'ADMIN', 5 FROM ids;
+  SELECT count(*) INTO n FROM class_discount_coupons;
+  IF n <> 1 THEN RAISE EXCEPTION 'FAIL admin sees % coupons', n; END IF;
 END;
 $$;
 RESET ROLE;

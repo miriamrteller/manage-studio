@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { Button } from '@/components/ui/button';
 import { OverviewStatsGrid } from './OverviewStatsGrid';
 import { QuickActionsRow } from './QuickActionsRow';
@@ -25,11 +25,11 @@ export const AdminOverviewSection = ({
 }: AdminOverviewSectionProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { vertical } = useEntityLabels();
+  const { classes } = useWorkModes();
 
-  // No active season — distinct UI state, not a generic error. Photographers
-  // have no seasons (the page is hidden for them), so show nothing instead.
-  if (error instanceof NoActiveSeasonError && vertical === 'photographer') return null;
+  // No active season — distinct UI state, not a generic error. Seasons are part of Classes:
+  // with Classes switched off there are none (the page is hidden), so show nothing instead.
+  if (error instanceof NoActiveSeasonError && !classes) return null;
   if (error instanceof NoActiveSeasonError) {
     return (
       <div className={`space-y-4 ${className}`}>
@@ -43,7 +43,7 @@ export const AdminOverviewSection = ({
           <Button
             variant="primary"
             className="mt-3"
-            onClick={() => navigate('/admin/setup/terms')}
+            onClick={() => navigate('/admin/classes/seasons')}
           >
             {t('pages.admin.overview.go_to_seasons')}
           </Button>
@@ -95,7 +95,7 @@ export const AdminOverviewSection = ({
         <TodaysClassesTable
           classes={overview?.today_classes ?? []}
           isLoading={isLoading}
-          onClassClick={(classId) => navigate(`/admin/students?class=${classId}`)}
+          onClassClick={(classId) => navigate(`/admin/people?class=${classId}`)}
         />
       </section>
     </div>

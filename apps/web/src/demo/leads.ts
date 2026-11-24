@@ -6,6 +6,8 @@
  */
 import {
   formLinkEmail,
+  STUDIO_LINK_PATHS,
+  studioLinkEmail,
   formQuestions,
   leadFormKindFor,
   parseLeadFormConfig,
@@ -188,6 +190,20 @@ leadFunctions['send-lead-form-link'] = (body, ctx) => {
   const tenant = adminTenant(ctx);
   const recipient = nonEmpty(body.email)?.toLowerCase() ?? '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) return { error: 'invalid_email' };
+  if (body.kind === 'class_link' || body.kind === 'booking_link') {
+    const lang = body.lang === 'he' || body.lang === 'en' ? body.lang : tenant.language_default === 'he' ? 'he' : 'en';
+    const path = STUDIO_LINK_PATHS[body.kind];
+    const email = studioLinkEmail({
+      studio: String(tenant.name || tenant.subdomain),
+      recipientName: nonEmpty(body.name),
+      url: `${window.location.origin}${path}`,
+      kind: body.kind,
+      lang,
+      colour: tenant.primary_color as string | null,
+    });
+    sendToOutbox({ to: recipient, subject: email.subject, body: email.text, link: { label: email.subject, href: `#${path}` } });
+    return { ok: true };
+  }
   const kind = body.kind === 'web_instructions' ? 'web_instructions' : 'form';
   const lang = body.lang === 'he' || body.lang === 'en' ? body.lang : tenant.language_default === 'he' ? 'he' : 'en';
   const studio = String(tenant.name || tenant.subdomain);

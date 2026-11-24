@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { formatCurrency, formatDate } from "../email-dist/format.js";
 import { resolveOfferingPrice } from "../email-dist/pricing.js";
-import { loadEngagementDiscount, priceAfterDiscount } from "../payments/class-discount.ts";
+import { firstPaymentDiscount, loadEngagementDiscount, priceAfterDiscount } from "../payments/class-discount.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
 
 export type DunningKind = "renewal" | "enrolment_unpaid";
@@ -176,7 +176,7 @@ export async function buildDunningEmailContext(
 
   const discount = await loadEngagementDiscount(service, input.engagementId);
   const pricing = resolveOfferingPrice({
-    price_minor: priceAfterDiscount(offering.price_minor as number, discount.discountMinor),
+    price_minor: priceAfterDiscount(offering.price_minor as number, firstPaymentDiscount(discount)),
   });
   const currency = (offering.currency ?? tenant?.currency ?? "ILS").toUpperCase();
   const locale = input.language === "he" ? "he-IL" : "en-GB";

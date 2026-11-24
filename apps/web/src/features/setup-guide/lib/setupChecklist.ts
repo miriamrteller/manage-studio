@@ -101,8 +101,36 @@ export function isRowDone(id: SetupRowId, f: SetupFacts): boolean {
   }
 }
 
-export function buildSetupRows(vertical: string | null | undefined, facts: SetupFacts): SetupRow[] {
-  return ROWS[setupFlavour(vertical)]
+/** The ticks in Settings › Business that decide which rows a studio sees. */
+export interface SetupModes {
+  classes: boolean;
+  projects: boolean;
+  appointments: boolean;
+}
+
+/**
+ * Rows from the studio's ticks, not its business type (owner, 13 Nov 2026): class steps only
+ * with Classes, packages and the first quote only with Projects, services with Appointments.
+ */
+export function rowsForModes(modes: SetupModes): SetupRowId[] {
+  const rows: SetupRowId[] = ['branding'];
+  if (modes.classes) rows.push('levels', 'season', 'classes');
+  // A class studio's classes already count as what it offers; services get their own row only without classes.
+  if (modes.projects) rows.push('packages');
+  else if (!modes.classes) rows.push('offerings');
+  rows.push('payments', 'legal');
+  if (modes.projects || !modes.classes) rows.push('leads');
+  if (modes.classes) rows.push('test_enrolment');
+  if (modes.projects) rows.push('first_quote');
+  return rows;
+}
+
+export function buildSetupRows(
+  vertical: string | null | undefined,
+  facts: SetupFacts,
+  modes?: SetupModes,
+): SetupRow[] {
+  return (modes ? rowsForModes(modes) : ROWS[setupFlavour(vertical)])
     .flatMap((id): SetupRowId[] => (id === 'payments' && facts.onlinePayments ? [id, 'connect_payments'] : [id]))
     .map((id) => ({ id, done: isRowDone(id, facts) }));
 }

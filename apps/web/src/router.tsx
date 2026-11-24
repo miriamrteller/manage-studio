@@ -2,7 +2,8 @@ import { PlatformOwnerNotice } from '@/components/PlatformOwnerNotice';
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
-import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute } from "./layouts/RouteGuards";
+import { Forward } from "./components/Forward";
+import { AdminRoute, ParentRoute, StudentRoute, SuperAdminRoute, TeacherRoute } from "./layouts/RouteGuards";
 import { LabelsProvider } from "./contexts/LabelsContext";
 import { StudioHostGate } from "./layouts/StudioHostGate";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -14,6 +15,7 @@ import { RouteLoading } from "./components/RouteLoading";
 // Pages load on demand, so a visitor downloads only the area they open
 // (a parent on an enrolment link never downloads the admin or finance pages).
 const ClassesRoute = lazy(() => import("./pages/ClassesRoute"));
+const PublicShopPage = lazy(() => import("./pages/PublicShopPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
@@ -42,28 +44,35 @@ const PlatformFeedbackPage = lazy(() => import("./pages/PlatformFeedbackPage"));
 const SkinsPage = lazy(() => import("./features/skins/SkinsPage"));
 const FinanceWalkthroughPage = lazy(() => import("./pages/FinanceWalkthroughPage"));
 const LevelsPage = lazy(() => import("./pages/LevelsPage"));
+const TeachersPage = lazy(() => import("./pages/TeachersPage"));
+const MyClassesPage = lazy(() => import("./pages/MyClassesPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const AdminClassesPage = lazy(() => import("./pages/AdminClassesPage"));
 const AdminAppointmentsPage = lazy(() => import("./pages/AdminAppointmentsPage"));
-const BookingSettingsPage = lazy(() => import("./pages/BookingSettingsPage"));
 const BookingServicesPage = lazy(() => import("./pages/BookingServicesPage"));
 const GoogleCalendarCallbackPage = lazy(() => import("./pages/GoogleCalendarCallbackPage"));
 const SmugMugCallbackPage = lazy(() => import("./pages/SmugMugCallbackPage"));
 const PhotoShopPage = lazy(() => import("./pages/PhotoShopPage"));
+const StudioShopPage = lazy(() => import("./pages/StudioShopPage"));
 const WaiversPage = lazy(() => import("./pages/WaiversPage"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const PortalDashboard = lazy(() => import("./pages/PortalDashboard"));
+const PhotoOrderPaymentPage = lazy(() => import("./pages/PhotoOrderPaymentPage"));
 const EnrolEntryRoute = lazy(() => import("./layouts/EnrolEntryRoute").then((m) => ({ default: m.EnrolEntryRoute })));
 const EnrolPayPage = lazy(() => import("./pages/EnrolPayPage"));
 const EnrolReturnPage = lazy(() => import("./pages/EnrolReturnPage"));
 const EnrolCompletePage = lazy(() => import("./pages/EnrolCompletePage"));
 const PayRequestPage = lazy(() => import("./pages/PayRequestPage"));
+const SignInLinkPage = lazy(() => import("./pages/SignInLinkPage"));
+const ShopLinkPage = lazy(() => import("./pages/ShopLinkPage"));
+const ClientShootPhotosPage = lazy(() => import("./pages/ClientShootPhotosPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const FinanceHubPage = lazy(() => import("./pages/FinanceHubPage"));
 const PaymentsLogPage = lazy(() => import("./pages/PaymentsLogPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const ExpenseCategoriesPage = lazy(() => import("./pages/ExpenseCategoriesPage"));
 const FinanceImportPage = lazy(() => import("./pages/FinanceImportPage"));
+const ClientImportPage = lazy(() => import("./pages/ClientImportPage"));
 const LeadsPage = lazy(() => import("./pages/LeadsPage"));
 const JobsPage = lazy(() => import("./pages/JobsPage"));
 const JobDetailPage = lazy(() => import("./pages/JobDetailPage"));
@@ -73,6 +82,11 @@ const EmbedNamedFormPage = lazy(() => import("./pages/EmbedInquirePage").then((m
 const NamedFormPage = lazy(() => import("./pages/NamedFormPage"));
 const LeadFormsPage = lazy(() => import("./pages/LeadFormsPage"));
 const LeadsHelpPage = lazy(() => import("./pages/LeadsHelpPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+const LeadSettingsPage = lazy(() => import("./pages/LeadSettingsPage"));
+const PersonPage = lazy(() => import("./pages/PersonPage"));
+const ClassCardsSettingsPage = lazy(() => import("./pages/ClassCardsSettingsPage"));
+const ClassDiscountsPage = lazy(() => import("./pages/ClassDiscountsPage"));
 const GetLeadsPage = lazy(() => import("./pages/GetLeadsPage"));
 const AdminQuotesPage = lazy(() => import("./pages/AdminQuotesPage"));
 const AdminQuoteEditorPage = lazy(() => import("./pages/AdminQuoteEditorPage"));
@@ -201,6 +215,13 @@ const router = createBrowserRouter([
           { path: 'enrol/complete', element: <EnrolCompletePage /> },
           // Public pay link for a job (shoot) deposit/balance request — token is the capability.
           { path: 'pay/:token', element: <PayRequestPage /> },
+          // Booking email "Go to my page": signs the client in (token in the fragment, 3 days).
+          { path: 'signin', element: <SignInLinkPage /> },
+          // The studio shop's public page: anyone can see what the studio sells.
+          { path: 'shop', element: <PublicShopPage /> },
+          { path: 'shop/:token', element: <ShopLinkPage /> },
+          // Where the gallery email's button lands: that shoot's photo shop, nothing else.
+          { path: 'photos/:engagementId', element: <ParentRoute><ClientShootPhotosPage /></ParentRoute> },
           { path: 'book', element: <BookingPage /> },
           { path: 'book/:offeringId', element: <BookingPage /> },
           { path: 'inquire', element: <InquirePage /> },
@@ -211,50 +232,88 @@ const router = createBrowserRouter([
           { path: 'dashboard', element: <DashboardRedirectPage /> },
 
           // ADMIN ROUTES
-          { path: "admin/students", element: <AdminRoute><StudentsPage /></AdminRoute> },
-          // Legacy redirects — keep URLs working
-          { path: "admin/people", element: <AdminRoute><Navigate to="/admin/students" replace /></AdminRoute> },
-          { path: "admin/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
+          { path: "teach", element: <TeacherRoute><MyClassesPage /></TeacherRoute> },
+          // Admin addresses follow the menu: /admin/<area>/<tab> (owner, 13 Nov 2026).
+          { path: "admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },
           { path: "admin/notifications", element: <AdminRoute><NotificationsPage /></AdminRoute> },
+          { path: "admin/help", element: <AdminRoute><HelpPage /></AdminRoute> },
+          // Leads
           { path: "admin/leads", element: <AdminRoute><LeadsPage /></AdminRoute> },
           { path: "admin/leads/get", element: <AdminRoute><GetLeadsPage /></AdminRoute> },
           { path: "admin/leads/forms", element: <AdminRoute><LeadFormsPage /></AdminRoute> },
           { path: "admin/leads/help", element: <AdminRoute><LeadsHelpPage /></AdminRoute> },
-          { path: "admin/jobs", element: <AdminRoute><JobsPage /></AdminRoute> },
-          { path: "admin/jobs/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
-          { path: "admin/photo-shop", element: <AdminRoute><PhotoShopPage /></AdminRoute> },
-          { path: "admin/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
-          { path: "admin/quotes/:id", element: <AdminRoute><AdminQuoteEditorPage /></AdminRoute> },
-          { path: "admin/appointments", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
-          { path: "admin/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
+          { path: "admin/leads/settings", element: <AdminRoute><LeadSettingsPage /></AdminRoute> },
+          // People
+          { path: "admin/people", element: <AdminRoute><StudentsPage /></AdminRoute> },
+          { path: "admin/people/import", element: <AdminRoute><ClientImportPage /></AdminRoute> },
+          { path: "admin/people/families", element: <AdminRoute><FamiliesPage /></AdminRoute> },
+          { path: "admin/people/families/:id", element: <AdminRoute><FamilyDetailPage /></AdminRoute> },
+          { path: "admin/people/:personId", element: <AdminRoute><PersonPage /></AdminRoute> },
+          // Classes
+          { path: "admin/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
+          { path: "admin/classes/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
+          { path: "admin/classes/seasons", element: <AdminRoute><TermsPage /></AdminRoute> },
+          { path: "admin/classes/teachers", element: <AdminRoute><TeachersPage /></AdminRoute> },
+          { path: "admin/classes/cards", element: <AdminRoute><ClassCardsSettingsPage /></AdminRoute> },
+          { path: "admin/classes/discounts", element: <AdminRoute><ClassDiscountsPage /></AdminRoute> },
+          // Projects (shoots) and quotes
+          { path: "admin/projects", element: <AdminRoute><JobsPage /></AdminRoute> },
+          { path: "admin/projects/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
+          { path: "admin/projects/quotes/:id", element: <AdminRoute><AdminQuoteEditorPage /></AdminRoute> },
+          { path: "admin/projects/:id", element: <AdminRoute><JobDetailPage /></AdminRoute> },
+          // Bookings
+          { path: "admin/bookings", element: <AdminRoute><Navigate to="/admin/bookings/packages" replace /></AdminRoute> },
+          { path: "admin/bookings/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
+          { path: "admin/bookings/diary", element: <AdminRoute><AdminAppointmentsPage /></AdminRoute> },
+          // Shop
+          { path: "admin/shop/photos", element: <AdminRoute><PhotoShopPage /></AdminRoute> },
+          { path: "admin/shop/studio", element: <AdminRoute><StudioShopPage /></AdminRoute> },
+          // Finance
           { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
           { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
           { path: "admin/finance/expenses", element: <AdminRoute><ExpensesPage /></AdminRoute> },
           { path: "admin/finance/expenses/categories", element: <AdminRoute><ExpenseCategoriesPage /></AdminRoute> },
           { path: "admin/finance/import", element: <AdminRoute><FinanceImportPage /></AdminRoute> },
-          { path: "admin/setup", element: <AdminRoute><AdminDashboard /></AdminRoute> },
-          { path: "admin/setup/billing", element: <AdminRoute><BillingPage /></AdminRoute> },
-          { path: "admin/setup/levels", element: <AdminRoute><LevelsPage /></AdminRoute> },
-          { path: "admin/setup/terms", element: <AdminRoute><TermsPage /></AdminRoute> },
-          { path: "admin/classes", element: <AdminRoute><AdminClassesPage /></AdminRoute> },
-          { path: "admin/setup/classes", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
-          // Legacy redirect — the admin-only calendar was removed in favour of the
-          // client-facing classes calendar on /classes.
-          { path: "admin/setup/calendar", element: <AdminRoute><Navigate to="/classes" replace /></AdminRoute> },
-          { path: "admin/setup/booking", element: <AdminRoute><BookingSettingsPage /></AdminRoute> },
-          { path: "admin/packages", element: <AdminRoute><BookingServicesPage /></AdminRoute> },
-          { path: "admin/setup/services", element: <AdminRoute><Navigate to="/admin/packages" replace /></AdminRoute> },
-          { path: "admin/setup/integrations/google/callback", element: <AdminRoute><GoogleCalendarCallbackPage /></AdminRoute> },
-          { path: "admin/setup/integrations/smugmug/callback", element: <AdminRoute><SmugMugCallbackPage /></AdminRoute> },
-          { path: "admin/setup/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
-          { path: "admin/setup/tax", element: <AdminRoute><Navigate to="/admin/classes" replace /></AdminRoute> },
-          { path: "admin/setup/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
-          { path: "admin/setup/bundled-payments", element: <AdminRoute><BundledPaymentsSettingsPage /></AdminRoute> },
-          { path: "admin/setup/grow", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
-          { path: "admin/setup/icount", element: <AdminRoute><Navigate to="/admin/setup/bundled-payments" replace /></AdminRoute> },
-          { path: "admin/setup/payments", element: <AdminRoute><PaymentSettingsPage /></AdminRoute> },
-          { path: "admin/setup/invoicing", element: <AdminRoute><InvoicingSettingsPage /></AdminRoute> },
-          { path: "admin/setup/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
+          { path: "admin/finance/accounts", element: <AdminRoute><BillingPage /></AdminRoute> },
+          // Settings
+          { path: "admin/settings", element: <AdminRoute><TenantSettingsPage /></AdminRoute> },
+          { path: "admin/settings/waivers", element: <AdminRoute><WaiversPage /></AdminRoute> },
+          { path: "admin/settings/payments", element: <AdminRoute><PaymentSettingsPage /></AdminRoute> },
+          { path: "admin/settings/invoicing", element: <AdminRoute><InvoicingSettingsPage /></AdminRoute> },
+          { path: "admin/settings/bundled-payments", element: <AdminRoute><BundledPaymentsSettingsPage /></AdminRoute> },
+          { path: "admin/settings/stripe", element: <AdminRoute><StripeSettingsPage /></AdminRoute> },
+          // OAuth callbacks: these addresses are registered with Google and SmugMug. Never change them.
+          { path: "admin/setup/integrations/google/callback", element: <GoogleCalendarCallbackPage /> },
+          { path: "admin/setup/integrations/smugmug/callback", element: <SmugMugCallbackPage /> },
+
+          // Old addresses forward to the new ones, keeping the rest of the path, the query and the
+          // hash (bookmarks, links in emails already sent, and the edge functions' links).
+          { path: "admin/setup", element: <Forward from="/admin/setup" to="/admin" /> },
+          { path: "admin/setup/settings", element: <Forward from="/admin/setup/settings" to="/admin/settings" /> },
+          { path: "admin/setup/waivers", element: <Forward from="/admin/setup/waivers" to="/admin/settings/waivers" /> },
+          { path: "admin/setup/payments", element: <Forward from="/admin/setup/payments" to="/admin/settings/payments" /> },
+          { path: "admin/setup/invoicing", element: <Forward from="/admin/setup/invoicing" to="/admin/settings/invoicing" /> },
+          { path: "admin/setup/bundled-payments", element: <Forward from="/admin/setup/bundled-payments" to="/admin/settings/bundled-payments" /> },
+          { path: "admin/setup/grow", element: <Navigate to="/admin/settings/bundled-payments" replace /> },
+          { path: "admin/setup/icount", element: <Navigate to="/admin/settings/bundled-payments" replace /> },
+          { path: "admin/setup/stripe", element: <Forward from="/admin/setup/stripe" to="/admin/settings/stripe" /> },
+          { path: "admin/setup/billing", element: <Forward from="/admin/setup/billing" to="/admin/finance/accounts" /> },
+          { path: "admin/setup/levels", element: <Forward from="/admin/setup/levels" to="/admin/classes/levels" /> },
+          { path: "admin/setup/terms", element: <Forward from="/admin/setup/terms" to="/admin/classes/seasons" /> },
+          { path: "admin/setup/teachers", element: <Forward from="/admin/setup/teachers" to="/admin/classes/teachers" /> },
+          { path: "admin/setup/classes", element: <Navigate to="/admin/classes" replace /> },
+          { path: "admin/setup/tax", element: <Navigate to="/admin/classes" replace /> },
+          { path: "admin/setup/calendar", element: <Navigate to="/classes" replace /> },
+          { path: "admin/setup/booking/*", element: <Navigate to="/admin/bookings/diary" replace /> },
+          { path: "admin/setup/services", element: <Navigate to="/admin/bookings/packages" replace /> },
+          { path: "admin/students/*", element: <Forward from="/admin/students" to="/admin/people" /> },
+          { path: "admin/families/*", element: <Forward from="/admin/families" to="/admin/people/families" /> },
+          { path: "admin/jobs/*", element: <Forward from="/admin/jobs" to="/admin/projects" /> },
+          { path: "admin/quotes/*", element: <Forward from="/admin/quotes" to="/admin/projects/quotes" /> },
+          { path: "admin/packages", element: <Forward from="/admin/packages" to="/admin/bookings/packages" /> },
+          { path: "admin/appointments", element: <Forward from="/admin/appointments" to="/admin/bookings/diary" /> },
+          { path: "admin/photo-shop", element: <Forward from="/admin/photo-shop" to="/admin/shop/photos" /> },
+          { path: "admin/shop", element: <Forward from="/admin/shop" to="/admin/shop/studio" /> },
           { path: "admin/dev/finance-walkthrough", element: <AdminRoute><FinanceWalkthroughPage /></AdminRoute> },
           { path: "platform/onboard", element: <SuperAdminRoute><PlatformOnboardPage /></SuperAdminRoute> },
           { path: "platform/features", element: <SuperAdminRoute><PlatformFeaturesPage /></SuperAdminRoute> },
@@ -265,6 +324,8 @@ const router = createBrowserRouter([
           // LEGACY ROUTES (Phase 1B) — kept for backward compatibility
           { path: "dashboard/admin", element: <AdminRoute><AdminDashboard /></AdminRoute> },
           { path: "dashboard/portal", element: <ParentRoute><PortalDashboard /></ParentRoute> },
+          // A photo order's payment page: Bit / bank transfer details and the payment screenshot.
+          { path: "dashboard/portal/photo-order/:engagementId/:orderId", element: <ParentRoute><PhotoOrderPaymentPage /></ParentRoute> },
           { path: "dashboard/student", element: <StudentRoute><PortalDashboard /></StudentRoute> },
 
           // 404

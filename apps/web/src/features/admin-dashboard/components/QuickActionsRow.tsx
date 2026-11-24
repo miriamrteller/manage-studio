@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 
 interface QuickActionsRowProps {
@@ -19,7 +19,7 @@ export const QuickActionsRow = ({
 }: QuickActionsRowProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { vertical } = useEntityLabels();
+  const { classes: teachesClasses } = useWorkModes();
 
   return (
     <div className={className}>
@@ -29,7 +29,7 @@ export const QuickActionsRow = ({
       <div className="flex flex-wrap gap-3">
         <Button
           variant="primary"
-          onClick={onManageClasses ?? (() => navigate(managePackagesPath(vertical)))}
+          onClick={onManageClasses ?? (() => navigate(managePackagesPath(teachesClasses)))}
         >
           {t('pages.admin.overview.manage_classes')}
         </Button>

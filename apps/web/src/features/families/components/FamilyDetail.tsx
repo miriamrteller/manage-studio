@@ -63,7 +63,7 @@ export function FamilyDetail({ id }: FamilyDetailProps) {
     return (
       <div className="p-6">
         <p className="text-red-600">{t('errors.not_found')}</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate('/admin/families')}>
+        <Button variant="outline" className="mt-4" onClick={() => navigate('/admin/people/families')}>
           {t('common.back')}
         </Button>
       </div>
@@ -73,7 +73,7 @@ export function FamilyDetail({ id }: FamilyDetailProps) {
   return (
     <div className="space-y-6 p-6 max-w-3xl mx-auto">
       {/* Back */}
-      <Button variant="ghost" size="sm" onClick={() => navigate('/admin/families')}>
+      <Button variant="ghost" size="sm" onClick={() => navigate('/admin/people/families')}>
         ← {t('common.back')}
       </Button>
 

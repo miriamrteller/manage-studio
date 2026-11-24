@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * The Shoots (jobs) page is photographer-only. A dance studio that lands on
- * /admin/jobs (the ballet demo's start page did) gets its Students page, never
+ * The jobs page follows the Projects feature (billing:quotes.generate), not the industry. A dance studio that lands on
+ * /admin/projects (the ballet demo's start page did) gets its Students page, never
  * the photographer jobs list; photographers keep their Shoots page.
  * Run: pnpm -C apps/web test jobs-page-vertical-guard.test.tsx
  */
@@ -16,26 +16,39 @@ vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), func
 vi.mock('@/features/jobs/hooks/useJobs', () => ({
   useJobs: () => ({ jobs: [], isLoading: false, error: null }),
 }));
+// Projects on = the quotes feature (billing:quotes.generate). Photographers have it.
+const features = vi.hoisted(() => ({ on: new Set<string>() }));
+vi.mock('@/hooks/useHasFeature', () => ({
+  useHasFeature: () => ({ hasFeature: (key: string) => features.on.has(key), isLoading: false }),
+}));
 vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () => null }));
 
 function renderJobs() {
   return renderInApp(<JobsPage />, {
-    path: '/admin/jobs',
-    extraRoutes: { '/admin/students': <h1>Students page</h1> },
+    path: '/admin/projects',
+    extraRoutes: { '/admin/people': <h1>Students page</h1> },
   });
 }
 
 beforeEach(async () => {
   await setLanguage('en');
+  features.on = new Set();
 });
 
-describe('/admin/jobs by studio type', () => {
+describe('/admin/projects by studio type', () => {
+  it('any studio with projects switched on keeps the page (the feature set decides, not the industry)', () => {
+    setTenant('generic');
+    features.on = new Set(['billing:quotes.generate']);
+    renderJobs();
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/projects');
+  });
+
   it.each<FakeTenantKind>(['dance', 'generic', 'none', 'beautician'])(
     '%s studio goes to its Students page, with no Shoots, quotes or contracts UI',
     (kind) => {
       setTenant(kind);
       renderJobs();
-      expect(screen.getByTestId('location')).toHaveTextContent('/admin/students');
+      expect(screen.getByTestId('location')).toHaveTextContent('/admin/people');
       expect(screen.getByRole('heading', { name: 'Students page' })).toBeInTheDocument();
       expect(document.body).not.toHaveTextContent(/shoot|quote|contract|gallery/i);
     },
@@ -43,8 +56,9 @@ describe('/admin/jobs by studio type', () => {
 
   it('photographer keeps the Shoots page (unchanged)', () => {
     setTenant('photographer');
+    features.on = new Set(['billing:quotes.generate']);
     renderJobs();
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/jobs');
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/projects');
     expect(screen.queryByRole('heading', { name: 'Students page' })).not.toBeInTheDocument();
     expect(document.body).toHaveTextContent(/shoot/i);
   });

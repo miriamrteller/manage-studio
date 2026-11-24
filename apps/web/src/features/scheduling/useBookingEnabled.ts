@@ -11,7 +11,7 @@ import { BookingSettingsService } from './bookingSettingsService';
  * should not restrict anything — the booking page itself degrades gracefully.
  *
  * Shares the ['bookingSettings', id] cache entry (bare BookingSettings shape)
- * with BookingServicesPage; BookingSettingsPage invalidates it on save.
+ * with BookingServicesPage; BookingHoursSection (Diary) invalidates it on save.
  */
 export function useBookingEnabled(): boolean | undefined {
   const tenant = useTenant();

@@ -8,7 +8,7 @@ import { WaiverStep } from '@/features/enrolment/components/WaiverStep';
 import { WaiverSigningConsentTemplateSchema } from '@shared/schemas';
 import type { WaiverSigningConsentTemplate } from '@shared/schemas';
 import { linkAuthUserToPerson } from '@/features/enrolment/linkAuthUser';
-import { JobAfterSignNextStep } from '@/features/jobs/components/JobAfterSignNextStep';
+import { JobAfterSignNextStep, JobPayFirstLink } from '@/features/jobs/components/JobAfterSignNextStep';
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 import { resolveTenantSubdomain } from '@/lib/resolveTenantSubdomain';
 import { useCaptcha } from '@/components/captcha/useCaptcha';
@@ -364,6 +364,9 @@ export default function EnrolCompletePage() {
         <p className="text-sm text-gray-600">
           {t('pages.enrol_complete.sign_prompt')}
         </p>
+        {state.isJob && state.waiverToken && (
+          <JobPayFirstLink engagementId={engagementId} waiverToken={state.waiverToken} />
+        )}
         <WaiverStep
           personId={state.personId}
           template={state.template}

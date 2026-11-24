@@ -37,7 +37,7 @@ test.describe('Enrolment features', () => {
     );
 
     test('students list supports enrolment-related filters', async ({ page }) => {
-      await loginAsAdmin(page, '/admin/students');
+      await loginAsAdmin(page, '/admin/people');
       await expect(page.getByRole('heading', { level: 1 })).toContainText(/Students/i);
       await expect(page.getByText(/Enrolment|status|Active|Filter/i).first()).toBeVisible();
     });

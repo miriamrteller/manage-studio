@@ -28,8 +28,8 @@ export class PreviewError extends Error {
   }
 }
 
-/** Shrink and watermark one photo in the browser. Returns a JPEG blob. */
-export async function makePreview(file: Blob, watermark: string): Promise<Blob> {
+/** Shrink (and watermark, unless `watermark` is null) one photo in the browser. Returns a JPEG blob. */
+export async function makePreview(file: Blob, watermark: string | null, maxEdge = PREVIEW_MAX_EDGE): Promise<Blob> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -37,7 +37,7 @@ export async function makePreview(file: Blob, watermark: string): Promise<Blob> 
     // HEIC and other formats the browser can't read.
     throw new PreviewError('unreadable');
   }
-  const { width, height } = previewSize(bitmap.width, bitmap.height);
+  const { width, height } = previewSize(bitmap.width, bitmap.height, maxEdge);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -45,7 +45,7 @@ export async function makePreview(file: Blob, watermark: string): Promise<Blob> 
   if (!ctx) throw new PreviewError('failed');
   ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
-  drawWatermark(ctx, width, height, watermark);
+  if (watermark) drawWatermark(ctx, width, height, watermark);
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', PREVIEW_QUALITY));
   if (!blob) throw new PreviewError('failed');

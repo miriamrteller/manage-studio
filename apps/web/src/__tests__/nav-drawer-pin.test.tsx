@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * The pinned admin menu stays pinned. Only the Pin / Unpin control changes the saved choice;
- * closing the menu (menu button, Escape, Report a problem, sign out), a narrow window and
- * page changes never erase it. Storage that throws must not break the menu.
+ * The menu is always there on a wide screen (owner, 13 Nov 2026). Its one switch is full size /
+ * icons only: full size to start with, remembered per browser. A phone opens the menu from the
+ * menu button, always at full size. Storage that throws must not break the menu.
  * Run: pnpm -C apps/web test nav-drawer-pin.test.tsx
  */
 import { act, render, renderHook } from '@testing-library/react';
@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { NavDrawerProvider, useNavDrawer } from '@/components/Navigation/NavDrawerContext';
 
-const KEY = 'nav-drawer-pinned';
+const KEY = 'nav-drawer-icons-only';
 
 function setWidth(px: number) {
   Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: px });
@@ -26,54 +26,59 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('pinned menu', () => {
-  it('starts pinned from the saved choice', () => {
-    localStorage.setItem(KEY, 'true');
+describe('always-on menu', () => {
+  it('is pinned at full size on a wide screen, with nothing saved', () => {
     const { result } = renderHook(() => useNavDrawer(), { wrapper });
     expect(result.current.isPinned).toBe(true);
+    expect(result.current.isIconsOnly).toBe(false);
   });
 
-  it('closing the pinned menu (menu button, Escape, Report a problem, sign out) keeps the saved pin', () => {
-    localStorage.setItem(KEY, 'true');
+  it('cannot be closed on a wide screen (menu button, Escape, Report a problem, sign out)', () => {
     const { result } = renderHook(() => useNavDrawer(), { wrapper });
     act(() => result.current.close());
-    expect(result.current.isOpen).toBe(false);
-    expect(localStorage.getItem(KEY)).toBe('true');
     act(() => result.current.toggle());
-    act(() => result.current.toggle());
-    expect(localStorage.getItem(KEY)).toBe('true');
+    expect(result.current.isPinned).toBe(true);
+    expect(result.current.isOpen).toBe(true);
   });
 
-  it('a remount (e.g. the layout showing its loading state) comes back pinned', () => {
-    localStorage.setItem(KEY, 'true');
+  it('switches to icons only and back, and remembers it after a reload', () => {
     const first = renderHook(() => useNavDrawer(), { wrapper });
-    act(() => first.result.current.close());
+    act(() => first.result.current.toggleIconsOnly());
+    expect(first.result.current.isIconsOnly).toBe(true);
+    expect(localStorage.getItem(KEY)).toBe('true');
     first.unmount();
     const second = renderHook(() => useNavDrawer(), { wrapper });
-    expect(second.result.current.isPinned).toBe(true);
+    expect(second.result.current.isIconsOnly).toBe(true);
+    act(() => second.result.current.toggleIconsOnly());
+    expect(second.result.current.isIconsOnly).toBe(false);
+    expect(localStorage.getItem(KEY)).toBe('false');
   });
 
-  it('a narrow window hides the menu but keeps the choice for when it is wide again', () => {
+  it('a phone opens it from the menu button, at full size even when icons only is saved', () => {
     localStorage.setItem(KEY, 'true');
-    const { result, unmount } = renderHook(() => useNavDrawer(), { wrapper });
+    setWidth(500);
+    const { result } = renderHook(() => useNavDrawer(), { wrapper });
+    expect(result.current.isPinned).toBe(false);
+    expect(result.current.isOpen).toBe(false);
+    act(() => result.current.toggle());
+    expect(result.current.isOverlay).toBe(true);
+    expect(result.current.isIconsOnly).toBe(false);
+    act(() => result.current.close());
+    expect(result.current.isOpen).toBe(false);
+  });
+
+  it('a narrow window hides it behind the menu button; wide again, it is back', () => {
+    const { result } = renderHook(() => useNavDrawer(), { wrapper });
     act(() => {
       setWidth(500);
       window.dispatchEvent(new Event('resize'));
     });
     expect(result.current.isPinned).toBe(false);
-    expect(localStorage.getItem(KEY)).toBe('true');
-    unmount();
-    setWidth(1280);
-    expect(renderHook(() => useNavDrawer(), { wrapper }).result.current.isPinned).toBe(true);
-  });
-
-  it('Pin and Unpin are the only things that change the saved choice', () => {
-    const { result } = renderHook(() => useNavDrawer(), { wrapper });
-    act(() => result.current.openOverlay());
-    act(() => result.current.pin());
-    expect(localStorage.getItem(KEY)).toBe('true');
-    act(() => result.current.unpin());
-    expect(localStorage.getItem(KEY)).toBe('false');
+    act(() => {
+      setWidth(1280);
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(result.current.isPinned).toBe(true);
   });
 
   it('works when storage throws', () => {
@@ -84,10 +89,9 @@ describe('pinned menu', () => {
       throw new Error('blocked');
     });
     const { result } = renderHook(() => useNavDrawer(), { wrapper });
-    act(() => result.current.openOverlay());
-    expect(() => act(() => result.current.pin())).not.toThrow();
-    expect(result.current.isPinned).toBe(true);
-    expect(() => act(() => result.current.unpin())).not.toThrow();
+    expect(result.current.isIconsOnly).toBe(false);
+    expect(() => act(() => result.current.toggleIconsOnly())).not.toThrow();
+    expect(result.current.isIconsOnly).toBe(true);
   });
 });
 

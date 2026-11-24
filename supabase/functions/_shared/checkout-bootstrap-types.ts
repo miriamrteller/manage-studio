@@ -35,6 +35,8 @@ export interface CheckoutChargePayload {
   listAmountMinor?: number | null;
   /** The automatic class discounts behind amountMinor. */
   discounts?: ClassDiscountLine[];
+  /** The studio has coupon codes for classes: checkout offers a box to type one. */
+  couponsOffered?: boolean;
   /** From offering — drives "/ month" on checkout UI. */
   billingMode?: string | null;
   billingInterval?: string | null;
@@ -94,6 +96,18 @@ export interface PrepareEnrolmentCheckoutResponse {
 }
 
 export interface ClassDiscountLine {
-  kind: "sibling" | "extra_class" | "early_bird";
+  kind: "sibling" | "extra_class" | "early_bird" | "client" | "coupon";
   amountMinor: number;
+  /** Off the first payment only (a first-payment coupon). */
+  firstOnly?: boolean;
+  /** The coupon code, for a coupon line. */
+  code?: string;
 }
+
+/** The answer to a coupon code typed at checkout. */
+export type ClassCouponResult =
+  | { ok: true; amountMinor: number; firstOnly: boolean }
+  | {
+      ok: false;
+      reason: "not_found" | "expired" | "used_up" | "at_maximum" | "not_payable" | "not_class" | "error";
+    };

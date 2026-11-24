@@ -13,8 +13,16 @@ export const AUTOMATIC_EMAIL_KEYS = [
   'shoot_reminder',
   'shoot_thank_you',
   'gallery_ready',
+  'review_request',
 ] as const;
 export type AutomaticEmailKey = (typeof AUTOMATIC_EMAIL_KEYS)[number];
+
+/** Studio review link (tenants.review_url): empty = none; else http(s), max 500 (CHECK in SQL). */
+export const reviewUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((value) => value === '' || /^https?:\/\/\S+$/i.test(value));
 
 const isoDate = z
   .string()

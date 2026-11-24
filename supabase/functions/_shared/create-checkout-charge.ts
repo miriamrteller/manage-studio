@@ -2,11 +2,12 @@ import { createServiceClient } from "./edge-runtime/supabase.ts";
 import { resolveCheckoutSession } from "./checkout-session.ts";
 import { getPaymentProviderForTenant, isOfflinePaymentProvider } from "./payments/index.ts";
 import { isProviderNotConfiguredError } from "./payments/not-configured.ts";
-import type { CheckoutChargePayload } from "./checkout-bootstrap-types.ts";
+import type { CheckoutChargePayload, ClassCouponResult } from "./checkout-bootstrap-types.ts";
 import { ypayEnrolmentReturnUrls } from "./payments/ypay/enrolment-return.ts";
+import { hasDiscount } from "./payments/class-discount.ts";
 
 export type CreateCheckoutChargeResult =
-  | { ok: true; charge: CheckoutChargePayload }
+  | { ok: true; charge: CheckoutChargePayload; coupon?: ClassCouponResult | null }
   | { ok: false; error: string; status: number };
 
 export async function createCheckoutCharge(
@@ -18,6 +19,8 @@ export async function createCheckoutCharge(
     /** Takbull: pay with Bit; on a phone the answer opens the Bit app. */
     pay_with?: "card" | "bit";
     is_mobile?: boolean;
+    /** A coupon code the parent typed (classes). A bad code is reported, never an error. */
+    coupon_code?: string;
   },
 ): Promise<CreateCheckoutChargeResult> {
   const earlyService = createServiceClient();
@@ -66,9 +69,12 @@ export async function createCheckoutCharge(
   const { session } = resolved;
   const { service, tenant } = session;
   // Shown to the parent as their own lines before paying.
-  const discountFields = session.discount.discountMinor > 0
-    ? { listAmountMinor: session.listMinor, discounts: session.discount.lines }
-    : {};
+  const discountFields = {
+    ...(hasDiscount(session.discount)
+      ? { listAmountMinor: session.listMinor, discounts: session.discount.lines }
+      : {}),
+    ...(session.couponsOffered ? { couponsOffered: true } : {}),
+  };
 
   // Pay at the studio: nothing to charge online. The place stays reserved
   // (pending_payment) until an admin records the payment.
@@ -92,6 +98,7 @@ export async function createCheckoutCharge(
       offlineInstructions: tenant.offline_payment_instructions,
       onlinePaymentNotSetUp,
     },
+    coupon: session.coupon,
   });
 
   if (isOfflinePaymentProvider(tenant.payment_provider)) return payAtTheStudio(false);
@@ -142,5 +149,6 @@ export async function createCheckoutCharge(
       billingInterval: session.offering.billing_interval,
       ...discountFields,
     },
+    coupon: session.coupon,
   };
 }

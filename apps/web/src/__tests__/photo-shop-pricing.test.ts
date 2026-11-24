@@ -4,7 +4,7 @@
  * Run: pnpm -C apps/web test photo-shop-pricing.test.ts
  */
 import { describe, it, expect } from 'vitest';
-import { photoCartTotal, allPhotosIsBetter, type PhotoShopPrices } from '@shared/photoShop';
+import { photoCartTotal, photoCartGrandTotal, photoProductLabel, allPhotosIsBetter, type PhotoShopPrices } from '@shared/photoShop';
 
 const shop = (over: Partial<PhotoShopPrices> = {}): PhotoShopPrices => ({
   includedPhotos: 2,
@@ -76,5 +76,33 @@ describe('allPhotosIsBetter', () => {
   it('not offered without a bundle price, or when everything is already picked', () => {
     expect(allPhotosIsBetter(shop({ allPhotosPriceMinor: null }), 6, 20)).toBe(false);
     expect(allPhotosIsBetter(shop(), 20, 20)).toBe(false);
+  });
+});
+
+describe('photoCartGrandTotal (prints and other products)', () => {
+  it('adds product lines to the digital total; included photos are digital only', () => {
+    const r = photoCartGrandTotal(shop(), 3, [14000, 23000]);
+    expect(r.digital.totalMinor).toBe(3000);
+    expect(r).toMatchObject({ productCount: 2, productsMinor: 37000, totalMinor: 40000, problem: null });
+  });
+
+  it('a cart of products only is fine, even with no digital price', () => {
+    expect(photoCartGrandTotal(shop({ pricePerPhotoMinor: null }), 0, [14000])).toMatchObject({ totalMinor: 14000, problem: null });
+    expect(photoCartGrandTotal(shop(), 0, []).problem).toBe('no_photos');
+  });
+
+  it('keeps the digital problem when digital photos cannot be priced', () => {
+    const r = photoCartGrandTotal(shop({ includedPhotos: 0, pricePerPhotoMinor: null }), 1, [14000]);
+    expect(r).toMatchObject({ problem: 'no_price', totalMinor: 0 });
+  });
+
+  it('"all photos" price plus the products', () => {
+    expect(photoCartGrandTotal(shop(), 6, [14000], true).totalMinor).toBe(10000 + 14000);
+  });
+
+  it('labels in the client language', () => {
+    const p = { name_en: 'Canvas print', name_he: 'הדפסה על קנבס', size: '20x30 cm' };
+    expect(photoProductLabel(p, 'en')).toBe('Canvas print · 20x30 cm');
+    expect(photoProductLabel({ ...p, size: null }, 'he')).toBe('הדפסה על קנבס');
   });
 });

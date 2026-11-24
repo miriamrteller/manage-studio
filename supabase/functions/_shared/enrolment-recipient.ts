@@ -107,7 +107,8 @@ export async function resolveTenantAdminNotificationEmails(
     .from("user_profiles")
     .select("email")
     .eq("tenant_id", tenantId)
-    .contains("role", ["tenant_admin"]);
+    .contains("role", ["tenant_admin"])
+    .eq("is_platform_support", false);
 
   const emails = new Set<string>();
   for (const row of rows ?? []) {

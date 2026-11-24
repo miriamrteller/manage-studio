@@ -7,6 +7,7 @@ import {
   bookingConfirmedVariables,
   dueShootEmailVariables,
   isSafeLink,
+  shootCancelledVariables,
   type DueShootEmail,
 } from '../../../../supabase/functions/_shared/photographer-emails/variables.ts';
 import {
@@ -81,6 +82,18 @@ describe('dueShootEmailVariables', () => {
       'he',
     );
     expect(vars.galleryUrl).toBe('https://gallery.example.test/x');
+  });
+
+  it('review request carries the studio review link', () => {
+    const vars = dueShootEmailVariables(due({ email_key: 'review_request' }), 'en', 'https://g.page/r/example/review');
+    expect(vars).toEqual({ recipientName: 'Dana', reviewUrl: 'https://g.page/r/example/review' });
+  });
+
+  it('shoot cancelled carries the date and time that no longer go ahead', () => {
+    expect(shootCancelledVariables({ recipientName: 'Dana', startsAt: '2026-11-20T08:00:00Z' }, 'en')).toEqual({
+      recipientName: 'Dana', shootDate: 'Friday, 20 November 2026', shootTime: '10:00',
+    });
+    expect(shootCancelledVariables({ recipientName: null, startsAt: null }, 'he').recipientName).toBe('לקוח/ה יקר/ה');
   });
 
   it('only accepts http(s) gallery links', () => {
@@ -191,5 +204,36 @@ describe('booking_confirmed next steps (sign the contract, then pay the deposit)
     expect(selectPhotographerEmailVariant('booking_confirmed', { signUrl: 'x' })).toBe('sign');
     expect(selectPhotographerEmailVariant('booking_confirmed', {})).toBeNull();
     expect(selectPhotographerEmailVariant('quote_sent', { signUrl: 'x' })).toBeNull();
+  });
+});
+
+describe('booking_confirmed sign-in button (every booked client has a login)', () => {
+  const base = { ok: true, total_minor: 100000, deposit_minor: 30000, balance_minor: 70000, currency: 'ILS' };
+  const URL = 'https://s.example.test/signin#t=abc';
+  const render = (language: 'en' | 'he', withLink: boolean) =>
+    renderPhotographerEmail({
+      key: 'booking_confirmed', language, schoolName: 'S', primaryColor: '#000', accentColor: '#fff',
+      variables: bookingConfirmedVariables(base, {
+        recipientName: 'Dana', quoteUrl: 'https://s.example.test/quote/q', language,
+        signIn: withLink
+          ? {
+            url: URL,
+            body: language === 'he' ? 'גוף' : 'Body text',
+            cta: language === 'he' ? 'לדף שלי' : 'Go to my page',
+            before: language === 'he' ? 'מחכים לראות אותך.' : 'We are looking forward to it.',
+          }
+          : null,
+      }),
+    }).html;
+
+  it('puts the button above the closing line', () => {
+    const html = render('en', true);
+    expect(html).toContain(`href="${URL}"`);
+    expect(html.indexOf('Go to my page')).toBeLessThan(html.indexOf('We are looking forward to it.'));
+    expect(render('he', true)).toContain('לדף שלי');
+  });
+
+  it('no link, no button', () => {
+    expect(render('en', false)).not.toContain('Go to my page');
   });
 });

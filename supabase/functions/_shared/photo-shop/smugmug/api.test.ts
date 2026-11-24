@@ -4,6 +4,7 @@ import {
   checkGallery,
   linkPath,
   listAlbums,
+  refreshCheckedPhotos,
   type SmugMugReader,
   SmugMugShapeError,
   smugmugPath,
@@ -31,6 +32,7 @@ function fakeReader(routes: Record<string, Json>): SmugMugReader & { asked: stri
 const safeAlbum = {
   AlbumKey: "abc123",
   Name: "Cohen family shoot",
+  WebUri: "https://studio.smugmug.com/Cohen-family",
   Watermark: true,
   LargestSize: "Large",
   AllowDownloads: false,
@@ -115,18 +117,24 @@ Deno.test("check gallery: passes with watermark, capped size, no downloads, Larg
   const result = await checkGallery(reader, "abc123", probe);
   assert(result.passed);
   assertEquals(result.albumName, "Cohen family shoot");
+  assertEquals(result.webUrl, "https://studio.smugmug.com/Cohen-family", "the gallery's own page (Album.WebUri)");
   assertEquals(result.photos.map((p) => p.key), ["K1", "K2", "K3"]);
   assertEquals(result.photos[0], { key: "K1", fileName: "IMG_0001.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" });
-  assertEquals(probed, ["https://photos.smugmug.com/K1-L.jpg", "https://photos.smugmug.com/K1-O.jpg"]);
+  assertEquals(probed.sort(), [
+    "https://photos.smugmug.com/K1-L.jpg",
+    "https://photos.smugmug.com/K1-O.jpg",
+    "https://photos.smugmug.com/K2-L.jpg",
+    "https://photos.smugmug.com/K3-L.jpg",
+  ], "every preview is opened, and the first photo's bigger sizes");
   assert(!reader.asked.includes("/api/v2/image/V1!sizedetails"), "videos are skipped");
 });
 
-Deno.test("check gallery: an original that loads without signing in fails the check", async () => {
+Deno.test("check gallery: an original that loads is a tip only, the gallery still opens", async () => {
   const reader = fakeReader(galleryRoutes(safeAlbum, { ImageSizeOriginal: { Url: "https://photos.smugmug.com/K1-O.jpg" } }));
   const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
-  assert(!result.passed);
+  assert(result.passed);
   assertEquals(result.items.find((i) => i.code === "original_hidden")?.ok, false);
-  assertEquals(result.photos, []);
+  assertEquals(result.photos.length, 3);
 });
 
 Deno.test("check gallery: a preview clients cannot load fails the check", async () => {
@@ -136,27 +144,87 @@ Deno.test("check gallery: a preview clients cannot load fails the check", async 
   assertEquals(result.items.find((i) => i.code === "preview_public")?.ok, false);
 });
 
-Deno.test("check gallery: unsafe settings stop before any photo is read", async () => {
-  const reader = fakeReader(galleryRoutes({ ...safeAlbum, Watermark: false }));
+Deno.test("check gallery: protection settings are tips only, never block (owner, 11 Nov 2026)", async () => {
+  const reader = fakeReader(galleryRoutes({ ...safeAlbum, Watermark: false, LargestSize: "X5Large", AllowDownloads: true }));
   const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
-  assert(!result.passed);
-  assertEquals(reader.asked, ["/api/v2/album/abc123"]);
+  assert(result.passed);
+  assertEquals(result.photos.length, 3);
   assertEquals(result.items.map((i) => [i.code, i.ok]), [
     ["watermark", false],
-    ["largest_size", true],
-    ["downloads", true],
-    ["photos", false],
-    ["preview_public", false],
-    ["original_hidden", false],
+    ["largest_size", false],
+    ["downloads", false],
+    ["photos", true],
+    ["preview_public", true],
+    ["original_hidden", true],
   ]);
 });
 
-Deno.test("check gallery: a photo without a Large size fails the check", async () => {
+Deno.test("check gallery: watermark already in the photos", async () => {
+  const reader = fakeReader(galleryRoutes({ ...safeAlbum, Watermark: false, LargestSize: "5K" },
+    { ImageSizeOriginal: { Url: "https://photos.smugmug.com/K1-O.jpg" } }));
+  const probed: string[] = [];
+  const result = await checkGallery(reader, "abc123", (url) => { probed.push(url); return Promise.resolve(true); }, true);
+  assert(result.passed);
+  assertEquals(result.items.find((i) => i.code === "watermark"), { code: "watermark", ok: true, value: "in_photos" });
+  assertEquals(result.items.find((i) => i.code === "largest_size")?.ok, true);
+  assertEquals(result.items.find((i) => i.code === "original_hidden"), { code: "original_hidden", ok: true, value: "in_photos" });
+  assertEquals(probed.filter((u) => !u.endsWith("-L.jpg")), [], "bigger sizes are not probed");
+});
+
+Deno.test("check gallery: a photo with no preview size is left out with a tip, the rest open", async () => {
   const routes = galleryRoutes();
   routes["/api/v2/image/K2!sizedetails"] = { ImageSizeDetails: {} };
   const result = await checkGallery(fakeReader(routes), "abc123", () => Promise.resolve(true));
-  assert(!result.passed);
-  assertEquals(result.items.find((i) => i.code === "photos")?.ok, false);
+  assert(result.passed);
+  assertEquals(result.photos.map((p) => p.key), ["K1", "K3"]);
+  assertEquals(result.items.find((i) => i.code === "some_private"), { code: "some_private", ok: false, value: "1" });
+});
+
+Deno.test("check gallery: hidden photos and photos that don't open for visitors are left out", async () => {
+  const routes = galleryRoutes();
+  const page = routes["/api/v2/album/abc123!images"] as { AlbumImage: Json[] };
+  page.AlbumImage[1] = { ...page.AlbumImage[1], Hidden: true };
+  const probe = (url: string) => Promise.resolve(!url.includes("K3"));
+  const result = await checkGallery(fakeReader(routes), "abc123", probe);
+  assert(result.passed);
+  assertEquals(result.photos.map((p) => p.key), ["K1"]);
+  assertEquals(result.items.find((i) => i.code === "some_private"), { code: "some_private", ok: false, value: "2" });
+  assertEquals(result.items.find((i) => i.code === "preview_public")?.ok, true);
+});
+
+Deno.test("check gallery: a small photo with no Large size uses its biggest smaller size", async () => {
+  const routes = galleryRoutes();
+  routes["/api/v2/image/K2!sizedetails"] = {
+    ImageSizeDetails: { ImageSizeMedium: { Url: "https://photos.smugmug.com/K2-M.jpg" } },
+  };
+  const result = await checkGallery(fakeReader(routes), "abc123", () => Promise.resolve(true));
+  assert(result.passed);
+  assertEquals(result.photos.find((p) => p.key === "K2")?.previewUrl, "https://photos.smugmug.com/K2-M.jpg");
+});
+
+Deno.test("check gallery: an empty gallery, or one with only videos, says just that", async () => {
+  const probe = () => Promise.reject(new Error("must not probe"));
+  const empty = await checkGallery(fakeReader({
+    "/api/v2/album/abc123": { Album: safeAlbum },
+    "/api/v2/album/abc123!images": { AlbumImage: [] },
+  }), "abc123", probe);
+  assert(!empty.passed);
+  assertEquals(empty.items.find((i) => i.code === "photos"), { code: "photos", ok: false, value: "0", detail: "empty" });
+  assertEquals(empty.items.some((i) => i.code === "preview_public" || i.code === "original_hidden"), false);
+
+  const videos = await checkGallery(fakeReader({
+    "/api/v2/album/abc123": { Album: safeAlbum },
+    "/api/v2/album/abc123!images": {
+      AlbumImage: [{ ImageKey: "V1", FileName: "clip.mp4", IsVideo: true, Uris: { ImageSizeDetails: { Uri: "/api/v2/image/V1!sizedetails" } } }],
+    },
+  }), "abc123", probe);
+  assertEquals(videos.items.find((i) => i.code === "photos"), { code: "photos", ok: false, value: "1", detail: "videos_only" });
+
+  const odd = await checkGallery(fakeReader({
+    "/api/v2/album/abc123": { Album: safeAlbum },
+    "/api/v2/album/abc123!images": { AlbumImage: [{ FileName: "IMG_9.jpg" }] },
+  }), "abc123", probe);
+  assertEquals(odd.items.find((i) => i.code === "photos"), { code: "photos", ok: false, value: "1", detail: "unreadable" });
 });
 
 Deno.test("check gallery: unknown album and bad keys", async () => {
@@ -196,4 +264,25 @@ Deno.test("suggested gallery: the one named after the client or service", () => 
   assertEquals(suggestAlbum(albums, ["Levi", ""]), "a1");
   assertEquals(suggestAlbum(albums, ["Zz", ""]), null);
   assertEquals(suggestAlbum(albums, []), null);
+});
+
+Deno.test("check gallery: a gallery page that is not https is not offered", async () => {
+  const reader = fakeReader(galleryRoutes({ ...safeAlbum, WebUri: "javascript:alert(1)" }));
+  const result = await checkGallery(reader, "abc123", () => Promise.resolve(true));
+  assertEquals(result.webUrl, null);
+});
+
+Deno.test("refresh: fresh links read from SmugMug, only for photos that passed the check", async () => {
+  const reader = fakeReader(galleryRoutes());
+  const photos = await refreshCheckedPhotos(reader, "abc123", new Set(["K1", "K3", "gone"]));
+  assertEquals(photos, [
+    { key: "K1", fileName: "IMG_0001.jpg", previewUrl: "https://photos.smugmug.com/K1-L.jpg" },
+    { key: "K3", fileName: "IMG_0003.jpg", previewUrl: "https://photos.smugmug.com/K3-L.jpg" },
+  ]);
+});
+
+Deno.test("refresh: a refused token is passed on, so the studio can be told to reconnect", async () => {
+  const reader: SmugMugReader = { get: () => Promise.reject(new SmugMugError(401, "refused")) };
+  const err = await assertRejects(() => refreshCheckedPhotos(reader, "abc123", new Set(["K1"])), SmugMugError);
+  assert((err as SmugMugError).rejected);
 });

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
  * Photo shop menu page (beta): only with the photo shop feature; Overview shows what's
- * left to set up; Preview shows a shoot's shop as its client sees it, with buying off
- * and a sample-photos note; a shoot without a saved shop says so. EN + HE.
+ * left to set up; Preview shows a shoot's shop exactly as its client sees it (photos can
+ * be picked and the buttons pressed, but no order is placed), opens on the shoot named
+ * in the address, and has a sample-photos note; a shoot without a saved shop says so. EN + HE.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
@@ -20,6 +21,8 @@ const state = vi.hoisted(() => ({
   connected: false,
   pricePerPhoto: null as number | null,
   preview: vi.fn(),
+  order: vi.fn(),
+  orders: [] as unknown[],
 }));
 
 vi.mock('@/hooks/useFeatureGate', () => ({
@@ -39,8 +42,9 @@ vi.mock('@/features/jobs/hooks/usePhotoShop', async (orig) => {
   return {
     ...real,
     usePhotoShopEnabled: () => state.flag,
+    useStudioPhotoOrders: () => ({ data: state.orders, isLoading: false, isError: false }),
     useStudioPhotoShopDefaults: () => ({
-      defaults: { data: { price_per_photo_minor: state.pricePerPhoto, all_photos_price_minor: null, gallery_open_days: 90 }, isLoading: false },
+      defaults: { data: { price_per_photo_minor: state.pricePerPhoto, all_photos_price_minor: null, gallery_open_days: 90, card_payments: false }, isLoading: false },
       save: { mutate: vi.fn(), isPending: false, error: null },
     }),
   };
@@ -57,7 +61,7 @@ vi.mock('@/features/settings/services/smugmugService', async (orig) => {
 });
 vi.mock('@/features/jobs/services/clientPhotoShopService', async (orig) => {
   const real = await orig<typeof import('@/features/jobs/services/clientPhotoShopService')>();
-  return { ...real, ClientPhotoShopService: { ...real.ClientPhotoShopService, preview: (id: string) => state.preview(id) } };
+  return { ...real, ClientPhotoShopService: { ...real.ClientPhotoShopService, preview: (id: string) => state.preview(id), order: (...a: unknown[]) => state.order(...a) } };
 });
 
 const view = (): ClientPhotoShopView => ({
@@ -83,56 +87,110 @@ describe('Photo shop page', () => {
     state.connected = false;
     state.pricePerPhoto = null;
     state.preview.mockReset();
+    state.order.mockReset();
+    state.orders = [];
     setTenant('photographer');
     await setLanguage('en');
   });
 
   it('is a menu item only with the photo shop feature', () => {
-    const item = navigationConfig.find((i) => i.path === '/admin/photo-shop');
+    const item = navigationConfig.find((i) => i.path === '/admin/shop/photos');
     expect(item?.featureKey).toBe('billing:photo_shop');
     expect(item?.requiredRoles).toEqual(['tenant_admin']);
   });
 
   it('sends a studio without the feature away', () => {
     state.flag = false;
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', extraRoutes: { '/admin/setup': <p>setup home</p> } });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', extraRoutes: { '/admin': <p>setup home</p> } });
     expect(screen.getByText('setup home')).toBeTruthy();
+  });
+
+  it('opens when the menu shows it: the feature is on in the studio list only', () => {
+    // Same check as the menu (owner, 15 Nov 2026: the menu item went to setup instead).
+    state.flag = false;
+    setTenant('photographer', { enabled_features: ['billing:photo_shop'] });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', extraRoutes: { '/admin': <p>setup home</p> } });
+    expect(screen.queryByText('setup home')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Photo shop' })).toBeTruthy();
   });
 
   it('Overview shows what is left, with links to the tabs', async () => {
     state.pricePerPhoto = 3000;
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });
     expect(screen.getByRole('heading', { name: 'Photo shop' })).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Prices', 'SmugMug', 'Preview']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Orders', 'Prices', 'SmugMug', 'Preview']);
     expect(screen.getByText('Set your price per photo').parentElement?.textContent).toContain('Done');
     expect(screen.getByText(/Add each shoot's photos on its shoot page/)).toBeTruthy();
     expect(screen.queryByText('Connect your SmugMug account')).toBeNull();
   });
 
-  it('Preview shows the client view with buying off and sample photos', async () => {
-    state.preview.mockResolvedValue({ shop: view(), photos, sample: true });
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
+  it('Preview works like the client page but never places an order', async () => {
+    state.preview.mockResolvedValue({ shop: { ...view(), card_payments: true }, photos, sample: true });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e1' } });
-    expect(await screen.findByText(/this is what your client sees/i)).toBeTruthy();
+    expect(await screen.findByText(/this is exactly what your client sees/i)).toBeTruthy();
     expect(screen.getByText(/sample photos until you add this shoot's photos/)).toBeTruthy();
     expect(state.preview).toHaveBeenCalledWith('e1');
     expect(screen.getByText('IMG_0001.jpg')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Add to cart' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Pay/ })).toBeNull();
+
+    // Card: picking photos and pressing Pay shows what would happen, nothing is ordered.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Choose' })[0]);
+    fireEvent.click(screen.getByLabelText('By card now'));
+    fireEvent.click(screen.getByRole('button', { name: /^Pay/ }));
+    expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/secure payment page/);
+
+    // Cash: the client's own confirmation is shown, still nothing ordered.
+    fireEvent.click(screen.getByLabelText('Pay the studio directly (cash, bank transfer or other)'));
+    expect(screen.queryByText(/nothing was ordered/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Send order/ }));
+    expect(screen.getByText(/nothing was ordered or charged/).textContent).toMatch(/Pay the studio directly/);
+    expect(state.order).not.toHaveBeenCalled();
+  });
+
+  it('Preview opens on the shoot named in the address', async () => {
+    state.preview.mockResolvedValue({ shop: view(), photos, sample: false });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview&shoot=e1' });
+    expect(await screen.findByText('IMG_0002.jpg')).toBeTruthy();
+    expect(state.preview).toHaveBeenCalledWith('e1');
+    expect((screen.getByLabelText('Shoot') as HTMLSelectElement).value).toBe('e1');
   });
 
   it('Preview says when a shoot has no shop yet', async () => {
     const { ClientPhotoShopError } = await import('@/features/jobs/services/clientPhotoShopService');
     state.preview.mockRejectedValue(new ClientPhotoShopError('no_shop'));
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop', initialEntry: '/admin/photo-shop?tab=preview' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=preview' });
     fireEvent.change(screen.getByLabelText('Shoot'), { target: { value: 'e2' } });
     expect(await screen.findByText(/This shoot has no photos yet/)).toBeTruthy();
   });
 
+  it('Orders lists every shoot\'s orders, each opening its shoot', () => {
+    const order = (id: string, engagement_id: string, status: string, extra = {}) => ({
+      id, engagement_id, status, photo_count: 2, included_count: 0, total_minor: 6000, currency: 'ILS', all_photos: false,
+      delivery_url: null, created_at: '2026-11-16T10:00:00Z', paid_at: null, delivered_at: null, items: [], ...extra,
+    });
+    state.orders = [order('o1', 'e1', 'paid'), order('o2', 'e2', 'awaiting_payment', { pay_by_cash: true })];
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=orders' });
+    const rows = screen.getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('Client A · Family');
+    expect(rows[0].textContent).toContain('Paid, to deliver');
+    expect(rows[1].textContent).toContain('Client B · Newborn');
+    expect(rows[1].textContent).toContain('Paying you directly');
+    const links = screen.getAllByRole('link', { name: 'Open shoot' });
+    expect(links[0].getAttribute('href')).toBe('/admin/projects/e1?tab=shop');
+    expect(links[1].getAttribute('href')).toBe('/admin/projects/e2?tab=shop');
+  });
+
+  it('Orders says when there are none', () => {
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos', initialEntry: '/admin/shop/photos?tab=orders' });
+    expect(screen.getByText('No photo orders yet.')).toBeTruthy();
+  });
+
   it('has Hebrew text', async () => {
     await setLanguage('he');
-    renderInApp(<PhotoShopPage />, { path: '/admin/photo-shop' });
+    renderInApp(<PhotoShopPage />, { path: '/admin/shop/photos' });
     expect(screen.getByRole('heading', { name: 'חנות תמונות' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'תצוגה מקדימה' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'הזמנות' })).toBeTruthy();
   });
 });

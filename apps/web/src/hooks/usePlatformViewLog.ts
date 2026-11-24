@@ -6,7 +6,7 @@ import type { UserProfile } from '@/types/auth';
 const WINDOW_MS = 10 * 60 * 1000;
 const ID_SEGMENT = /^(\d+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
-/** "/admin/students/<uuid>" → "admin-students": the page, never the record. */
+/** "/admin/people/<uuid>" → "admin-students": the page, never the record. */
 export function platformViewArea(pathname: string): string {
   const area = pathname
     .split('/')
@@ -20,17 +20,23 @@ export function platformViewArea(pathname: string): string {
 
 /**
  * Platform access log, 'view' side: when the OpalSwift platform owner
- * (super_admin) opens a page of a studio that is not their own, record it so
+ * (super_admin, or the studio's OpalSwift support login) opens a page of a
+ * studio that is not their own, record it so
  * the studio sees it under Settings → Security → OpalSwift access. At most
  * once per studio + page per 10 minutes per browser session (the database
  * dedupes the same way). Nothing happens for anyone else.
  */
 export function usePlatformViewLog(
-  user: Pick<UserProfile, 'role' | 'tenant_id'> | null,
+  user: Pick<UserProfile, 'role' | 'tenant_id' | 'is_platform_support'> | null,
   tenantId: string | undefined,
 ) {
   const { pathname } = useLocation();
-  const watch = !!user && !!tenantId && user.role.includes('super_admin') && user.tenant_id !== tenantId;
+  const watch =
+    !!user &&
+    !!tenantId &&
+    ((user.role.includes('super_admin') && user.tenant_id !== tenantId) ||
+      // The studio's OpalSwift support login (the platform owner, after the confirm step).
+      (user.is_platform_support === true && user.tenant_id === tenantId));
   const area = platformViewArea(pathname);
 
   useEffect(() => {

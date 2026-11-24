@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { formatCurrency, formatDate } from "./email-dist/format.js";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
-import { loadEngagementDiscount, NO_DISCOUNT, priceAfterDiscount } from "./payments/class-discount.ts";
+import { firstPaymentDiscount, loadEngagementDiscount, NO_DISCOUNT, priceAfterDiscount } from "./payments/class-discount.ts";
 
 export interface EnrolmentPaymentEmailDetails {
   className: string;
@@ -68,7 +68,7 @@ export async function resolveEnrolmentPaymentEmailDetails(
 
   const discount = input.engagementId ? await loadEngagementDiscount(service, input.engagementId) : NO_DISCOUNT;
   const pricing = resolveOfferingPrice({
-    price_minor: priceAfterDiscount(offering.price_minor as number, discount.discountMinor),
+    price_minor: priceAfterDiscount(offering.price_minor as number, firstPaymentDiscount(discount)),
   });
 
   const currency = (offering.currency ?? tenant.currency ?? "ILS").toUpperCase();

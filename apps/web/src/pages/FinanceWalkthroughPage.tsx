@@ -91,7 +91,7 @@ export default function FinanceWalkthroughPage() {
   });
 
   if (!WALKTHROUGH_ENABLED) {
-    return <Navigate to="/admin/setup" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   const summary = pipeline.data;

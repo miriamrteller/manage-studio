@@ -1,3 +1,4 @@
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useState, useEffect, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -218,6 +219,8 @@ function EvidenceSection() {
     staleTime: 60_000,
   });
 
+  // Seasons are part of Classes: no season filter without it.
+  const { classes: teachesClasses } = useWorkModes();
   const { data: seasons } = useQuery({
     queryKey: ['waiver-filter-seasons', tenant?.id],
     queryFn: async () => {
@@ -226,7 +229,7 @@ function EvidenceSection() {
         .order('name', { ascending: false });
       return (data ?? []) as { id: string; name: string }[];
     },
-    enabled: !!tenant?.id,
+    enabled: !!tenant?.id && teachesClasses,
     staleTime: 60_000,
   });
 
@@ -309,6 +312,7 @@ function EvidenceSection() {
               ))}
             </select>
           </div>
+          {teachesClasses && (
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">{t('pages.waivers.filter_term')}</label>
             <select value={seasonId} onChange={(e) => setSeasonId(e.target.value)} className={selectCls}>
@@ -318,6 +322,7 @@ function EvidenceSection() {
               ))}
             </select>
           </div>
+          )}
         </div>
         {hasFilters && (
           <button

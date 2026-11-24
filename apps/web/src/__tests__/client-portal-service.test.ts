@@ -27,6 +27,10 @@ vi.mock('@/lib/supabase', () => {
         call.filters.push(['in', c, v]);
         return q;
       },
+      not: (c: string, op: string, v: unknown) => {
+        call.filters.push(['not', c, op, v]);
+        return q;
+      },
       order: () => q,
       then: (resolve: (v: unknown) => void) =>
         resolve({ data: table === 'client_job_details' ? rows.views : rows.engagements, error: null }),
@@ -36,7 +40,12 @@ vi.mock('@/lib/supabase', () => {
   return { supabase: { from: builder, rpc: vi.fn(), functions: { invoke: vi.fn() } } };
 });
 
-import { ClientPortalService, sortShoots, type ClientShoot } from '@/features/jobs/services/clientPortalService';
+import {
+  ClientPortalService,
+  sortBookings,
+  sortShoots,
+  type ClientShoot,
+} from '@/features/jobs/services/clientPortalService';
 
 const TENANT = 't-1';
 const ME = 'person-me';
@@ -126,5 +135,39 @@ describe('decideClientContractLink (edge: client-job-contract-link)', () => {
 
   it('builds an app-relative /enrol/complete link', () => {
     expect(clientContractSignPath('e 1', 'a.b+c')).toBe('/enrol/complete?engagementId=e%201&wt=a.b%2Bc');
+  });
+});
+
+describe('ClientPortalService.listBookings (My bookings for appointment clients)', () => {
+  it('lists own and family bookings, leaves out shoots and other people, soonest upcoming first', async () => {
+    rows.engagements = [
+      { id: 'b-past', person_id: ME, status: 'active', booked_starts_at: '2020-03-01T09:00:00Z', offerings: { name: 'Facial' }, people: { account_id: MY_ACCOUNT } },
+      { id: 'b-later', person_id: 'person-partner', status: 'pending_payment', booked_starts_at: '2031-05-01T09:00:00Z', offerings: { name: 'Brows' }, people: { account_id: MY_ACCOUNT } },
+      { id: 'b-soon', person_id: ME, status: 'active', booked_starts_at: '2030-05-01T09:00:00Z', offerings: [{ name: 'Nails' }], people: { account_id: MY_ACCOUNT } },
+      { id: 'e-mine', person_id: ME, status: 'active', booked_starts_at: '2030-01-01T10:00:00Z', offerings: { name: 'Gold' }, people: { account_id: MY_ACCOUNT } },
+      { id: 'b-other', person_id: 'person-other', status: 'active', booked_starts_at: '2030-06-01T09:00:00Z', offerings: { name: 'Facial' }, people: { account_id: 'acct-other' } },
+    ];
+    const bookings = await ClientPortalService.listBookings(
+      TENANT,
+      { personId: ME, accountId: MY_ACCOUNT },
+      new Set(['e-mine']),
+    );
+    expect(bookings.map((b) => b.engagementId)).toEqual(['b-soon', 'b-later', 'b-past']);
+    expect(bookings[0].serviceName).toBe('Nails');
+    const call = rows.calls.find((c) => c.table === 'engagements');
+    expect(call?.filters).toContainEqual(['eq', 'tenant_id', TENANT]);
+    expect(call?.filters).toContainEqual(['not', 'booked_starts_at', 'is', null]);
+  });
+
+  it('sortBookings puts upcoming before past', () => {
+    const now = new Date('2026-11-13T12:00:00Z');
+    const sorted = sortBookings(
+      [
+        { engagementId: 'a', startsAt: '2026-11-01T10:00:00Z', status: 'active', serviceName: null },
+        { engagementId: 'b', startsAt: '2026-11-20T10:00:00Z', status: 'active', serviceName: null },
+      ],
+      now,
+    );
+    expect(sorted.map((b) => b.engagementId)).toEqual(['b', 'a']);
   });
 });

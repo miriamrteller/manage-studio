@@ -142,8 +142,11 @@ export type Database = {
           attended: boolean
           created_at: string
           id: string
+          marked_by: string | null
+          offering_id: string | null
           person_id: string
-          session_id: string
+          session_date: string | null
+          session_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -151,8 +154,11 @@ export type Database = {
           attended?: boolean
           created_at?: string
           id?: string
+          marked_by?: string | null
+          offering_id?: string | null
           person_id: string
-          session_id: string
+          session_date?: string | null
+          session_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -160,12 +166,29 @@ export type Database = {
           attended?: boolean
           created_at?: string
           id?: string
+          marked_by?: string | null
+          offering_id?: string | null
           person_id?: string
-          session_id?: string
+          session_date?: string | null
+          session_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_person_id_fkey"
             columns: ["person_id"]
@@ -588,6 +611,7 @@ export type Database = {
           class_count: number
           created_at: string
           currency: string
+          ends_on: string | null
           id: string
           is_active: boolean
           name: string
@@ -601,6 +625,7 @@ export type Database = {
           class_count: number
           created_at?: string
           currency?: string
+          ends_on?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -614,6 +639,7 @@ export type Database = {
           class_count?: number
           created_at?: string
           currency?: string
+          ends_on?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -806,6 +832,203 @@ export type Database = {
           },
         ]
       }
+      class_cash_notes: {
+        Row: {
+          amount_minor: number | null
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          offering_id: string
+          payment_id: string | null
+          person_id: string
+          recorded_by: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_date: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          offering_id: string
+          payment_id?: string | null
+          person_id: string
+          recorded_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_date: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          offering_id?: string
+          payment_id?: string | null
+          person_id?: string
+          recorded_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_date?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_cash_notes_offering_id_fkey"
+            columns: ["offering_id"]
+            isOneToOne: false
+            referencedRelation: "offerings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_cash_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_discount_clients: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          note: string | null
+          tenant_id: string
+          unit: string
+          updated_at: string
+          updated_by: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          note?: string | null
+          tenant_id: string
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          note?: string | null
+          tenant_id?: string
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_discount_clients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_discount_coupons: {
+        Row: {
+          active: boolean
+          applies_to: string
+          code: string
+          created_at: string
+          id: string
+          max_uses: number | null
+          note: string | null
+          tenant_id: string
+          unit: string
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          applies_to?: string
+          code: string
+          created_at?: string
+          id?: string
+          max_uses?: number | null
+          note?: string | null
+          tenant_id: string
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          value: number
+        }
+        Update: {
+          active?: boolean
+          applies_to?: string
+          code?: string
+          created_at?: string
+          id?: string
+          max_uses?: number | null
+          note?: string | null
+          tenant_id?: string
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_discount_coupons_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_discount_settings: {
         Row: {
           combine_mode: string
@@ -870,6 +1093,271 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: true
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_import_batches: {
+        Row: {
+          clients_count: number
+          created_at: string
+          created_by: string
+          file_name: string
+          id: string
+          mapping: Json
+          sheet_name: string | null
+          shoots_count: number
+          skipped_count: number
+          students_count: number
+          tenant_id: string
+        }
+        Insert: {
+          clients_count?: number
+          created_at?: string
+          created_by: string
+          file_name: string
+          id?: string
+          mapping?: Json
+          sheet_name?: string | null
+          shoots_count?: number
+          skipped_count?: number
+          students_count?: number
+          tenant_id: string
+        }
+        Update: {
+          clients_count?: number
+          created_at?: string
+          created_by?: string
+          file_name?: string
+          id?: string
+          mapping?: Json
+          sheet_name?: string | null
+          shoots_count?: number
+          skipped_count?: number
+          students_count?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_batches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_import_people: {
+        Row: {
+          batch_id: string
+          created_at: string
+          person_id: string
+          tenant_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          person_id: string
+          tenant_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          person_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_import_people_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "client_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_people_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_people_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_import_shoots: {
+        Row: {
+          batch_id: string
+          created_at: string
+          engagement_id: string
+          tenant_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          engagement_id: string
+          tenant_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          engagement_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_import_shoots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "client_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_shoots_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_import_shoots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_payment_proofs: {
+        Row: {
+          created_at: string
+          engagement_id: string | null
+          id: string
+          pay_method: string | null
+          payment_request_id: string | null
+          proof_path: string | null
+          proof_reminded_at: string | null
+          proof_reminders_sent: number
+          proof_requested: boolean
+          proof_sent_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_id?: string | null
+          id?: string
+          pay_method?: string | null
+          payment_request_id?: string | null
+          proof_path?: string | null
+          proof_reminded_at?: string | null
+          proof_reminders_sent?: number
+          proof_requested?: boolean
+          proof_sent_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string | null
+          id?: string
+          pay_method?: string | null
+          payment_request_id?: string | null
+          proof_path?: string | null
+          proof_reminded_at?: string | null
+          proof_reminders_sent?: number
+          proof_requested?: boolean
+          proof_sent_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_payment_proofs_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_payment_proofs_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "job_payment_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_payment_proofs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_sign_in_links: {
+        Row: {
+          created_at: string
+          engagement_id: string | null
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          tenant_id: string
+          token_hash: string
+          user_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_id?: string | null
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id: string
+          token_hash: string
+          user_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          engagement_id?: string | null
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id?: string
+          token_hash?: string
+          user_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_sign_in_links_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sign_in_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sign_in_links_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1212,9 +1700,11 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          coupon_id: string | null
           created_at: string
           discount_lines: Json
           discount_minor: number
+          first_discount_minor: number
           google_event_id: string | null
           id: string
           offering_id: string
@@ -1247,9 +1737,11 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          coupon_id?: string | null
           created_at?: string
           discount_lines?: Json
           discount_minor?: number
+          first_discount_minor?: number
           google_event_id?: string | null
           id?: string
           offering_id: string
@@ -1282,9 +1774,11 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          coupon_id?: string | null
           created_at?: string
           discount_lines?: Json
           discount_minor?: number
+          first_discount_minor?: number
           google_event_id?: string | null
           id?: string
           offering_id?: string
@@ -1324,6 +1818,13 @@ export type Database = {
             columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "class_discount_coupons"
             referencedColumns: ["id"]
           },
           {
@@ -1771,7 +2272,9 @@ export type Database = {
           job_name: string | null
           original_amount_minor: number | null
           original_currency: string | null
+          payer_email: string | null
           payer_name: string | null
+          payment_id: string | null
           payment_method: string | null
           receipt_batch_id: string | null
           receipt_book: string | null
@@ -1792,7 +2295,9 @@ export type Database = {
           job_name?: string | null
           original_amount_minor?: number | null
           original_currency?: string | null
+          payer_email?: string | null
           payer_name?: string | null
+          payment_id?: string | null
           payment_method?: string | null
           receipt_batch_id?: string | null
           receipt_book?: string | null
@@ -1813,7 +2318,9 @@ export type Database = {
           job_name?: string | null
           original_amount_minor?: number | null
           original_currency?: string | null
+          payer_email?: string | null
           payer_name?: string | null
+          payment_id?: string | null
           payment_method?: string | null
           receipt_batch_id?: string | null
           receipt_book?: string | null
@@ -1827,6 +2334,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "finance_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_income_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {
@@ -1873,10 +2387,12 @@ export type Database = {
       }
       job_details: {
         Row: {
+          auto_status: string | null
           contract_pdf_pending: boolean
           created_at: string
           engagement_id: string
           gallery_released_at: string | null
+          gallery_shared_at: string | null
           gallery_url: string | null
           job_status: string
           lead_id: string | null
@@ -1886,10 +2402,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_status?: string | null
           contract_pdf_pending?: boolean
           created_at?: string
           engagement_id: string
           gallery_released_at?: string | null
+          gallery_shared_at?: string | null
           gallery_url?: string | null
           job_status?: string
           lead_id?: string | null
@@ -1899,10 +2417,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_status?: string | null
           contract_pdf_pending?: boolean
           created_at?: string
           engagement_id?: string
           gallery_released_at?: string | null
+          gallery_shared_at?: string | null
           gallery_url?: string | null
           job_status?: string
           lead_id?: string | null
@@ -1955,6 +2475,7 @@ export type Database = {
           refund_note: string | null
           refunded_at: string | null
           sent_at: string | null
+          shop_order_id: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -1978,6 +2499,7 @@ export type Database = {
           refund_note?: string | null
           refunded_at?: string | null
           sent_at?: string | null
+          shop_order_id?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -2001,6 +2523,7 @@ export type Database = {
           refund_note?: string | null
           refunded_at?: string | null
           sent_at?: string | null
+          shop_order_id?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -2035,6 +2558,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "job_payment_requests_shop_order_id_fkey"
+            columns: ["shop_order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "job_payment_requests_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -2051,8 +2581,13 @@ export type Database = {
           id: string
           image_key: string
           included: boolean
+          kind: string
           order_id: string
           price_minor: number
+          product_id: string | null
+          product_name_en: string | null
+          product_name_he: string | null
+          product_size: string | null
           tenant_id: string
           voided_at: string | null
         }
@@ -2063,8 +2598,13 @@ export type Database = {
           id?: string
           image_key: string
           included?: boolean
+          kind?: string
           order_id: string
           price_minor: number
+          product_id?: string | null
+          product_name_en?: string | null
+          product_name_he?: string | null
+          product_size?: string | null
           tenant_id: string
           voided_at?: string | null
         }
@@ -2075,8 +2615,13 @@ export type Database = {
           id?: string
           image_key?: string
           included?: boolean
+          kind?: string
           order_id?: string
           price_minor?: number
+          product_id?: string | null
+          product_name_en?: string | null
+          product_name_he?: string | null
+          product_size?: string | null
           tenant_id?: string
           voided_at?: string | null
         }
@@ -2086,6 +2631,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "job_photo_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photo_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_photo_products"
             referencedColumns: ["id"]
           },
           {
@@ -2110,8 +2662,16 @@ export type Database = {
           included_count: number
           job_payment_request_id: string | null
           paid_at: string | null
+          pay_by_cash: boolean
+          pay_method: string | null
           person_id: string | null
           photo_count: number
+          product_count: number
+          proof_path: string | null
+          proof_reminded_at: string | null
+          proof_reminders_sent: number
+          proof_requested: boolean
+          proof_sent_at: string | null
           refunded_at: string | null
           status: string
           tenant_id: string
@@ -2130,8 +2690,16 @@ export type Database = {
           included_count?: number
           job_payment_request_id?: string | null
           paid_at?: string | null
+          pay_by_cash?: boolean
+          pay_method?: string | null
           person_id?: string | null
           photo_count: number
+          product_count?: number
+          proof_path?: string | null
+          proof_reminded_at?: string | null
+          proof_reminders_sent?: number
+          proof_requested?: boolean
+          proof_sent_at?: string | null
           refunded_at?: string | null
           status?: string
           tenant_id: string
@@ -2150,8 +2718,16 @@ export type Database = {
           included_count?: number
           job_payment_request_id?: string | null
           paid_at?: string | null
+          pay_by_cash?: boolean
+          pay_method?: string | null
           person_id?: string | null
           photo_count?: number
+          product_count?: number
+          proof_path?: string | null
+          proof_reminded_at?: string | null
+          proof_reminders_sent?: number
+          proof_requested?: boolean
+          proof_sent_at?: string | null
           refunded_at?: string | null
           status?: string
           tenant_id?: string
@@ -2253,12 +2829,14 @@ export type Database = {
           engagement_id: string
           gallery_key: string | null
           gallery_name: string | null
+          gallery_web_url: string | null
           included_photos: number
           price_per_photo_minor: number | null
           provider: string
           smugmug_check: Json | null
           smugmug_checked_at: string | null
           smugmug_photos: Json | null
+          smugmug_photos_refreshed_at: string | null
           tenant_id: string
           updated_at: string
         }
@@ -2270,12 +2848,14 @@ export type Database = {
           engagement_id: string
           gallery_key?: string | null
           gallery_name?: string | null
+          gallery_web_url?: string | null
           included_photos?: number
           price_per_photo_minor?: number | null
           provider?: string
           smugmug_check?: Json | null
           smugmug_checked_at?: string | null
           smugmug_photos?: Json | null
+          smugmug_photos_refreshed_at?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -2287,12 +2867,14 @@ export type Database = {
           engagement_id?: string
           gallery_key?: string | null
           gallery_name?: string | null
+          gallery_web_url?: string | null
           included_photos?: number
           price_per_photo_minor?: number | null
           provider?: string
           smugmug_check?: Json | null
           smugmug_checked_at?: string | null
           smugmug_photos?: Json | null
+          smugmug_photos_refreshed_at?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -2975,6 +3557,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "offerings_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_names"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "offerings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -3158,6 +3747,7 @@ export type Database = {
           created_by: string | null
           currency: string
           description: string | null
+          document_name: string | null
           document_pdf_path: string | null
           document_stored_at: string | null
           document_type: string | null
@@ -3206,6 +3796,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          document_name?: string | null
           document_pdf_path?: string | null
           document_stored_at?: string | null
           document_type?: string | null
@@ -3254,6 +3845,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          document_name?: string | null
           document_pdf_path?: string | null
           document_stored_at?: string | null
           document_type?: string | null
@@ -3442,6 +4034,61 @@ export type Database = {
             columns: ["user_profile_id"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_shop_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          engagement_id: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          tenant_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          engagement_id: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          engagement_id?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          tenant_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_shop_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_shop_links_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_shop_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -4106,6 +4753,270 @@ export type Database = {
           },
         ]
       }
+      shop_order_lines: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          position: number
+          product_id: string | null
+          product_name: string
+          quantity: number
+          tenant_id: string
+          unit_price_minor: number
+          variant_id: string | null
+          variant_label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          position?: number
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          tenant_id: string
+          unit_price_minor: number
+          variant_id?: string | null
+          variant_label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          position?: number
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          tenant_id?: string
+          unit_price_minor?: number
+          variant_id?: string | null
+          variant_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_order_lines_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_lines_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "shop_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_orders: {
+        Row: {
+          cancelled_at: string | null
+          collected_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          currency: string
+          engagement_id: string
+          guest: boolean
+          holds_stock: boolean
+          id: string
+          ordered_by: string | null
+          paid_at: string | null
+          pay_by_cash: boolean
+          person_id: string
+          ready_at: string | null
+          refunded_at: string | null
+          status: string
+          tenant_id: string
+          total_minor: number
+        }
+        Insert: {
+          cancelled_at?: string | null
+          collected_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          engagement_id: string
+          guest?: boolean
+          holds_stock?: boolean
+          id?: string
+          ordered_by?: string | null
+          paid_at?: string | null
+          pay_by_cash?: boolean
+          person_id: string
+          ready_at?: string | null
+          refunded_at?: string | null
+          status?: string
+          tenant_id: string
+          total_minor: number
+        }
+        Update: {
+          cancelled_at?: string | null
+          collected_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          engagement_id?: string
+          guest?: boolean
+          holds_stock?: boolean
+          id?: string
+          ordered_by?: string | null
+          paid_at?: string | null
+          pay_by_cash?: boolean
+          person_id?: string
+          ready_at?: string | null
+          refunded_at?: string | null
+          status?: string
+          tenant_id?: string
+          total_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_orders_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_orders_ordered_by_fkey"
+            columns: ["ordered_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_orders_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          position: number
+          product_id: string
+          stock: number | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+          product_id: string
+          stock?: number | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          product_id?: string
+          stock?: number | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_product_variants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          image_path: string | null
+          name: string
+          position: number
+          price_minor: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_path?: string | null
+          name: string
+          position?: number
+          price_minor: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_path?: string | null
+          name?: string
+          position?: number
+          price_minor?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff: {
         Row: {
           contract_type: string | null
@@ -4693,23 +5604,147 @@ export type Database = {
           },
         ]
       }
+      tenant_pay_ways: {
+        Row: {
+          accepts_bank: boolean
+          accepts_bit: boolean
+          accepts_cash: boolean
+          accepts_cheque: boolean
+          bank_details: string | null
+          bit_phone: string | null
+          cash_instructions: string | null
+          cheque_instructions: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
+          bank_details?: string | null
+          bit_phone?: string | null
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
+          bank_details?: string | null
+          bit_phone?: string | null
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_pay_ways_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_photo_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name_en: string
+          name_he: string
+          position: number
+          price_minor: number
+          size_label: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name_en: string
+          name_he: string
+          position?: number
+          price_minor: number
+          size_label?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name_en?: string
+          name_he?: string
+          position?: number
+          price_minor?: number
+          size_label?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_photo_products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_photo_shop_settings: {
         Row: {
+          accepts_bank: boolean
+          accepts_bit: boolean
+          accepts_cash: boolean
+          accepts_cheque: boolean
           all_photos_price_minor: number | null
+          bank_details: string | null
+          bit_phone: string | null
+          card_payments: boolean
+          cash_instructions: string | null
+          cheque_instructions: string | null
+          email_signature: string | null
           gallery_open_days: number
           price_per_photo_minor: number | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
           all_photos_price_minor?: number | null
+          bank_details?: string | null
+          bit_phone?: string | null
+          card_payments?: boolean
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
+          email_signature?: string | null
           gallery_open_days?: number
           price_per_photo_minor?: number | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          accepts_bank?: boolean
+          accepts_bit?: boolean
+          accepts_cash?: boolean
+          accepts_cheque?: boolean
           all_photos_price_minor?: number | null
+          bank_details?: string | null
+          bit_phone?: string | null
+          card_payments?: boolean
+          cash_instructions?: string | null
+          cheque_instructions?: string | null
+          email_signature?: string | null
           gallery_open_days?: number
           price_per_photo_minor?: number | null
           tenant_id?: string
@@ -4825,6 +5860,7 @@ export type Database = {
           business_preset: string
           celebrations: Json
           chrome_style: string
+          class_reminders: Json
           client_booking: boolean
           contact_email: string
           country: string
@@ -4855,6 +5891,7 @@ export type Database = {
           labels: Json
           language_default: string
           lead_form: Json
+          lead_thank_you: Json
           legal_pack_ack_drafts: string[]
           legal_pack_acknowledged_at: string | null
           legal_pack_required: boolean
@@ -4883,6 +5920,7 @@ export type Database = {
           primary_color: string
           privacy_policy_url: string | null
           require_admin_mfa: boolean
+          review_url: string | null
           signup_source: string
           skin: string
           smugmug_access_secret_enc: string | null
@@ -4900,6 +5938,7 @@ export type Database = {
           takbull_credentials_updated_at: string | null
           takbull_document_type: number
           takbull_merchant_id: string | null
+          teachers_own_classes_only: boolean
           teaches_classes: boolean
           terms_url: string | null
           tranzila_terminal_name: string | null
@@ -4920,6 +5959,7 @@ export type Database = {
           business_preset?: string
           celebrations?: Json
           chrome_style?: string
+          class_reminders?: Json
           client_booking?: boolean
           contact_email: string
           country?: string
@@ -4950,6 +5990,7 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          lead_thank_you?: Json
           legal_pack_ack_drafts?: string[]
           legal_pack_acknowledged_at?: string | null
           legal_pack_required?: boolean
@@ -4978,6 +6019,7 @@ export type Database = {
           primary_color?: string
           privacy_policy_url?: string | null
           require_admin_mfa?: boolean
+          review_url?: string | null
           signup_source?: string
           skin?: string
           smugmug_access_secret_enc?: string | null
@@ -4995,6 +6037,7 @@ export type Database = {
           takbull_credentials_updated_at?: string | null
           takbull_document_type?: number
           takbull_merchant_id?: string | null
+          teachers_own_classes_only?: boolean
           teaches_classes?: boolean
           terms_url?: string | null
           tranzila_terminal_name?: string | null
@@ -5015,6 +6058,7 @@ export type Database = {
           business_preset?: string
           celebrations?: Json
           chrome_style?: string
+          class_reminders?: Json
           client_booking?: boolean
           contact_email?: string
           country?: string
@@ -5045,6 +6089,7 @@ export type Database = {
           labels?: Json
           language_default?: string
           lead_form?: Json
+          lead_thank_you?: Json
           legal_pack_ack_drafts?: string[]
           legal_pack_acknowledged_at?: string | null
           legal_pack_required?: boolean
@@ -5073,6 +6118,7 @@ export type Database = {
           primary_color?: string
           privacy_policy_url?: string | null
           require_admin_mfa?: boolean
+          review_url?: string | null
           signup_source?: string
           skin?: string
           smugmug_access_secret_enc?: string | null
@@ -5090,6 +6136,7 @@ export type Database = {
           takbull_credentials_updated_at?: string | null
           takbull_document_type?: number
           takbull_merchant_id?: string | null
+          teachers_own_classes_only?: boolean
           teaches_classes?: boolean
           terms_url?: string | null
           tranzila_terminal_name?: string | null
@@ -5118,6 +6165,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_platform_support: boolean
           language: string | null
           person_id: string | null
           role: string[]
@@ -5129,6 +6177,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id: string
+          is_platform_support?: boolean
           language?: string | null
           person_id?: string | null
           role?: string[]
@@ -5140,6 +6189,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_platform_support?: boolean
           language?: string | null
           person_id?: string | null
           role?: string[]
@@ -5595,6 +6645,32 @@ export type Database = {
           },
         ]
       }
+      staff_names: {
+        Row: {
+          id: string | null
+          name: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          id?: string | null
+          name?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          id?: string | null
+          name?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_quote: {
@@ -5632,6 +6708,11 @@ export type Database = {
           retention_expires_at: string
           tenant_id: string
         }[]
+      }
+      advance_job_statuses: { Args: { p_now?: string }; Returns: Json }
+      apply_class_coupon: {
+        Args: { p_code: string; p_engagement_id: string }
+        Returns: Json
       }
       approve_age_review_engagement: {
         Args: { p_admin_reason?: string; p_engagement_id: string }
@@ -5712,6 +6793,7 @@ export type Database = {
         Args: { p_engagement_id: string; p_reason?: string }
         Returns: Json
       }
+      cancel_shop_order: { Args: { p_order_id: string }; Returns: undefined }
       check_in_with_class_card: {
         Args: {
           p_card_id: string
@@ -5756,6 +6838,47 @@ export type Database = {
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_old_verification_attempts: { Args: never; Returns: number }
+      clear_cash_collected: {
+        Args: {
+          p_offering_id: string
+          p_person_id: string
+          p_session_date: string
+        }
+        Returns: boolean
+      }
+      client_import_add_shoots: {
+        Args: {
+          p_batch_id: string
+          p_person_id: string
+          p_shoots: Json
+          p_tenant_id: string
+        }
+        Returns: number
+      }
+      client_import_admin_tenant: { Args: never; Returns: string }
+      client_import_find_client: {
+        Args: { p_email: string; p_phone: string; p_tenant_id: string }
+        Returns: {
+          name: string
+          person_id: string
+          reason: string
+        }[]
+      }
+      client_import_matches: { Args: { p_clients: Json }; Returns: Json }
+      client_import_phone_key: { Args: { p_phone: string }; Returns: string }
+      client_import_shoot_links: {
+        Args: {
+          p_client: number
+          p_person_id: string
+          p_shoots: Json
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
+      client_import_shoot_package: {
+        Args: { p_name: string; p_tenant_id: string }
+        Returns: string
+      }
       complete_automatic_email: {
         Args: {
           p_external_msg_id?: string
@@ -5817,7 +6940,9 @@ export type Database = {
           p_engagement_id: string
           p_items: Json
           p_label?: string
+          p_pay_by_cash?: boolean
           p_person_id: string
+          p_products?: Json
         }
         Returns: Json
       }
@@ -5871,10 +6996,15 @@ export type Database = {
         Args: { p_reason?: string; p_tenant_id: string; p_token: string }
         Returns: Json
       }
+      delete_client: {
+        Args: { p_confirm?: boolean; p_person_id: string }
+        Returns: Json
+      }
       delete_job_photo_shop_photo: {
         Args: { p_photo_id: string }
         Returns: string
       }
+      delete_shop_product: { Args: { p_product_id: string }; Returns: string }
       deliver_job_photo_order: {
         Args: { p_delivery_url: string; p_order_id: string }
         Returns: Json
@@ -5957,7 +7087,12 @@ export type Database = {
           price_minor: number
         }[]
       }
+      get_cash_to_confirm: { Args: never; Returns: Json }
       get_class_card_register: {
+        Args: { p_offering_id: string; p_session_date: string }
+        Returns: Json
+      }
+      get_class_register: {
         Args: { p_offering_id: string; p_session_date: string }
         Returns: Json
       }
@@ -6042,6 +7177,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_platform_support: boolean
           language: string | null
           person_id: string | null
           role: string[]
@@ -6055,6 +7191,8 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_shop_orders: { Args: never; Returns: Json }
+      get_my_teaching: { Args: never; Returns: Json }
       get_my_tenant_id: { Args: never; Returns: string }
       get_named_lead_form: {
         Args: { p_slug: string; p_tenant_id: string }
@@ -6149,6 +7287,10 @@ export type Database = {
           title: string
         }[]
       }
+      get_public_shop_catalogue: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_schedule_events: {
         Args: { p_end: string; p_start: string; p_tenant_id: string }
         Returns: {
@@ -6161,11 +7303,13 @@ export type Database = {
           title: string
         }[]
       }
+      get_shop_catalogue: { Args: never; Returns: Json }
       get_signed_record_details: {
         Args: { p_evidence_id: string }
         Returns: Json
       }
       get_studio_card_token: { Args: { p_tenant_id: string }; Returns: string }
+      get_studio_shop_orders: { Args: never; Returns: Json }
       get_supabase_functions_url: { Args: never; Returns: string }
       get_tenant_config_by_host: {
         Args: { p_host: string }
@@ -6385,6 +7529,15 @@ export type Database = {
         }
         Returns: Json
       }
+      import_clients: {
+        Args: {
+          p_clients: Json
+          p_file_name: string
+          p_mapping: Json
+          p_sheet_name: string
+        }
+        Returns: Json
+      }
       import_finance_rows: {
         Args: {
           p_file_fingerprint: string
@@ -6412,10 +7565,15 @@ export type Database = {
         Returns: boolean
       }
       is_minor: { Args: { date_of_birth: string }; Returns: boolean }
+      is_my_studio_admin: { Args: never; Returns: boolean }
       is_platform_owner_email: { Args: { p_email: string }; Returns: boolean }
       is_reserved_subdomain: { Args: { p_subdomain: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      is_teacher_for_offering: {
+        Args: { p_offering_id: string }
+        Returns: boolean
+      }
       is_valid_israeli_id: { Args: { p_id: string }; Returns: boolean }
       issue_class_card: {
         Args: {
@@ -6501,6 +7659,7 @@ export type Database = {
         Returns: undefined
       }
       link_my_guardian_accounts: { Args: never; Returns: number }
+      link_my_teacher_login: { Args: never; Returns: boolean }
       list_admin_quotes: { Args: never; Returns: Json }
       list_due_shoot_emails: {
         Args: { p_now?: string }
@@ -6591,6 +7750,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      place_guest_shop_order: {
+        Args: {
+          p_email: string
+          p_lines: Json
+          p_name: string
+          p_pay_by_cash: boolean
+          p_phone: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
+      place_shop_order: {
+        Args: { p_lines: Json; p_person_id?: string }
+        Returns: Json
+      }
       platform_access_should_log: {
         Args: { p_tenant_id: string }
         Returns: boolean
@@ -6629,6 +7803,10 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: undefined
+      }
+      platform_support_auth_user_id: {
+        Args: { p_email: string }
+        Returns: string
       }
       platform_tenant_feature_states: {
         Args: { p_tenant_id: string }
@@ -6741,6 +7919,7 @@ export type Database = {
         Args: { p_hold_id: string }
         Returns: undefined
       }
+      release_stale_shop_orders: { Args: never; Returns: number }
       replace_tenant_scheduling_hours: {
         Args: { p_hours: Json }
         Returns: undefined
@@ -6779,6 +7958,32 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "class_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      resolve_cash_note: {
+        Args: { p_note_id: string; p_outcome: string; p_payment_id?: string }
+        Returns: {
+          amount_minor: number | null
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          offering_id: string
+          payment_id: string | null
+          person_id: string
+          recorded_by: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_date: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "class_cash_notes"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -6859,6 +8064,7 @@ export type Database = {
         Returns: undefined
       }
       save_quote: { Args: { p_lines: Json; p_quote: Json }; Returns: string }
+      save_shop_product: { Args: { p_product: Json }; Returns: string }
       save_studio_card_token: {
         Args: {
           p_expiry: string
@@ -7015,6 +8221,25 @@ export type Database = {
         }
         Returns: Json
       }
+      set_cash_collected: {
+        Args: {
+          p_amount_minor?: number
+          p_note?: string
+          p_offering_id: string
+          p_person_id: string
+          p_session_date: string
+        }
+        Returns: string
+      }
+      set_class_attendance: {
+        Args: {
+          p_attended: boolean
+          p_offering_id: string
+          p_person_ids: string[]
+          p_session_date: string
+        }
+        Returns: number
+      }
       set_class_card_visit_status: {
         Args: { p_status: string; p_visit_id: string }
         Returns: {
@@ -7053,6 +8278,10 @@ export type Database = {
       set_platform_child_package: {
         Args: { p_package_id: string }
         Returns: undefined
+      }
+      set_shop_order_status: {
+        Args: { p_order_id: string; p_status: string }
+        Returns: string
       }
       set_tenant_smugmug_oauth_pending: {
         Args: { p_pending: string; p_tenant_id: string }

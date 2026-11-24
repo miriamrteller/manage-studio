@@ -6,6 +6,7 @@ const mockVerifyOtp = vi.fn();
 const mockSetSession = vi.fn();
 const mockGetSession = vi.fn();
 const mockOnAuthStateChange = vi.fn();
+const mockSignOut = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -16,6 +17,7 @@ vi.mock('@/lib/supabase', () => ({
       setSession: (...args: unknown[]) => mockSetSession(...args),
       getSession: () => mockGetSession(),
       onAuthStateChange: (callback: unknown) => mockOnAuthStateChange(callback),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
     },
   },
 }));
@@ -29,19 +31,113 @@ describe('establishSessionFromAuthCallback', () => {
     });
   });
 
-  it('reuses an existing session without re-exchanging the code', async () => {
+  it('keeps an existing session when the address carries no link', async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: 'user-1' } } },
       error: null,
     });
 
+    const result = await establishSessionFromAuthCallback({ search: '', hash: '' });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+  });
+
+  it('signs out whoever is signed in, then signs in only the link\'s person', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'someone-else' } } },
+      error: null,
+    });
+    mockSignOut.mockResolvedValue({ error: null });
+    mockVerifyOtp.mockResolvedValue({ error: null });
+
     const result = await establishSessionFromAuthCallback({
-      search: '?code=already-used',
+      search: '?token_hash=link-for-photographer&type=magiclink',
       hash: '',
     });
 
     expect(result).toEqual({ ok: true });
-    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(mockSignOut.mock.invocationCallOrder[0]).toBeLessThan(mockVerifyOtp.mock.invocationCallOrder[0]);
+    expect(mockVerifyOtp).toHaveBeenCalledWith({ token_hash: 'link-for-photographer', type: 'email' });
+  });
+
+  it('never reports the old person as signed in when the link fails', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'someone-else' } } },
+      error: null,
+    });
+    mockSignOut.mockResolvedValue({ error: null });
+    mockVerifyOtp.mockResolvedValue({ error: { message: 'Email link is invalid or has expired' } });
+
+    const result = await establishSessionFromAuthCallback({
+      search: '?token_hash=expired-link&type=magiclink',
+      hash: '',
+    });
+
+    expect(result).toEqual({ ok: false, message: 'Email link is invalid or has expired' });
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('replaces an existing session with handed-over tokens (studio handoff)', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'someone-else' } } },
+      error: null,
+    });
+    mockSignOut.mockResolvedValue({ error: null });
+    mockSetSession.mockResolvedValue({ error: null });
+
+    const result = await establishSessionFromAuthCallback({
+      search: '',
+      hash: '#access_token=new-at&refresh_token=new-rt',
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(mockSetSession).toHaveBeenCalledWith({ access_token: 'new-at', refresh_token: 'new-rt' });
+  });
+
+  it('exchanges a PKCE code even when someone is signed in, keeping its verifier', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'someone-else' } } },
+      error: null,
+    });
+    mockExchangeCodeForSession.mockResolvedValue({ error: null });
+
+    const result = await establishSessionFromAuthCallback({ search: '?code=new-person', hash: '' });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockExchangeCodeForSession).toHaveBeenCalledWith('new-person');
+    expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it('signs out the old person when a PKCE code fails', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'someone-else' } } },
+      error: null,
+    });
+    mockSignOut.mockResolvedValue({ error: null });
+    mockExchangeCodeForSession.mockResolvedValue({ error: { message: 'invalid flow state' } });
+
+    const result = await establishSessionFromAuthCallback({ search: '?code=bad-code', hash: '' });
+
+    expect(result).toEqual({ ok: false, message: 'invalid flow state' });
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('redeems the same link once when handled twice in one page load', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ error: null });
+
+    const url = { search: '?code=once-only', hash: '' };
+    const [a, b] = await Promise.all([
+      establishSessionFromAuthCallback(url),
+      establishSessionFromAuthCallback(url),
+    ]);
+
+    expect(a).toEqual({ ok: true });
+    expect(b).toEqual({ ok: true });
+    expect(mockExchangeCodeForSession).toHaveBeenCalledTimes(1);
   });
 
   it('exchanges PKCE code from captured search params', async () => {

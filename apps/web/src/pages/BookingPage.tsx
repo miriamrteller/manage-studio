@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowView
 import { cn } from '@/lib/utils';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
+import { ShootRequestForm } from '@/features/scheduling/components/ShootRequestForm';
 
 function formatWhen(slot: AvailableSlot): string {
   const start = new Date(slot.starts_at);
@@ -34,6 +36,8 @@ export default function BookingPage() {
   const { t, i18n } = useTranslation();
   const { offeringId: offeringParam } = useParams<{ offeringId?: string }>();
   const tenant = useTenant();
+  // Projects ticked: clients send a request and get a quote (owner: the feature set decides, not the business type).
+  const takesRequests = useWorkModes().projects;
   const navigate = useNavigate();
   const isNarrow = useIsNarrowViewport();
   const subdomain = tenant?.subdomain ?? '';
@@ -136,7 +140,7 @@ export default function BookingPage() {
     return (
       <div className="mx-auto max-w-xl space-y-2 p-6">
         <h1 className="text-3xl font-bold">{t('scheduling.book.title')}</h1>
-        {tenant?.vertical === 'photographer' ? (
+        {takesRequests ? (
           <>
             <p className="text-gray-600">{t('scheduling.book.photographer_note')}</p>
             <p>
@@ -147,6 +151,19 @@ export default function BookingPage() {
           <p className="text-gray-600">{t('scheduling.book.not_enabled')}</p>
         )}
       </div>
+    );
+  }
+
+  // Projects: the client sends a request (package + day) and the studio confirms
+  // it with a quote. No slots, no booking rules, nothing charged now.
+  if (takesRequests && offerings.length > 0 && subdomain) {
+    return (
+      <ShootRequestForm
+        subdomain={subdomain}
+        studioName={tenant?.name ?? null}
+        offerings={offerings}
+        initialOfferingId={offeringParam ?? null}
+      />
     );
   }
 
@@ -172,6 +189,19 @@ export default function BookingPage() {
 
       {/* Services (capped + scroll) above calendar — pick service, then see its slots */}
       <section className="space-y-4 sm:space-y-5">
+        {/* One service: nothing to choose, so show it as a line and go straight to the times. */}
+        {offerings.length === 1 ? (
+          <p className="text-sm text-gray-700" data-testid="single-service">
+            <span className="font-medium">{offerings[0].name}</span>
+            {offerings[0].duration_mins
+              ? ` · ${t('scheduling.book.duration_mins', { count: offerings[0].duration_mins })}`
+              : ''}
+            {' · '}
+            {formatOfferingPrice(t, offerings[0].price_minor, offerings[0].currency || 'ILS', i18n.language, {
+              billing_mode: 'one_time',
+            })}
+          </p>
+        ) : (
         <div className="space-y-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-semibold sm:text-lg">{t('scheduling.book.choose_service')}</h2>
@@ -220,6 +250,7 @@ export default function BookingPage() {
             })}
           </ul>
         </div>
+        )}
 
         {selectedOffering && subdomain ? (
           <div className="space-y-2 border-t border-gray-200 pt-4 sm:pt-5">

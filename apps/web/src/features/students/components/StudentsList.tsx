@@ -1,3 +1,5 @@
+import { openAmountMinor, useProjectRequests } from '@/features/jobs/lib/projectSummary';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +32,7 @@ import { useJobs } from '@/features/jobs/hooks/useJobs';
 import { NEW_SHOOT_PATH, newShootState } from '@/features/jobs/lib/newShootRoute';
 import type { JobRow } from '@/features/jobs/services/jobService';
 import { StudentSlideOver } from './StudentSlideOver';
+import { personPagePath } from '@/features/people/lib/personPagePath';
 import { useStudentsListColumns } from './students-list/useStudentsListColumns';
 import { StudentsFilterDrawer } from './students-list/StudentsFilterDrawer';
 import { StudentsTable } from './students-list/StudentsTable';
@@ -38,10 +41,15 @@ import type { Person } from '@shared/schemas';
 
 export function StudentsList() {
   const { t } = useTranslation();
-  const { labels, vertical } = useEntityLabels();
-  // Photographers: this page is "Clients". Bookings are shoots (/admin/jobs),
-  // so class/level/family/age/guardian UI and the /enrol flow don't apply.
-  const isPhotographer = vertical === 'photographer';
+  const { labels } = useEntityLabels();
+  // Follows "How do clients work with you?" (owner, 13 Nov 2026): without Classes there are no
+  // class, level, age or enrol parts here, and a client's column lists their projects instead.
+  const { classes: teachesClasses, projects, families } = useWorkModes();
+  const withoutClasses = !teachesClasses;
+  // Something to add a client to: a class, or a project. Appointments-only clients come from
+  // their bookings (or Import).
+  const canAdd = teachesClasses || projects;
+  const addLabel = withoutClasses ? t('pages.people.add_client') : t('pages.students.enrol_new_button');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classIdFromUrl = searchParams.get('class');
@@ -119,7 +127,20 @@ export function StudentsList() {
     enrolmentStatusFilterValues: selectedEnrolmentStatuses.map((s) => s.value),
   });
 
-  const { jobs } = useJobs({ enabled: isPhotographer });
+  const { jobs } = useJobs({ enabled: withoutClasses && projects });
+  // "Still to pay" per client (projects): open payment requests on their projects.
+  const { data: projectRequests = [] } = useProjectRequests(jobs.map((job) => job.engagement_id));
+  const toPayByPerson = useMemo(() => {
+    const personOf = new Map(jobs.map((job) => [job.engagement_id, job.person_id]));
+    const map = new Map<string, number>();
+    for (const request of projectRequests) {
+      const personId = personOf.get(request.engagement_id);
+      if (!personId) continue;
+      map.set(personId, (map.get(personId) ?? 0) + openAmountMinor([request]));
+    }
+    return map;
+  }, [jobs, projectRequests]);
+
   const jobsByPerson = useMemo(() => {
     const map = new Map<string, JobRow[]>();
     for (const job of jobs) {
@@ -139,9 +160,9 @@ export function StudentsList() {
   );
 
   const openAddAction = () =>
-    isPhotographer
+    withoutClasses
       ? openNewShoot()
-      : navigate('/enrol', { state: { mode: 'admin', from: '/admin/students' } });
+      : navigate('/enrol', { state: { mode: 'admin', from: '/admin/people' } });
 
   const openEnrolModal = useCallback((person: Person) => {
     const family = person.account_id ? familyMap.get(person.account_id) : undefined;
@@ -159,14 +180,18 @@ export function StudentsList() {
   }, [familyMap]);
 
   const columns = useStudentsListColumns({
-    isPhotographer,
+    withoutClasses,
+    canAdd,
     enrolmentsByPerson,
     familyMap,
     contactPrefsMap,
     jobsByPerson,
+    toPayByPerson,
+    currency: tenant?.currency ?? 'ILS',
     openEnrolModal,
     openNewShoot,
-    openDetails: setSlideOverPersonId,
+    // A name opens the person's own page, with everything about them.
+    openDetails: (personId: string) => navigate(personPagePath(personId)),
   });
 
   const table = useReactTable({
@@ -175,7 +200,12 @@ export function StudentsList() {
     state: {
       expanded,
       // Photographer clients: no age ("Adult" for everyone) or guardian columns.
-      columnVisibility: isPhotographer ? { date_of_birth: false, guardian: false } : {},
+      // No age without Classes; no parent column without "Parents pay for children".
+      columnVisibility: {
+        ...(withoutClasses ? { date_of_birth: false } : {}),
+        ...(withoutClasses || !families ? { guardian: false } : {}),
+        ...(withoutClasses && projects ? {} : { to_pay: false }),
+      },
     },
     onExpandedChange: setExpanded,
     getRowCanExpand: () => true,
@@ -233,9 +263,16 @@ export function StudentsList() {
           />
         }
         actions={
-          <Button variant="primary" onClick={openAddAction}>
-            {t('pages.students.enrol_new_button')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => navigate('/admin/people/import')}>
+              {t('clients_import.button')}
+            </Button>
+            {canAdd && (
+              <Button variant="primary" onClick={openAddAction}>
+                {addLabel}
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -243,7 +280,8 @@ export function StudentsList() {
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         filters={filters}
-        isPhotographer={isPhotographer}
+        withoutClasses={withoutClasses}
+        showFamilies={families}
         hasClasses={classes.length > 0}
         levels={levels}
         resetPage={resetPage}
@@ -264,8 +302,8 @@ export function StudentsList() {
         <EmptyState
           title={t('pages.students.empty_title')}
           message={t('pages.students.empty_message')}
-          actionLabel={t('pages.students.enrol_new_button')}
-          onAction={openAddAction}
+          actionLabel={canAdd ? addLabel : undefined}
+          onAction={canAdd ? openAddAction : undefined}
         />
       )}
 
@@ -273,7 +311,7 @@ export function StudentsList() {
       {students.length > 0 && (
         <StudentsTable
           table={table}
-          isPhotographer={isPhotographer}
+          withoutClasses={withoutClasses}
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={handleSort}
@@ -281,7 +319,7 @@ export function StudentsList() {
           familyMap={familyMap}
           contactPrefsMap={contactPrefsMap}
           jobsByPerson={jobsByPerson}
-          onEnrol={isPhotographer ? openNewShoot : openEnrolModal}
+          onEnrol={canAdd ? (withoutClasses ? openNewShoot : openEnrolModal) : undefined}
         />
       )}
 

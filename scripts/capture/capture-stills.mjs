@@ -179,7 +179,7 @@ async function captureAdminCashPayment(browser) {
     await login(page, SEED.admin.email, SEED.admin.password);
 
     // Enrol a walk-in: new family with one in-band child.
-    await gotoWarm(page, '/admin/students');
+    await gotoWarm(page, '/admin/people');
     await page.getByRole('button', { name: UI.enrolNewStudent }).first().click();
     await page.waitForURL(/\/enrol/);
 

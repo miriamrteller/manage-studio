@@ -1,5 +1,5 @@
 /**
- * Automatic class discounts (sibling, extra class, early bird). The database works the
+ * Class discounts (sibling, extra class, early bird, per client, coupon codes). The database works the
  * discount out at enrolment (supabase/tests/class-discounts); these check that every price
  * reader takes it off the class price, the Settings form, and the lines parents see.
  * Fakes only.
@@ -11,10 +11,19 @@ import { makeGrowFakeService } from './helpers/growFakeService';
 import { pickMonthAmount, resolveMonthAmount } from '../../../../supabase/functions/_shared/payments/month-amount.ts';
 import {
   engagementDiscountFromRow,
+  firstPaymentDiscount,
   parseDiscountLines,
   priceAfterDiscount,
 } from '../../../../supabase/functions/_shared/payments/class-discount.ts';
-import { DEFAULT_CLASS_DISCOUNTS, formToRow, rowToForm } from '@/features/settings/lib/classDiscounts';
+import { parseClassCouponResult } from '../../../../supabase/functions/_shared/payments/class-coupon.ts';
+import {
+  clientDiscountToRow,
+  couponToRow,
+  DEFAULT_CLASS_DISCOUNTS,
+  DEFAULT_COUPON_INPUT,
+  formToRow,
+  rowToForm,
+} from '@/features/settings/lib/classDiscounts';
 import { ClassDiscountLines, discountLinesFromRow } from '@/features/enrolment/components/ClassDiscountLines';
 import { openItemsFrom } from '@/features/finance/hooks/usePayableItems';
 
@@ -26,7 +35,8 @@ describe('class discount on the enrolment', () => {
   it('reads only well-formed lines and never goes below zero', () => {
     expect(parseDiscountLines([{ kind: 'sibling', amount_minor: 2000 }, { kind: 'bogus', amount_minor: 5 }, null]))
       .toEqual([{ kind: 'sibling', amountMinor: 2000 }]);
-    expect(engagementDiscountFromRow({ discount_minor: 0, discount_lines: [] })).toEqual({ discountMinor: 0, lines: [] });
+    expect(engagementDiscountFromRow({ discount_minor: 0, discount_lines: [] }))
+      .toEqual({ discountMinor: 0, firstDiscountMinor: 0, lines: [] });
     expect(engagementDiscountFromRow(null).discountMinor).toBe(0);
     expect(priceAfterDiscount(20000, 3000)).toBe(17000);
     expect(priceAfterDiscount(20000, null)).toBe(20000);
@@ -110,5 +120,73 @@ describe('the lines parents see before paying', () => {
   it('shows nothing without a discount', () => {
     const { container } = render(<ClassDiscountLines listAmountMinor={20000} discounts={[]} currency="ILS" />);
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('client discounts and coupon codes', () => {
+  it('a first-payment coupon comes off the first payment only', () => {
+    const discount = engagementDiscountFromRow({
+      discount_minor: 2000,
+      first_discount_minor: 1000,
+      discount_lines: [
+        { kind: 'client', amount_minor: 2000 },
+        { kind: 'coupon', amount_minor: 1000, first_only: true, code: 'WELCOME' },
+      ],
+    });
+    expect(discount.lines).toEqual([
+      { kind: 'client', amountMinor: 2000 },
+      { kind: 'coupon', amountMinor: 1000, firstOnly: true, code: 'WELCOME' },
+    ]);
+    expect(firstPaymentDiscount(discount)).toBe(3000);
+    expect(pickMonthAmount({ classPriceMinor: 20000, studentAmountMinor: null, classDiscountMinor: discount.discountMinor }).amountMinor)
+      .toBe(18000);
+  });
+
+  it('Record a payment suggests the first payment less a first-payment coupon', () => {
+    const items = openItemsFrom(
+      [{ id: 'a', status: 'pending_payment', discount_minor: 2000, first_discount_minor: 1000, offering: { id: 'o', name: 'Ballet', price_minor: 20000, billing_mode: 'recurring' } }],
+      [],
+    );
+    expect(items[0].amountMinor).toBe(17000);
+  });
+
+  it('reads the coupon answer from the database', () => {
+    expect(parseClassCouponResult({ ok: true, amount_minor: 1000, first_only: true }))
+      .toEqual({ ok: true, amountMinor: 1000, firstOnly: true });
+    expect(parseClassCouponResult({ ok: false, reason: 'expired' })).toEqual({ ok: false, reason: 'expired' });
+    expect(parseClassCouponResult({ ok: false, reason: 'weird' })).toEqual({ ok: false, reason: 'error' });
+    expect(parseClassCouponResult(null)).toEqual({ ok: false, reason: 'error' });
+  });
+
+  it('client discount: email in lower case, amount checked', () => {
+    expect(clientDiscountToRow({ email: ' Parent@Example.TEST ', unit: 'amount', value: '50', note: '' }))
+      .toEqual({ ok: true, row: { email: 'parent@example.test', unit: 'amount', value: 5000, note: null } });
+    expect(clientDiscountToRow({ email: 'nope', unit: 'percent', value: '95', note: '' }))
+      .toEqual({ ok: false, invalid: ['email', 'value'] });
+  });
+
+  it('coupon: prefilled as 10% off the first payment, code in capitals', () => {
+    expect(DEFAULT_COUPON_INPUT.applies_to).toBe('first_payment');
+    expect(couponToRow({ ...DEFAULT_COUPON_INPUT, code: ' welcome ' }))
+      .toEqual({ ok: true, row: { code: 'WELCOME', unit: 'percent', value: 10, applies_to: 'first_payment', valid_until: null, max_uses: null, note: null } });
+    expect(couponToRow({ ...DEFAULT_COUPON_INPUT, code: 'a b', max_uses: '0' }))
+      .toEqual({ ok: false, invalid: ['code', 'max_uses'] });
+  });
+
+  it('parents see the coupon line and what later months cost', () => {
+    render(
+      <ClassDiscountLines
+        listAmountMinor={20000}
+        discounts={discountLinesFromRow([
+          { kind: 'client', amount_minor: 2000 },
+          { kind: 'coupon', amount_minor: 1000, first_only: true, code: 'WELCOME' },
+        ])}
+        currency="ILS"
+        monthly
+      />,
+    );
+    expect(screen.getByText('Your discount')).toBeInTheDocument();
+    expect(screen.getByText('Coupon WELCOME (first payment)')).toBeInTheDocument();
+    expect(screen.getByText(/After the first payment: .*180.* a month\./)).toBeInTheDocument();
   });
 });

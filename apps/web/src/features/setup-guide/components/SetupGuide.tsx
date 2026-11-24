@@ -14,29 +14,31 @@ import { GemBadge } from './Celebration';
 export const HELP_EMAIL = 'hello@opalswift.com';
 
 /** Where each row sends the owner. Existing pages only. */
-export function setupRowHref(id: SetupRowId, vertical: string | null | undefined): string {
+export function setupRowHref(id: SetupRowId, _vertical?: string | null): string {
   switch (id) {
     case 'branding':
-      return '/admin/setup/settings?tab=branding';
+      return '/admin/settings?tab=branding';
     case 'levels':
-      return '/admin/setup/levels';
+      return '/admin/classes/levels';
     case 'season':
-      return '/admin/setup/terms';
+      return '/admin/classes/seasons';
+    // Rows follow the ticks: the classes row exists only with Classes, the others only for packages.
     case 'classes':
+      return managePackagesPath(true);
     case 'packages':
     case 'offerings':
-      return managePackagesPath(vertical as Parameters<typeof managePackagesPath>[0]);
+      return managePackagesPath(false);
     case 'payments':
     case 'connect_payments':
-      return '/admin/setup/settings?tab=payment';
+      return '/admin/settings?tab=payment';
     case 'legal':
-      return '/admin/setup/settings?tab=legal';
+      return '/admin/settings?tab=legal';
     case 'leads':
       return '/admin/leads';
     case 'test_enrolment':
       return '/classes';
     case 'first_quote':
-      return '/admin/quotes';
+      return '/admin/projects/quotes';
   }
 }
 

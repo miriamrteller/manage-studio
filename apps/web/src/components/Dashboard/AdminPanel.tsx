@@ -1,3 +1,4 @@
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -8,7 +9,10 @@ import { managePackagesPath } from '@/features/classes/lib/managePackagesPath';
 import { FinanceHealthCard } from '@/features/finance/components/FinanceHealthCard';
 import { AdminOverviewSection } from '@/features/admin-dashboard/components/AdminOverviewSection';
 import { useTenant } from '@/hooks/useTenant';
+import { useHasFeature } from '@/hooks/useHasFeature';
+import { FEATURES } from '@shared/index';
 import { getBundledPaymentProviderSlug } from '@/lib/tenantProviderRouting';
+import { CashToConfirmNotice } from '@/features/finance-admin/components/CashToConfirm';
 import { CelebrationBanner, SetupGuideCard, useCelebrations, useSetupGuide } from '@/features/setup-guide';
 
 /**
@@ -20,8 +24,14 @@ export function AdminPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { overview, isLoading, error, refetch } = useAdminDashboard();
-  const { labels, modules, vertical } = useEntityLabels();
+  const { labels, modules } = useEntityLabels();
+  const { classes: teachesClasses } = useWorkModes();
   const tenant = useTenant();
+  // Class-only cards follow the studio's feature set (owner, 13 Nov 2026): levels and
+  // seasons need "Levels, terms and sessions"; billing accounts need family accounts.
+  const { hasFeature } = useHasFeature();
+  const showStructure = hasFeature(FEATURES.offerings.structure);
+  const showBillingAccounts = hasFeature(FEATURES.people.families);
   const healthProvider = getBundledPaymentProviderSlug(tenant);
 
   // "Finish setup" checklist: shown until every row is done or skipped, or the owner
@@ -49,6 +59,7 @@ export function AdminPanel() {
       {celebrations.active && (
         <CelebrationBanner moment={celebrations.active} fewer={celebrations.fewer} onDismiss={celebrations.dismiss} />
       )}
+      {teachesClasses && <CashToConfirmNotice onOpen={() => navigate('/admin/finance/payments')} />}
       {showGuide ? (
         guide.isLoading ? (
           <p role="status" className="text-gray-600">{t('common.loading')}</p>
@@ -111,7 +122,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/settings')}
+              onClick={() => navigate('/admin/settings')}
               aria-label={t('settings.hub.page_title')}
             >
               {t('common.manage')} →
@@ -131,7 +142,7 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/waivers')}
+              onClick={() => navigate('/admin/settings/waivers')}
               aria-label={t('pages.waivers.title')}
             >
               {t('common.manage')} →
@@ -140,6 +151,7 @@ export function AdminPanel() {
         </div>
 
         {/* Billing Accounts Card */}
+        {showBillingAccounts && (
         <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -151,16 +163,17 @@ export function AdminPanel() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/admin/setup/billing')}
+              onClick={() => navigate('/admin/finance/accounts')}
               aria-label={t('pages.billing.title')}
             >
               {t('common.manage')} →
             </Button>
           </div>
         </div>
+        )}
 
         {/* Levels Card */}
-        {modules.categories && (
+        {showStructure && modules.categories && (
           <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -172,7 +185,7 @@ export function AdminPanel() {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate('/admin/setup/levels')}
+                onClick={() => navigate('/admin/classes/levels')}
                 aria-label={labels.category.plural}
               >
                 {t('common.manage')} →
@@ -182,7 +195,7 @@ export function AdminPanel() {
         )}
 
         {/* Terms Card */}
-        {modules.scheduling && (
+        {showStructure && modules.scheduling && (
           <div className="card border border-gray-200 hover:border-primary hover:shadow-md transition-all">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -194,7 +207,7 @@ export function AdminPanel() {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate('/admin/setup/terms')}
+                onClick={() => navigate('/admin/classes/seasons')}
                 aria-label={labels.season.plural}
               >
                 {t('common.manage')} →
@@ -210,14 +223,14 @@ export function AdminPanel() {
               {`${t('common.manage')} ${labels.offering.plural}`}
             </h3>
             <p className="text-sm text-gray-600">
-              {vertical === 'photographer'
+              {!teachesClasses
                 ? t('pages.admin_classes.packages_description')
                 : t('pages.admin_classes.description', { entity: labels.offering.plural })}
             </p>
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate(managePackagesPath(vertical))}
+              onClick={() => navigate(managePackagesPath(teachesClasses))}
               aria-label={t('pages.admin_classes.title')}
             >
               {t('common.manage')} →

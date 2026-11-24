@@ -18,24 +18,23 @@ test.describe('Admin features', () => {
   });
 
   const adminRoutes: { path: string; heading: RegExp }[] = [
-    { path: '/admin/students', heading: /Students/i },
-    { path: '/admin/families', heading: /Families/i },
+    { path: '/admin/people', heading: /Students/i },
+    { path: '/admin/people/families', heading: /Families/i },
     { path: '/admin/notifications', heading: /Notifications/i },
-    { path: '/admin/appointments', heading: /Appointments/i },
+    { path: '/admin/bookings/diary', heading: /Diary/i },
     { path: '/admin/finance', heading: /Finance/i },
     { path: '/admin/finance/payments', heading: /Payments/i },
     { path: '/admin/finance/expenses', heading: /Expenses/i },
     { path: '/admin/finance/expenses/categories', heading: /Categor/i },
-    { path: '/admin/setup', heading: /Overview|Setup|Dashboard|Activity/i },
-    { path: '/admin/setup/settings', heading: /Settings|School/i },
-    { path: '/admin/setup/bundled-payments', heading: /Payment|Grow|iCount|Bundled/i },
-    { path: '/admin/setup/billing', heading: /Billing/i },
-    { path: '/admin/setup/levels', heading: /Level/i },
-    { path: '/admin/setup/terms', heading: /Term|Season|Learning/i },
+    { path: '/admin', heading: /Overview|Setup|Dashboard|Activity/i },
+    { path: '/admin/settings', heading: /Settings|School/i },
+    { path: '/admin/settings/bundled-payments', heading: /Payment|Grow|iCount|Bundled/i },
+    { path: '/admin/finance/accounts', heading: /Billing/i },
+    { path: '/admin/classes/levels', heading: /Level/i },
+    { path: '/admin/classes/seasons', heading: /Term|Season|Learning/i },
     { path: '/admin/classes', heading: /Class/i },
-    { path: '/admin/packages', heading: /Service/i },
-    { path: '/admin/setup/booking', heading: /Booking|Availability/i },
-    { path: '/admin/setup/waivers', heading: /Waiver/i },
+    { path: '/admin/bookings/packages', heading: /Service|Package/i },
+    { path: '/admin/settings/waivers', heading: /Waiver/i },
     { path: '/platform/onboard', heading: /Onboard|Provision|Studio/i },
   ];
 
@@ -51,7 +50,7 @@ test.describe('Admin features', () => {
   }
 
   test('students directory has search / filter affordances', async ({ page }) => {
-    await page.goto('/admin/students');
+    await page.goto('/admin/people');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/Students/i);
     // Filter controls or table body
     await expect(
@@ -74,8 +73,8 @@ test.describe('Admin features', () => {
   });
 
   test('booking settings shows penalty fields when feature enabled', async ({ page }) => {
-    await page.goto('/admin/setup/booking');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Booking|Availability/i);
+    await page.goto('/admin/bookings/diary');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Diary/i);
     const lateCancel = page.getByText(/Late cancellation window|חלון ביטול מאוחר/i);
     if (await lateCancel.isVisible().catch(() => false)) {
       await expect(lateCancel).toBeVisible();
@@ -86,11 +85,11 @@ test.describe('Admin features', () => {
   });
 
   test('appointments page exposes cancel (and no-show when penalties on)', async ({ page }) => {
-    await page.goto('/admin/appointments');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Appointments/i);
+    await page.goto('/admin/bookings/diary');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Diary/i);
     const cancel = page.getByRole('button', { name: /^Cancel$/i }).first();
     const noShow = page.getByRole('button', { name: /Mark no-show/i }).first();
-    const empty = page.getByText(/No appointments/i);
+    const empty = page.getByText(/Nothing booked yet/i);
     const hasRow = await cancel.isVisible().catch(() => false);
     const hasEmpty = await empty.isVisible().catch(() => false);
     expect(hasRow || hasEmpty).toBeTruthy();

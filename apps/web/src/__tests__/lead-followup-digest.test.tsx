@@ -68,12 +68,12 @@ describe('digest email', () => {
   const leads = [lead({ id: 'late', name: 'A <b>', next_follow_up_at: '2026-10-30T00:00:00+00:00', stage: 'trial_booked' }), lead({ id: 't', name: 'Noa' })];
 
   it('English: count, overdue marked, stage named, names escaped, links to leads and settings', () => {
-    const e = digestEmail({ studio: 'Ballet', leads, today, leadsUrl: 'https://b.opalswift.com/admin/leads', settingsUrl: 'https://b.opalswift.com/admin/setup/settings', lang: 'en' });
+    const e = digestEmail({ studio: 'Ballet', leads, today, leadsUrl: 'https://b.opalswift.com/admin/leads', settingsUrl: 'https://b.opalswift.com/admin/settings', lang: 'en' });
     expect(e.subject).toBe('2 leads to follow up today – Ballet');
     expect(e.html).toContain('A &lt;b&gt;</b> <span style="color:#B91C1C">(overdue)</span>');
     expect(e.html).toContain('Trial booked');
     expect(e.html).toContain('href="https://b.opalswift.com/admin/leads"');
-    expect(e.html).toContain('href="https://b.opalswift.com/admin/setup/settings"');
+    expect(e.html).toContain('href="https://b.opalswift.com/admin/settings"');
     expect(e.text).toContain('- Noa: Contacted · 050-1234567');
   });
 

@@ -5,6 +5,7 @@ import {
   type EnrolmentConfirmationVariant,
 } from "./enrolment-confirmation-email-shells/generated.ts";
 import { applyEmailBrand } from "./email-brand.ts";
+import { insertBeforeParagraph, isHttpLink, signInBlockHtml } from "./sign-in-email-block.ts";
 import {
   EMAIL_TEMPLATE_NAMES,
   getEmailStrings,
@@ -34,6 +35,8 @@ export interface RenderEnrolmentConfirmationInput {
   /** tenants.skin: dance studios name the document a health declaration. */
   vertical?: string | null;
   signUrl?: string;
+  /** 3-day sign-in link to the client's page (client-login.ts). Unset: no button. */
+  signInUrl?: string;
   deadlineDate?: string;
   primaryColor: string;
   accentColor: string;
@@ -41,6 +44,28 @@ export interface RenderEnrolmentConfirmationInput {
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+/**
+ * Puts the sign-in button just above the closing "Please contact us" line. The shells
+ * are pre-rendered, so the line is found by its text; if it is not there, the email
+ * goes without the button.
+ */
+export function insertSignInBlock(
+  html: string,
+  params: { language: EnrolmentConfirmationLanguage; signInUrl?: string; primaryColor: string },
+): string {
+  if (!isHttpLink(params.signInUrl)) return html;
+  const strings = getEmailStrings(params.language, EMAIL_TEMPLATE_NAMES.ENROLMENT_CONFIRMATION);
+  const note = str(strings.confirmation_note);
+  const body = str(strings.sign_in_body);
+  const cta = str(strings.sign_in_cta);
+  if (!note || !body || !cta) return html;
+  return insertBeforeParagraph(
+    html,
+    note,
+    signInBlockHtml({ body, cta, url: params.signInUrl, color: params.primaryColor }),
+  );
 }
 
 function formatDeadline(deadlineDate: string | undefined, language: EnrolmentConfirmationLanguage): string | undefined {
@@ -115,7 +140,12 @@ export function renderEnrolmentConfirmationHtml(input: RenderEnrolmentConfirmati
     primaryColor: input.primaryColor,
     accentColor: input.accentColor,
   });
-  return applyEmailBrand(html, input.primaryColor, input.accentColor);
+  const withSignIn = insertSignInBlock(html, {
+    language: lang,
+    signInUrl: input.signInUrl,
+    primaryColor: input.primaryColor,
+  });
+  return applyEmailBrand(withSignIn, input.primaryColor, input.accentColor);
 }
 
 export function buildEnrolmentConfirmationSubject(

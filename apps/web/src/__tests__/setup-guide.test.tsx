@@ -133,7 +133,7 @@ describe('SetupGuideCard', () => {
     expect(await screen.findByText("You're 38% there")).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '38');
     expect(screen.getByText('Level: Open for enquiries')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Next: Set up your season\s*About 3 minutes$/ })).toHaveAttribute('href', '/admin/setup/terms');
+    expect(screen.getByRole('link', { name: /^Next: Set up your season\s*About 3 minutes$/ })).toHaveAttribute('href', '/admin/classes/seasons');
     expect(screen.getByRole('link', { name: 'hello@opalswift.com' })).toHaveAttribute('href', 'mailto:hello@opalswift.com');
   });
 
@@ -151,9 +151,9 @@ describe('SetupGuideCard', () => {
     expect(screen.queryByText(/waiver/i)).toBeNull();
   });
 
-  it('the legal row says who is waiting on it and has no Skip', async () => {
+  it('the legal row says the documents are drafts (nobody waits on it) and has no Skip', async () => {
     renderHarness();
-    expect(await screen.findByText("Parents can't sign up until you confirm your legal documents.")).toBeInTheDocument();
+    expect(await screen.findByText("Your legal documents are still drafts. Parents can still sign up, sign and pay.")).toBeInTheDocument();
     const legalRow = screen.getByRole('link', { name: /legal details and health declaration/ }).closest('li')!;
     expect(legalRow.querySelector('button')).toBeNull();
   });
@@ -162,7 +162,7 @@ describe('SetupGuideCard', () => {
     h.tenant = { id: 't1', vertical: 'generic', payment_provider: 'grow', payment_provider_secret_configured: false };
     renderHarness();
     const link = await screen.findByRole('link', { name: /Connect online payments/ });
-    expect(link).toHaveAttribute('href', '/admin/setup/settings?tab=payment');
+    expect(link).toHaveAttribute('href', '/admin/settings?tab=payment');
   });
 
   it('skip and undo update the count; the choice is kept', async () => {

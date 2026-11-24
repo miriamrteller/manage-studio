@@ -65,7 +65,7 @@ export function NoDocumentConfirmationOption({
         <div className="flex items-start justify-between gap-2 rounded border border-border px-3 py-2 text-sm" role="note">
           <p>
             {t('finance.no_document.nudge')}{' '}
-            <Link to="/admin/setup/settings?tab=invoicing" className="font-medium text-primary underline underline-offset-2">
+            <Link to="/admin/settings?tab=invoicing" className="font-medium text-primary underline underline-offset-2">
               {t('finance.no_document.nudge_link')}
             </Link>
           </p>

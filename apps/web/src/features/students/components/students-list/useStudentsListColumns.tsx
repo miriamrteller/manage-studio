@@ -1,3 +1,4 @@
+import { formatMinor } from '@/features/jobs/lib/jobPaymentFormat';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -18,25 +19,33 @@ const columnHelper = createColumnHelper<Person>();
 
 /** Column definitions for the Students (or photographer Clients) table. */
 export function useStudentsListColumns({
-  isPhotographer,
+  withoutClasses,
+  canAdd,
   enrolmentsByPerson,
   familyMap,
   contactPrefsMap,
   jobsByPerson,
+  toPayByPerson,
+  currency,
   openEnrolModal,
   openNewShoot,
   openDetails,
 }: {
-  isPhotographer: boolean;
+  withoutClasses: boolean;
+  /** The studio has classes or projects to add a client to. */
+  canAdd: boolean;
   enrolmentsByPerson: Map<string, StudentEnrolmentSummary[]>;
   familyMap: Map<string, StudentsListFamily>;
   contactPrefsMap: Map<string, StudentsListContactPrefs>;
   jobsByPerson: Map<string, JobRow[]>;
+  /** Open payment requests on each client's projects (minor units). */
+  toPayByPerson: Map<string, number>;
+  currency: string;
   openEnrolModal: (person: Person) => void;
   openNewShoot: (person?: Person) => void;
   openDetails: (personId: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return useMemo(
     () => [
@@ -63,17 +72,42 @@ export function useStudentsListColumns({
       }),
       columnHelper.accessor('name', {
         header: t('pages.people.name_label'),
-        cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+        cell: ({ row }) => {
+          const email = row.original.email?.trim();
+          return (
+            <>
+              <span className="font-medium">{row.original.name}</span>
+              {/* Phones: the email column is hidden, so show the email under the name. */}
+              {email && (
+                <span className="block break-all text-xs text-gray-500 sm:hidden" dir="ltr">
+                  {email}
+                </span>
+              )}
+            </>
+          );
+        },
+      }),
+      columnHelper.accessor('email', {
+        id: 'email',
+        header: t('pages.people.email_label'),
+        cell: (info) => {
+          const email = info.getValue()?.trim();
+          return email ? (
+            <span className="break-all" dir="ltr">{email}</span>
+          ) : (
+            <span className="text-gray-400 text-xs">—</span>
+          );
+        },
       }),
       columnHelper.accessor('id', {
         id: 'classes',
-        header: t('pages.students.classes_column'),
-        cell: ({ row }) => isPhotographer ? (
+        header: withoutClasses ? t('pages.people.projects_section') : t('pages.students.classes_column'),
+        cell: ({ row }) => withoutClasses ? (
           <ClientShootList jobs={jobsByPerson.get(row.original.id) ?? []} compact />
         ) : (
           <EnrolmentSummaryList
             enrolments={enrolmentsByPerson.get(row.original.id) ?? []}
-            returnTo="/admin/students"
+            returnTo="/admin/people"
             compact
             audience="admin"
             linkContext={{
@@ -116,6 +150,18 @@ export function useStudentsListColumns({
         },
       }),
       columnHelper.accessor('id', {
+        id: 'to_pay',
+        header: t('pages.people.still_to_pay'),
+        cell: ({ row }) => {
+          const open = toPayByPerson.get(row.original.id) ?? 0;
+          return open > 0 ? (
+            <span className="font-medium text-amber-800">{formatMinor(open, currency, i18n.language)}</span>
+          ) : (
+            <span className="text-gray-400 text-xs">—</span>
+          );
+        },
+      }),
+      columnHelper.accessor('id', {
         id: 'notifications',
         header: t('pages.students.notifications_column'),
         cell: ({ row }) => {
@@ -139,15 +185,17 @@ export function useStudentsListColumns({
         cell: ({ row }) => (
           // Phones: stack the two pills instead of squeezing them.
           <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() =>
-                isPhotographer ? openNewShoot(row.original) : openEnrolModal(row.original)
-              }
-            >
-              {t('pages.students.enrol_button')}
-            </Button>
+            {canAdd && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  withoutClasses ? openNewShoot(row.original) : openEnrolModal(row.original)
+                }
+              >
+                {withoutClasses ? t('pages.people.new_project') : t('pages.students.enrol_button')}
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"
@@ -160,6 +208,6 @@ export function useStudentsListColumns({
         size: 160,
       }),
     ],
-    [t, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, isPhotographer, jobsByPerson, openNewShoot, openDetails]
+    [t, i18n.language, enrolmentsByPerson, familyMap, contactPrefsMap, openEnrolModal, withoutClasses, canAdd, jobsByPerson, toPayByPerson, currency, openNewShoot, openDetails]
   );
 }

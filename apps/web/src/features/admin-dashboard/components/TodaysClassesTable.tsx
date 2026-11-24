@@ -1,4 +1,8 @@
+import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { ClassRegister } from '@/features/attendance/components/ClassRegister';
+import { lastSessionDate } from '@/features/attendance/service';
 import { ClassTableRow } from './ClassTableRow';
 import type { AdminDashboardTodayClass } from '../types';
 
@@ -16,6 +20,10 @@ export const TodaysClassesTable = ({
   className = '',
 }: TodaysClassesTableProps) => {
   const { t } = useTranslation();
+  // Today's register in one tap (13 Nov 2026, fewer steps): open it right here, on today's date.
+  const [registerId, setRegisterId] = useState<string | null>(null);
+  const today = lastSessionDate(null);
+  const todayDow = new Date(`${today}T12:00:00Z`).getUTCDay();
 
   const thead = (
     <thead>
@@ -25,6 +33,9 @@ export const TodaysClassesTable = ({
         <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_location', 'Location')}</th>
         <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_occupancy', 'Occupancy')}</th>
         <th className="px-4 py-2 text-start">{t('pages.admin.overview.col_waitlist', 'Waitlist')}</th>
+        <th className="px-4 py-2 text-start">
+          <span className="sr-only">{t('attendance.register.button')}</span>
+        </th>
       </tr>
     </thead>
   );
@@ -37,7 +48,7 @@ export const TodaysClassesTable = ({
           <tbody>
             {Array.from({ length: 3 }).map((_, i) => (
               <tr key={i} data-testid="skeleton" className="border-b">
-                {Array.from({ length: 5 }).map((__, j) => (
+                {Array.from({ length: 6 }).map((__, j) => (
                   <td key={j} className="px-4 py-3">
                     <div className="h-4 animate-pulse rounded bg-gray-200" />
                   </td>
@@ -64,12 +75,37 @@ export const TodaysClassesTable = ({
         {thead}
         <tbody>
           {classes.map((cls) => (
-            <ClassTableRow
-              key={cls.id}
-              class={cls}
-              onClick={onClassClick}
-              showWaitlist
-            />
+            <Fragment key={cls.id}>
+              <ClassTableRow
+                class={cls}
+                onClick={onClassClick}
+                showWaitlist
+                action={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-expanded={registerId === cls.id}
+                    onClick={() => setRegisterId(registerId === cls.id ? null : cls.id)}
+                  >
+                    {t('attendance.register.button')}
+                  </Button>
+                }
+              />
+              {registerId === cls.id && (
+                <tr className="border-b">
+                  <td colSpan={6} className="px-4 py-3">
+                    <ClassRegister
+                      offeringId={cls.id}
+                      className={cls.name}
+                      dayOfWeek={todayDow}
+                      isAdmin
+                      initialDate={today}
+                    />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>

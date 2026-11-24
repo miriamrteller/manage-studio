@@ -6,6 +6,7 @@ import {
   type JobCreateInput,
   type JobDetailsUpdateInput,
 } from '../services/jobService';
+import { jobPaymentRequestsKey } from './useJobPaymentRequests';
 
 const KEY = 'jobs';
 
@@ -94,6 +95,17 @@ export function useJob(engagementId: string | undefined) {
     onSuccess: invalidate,
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async (notifyClient: boolean) => {
+      if (!engagementId) throw new Error('Job not loaded');
+      return JobService.cancel(engagementId, notifyClient);
+    },
+    onSuccess: () => {
+      invalidate();
+      void queryClient.invalidateQueries({ queryKey: jobPaymentRequestsKey(engagementId) });
+    },
+  });
+
   return {
     job: query.data ?? null,
     isLoading: query.isLoading,
@@ -106,6 +118,8 @@ export function useJob(engagementId: string | undefined) {
     isSendingContract: contractMutation.isPending,
     contractError: contractMutation.error as Error | null,
     contractResult: contractMutation.data ?? null,
+    cancelJob: cancelMutation.mutateAsync,
+    isCancelling: cancelMutation.isPending,
   };
 }
 

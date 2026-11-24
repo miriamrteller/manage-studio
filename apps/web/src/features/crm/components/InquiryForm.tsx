@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ConsentCheckboxes } from '@/components/legal/ConsentCheckboxes';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { Button } from '@/components/ui/button';
+import { OPALSWIFT_SITE_URL } from '@/lib/opalswiftSite';
 import { useCaptcha } from '@/components/captcha/useCaptcha';
 import { useTenant } from '@/hooks/useTenant';
 import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
@@ -65,7 +66,18 @@ export function InquiryForm({
   }, [invite.prefill]);
   // The class example only for studios that teach classes; a general one for everyone else.
   const teachesClasses = (tenant?.profile?.teachesClasses ?? true) && tenant?.vertical !== 'photographer';
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam' | 'own_email'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'captcha' | 'answers' | 'spam' | 'own_email' | 'email'>('idle');
+
+  // Embedded on a studio's own website: once sent, show the thank-you at the
+  // top and tell the host page, so it can scroll the form back into view
+  // (otherwise the visitor is left looking at blank space below it).
+  useEffect(() => {
+    if (status !== 'sent' || !embedded) return;
+    window.scrollTo(0, 0);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'opalswift:form-sent' }, '*');
+    }
+  }, [status, embedded]);
   // Time trap: when the form first showed (the server ignores enquiries sent within seconds).
   const [shownAt] = useState(() => Date.now());
   const { questions } = useLeadFormQuestions(namedForm?.question_keys ?? null);
@@ -78,6 +90,11 @@ export function InquiryForm({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || status === 'sending') return;
+    // Email is required so the studio can always reply (phone stays optional).
+    if (!looksLikeEmail(email)) {
+      setStatus('email');
+      return;
+    }
     const checked = validateLeadAnswers(questions, answers);
     setInvalid(checked.invalid);
     if (!checked.ok) {
@@ -94,7 +111,7 @@ export function InquiryForm({
         body: {
           tenantSubdomain: resolveTenantSubdomain(),
           name: name.trim(),
-          email: email.trim() || null,
+          email: email.trim(),
           phone: phone.trim() || null,
           message: message.trim() || null,
           src,
@@ -106,6 +123,7 @@ export function InquiryForm({
           website: honeypot || null,
           elapsedMs: Date.now() - shownAt,
           marketingConsent: marketingPayload(marketing, lang, tenant?.name),
+          lang,
         },
       });
       if (error || (data && typeof data === 'object' && 'error' in data)) {
@@ -117,7 +135,9 @@ export function InquiryForm({
           setStatus('answers');
           return;
         }
-        setStatus(refusedAsSpam(body) ? 'spam' : refusedAsOwnEmail(body) ? 'own_email' : 'error');
+        setStatus(
+          refusedAsSpam(body) ? 'spam' : refusedAsOwnEmail(body) ? 'own_email' : refusedForEmail(body) ? 'email' : 'error',
+        );
         return;
       }
       setStatus('sent');
@@ -171,11 +191,14 @@ export function InquiryForm({
         </div>
         <div>
           <label htmlFor="inquire-email" className="block text-sm font-medium mb-1">
-            {t('pages.crm.inquire.email')}
+            {t('pages.crm.inquire.email')} *
           </label>
           <input
             id="inquire-email"
             type="email"
+            required
+            aria-invalid={status === 'email' || undefined}
+            aria-describedby={status === 'email' ? 'inquire-email-error' : undefined}
             autoComplete="email"
             className="w-full border rounded px-3 py-2"
             value={email}
@@ -236,6 +259,11 @@ export function InquiryForm({
             {t('pages.crm.inquire.error')}
           </div>
         )}
+        {status === 'email' && (
+          <div id="inquire-email-error" className="alert-error" role="alert">
+            {t('pages.crm.inquire.email_required_error')}
+          </div>
+        )}
         {status === 'spam' && (
           <div className="alert-error" role="alert">
             {t('pages.crm.inquire.spam_error')}
@@ -274,6 +302,18 @@ export function InquiryForm({
           {status === 'sending' ? t('common.loading') : t('pages.crm.inquire.submit')}
         </Button>
       </form>
+
+      <p className="text-center text-xs text-muted-foreground">
+        <a
+          href={OPALSWIFT_SITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {t('pages.crm.inquire.powered_by')}
+          <span className="sr-only"> {t('pages.crm.inquire.powered_by_new_tab')}</span>
+        </a>
+      </p>
     </div>
   );
 }
@@ -284,7 +324,7 @@ function pickAnswers(answers: Record<string, unknown>, keys: string[]): Record<s
 }
 
 /** The server's JSON answer when it refused the enquiry (read once: the body is a stream). */
-async function errorBodyFrom(error: unknown, data: unknown): Promise<unknown> {
+export async function errorBodyFrom(error: unknown, data: unknown): Promise<unknown> {
   if (data && typeof data === 'object' && 'error' in data) return data;
   const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
   if (context && typeof context.json === 'function') {
@@ -305,12 +345,23 @@ function invalidFieldsFrom(body: unknown): string[] {
 }
 
 /** The server's spam check refused it (422 looks_like_spam). */
-function refusedAsSpam(body: unknown): boolean {
+export function refusedAsSpam(body: unknown): boolean {
   return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'looks_like_spam';
 }
 
+/** A non-empty address with one @ and a dot after it (the server checks the same way). */
+export function looksLikeEmail(raw: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim());
+}
+
+/** The server refused a missing or invalid email (400 email_required / email_invalid). */
+export function refusedForEmail(body: unknown): boolean {
+  const code = body && typeof body === 'object' ? (body as { error?: unknown }).error : null;
+  return code === 'email_required' || code === 'email_invalid';
+}
+
 /** Sent with the studio's own email (422 own_studio_email): someone at the studio trying the form. */
-function refusedAsOwnEmail(body: unknown): boolean {
+export function refusedAsOwnEmail(body: unknown): boolean {
   return !!body && typeof body === 'object' && (body as { error?: unknown }).error === 'own_studio_email';
 }
 

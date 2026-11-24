@@ -62,7 +62,7 @@ export const FamiliesList = () => {
           message={t('pages.families.empty_message')}
           actionLabel={t('pages.families.enrol_action')}
           onAction={() =>
-            navigate('/enrol', { state: { mode: 'admin', from: '/admin/families' } })
+            navigate('/enrol', { state: { mode: 'admin', from: '/admin/people/families' } })
           }
         />
       )}
@@ -111,7 +111,7 @@ export const FamiliesList = () => {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => navigate(`/admin/families/${family.id}`)}
+                        onClick={() => navigate(`/admin/people/families/${family.id}`)}
                         title={t('common.view')}
                       >
                         {t('common.view')}

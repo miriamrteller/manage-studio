@@ -6,7 +6,9 @@ import {
   PhotoShopService,
   type JobPhotoShopPatch,
   type StudioPhotoShopDefaults,
+  type StudioPhotoProductInput,
 } from '../services/photoShopService';
+import { JobPaymentService } from '../services/jobPaymentService';
 
 /** The photo shop is a beta: only studios the owner switched it on for. */
 export function usePhotoShopEnabled(): boolean {
@@ -18,6 +20,19 @@ const shopKey = (id: string) => ['photo-shop', id] as const;
 const ordersKey = (id: string) => ['photo-shop-orders', id] as const;
 const photosKey = (id: string) => ['photo-shop-photos', id] as const;
 const defaultsKey = (tenantId: string | undefined) => ['photo-shop-defaults', tenantId] as const;
+const galleryNamesKey = ['photo-shop-gallery-names'] as const;
+
+/** engagement id -> its SmugMug gallery's name, for the Shoots list. Empty while the shop is off. */
+export function useShootGalleryNames(): Map<string, string> {
+  const tenant = useTenant();
+  const enabled = usePhotoShopEnabled();
+  const query = useQuery({
+    queryKey: [...galleryNamesKey, tenant?.id],
+    queryFn: () => PhotoShopService.smugmugGalleryNames(tenant!.id),
+    enabled: enabled && !!tenant?.id,
+  });
+  return query.data ?? new Map<string, string>();
+}
 
 export function useJobPhotoShop(engagementId: string, enabled = true) {
   const queryClient = useQueryClient();
@@ -33,7 +48,10 @@ export function useJobPhotoShop(engagementId: string, enabled = true) {
   });
   const save = useMutation({
     mutationFn: (patch: JobPhotoShopPatch) => PhotoShopService.saveShop(engagementId, patch),
-    onSuccess: (data) => queryClient.setQueryData(shopKey(engagementId), data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(shopKey(engagementId), data);
+      void queryClient.invalidateQueries({ queryKey: galleryNamesKey });
+    },
   });
   const deliver = useMutation({
     mutationFn: (params: { orderId: string; url: string }) => PhotoShopService.deliver(params.orderId, params.url),
@@ -43,7 +61,15 @@ export function useJobPhotoShop(engagementId: string, enabled = true) {
     mutationFn: (orderId: string) => PhotoShopService.markSent(orderId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) }),
   });
-  return { shop, orders, save, deliver, markSent };
+  /** An order sent in to pay in cash: the studio records the cash it received (record-job-payment). */
+  const recordCash = useMutation({
+    mutationFn: (requestId: string) => JobPaymentService.recordManualPayment(requestId, 'cash'),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ordersKey(engagementId) });
+      await queryClient.invalidateQueries({ queryKey: ['job-payment-requests', engagementId] });
+    },
+  });
+  return { shop, orders, save, deliver, markSent, recordCash };
 }
 
 /** The shoot's uploaded previews, plus upload and remove. */
@@ -65,6 +91,16 @@ export function useJobPhotoShopPhotos(engagementId: string) {
   return { photos, remove, refresh };
 }
 
+/** Every shoot's photo orders in one list (Photo shop > Orders). */
+export function useStudioPhotoOrders() {
+  const tenant = useTenant();
+  return useQuery({
+    queryKey: ['photo-shop-studio-orders', tenant?.id],
+    queryFn: () => PhotoShopService.listStudioOrders(tenant!.id),
+    enabled: Boolean(tenant?.id),
+  });
+}
+
 export function useStudioPhotoShopDefaults() {
   const tenant = useTenant();
   const queryClient = useQueryClient();
@@ -74,8 +110,25 @@ export function useStudioPhotoShopDefaults() {
     enabled: Boolean(tenant?.id),
   });
   const save = useMutation({
-    mutationFn: (values: StudioPhotoShopDefaults) => PhotoShopService.saveDefaults(tenant!.id, values),
+    mutationFn: (values: Partial<StudioPhotoShopDefaults>) => PhotoShopService.saveDefaults(tenant!.id, values),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: defaultsKey(tenant?.id) }),
   });
   return { defaults, save };
+}
+
+/** The studio's products sold per photo (prints ...), Photo shop > Prices. */
+export function useStudioPhotoProducts() {
+  const tenant = useTenant();
+  const queryClient = useQueryClient();
+  const key = ['photo-shop-products', tenant?.id] as const;
+  const products = useQuery({
+    queryKey: key,
+    queryFn: () => PhotoShopService.listProducts(tenant!.id),
+    enabled: Boolean(tenant?.id),
+  });
+  const save = useMutation({
+    mutationFn: (rows: StudioPhotoProductInput[]) => PhotoShopService.saveProducts(tenant!.id, rows),
+    onSuccess: (fresh) => queryClient.setQueryData(key, fresh),
+  });
+  return { products, save };
 }

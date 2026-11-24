@@ -17,7 +17,7 @@ const TOKEN_PARENTS = new Set(['pay', 'quote']);
 /** A static route segment: short lowercase words, e.g. "admin", "bundled-payments". */
 const STATIC_SEGMENT = /^(?:[a-z][a-z-]{0,39}|v\d{1,2})$/;
 
-/** Turns a path into a route template: "/pay/abc123" → "/pay/:token", "/admin/jobs/<uuid>" → "/admin/jobs/:id". */
+/** Turns a path into a route template: "/pay/abc123" → "/pay/:token", "/admin/projects/<uuid>" → "/admin/projects/:id". */
 export function scrubPath(path: string): string {
   const parts = path.split('/');
   return parts

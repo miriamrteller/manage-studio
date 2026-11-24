@@ -28,6 +28,9 @@ vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantSt
 
 type Json = { [key: string]: Json | string };
 
+/** Photographer studios have family accounts off, so they read the photographer overlay layered on the no-families one. */
+const PHOTOGRAPHER_NO_FAMILIES = overlayNamespaceFor('photographer', { familyAccounts: false });
+
 function flatten(obj: Json, prefix = '', out: Record<string, string> = {}): Record<string, string> {
   for (const [k, v] of Object.entries(obj)) {
     const key = prefix ? `${prefix}.${k}` : k;
@@ -143,7 +146,7 @@ describe('runtime resolution through LabelsProvider', () => {
     for (const lng of ['en', 'he'] as const) {
       await setLanguage(lng);
       const { unmount } = renderInApp(<Probe />);
-      expect(screen.getByTestId('ns').textContent).toBe(PHOTOGRAPHER_NAMESPACE);
+      expect(screen.getByTestId('ns').textContent).toBe(PHOTOGRAPHER_NO_FAMILIES);
       expect(screen.getByTestId('overridden').textContent).toBe(overlay[lng]['pages.enrol_complete.signed_heading']);
       expect(screen.getByTestId('with-default').textContent).toBe(overlay[lng]['enrolment.waiver_checkbox_label']);
       expect(screen.getByTestId('not-in-overlay').textContent).toBe(base[lng]['pages.enrol_complete.go_to_dashboard']);
@@ -177,7 +180,7 @@ describe('runtime resolution through LabelsProvider', () => {
     setTenant('photographer');
     view.rerenderApp();
     expect(await screen.findByText(overlay.en['pages.enrol_complete.signed_heading'])).toBeInTheDocument();
-    expect(screen.getByTestId('ns').textContent).toBe(PHOTOGRAPHER_NAMESPACE);
+    expect(screen.getByTestId('ns').textContent).toBe(PHOTOGRAPHER_NO_FAMILIES);
   });
 });
 
@@ -210,7 +213,7 @@ describe('dance overlay: health declaration for dance, neutral form for everyone
   it('the admin template editor is neutral "Forms" for every vertical (not overridden for dance)', () => {
     expect(base.en['pages.waivers.title']).toBe('Forms');
     expect(base.he['pages.waivers.title']).toBe('טפסים');
-    expect(base.en['nav.waivers']).toBe('Forms');
+    expect(base.en['nav.waivers']).toBe('Forms to sign');
     expect(danceFlat.en['pages.waivers.title']).toBeUndefined();
     expect(danceFlat.en['nav.waivers']).toBeUndefined();
   });

@@ -123,11 +123,6 @@ export const PAGES = {
     { title: "הצעות מחיר ותשלומים לבעלי מקצוע", lead: "לבעלי מקצוע." },
     PROJECT,
   ),
-  "sofer-stam.html": field(
-    { title: "Software for soferei STaM", lead: "For soferei STaM." },
-    { title: "תוכנה לסופרי סת״ם", lead: "לסופרי סת״ם." },
-    PROJECT,
-  ),
   "adviser.html": field(
     { title: "Software for independent advisers", lead: "For independent advisers." },
     { title: "תוכנה ליועצים עצמאיים", lead: "ליועצים עצמאיים." },

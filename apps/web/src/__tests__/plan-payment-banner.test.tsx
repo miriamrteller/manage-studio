@@ -50,7 +50,7 @@ describe('PlanPaymentBanner', () => {
     renderIt();
     expect(await screen.findByText("We couldn't charge your card for your OpalSwift plan.")).toBeInTheDocument();
     expect(screen.getByText(/We'll try again on/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Update your card' })).toHaveAttribute('href', '/admin/setup/payments');
+    expect(screen.getByRole('link', { name: 'Update your card' })).toHaveAttribute('href', '/admin/settings/payments');
   });
 
   it('asks for a new card after the last try, and can be closed', async () => {

@@ -7,18 +7,14 @@ import { formatCurrency } from '@shared/format';
 import { fetchJobNextStep, type JobNextStep } from '../services/jobNextStepService';
 import { BackToPortalButton } from './BackToPortalButton';
 
-/** Seconds before the automatic move to the deposit payment page. */
-export const AUTO_REDIRECT_SECONDS = 3;
-
 type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; step: JobNextStep };
 
 /**
  * Shown on /enrol/complete after a JOB contract is signed (or was already
- * signed): continue to the unpaid deposit, or to the client portal when the
- * deposit is paid or there is none. Dance waivers never render this.
- *
- * The deposit page opens by itself after a few seconds; the move is
- * announced to screen readers and "Stay on this page" cancels it.
+ * signed): go straight to the unpaid deposit (owner rule: no screen in between),
+ * or to the client portal when the deposit is paid or there is none. Dance
+ * waivers never render this. The pay button stays as a fallback while the
+ * payment page opens.
  */
 export function JobAfterSignNextStep({
   engagementId,
@@ -34,7 +30,6 @@ export function JobAfterSignNextStep({
   const tenant = useTenant();
   const navigate = useNavigate();
   const [state, setState] = useState<State>({ kind: 'loading' });
-  const [autoRedirect, setAutoRedirect] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,10 +44,8 @@ export function JobAfterSignNextStep({
 
   const payPath = state.kind === 'ready' && state.step.next === 'pay_deposit' ? state.step.payPath : null;
   useEffect(() => {
-    if (!payPath || !autoRedirect) return;
-    const timer = window.setTimeout(() => navigate(payPath), AUTO_REDIRECT_SECONDS * 1000);
-    return () => window.clearTimeout(timer);
-  }, [payPath, autoRedirect, navigate]);
+    if (payPath) navigate(payPath, { replace: true });
+  }, [payPath, navigate]);
 
   if (state.kind === 'loading') return <p role="status" className="text-gray-600">{t('common.loading')}</p>;
   if (state.kind === 'error') {
@@ -87,14 +80,35 @@ export function JobAfterSignNextStep({
         {t('pages.booking_flow.after_sign.pay_button')}
       </Button>
       <div role="status" aria-live="polite" className="text-sm text-gray-600">
-        {autoRedirect && t('pages.booking_flow.after_sign.redirecting', { count: AUTO_REDIRECT_SECONDS })}
+        {t('pages.booking_flow.after_sign.redirecting_now')}
       </div>
-      {autoRedirect && (
-        <Button type="button" variant="ghost" className="w-full" onClick={() => setAutoRedirect(false)}>
-          {t('pages.booking_flow.after_sign.stay')}
-        </Button>
-      )}
-      {!autoRedirect && <BackToPortalButton />}
+      <BackToPortalButton />
     </section>
+  );
+}
+
+/**
+ * On the contract page, before signing: the way straight to the deposit, so the
+ * contract never stands in front of payment (owner rule). Shown only while a
+ * deposit is waiting; nothing is shown if the next step cannot be loaded.
+ */
+export function JobPayFirstLink({ engagementId, waiverToken }: { engagementId: string; waiverToken: string }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [payPath, setPayPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchJobNextStep(engagementId, waiverToken)
+      .then((step) => { if (!cancelled && step.next === 'pay_deposit') setPayPath(step.payPath); })
+      .catch(() => { /* the signing form still works; the pay link is also in the booking email */ });
+    return () => { cancelled = true; };
+  }, [engagementId, waiverToken]);
+
+  if (!payPath) return null;
+  return (
+    <Button type="button" variant="outline" className="w-full" onClick={() => navigate(payPath)}>
+      {t('pages.booking_flow.after_sign.pay_first')}
+    </Button>
   );
 }

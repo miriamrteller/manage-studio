@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/hooks/useAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTenantQuery } from '@/hooks/useTenant';
-import { useEntityLabels } from '@/hooks/useEntityLabels';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import {
   clearEnrollmentIntent,
   readEnrollmentIntent,
   type EnrollmentIntent,
 } from '@/lib/enrollment-intent';
 import { hasParentRole } from '@/lib/parentRoles';
+import { hasTeacherRole } from '@/lib/teacherRoles';
 import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
 
 /**
@@ -22,7 +23,8 @@ import { isPlatformAppHost } from '@/lib/resolveTenantSubdomain';
  * - If enrolling in a class → return to /enrol (not for photographer tenants:
  *   their clients have no class enrolment / child setup, so the intent is
  *   dropped and they continue to their portal below)
- * - tenant_admin → /admin/setup
+ * - tenant_admin → /admin
+ * - teacher (staff) → /teach
  * - parent/guardian/account_holder → /dashboard/portal
  * - student/adult_student → /dashboard/student
  * - No matching role → /classes (fallback)
@@ -37,7 +39,7 @@ export default function DashboardRedirectPage() {
   const { session, isLoading: sessionLoading } = useAuthSession();
   const { user, isLoading: profileLoading } = useCurrentUser();
   const { isLoading: tenantLoading } = useTenantQuery();
-  const { vertical } = useEntityLabels();
+  const { classes } = useWorkModes();
   const isLoading = sessionLoading || profileLoading;
 
   useEffect(() => {
@@ -68,10 +70,10 @@ export default function DashboardRedirectPage() {
 
     const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
     if (intent?.classId) {
-      // The vertical decides where the intent goes; wait for the tenant.
+      // Classes (Settings › Business) decides where the intent goes; wait for the tenant.
       if (tenantLoading) return;
       clearEnrollmentIntent();
-      if (vertical !== 'photographer') {
+      if (classes) {
         navigate('/enrol', { replace: true, state: { ...intent, viaDashboardRedirect: true } });
         return;
       }
@@ -91,10 +93,13 @@ export default function DashboardRedirectPage() {
     // Determine redirect based on user role
     // Users can have multiple roles, so check in priority order
     if (isPlatformOwnerOnly(user)) {
-      // The platform owner on a studio address: a clear notice, not /classes.
-      navigate('/platform-owner', { replace: true });
+      // The platform owner on a studio address: the studio's admin, which
+      // first asks them to confirm (support access), never /classes.
+      navigate('/admin', { replace: true });
     } else if (user.role.includes('tenant_admin')) {
-      navigate('/admin/setup', { replace: true });
+      navigate('/admin', { replace: true });
+    } else if (hasTeacherRole(user.role)) {
+      navigate('/teach', { replace: true });
     } else if (hasParentRole(user.role)) {
       navigate('/dashboard/portal', { replace: true });
     } else if (user.role.some((r: string) => ['student', 'adult_student'].includes(r))) {
@@ -103,7 +108,7 @@ export default function DashboardRedirectPage() {
       // No recognized role - fallback to classes
       navigate('/classes', { replace: true });
     }
-  }, [session, user, isLoading, navigate, location.state, tenantLoading, vertical]);
+  }, [session, user, isLoading, navigate, location.state, tenantLoading, classes]);
 
   if (!isLoading && session && !user) {
     return (

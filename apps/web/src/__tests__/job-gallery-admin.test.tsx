@@ -14,7 +14,25 @@ import { baseValue, renderInApp, setLanguage, setTenant } from './helpers/vertic
 
 vi.mock('@/hooks/useTenant', async () => (await import('./helpers/fakeTenantState')).tenantHookMock());
 vi.mock('@/hooks/useLanguage', async () => (await import('./helpers/fakeTenantState')).languageHookMock());
-vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn(), functions: { invoke: vi.fn() } } }));
+const invoke = vi.hoisted(() => vi.fn());
+const upload = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    functions: { invoke },
+    storage: {
+      from: () => ({
+        upload,
+        getPublicUrl: (path: string) => ({ data: { publicUrl: `https://ref.supabase.co/storage/v1/object/public/tenant-assets/${path}` } }),
+      }),
+    },
+  },
+}));
+vi.mock('@/features/jobs/lib/photoPreview', async (orig) => ({
+  ...(await orig<typeof import('@/features/jobs/lib/photoPreview')>()),
+  makePreview: async () => new Blob(['jpeg'], { type: 'image/jpeg' }),
+}));
 
 const state = vi.hoisted(() => ({ job: null as JobRow | null, released: false }));
 vi.mock('@/features/jobs/hooks/useJobs', () => ({
@@ -30,17 +48,35 @@ vi.mock('@/features/jobs/hooks/useJobs', () => ({
   useJobs: () => ({ jobs: state.job ? [state.job] : [], isLoading: false, error: null }),
 }));
 vi.mock('@/features/jobs/hooks/useJobPaymentRequests', () => ({
+  useJobPaymentRequests: () => ({ requests: [] }),
   useJobGallery: () => ({
     gallery: { released: state.released, has_gallery: true, all_paid: state.released, released_by_admin: false, outstanding_minor: 0, gallery_url: null, engagement_id: 'e1' },
     isLoading: false,
     error: null,
   }),
 }));
-vi.mock('@/features/jobs/components/JobPaymentsPanel', () => ({ JobPaymentsPanel: () => <p>payments panel</p> }));
+// The panel is its own "Payments" card: the shoot page adds no second heading.
+vi.mock('@/features/jobs/components/JobPaymentsPanel', async () => {
+  const { useTranslation } = await import('react-i18next');
+  return {
+    JobPaymentsPanel: () => {
+      const { t } = useTranslation();
+      return <h3>{t('pages.jobs.payments.title')}</h3>;
+    },
+  };
+});
 vi.mock('@/features/jobs/components/JobContractCard', () => ({ JobContractCard: () => <p>contract card</p> }));
 vi.mock('@/features/jobs/components/JobBookingProgress', () => ({ JobBookingProgress: () => null }));
 vi.mock('@/features/jobs/components/JobCreateForm', () => ({ JobCreateForm: () => null }));
 vi.mock('@/features/quotes/components/CreateQuoteButton', () => ({ CreateQuoteButton: () => null }));
+const shop = vi.hoisted(() => ({ on: false, galleries: new Map<string, string>() }));
+vi.mock('@/features/jobs/hooks/usePhotoShop', async (orig) => ({
+  ...(await orig<typeof import('@/features/jobs/hooks/usePhotoShop')>()),
+  usePhotoShopEnabled: () => shop.on,
+  useShootGalleryNames: () => (shop.on ? shop.galleries : new Map<string, string>()),
+}));
+vi.mock('@/features/jobs/components/JobPhotoShopCard', () => ({ JobPhotoShopCard: () => <p>photo shop card</p> }));
+vi.mock('@/features/jobs/components/ClientPhotoShop', () => ({ PhotoShopPreview: () => <p>client view</p> }));
 
 function job(overrides: Partial<JobRow> = {}): JobRow {
   return {
@@ -109,10 +145,27 @@ describe('JobDetail (photographer admin shoot page)', () => {
   });
   afterEach(() => warn.mockRestore());
 
+  it('with the photo shop on, the shop and the client view are tabs at the top', () => {
+    shop.on = true;
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1?tab=client' });
+    expect(screen.getAllByRole('tab').map((x) => x.textContent)).toEqual(['Details', 'Photo shop', 'What your client sees']);
+    expect(screen.getByText('client view')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: baseValue('pages.jobs.payments.title') })).toBeNull();
+    shop.on = false;
+  });
+
+  it('without the photo shop there are no tabs', () => {
+    shop.on = false;
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.getByRole('heading', { name: baseValue('pages.jobs.payments.title') })).toBeTruthy();
+    expect(screen.queryByText('photo shop card')).toBeNull();
+  });
+
   it('renders every section heading as a string (Payments heading fixed)', () => {
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     const headings = screen.getAllByRole('heading').map((h) => h.textContent ?? '');
-    expect(headings).toContain(baseValue('pages.jobs.payments.title'));
+    expect(headings.filter((h) => h === baseValue('pages.jobs.payments.title'))).toHaveLength(1);
     for (const h of headings) expect(h).not.toMatch(/returned an object|\[object Object\]/);
     expect(document.body.textContent).not.toMatch(/returned an object/);
     const objectWarnings = warn.mock.calls.filter((c: unknown[]) => String(c[0]).includes('returned an object'));
@@ -120,7 +173,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
   });
 
   it('Open gallery opens the saved link in a new tab, safely, and shows client visibility', () => {
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     const link = screen.getByRole('link', { name: 'Open gallery' });
     expect(link).toHaveAttribute('href', 'https://gallery.example/pat');
     expect(link).toHaveAttribute('target', '_blank');
@@ -130,13 +183,13 @@ describe('JobDetail (photographer admin shoot page)', () => {
 
   it('shows "Visible to the client" once released', () => {
     state.released = true;
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.getByText('Visible to the client')).toBeInTheDocument();
   });
 
   it('is disabled when empty and never links a javascript: URL', () => {
     state.job = job({ gallery_url: null });
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.getByRole('button', { name: 'Open gallery' })).toBeDisabled();
     expect(screen.queryByRole('link', { name: 'Open gallery' })).toBeNull();
 
@@ -150,7 +203,7 @@ describe('JobDetail (photographer admin shoot page)', () => {
 
   it('Hebrew labels', async () => {
     await setLanguage('he');
-    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/jobs/:id', initialEntry: '/admin/jobs/e1' });
+    renderInApp(<JobDetail engagementId="e1" />, { path: '/admin/projects/:id', initialEntry: '/admin/projects/e1' });
     expect(screen.getByRole('link', { name: 'פתיחת הגלריה' })).toBeInTheDocument();
     expect(screen.getAllByRole('heading').map((h) => h.textContent)).toContain('תשלומים');
   });
@@ -161,28 +214,164 @@ describe('JobsList', () => {
     setTenant('photographer');
     await setLanguage('en');
     state.job = job();
+    shop.on = false;
+    shop.galleries = new Map();
+  });
+
+  it('shows the linked SmugMug gallery name in the table and on the phone card', async () => {
+    shop.on = true;
+    shop.galleries = new Map([['e1', 'Pat & Sam wedding']]);
+    const first = renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'SmugMug gallery' })).toBeInTheDocument();
+    expect(screen.getAllByText('Pat & Sam wedding').length).toBe(2); // card + table row
+    first.unmount();
+
+    await setLanguage('he');
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'גלריה ב-SmugMug' })).toBeInTheDocument();
+  });
+
+  it('no gallery linked: a dash in the table, nothing on the phone card', () => {
+    shop.on = true;
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'SmugMug gallery' })).toBeInTheDocument();
+    const cards = screen.getAllByRole('list').find((l) => l.className.includes('sm:hidden')) as HTMLElement;
+    expect(within(cards).queryByText('SmugMug gallery')).toBeNull();
+  });
+
+  it('no gallery column without the photo shop', () => {
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.queryByRole('columnheader', { name: 'SmugMug gallery' })).toBeNull();
   });
 
   it('renders a stacked card per shoot for phones next to the sm+ table', () => {
-    renderInApp(<JobsList />, { path: '/admin/jobs' });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
     const cards = screen.getAllByRole('list').find((l) => l.className.includes('sm:hidden')) as HTMLElement;
     expect(cards).toBeTruthy();
     const card = within(cards).getByRole('listitem');
-    expect(within(card).getByRole('link', { name: 'Pat Client' })).toHaveAttribute('href', '/admin/jobs/e1');
+    expect(within(card).getByRole('link', { name: 'Pat Client' })).toHaveAttribute('href', '/admin/projects/e1');
     expect(within(card).getByText('Wedding Gold')).toBeInTheDocument();
     expect(within(card).getByText('Jaffa Port')).toBeInTheDocument();
     expect(screen.getByRole('table').closest('div')?.className).toContain('hidden sm:block');
   });
 
   it('row gallery link: only for valid links', () => {
-    const first = renderInApp(<JobsList />, { path: '/admin/jobs' });
+    const first = renderInApp(<JobsList />, { path: '/admin/projects' });
     const links = screen.getAllByRole('link', { name: 'Open the gallery for Pat Client' });
     expect(links.length).toBe(2); // card + table row
     for (const l of links) expect(l).toHaveAttribute('rel', 'noopener noreferrer');
     first.unmount();
 
     state.job = job({ gallery_url: 'javascript:alert(1)' });
-    renderInApp(<JobsList />, { path: '/admin/jobs' });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
     expect(screen.queryByRole('link', { name: 'Open the gallery for Pat Client' })).toBeNull();
+  });
+
+  it('Send gallery: tick shoots, one press sends them all and says what was skipped', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 0, skipped: 1, failed: 0, results: [{ engagementId: 'e1', outcome: 'not_checked' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.queryByRole('button', { name: 'Send gallery to selected' })).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+    expect(screen.getAllByText('1 selected').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Send gallery to selected' }));
+    expect(await screen.findByText('Sent to 0 clients.')).toBeInTheDocument();
+    expect(screen.getByText('1 not sent:')).toBeInTheDocument();
+    expect(screen.getByText(/has not passed Check gallery yet \(1\)/)).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: false } });
+  });
+
+  it('several at once: clients who already got it are counted as already sent', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 0, skipped: 1, failed: 0, results: [{ engagementId: 'e1', outcome: 'already_sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send gallery to selected' }));
+    expect(await screen.findByText('already had the gallery email (1)')).toBeInTheDocument();
+  });
+
+  it('Send gallery on a row sends that shoot', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', { body: { engagementIds: ['e1'], resend: true } });
+  });
+
+  it('Edit email text: the box starts with the standard text and her words go with the send', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
+    const box = await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
+    fireEvent.change(box, { target: { value: 'Lovely to meet you, Pat.\nHere are your photos.' } });
+    const signed = screen.getByLabelText(/^Signed/) as HTMLInputElement;
+    expect(signed.value).not.toBe('');
+    fireEvent.change(signed, { target: { value: 'Pat Photographer' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
+      body: {
+        engagementIds: ['e1'],
+        resend: true,
+        message: 'Lovely to meet you, Pat.\nHere are your photos.',
+        signature: 'Pat Photographer',
+      },
+    });
+  });
+
+  it('Add a photo: uploaded once, the same photo and its description go with the send', async () => {
+    upload.mockResolvedValue({ data: {}, error: null });
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
+    await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
+    const input = screen.getAllByTestId('gallery-email-photo-input')[0];
+    fireEvent.change(input, { target: { files: [new File(['x'], 'family.png', { type: 'image/png' })] } });
+    const alt = await screen.findByLabelText(/Describe the photo/);
+    expect((alt as HTMLInputElement).value).toMatch(/^A photo from /);
+    fireEvent.change(alt, { target: { value: 'Autumn in the park' } });
+    expect(upload).toHaveBeenCalledTimes(1);
+    const path = upload.mock.calls[0][0] as string;
+    expect(path).toMatch(/^[^/]+\/gallery-email\/[A-Za-z0-9_-]+\.jpg$/);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
+      body: {
+        engagementIds: ['e1'],
+        resend: true,
+        photoUrl: `https://ref.supabase.co/storage/v1/object/public/tenant-assets/${path}`,
+        photoAlt: 'Autumn in the park',
+        signature: expect.any(String),
+      },
+    });
+  });
+
+  it('Edit email text left as it was: the standard text goes', async () => {
+    invoke.mockResolvedValue({
+      data: { sent: 1, skipped: 0, failed: 0, results: [{ engagementId: 'e1', outcome: 'sent' }] },
+      error: null,
+    });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit email text or add a photo' })[0]);
+    await screen.findByDisplayValue('Your photos are ready! Open your gallery to choose your photos.');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Send gallery' })[0]);
+    expect(await screen.findByText('Sent. The client has the gallery email.')).toBeInTheDocument();
+    // Only the signature (prefilled, kept for next time) goes: no message, so the standard text.
+    expect(invoke).toHaveBeenCalledWith('send-shoot-gallery', {
+      body: { engagementIds: ['e1'], resend: true, signature: expect.any(String) },
+    });
   });
 });

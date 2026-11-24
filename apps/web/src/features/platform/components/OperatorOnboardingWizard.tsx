@@ -811,7 +811,7 @@ function StudioCreated({ result, ownerEmail, name }: { result: StudioSetupResult
           <a className="underline" dir="ltr" href={origin} target="_blank" rel="noreferrer noopener">{origin.replace(/^https?:\/\//, '')}</a>
         </li>
         <li>
-          <a className="underline" href={`${origin}/admin/setup`} target="_blank" rel="noreferrer noopener">{t('studio_setup.created_admin_link')}</a>
+          <a className="underline" href={`${origin}/admin`} target="_blank" rel="noreferrer noopener">{t('studio_setup.created_admin_link')}</a>
         </li>
       </ul>
 

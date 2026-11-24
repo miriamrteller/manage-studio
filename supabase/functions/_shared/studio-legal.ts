@@ -1,12 +1,13 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 
-/** Error code returned while a studio's draft legal pack is not acknowledged yet. */
+/** Old error code for "legal pack not confirmed"; no longer returned (signing never waits for it). */
 export const STUDIO_LEGAL_NOT_READY = "studio_legal_not_ready";
 
 /**
- * Whether a studio may collect signatures: studios created before the legal
- * pack (legal_pack_required = false) always may; newer ones once an admin has
- * acknowledged the draft documents.
+ * Whether a studio's draft legal pack is confirmed: studios created before the
+ * legal pack (legal_pack_required = false) always are; newer ones once an admin
+ * has acknowledged the draft documents. This only decides whether the legal
+ * pages are published: signing and paying never wait for it.
  */
 export function isStudioLegalReady(row: { legal_pack_required?: boolean | null; legal_pack_acknowledged_at?: string | null } | null): boolean {
   if (!row) return true;
