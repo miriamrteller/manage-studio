@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { appLocale } from '@/utils/formatters';
 import type { UpcomingSessionOccurrence } from '@/features/enrolment/lib/upcomingSessions';
 
 interface UpcomingSessionsSectionProps {
@@ -7,7 +8,8 @@ interface UpcomingSessionsSectionProps {
 }
 
 export function UpcomingSessionsSection({ sessions, showPersonName }: UpcomingSessionsSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = appLocale(i18n.language);
 
   return (
     <section aria-labelledby="portal-upcoming-heading">
@@ -20,10 +22,15 @@ export function UpcomingSessionsSection({ sessions, showPersonName }: UpcomingSe
       ) : (
         <ul className="space-y-3">
           {sessions.map((session) => {
-            const dateLabel = session.occursAt.toLocaleDateString();
-            const timeLabel = session.occursAt.toLocaleTimeString(undefined, {
+            const dateLabel = session.occursAt.toLocaleDateString(locale, {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+            });
+            const timeLabel = session.occursAt.toLocaleTimeString(locale, {
               hour: '2-digit',
               minute: '2-digit',
+              hourCycle: 'h23',
             });
 
             return (

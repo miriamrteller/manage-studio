@@ -9,7 +9,8 @@ export function formatTime(time: string, locale: string = 'he-IL') {
   return date.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: locale.startsWith('en'), // 12h for English, 24h for others
+    // 24-hour clock in every language (owner, 10 Nov 2026). hourCycle 'h23' avoids "24:30".
+    hourCycle: 'h23',
   });
 }
 /**
