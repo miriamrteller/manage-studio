@@ -476,6 +476,12 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-lead-form-link/index.ts"
 
+# "Ask OpalSwift": read-only AI help for studio admins (beta feature platform:assistant.help).
+[functions.assistant-chat]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/assistant-chat/index.ts"
+
 [functions.notify-problem-report]
 enabled = true
 verify_jwt = true

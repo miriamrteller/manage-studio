@@ -17,6 +17,15 @@ export interface JobCreatePrefill {
   clientMode?: ClientMode;
   personId?: string;
   personName?: string;
+  /** From "Fill it in for me" (Ask OpalSwift): a new client's details, still editable. */
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  /** Matched to a package by name; no match keeps the first package. */
+  packageName?: string;
+  /** Local date and time, YYYY-MM-DDTHH:MM. */
+  startsAt?: string;
+  location?: string;
 }
 
 interface JobCreateFormProps {
@@ -34,17 +43,17 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
 
   const prefilledPerson = prefill?.personId ? prefill : null;
   const [mode, setMode] = useState<ClientMode>(
-    prefilledPerson ? 'existing' : (prefill?.clientMode ?? 'existing'),
+    prefilledPerson ? 'existing' : (prefill?.clientMode ?? (prefill?.clientName ? 'new' : 'existing')),
   );
   const [personId, setPersonId] = useState<string | null>(prefilledPerson?.personId ?? null);
   const [personLabel, setPersonLabel] = useState(prefilledPerson?.personName ?? '');
-  const [clientName, setClientName] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
+  const [clientName, setClientName] = useState(prefill?.clientName ?? '');
+  const [clientEmail, setClientEmail] = useState(prefill?.clientEmail ?? '');
+  const [clientPhone, setClientPhone] = useState(prefill?.clientPhone ?? '');
   const [offeringId, setOfferingId] = useState('');
-  const [startsAt, setStartsAt] = useState('');
+  const [startsAt, setStartsAt] = useState(prefill?.startsAt ?? '');
   const [endsAt, setEndsAt] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(prefill?.location ?? '');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   // Main button: create and email the quote at once (owner, 13 Nov 2026: fewest steps).
@@ -54,7 +63,12 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
   const [sendingQuote, setSendingQuote] = useState(false);
 
   // No package picked yet: start from the studio's first one (still editable), so the button is never stuck.
-  const firstPackageId = packagesQuery.data?.[0]?.id ?? '';
+  // A package named in the prefill wins over the first one.
+  const wantedPackage = prefill?.packageName?.trim().toLocaleLowerCase();
+  const namedPackageId = wantedPackage
+    ? (packagesQuery.data ?? []).find((p) => p.name.trim().toLocaleLowerCase() === wantedPackage)?.id
+    : undefined;
+  const firstPackageId = namedPackageId ?? packagesQuery.data?.[0]?.id ?? '';
   useEffect(() => {
     if (firstPackageId) setOfferingId((current) => current || firstPackageId);
   }, [firstPackageId]);
@@ -133,7 +147,7 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
     <form onSubmit={handleSubmit} className="card p-4 space-y-4" aria-label={t('pages.jobs.new')}>
       <h2 className="font-semibold">{t('pages.jobs.new')}</h2>
 
-      <fieldset className="space-y-2">
+      <fieldset className="space-y-2" data-tour="shoot-client">
         <legend className="text-sm font-medium">{labels.account.singular}</legend>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 text-sm">
@@ -184,7 +198,7 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
         )}
       </fieldset>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2" data-tour="shoot-package">
         <PackageSelect
           id="job-package"
           label={`${labels.offering.singular} *`}
@@ -231,7 +245,7 @@ export function JobCreateForm({ onCreated, prefill = null }: JobCreateFormProps)
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="primary" disabled={!canSubmit || isCreating || sendingQuote} data-quote="yes">
+        <Button type="submit" variant="primary" disabled={!canSubmit || isCreating || sendingQuote} data-quote="yes" data-tour="shoot-create-quote">
           {(isCreating || sendingQuote) && withQuote ? t('pages.jobs.creating') : t('pages.jobs.create_and_quote')}
         </Button>
         <Button type="submit" variant="outline" disabled={!canSubmit || isCreating || sendingQuote} data-quote="no">

@@ -54,6 +54,8 @@ export declare const FEATURES: {
         readonly customDomains: "platform:domains.custom";
         /** Visual theme customization */
         readonly themeCustomizer: "platform:themes.customize";
+        /** "Ask OpalSwift": read-only AI help for studio admins (beta, per-studio switch) */
+        readonly assistantHelp: "platform:assistant.help";
     };
     readonly people: {
         /** CRUD operations for people/contacts */

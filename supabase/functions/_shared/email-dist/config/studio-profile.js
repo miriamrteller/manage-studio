@@ -41,6 +41,7 @@ export const PROFILE_GATES = {
     [FEATURES.billing.photoShop]: 'opt_in',
     [FEATURES.billing.studioShop]: 'opt_in',
     [FEATURES.billing.takbullTesting]: 'opt_in',
+    [FEATURES.platform.assistantHelp]: 'opt_in',
 };
 export function profileHasGate(profile, gate) {
     switch (gate) {

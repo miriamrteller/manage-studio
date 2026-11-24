@@ -10,7 +10,7 @@ export function AutomaticEmailSettings() {
   const { settings, isLoading, error, toggle } = useAutomaticEmails();
 
   return (
-    <section aria-labelledby="automatic-emails-heading" className="card p-4 space-y-3">
+    <section aria-labelledby="automatic-emails-heading" data-tour="quotes-automatic" className="card p-4 space-y-3">
       <h2 id="automatic-emails-heading" className="font-semibold">{t('pages.quotes.automatic.title')}</h2>
       <p className="text-sm text-muted-foreground">{t('pages.quotes.automatic.description')}</p>
       {isLoading && <p role="status">{t('common.loading')}</p>}

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { formatDuration } from '@/lib/formatDuration';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { FEATURES } from '@shared/index';
 import { useTenant } from '@/hooks/useTenant';
 import { useHasFeature } from '@/hooks/useHasFeature';
@@ -20,6 +21,26 @@ import {
 import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import { useWorkModes } from '@/hooks/useWorkModes';
 import { usePhotoShopEnabled } from '@/features/jobs/hooks/usePhotoShop';
+
+/** A new package from Ask OpalSwift: every field optional and still editable. */
+export interface PackagePrefill {
+  name?: string;
+  /** Price in major units, e.g. "1200". */
+  price?: string;
+  durationHours?: string;
+}
+
+function packageFormFromPrefill(prefill: PackagePrefill, currency: string): ServiceFormState {
+  const price = Number(prefill.price);
+  const hours = Number(prefill.durationHours);
+  return {
+    ...EMPTY_FORM,
+    currency,
+    name: prefill.name ?? '',
+    ...(Number.isFinite(price) && price >= 0 ? { price_major: price } : {}),
+    ...(Number.isFinite(hours) && hours > 0 ? { duration_mins: Math.round(hours * 60) } : {}),
+  };
+}
 
 interface ServiceFormState {
   id: string | null;
@@ -67,6 +88,14 @@ export default function BookingServicesPage() {
   const instantBooking = appointments && !projects;
 
   const [form, setForm] = useState<ServiceFormState | null>(null);
+  // Ask OpalSwift's "Fill it in for me" lands here with a new package filled in; the admin saves it.
+  const location = useLocation();
+  const newPackage = (location.state as { newPackage?: PackagePrefill } | null)?.newPackage ?? null;
+  const [prefillKey, setPrefillKey] = useState<string | null>(null);
+  if (newPackage && prefillKey !== location.key) {
+    setPrefillKey(location.key);
+    setForm(packageFormFromPrefill(newPackage, tenant?.currency || EMPTY_FORM.currency));
+  }
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; msg: string } | null>(null);
 
@@ -171,7 +200,7 @@ export default function BookingServicesPage() {
           <p className="text-gray-600">{t('scheduling.services.packages_subtitle')}</p>
         </div>
         {!form && (
-          <Button variant="primary" onClick={startAdd}>
+          <Button variant="primary" data-tour="packages-add" onClick={startAdd}>
             {t('scheduling.services.add_named', { item: itemWord })}
           </Button>
         )}
