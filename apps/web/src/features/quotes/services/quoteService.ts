@@ -52,6 +52,8 @@ export interface QuotePackage {
   id: string;
   name: string;
   price_minor: number;
+  /** The package's deposit percent for new quotes; null = the usual 30%. */
+  deposit_percent?: number | null;
 }
 
 export type QuoteSendVia = 'email' | 'whatsapp' | 'link';
@@ -142,7 +144,7 @@ export class QuoteService extends BaseService {
     return this.withRetry(async () => {
       const { data, error } = await supabase
         .from('offerings')
-        .select('id, name, price_minor')
+        .select('id, name, price_minor, deposit_percent')
         .eq('tenant_id', tenantId)
         .eq('status', 'active')
         .order('name');

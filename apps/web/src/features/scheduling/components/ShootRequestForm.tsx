@@ -8,7 +8,7 @@ import { useCaptcha } from '@/components/captcha/useCaptcha';
 import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
-import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import { errorBodyFrom, refusedAsOwnEmail, refusedAsSpam } from '@/features/crm/components/InquiryForm';
 import { BookingService, type BookableOffering } from '../bookingService';
 import { busyDaysFrom, daysOfMonth, studioToday, weekdayOf } from '../lib/busyDays';
@@ -186,7 +186,7 @@ export function ShootRequestForm({ subdomain, studioName, offerings, initialOffe
                   >
                     <div className="font-medium leading-snug">{o.name}</div>
                     <div className="text-xs text-gray-500 sm:text-sm">
-                      {formatOfferingPrice(t, o.price_minor, o.currency || 'ILS', i18n.language, { billing_mode: 'one_time' })}
+                      {formatPackagePrice(t, o.price_minor, o.price_display, o.currency || 'ILS', i18n.language)}
                     </div>
                   </button>
                 </li>
