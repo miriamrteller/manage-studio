@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
 import { formatCurrency, formatDate } from "../email-dist/format.js";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../email-send.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 import {
   resolveTenantSender,
   TENANT_SENDER_COLUMNS,
@@ -118,7 +119,11 @@ export async function sendJobPaymentRequestLinkEmail(
     return { sent: false, skipped: "sender_not_configured", paymentUrl };
   }
 
-  const language: "he" | "en" = tenant.language_default === "he" ? "he" : "en";
+  const language = await resolveEmailLanguage(service, {
+    tenantId: request.tenant_id,
+    personId: recipient.personId,
+    tenantDefault: tenant.language_default as string | null,
+  });
   const locale = language === "he" ? "he-IL" : "en-GB";
   const amountFormatted = formatCurrency(request.amount_minor, request.currency, locale);
   const dueFormatted = request.due_date ? formatDate(request.due_date, locale) : "—";

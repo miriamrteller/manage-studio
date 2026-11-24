@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { currentClientLanguage } from '@/lib/clientLanguage';
 import { errorBodyFrom } from '@/features/crm/components/InquiryForm';
 import type { ClassCouponResult } from '@/features/enrolment/lib/checkoutBootstrapTypes';
 
@@ -178,6 +179,7 @@ export const ShopOrdersService = {
         website: input.website,
         elapsedMs: input.elapsedMs,
         couponCode: input.couponCode?.trim() || null,
+        clientLanguage: currentClientLanguage(),
       },
     });
     const body = (data ?? {}) as {

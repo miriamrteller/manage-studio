@@ -22,6 +22,7 @@ import {
   mintJobContractSignLink,
 } from "../_shared/jobs/contract-sign-link.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 interface SendJobContractLinkBody {
   engagementId: string;
@@ -93,7 +94,12 @@ Deno.serve(withMonitoring("send-job-contract-link", async (req) => {
       .eq("id", tenantId)
       .single();
     if (!tenant) return jsonResponse({ error: "Tenant not found" }, 404);
-    const language = tenant.language_default === "he" ? "he" : "en";
+    // The client's email goes in the client's own language.
+    const language = await resolveEmailLanguage(service, {
+      tenantId,
+      email: recipientEmail,
+      tenantDefault: tenant.language_default as string | null,
+    });
 
     const job = await loadJobContractContext(service, { tenantId, engagementId: body.engagementId, language });
     const blocker = contractLinkBlocker(job, await hasActiveContractTemplate(service, tenantId));

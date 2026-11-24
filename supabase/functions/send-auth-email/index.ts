@@ -12,8 +12,10 @@ import {
   getTenantForAuthUser,
 } from "../_shared/tenant-email.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 interface AuthEmailHookUser {
+  id?: string;
   email: string;
   /** Set during an email change: the address being changed to. */
   new_email?: string | null;
@@ -156,7 +158,20 @@ Deno.serve(withMonitoring("send-auth-email", async (req) => {
     }
 
     const supabase = createServiceClient();
-    const tenant = await getTenantForAuthUser(supabase, user);
+    const studio = await getTenantForAuthUser(supabase, user);
+    // A studio's sign-in emails go in the person's own language (their login's, else the
+    // one they booked in), else the studio's.
+    const tenant = studio.id
+      ? {
+        ...studio,
+        language: await resolveEmailLanguage(supabase, {
+          tenantId: studio.id,
+          userId: user.id ?? null,
+          email: user.email,
+          tenantDefault: studio.language,
+        }),
+      }
+      : studio;
     // The platform host's emails (no studio) have no studio customisations.
     const overrides = tenant.id
       ? await getEmailTemplateOverrides(supabase, tenant.id, MAGIC_LINK_TEMPLATE, tenant.language)

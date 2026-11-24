@@ -33,6 +33,7 @@ import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { sendHtmlEmail } from "../_shared/email-client.ts";
 import { buildEnrolmentPayUrl } from "../_shared/enrolment-pay-url.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 const BATCH_LIMIT = 200;
 
@@ -140,6 +141,21 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
     return (data as TenantInfo) ?? null;
   }
 
+  /** The client's own email language: their booking's client record, else found by email. */
+  async function holdEmailLanguage(hold: HoldRow, tenant: TenantInfo | null): Promise<"en" | "he"> {
+    let personId: string | null = null;
+    if (hold.engagement_id) {
+      const { data } = await service.from("engagements").select("person_id").eq("id", hold.engagement_id).maybeSingle();
+      personId = (data?.person_id as string | undefined) ?? null;
+    }
+    return resolveEmailLanguage(service, {
+      tenantId: hold.tenant_id,
+      personId,
+      email: hold.client_email,
+      tenantDefault: tenant?.language_default ?? null,
+    });
+  }
+
   // 1. Pre-expiry reminders (open, unreminded, not yet expired)
   const { data: upcoming, error: upErr } = await service
     .from("scheduling_holds")
@@ -164,15 +180,16 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
       const sender = tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;
       if (sender) {
         try {
+          const lang = await holdEmailLanguage(hold, tenant);
           await sendHtmlEmail({
             to: hold.client_email,
             from: sender.from,
             replyTo: sender.replyTo,
-            subject: (tenant?.language_default !== "en")
+            subject: (lang !== "en")
               ? "שריון הפגישה שלך עומד לפוג"
               : "Your appointment hold is expiring soon",
             html: reminderHtml(
-              tenant?.language_default ?? "he",
+              lang,
               tenant?.name ?? "",
               hold.starts_at,
               `${tenantBaseUrl(tenant)}/book`,
@@ -240,14 +257,15 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
             tenantId: hold.tenant_id,
             recipientEmail: hold.client_email,
           });
+          const lang = await holdEmailLanguage(hold, tenant);
           await sendHtmlEmail({
             to: hold.client_email,
             from: sender.from,
             replyTo: sender.replyTo,
-            subject: (tenant.language_default !== "en")
+            subject: (lang !== "en")
               ? "ההזמנה שלך שמורה"
               : "Your booking is saved",
-            html: payLaterHtml(tenant.language_default ?? "he", tenant.name ?? "", hold.starts_at, paymentUrl),
+            html: payLaterHtml(lang, tenant.name ?? "", hold.starts_at, paymentUrl),
           });
         } catch (e) {
           console.error("[expire-scheduling-holds] pay-later send failed", hold.id, String(e));
@@ -263,14 +281,15 @@ Deno.serve(withMonitoring("expire-scheduling-holds", async (req) => {
       const releasedSender = tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;
       if (tenant && releasedSender) {
         try {
+          const lang = await holdEmailLanguage(hold, tenant);
           await sendHtmlEmail({
             to: hold.client_email,
             from: releasedSender.from,
             replyTo: releasedSender.replyTo,
-            subject: (tenant.language_default !== "en")
+            subject: (lang !== "en")
               ? "שריון הפגישה שוחרר"
               : "Your appointment hold was released",
-            html: releasedHtml(tenant.language_default ?? "he", tenant.name ?? "", `${tenantBaseUrl(tenant)}/book`),
+            html: releasedHtml(lang, tenant.name ?? "", `${tenantBaseUrl(tenant)}/book`),
           });
         } catch (e) {
           console.error("[expire-scheduling-holds] released send failed", hold.id, String(e));

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { currentClientLanguage } from '@/lib/clientLanguage';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,7 @@ export function ShootRequestForm({ subdomain, studioName, offerings, initialOffe
           src: 'website',
           captchaToken: captcha.token,
           shootRequest: { offeringId, date: day },
+          lang: currentClientLanguage(),
           website: honeypot || null,
           elapsedMs: Date.now() - shownAt,
         },

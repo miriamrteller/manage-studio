@@ -8,6 +8,7 @@ import {
   type TenantSenderInput,
 } from "../notification-from.ts";
 import { paymentNeedsClientDocumentEmail } from "./send-payment-document-client-email.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 
 export const PAYMENT_CONFIRMATION_EMAIL_SENT = "payment_confirmation_email_sent";
 export const PAYMENT_CONFIRMATION_EMAIL_FAILED = "payment_confirmation_email_failed";
@@ -91,7 +92,11 @@ export async function sendNoDocumentPaymentConfirmation(
     return skip("sender_not_configured");
   }
 
-  const language: "he" | "en" = tenant.language_default === "en" ? "en" : "he";
+  const language = await resolveEmailLanguage(service, {
+    tenantId: params.tenantId,
+    personId: payment.person_id as string,
+    tenantDefault: tenant.language_default as string | null,
+  });
   const { subject, html } = renderNoDocumentConfirmation({
     language,
     studioName: (tenant.name as string | null) ?? "",

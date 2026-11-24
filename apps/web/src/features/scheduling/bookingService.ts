@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { currentClientLanguage } from '@/lib/clientLanguage';
 
 export interface BookableOffering {
   id: string;
@@ -126,6 +127,7 @@ export const BookingService = {
         client_name: params.clientName,
         client_email: params.clientEmail,
         client_phone: params.clientPhone ?? null,
+        client_language: currentClientLanguage(),
       },
     });
     if (error) throw error;

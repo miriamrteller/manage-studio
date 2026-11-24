@@ -25,6 +25,7 @@ import { checkAndIncrementAttempt, normaliseContactPoint } from "../_shared/rate
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { leadCaptchaPasses } from "../_shared/crm-contract/lead-capture-guard.ts";
 import { ensureClientLogin } from "../_shared/client-login.ts";
+import { rememberClientLanguage } from "../_shared/resolve-email-language.ts";
 import { notifyBuyerShopOrderPlaced, notifyStudioShopOrderSentIn } from "../_shared/studio-shop/emails.ts";
 import { applyRequestCoupon, type ClassCouponResult } from "../_shared/payments/class-coupon.ts";
 
@@ -42,6 +43,8 @@ const BodySchema = z.object({
   website: z.string().max(200).nullable().optional(),
   elapsedMs: z.number().nonnegative().optional(),
   couponCode: z.string().trim().max(80).nullable().optional(),
+  /** The language the buyer's browser was in; emails to them use it. */
+  clientLanguage: z.enum(["en", "he"]).nullable().optional(),
 });
 
 /** Database errors raised as "place_shop_order: <code>" → a stable code for the page. */
@@ -133,6 +136,7 @@ Deno.serve(withMonitoring("studio-shop-checkout", async (req) => {
     } catch (err) {
       console.error("[studio-shop-checkout] client login:", err instanceof Error ? err.message : err);
     }
+    await rememberClientLanguage(service, { tenantId, email, language: body.clientLanguage });
     await notifyBuyerShopOrderPlaced(service, result.order_id, result.pay_token).catch((err) =>
       console.error("[studio-shop-checkout] buyer email failed", err)
     );

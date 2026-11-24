@@ -32,6 +32,7 @@ import {
   type ReminderOffering,
   type ReminderSession,
 } from "../_shared/class-reminders.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 const MORNING = "class_reminder_morning";
 const NO_CLASS = "class_no_class_notice";
@@ -188,7 +189,12 @@ async function runTenant(
         counts.skipped += 1;
         continue;
       }
-      const lang: "en" | "he" = (pref?.language ?? tenant.language_default) === "he" ? "he" : "en";
+      // The parent's own language (resolveEmailLanguage); else as before.
+      const lang = await resolveEmailLanguage(service, {
+        tenantId: tenant.id,
+        personId: contact.id,
+        tenantDefault: pref?.language ?? tenant.language_default,
+      });
       const built = job.kind === MORNING
         ? morningReminderEmail({
           lang,

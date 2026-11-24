@@ -13,6 +13,7 @@ import {
   formatCardLinkMonth,
 } from "../_shared/payments/card-link.ts";
 import { getPaymentProviderForTenant } from "../_shared/payments/index.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 /**
  * Admin → student → active monthly enrolment → "Send card link" (payments B b). Creates the
@@ -78,8 +79,13 @@ Deno.serve(withMonitoring("send-card-link", async (req) => {
     service.from("offerings").select("name").eq("id", result.offeringId).single(),
   ]);
 
-  const language = tenant?.language_default === "he" ? "he" : "en";
   const recipient = await resolveEnrolmentNotificationRecipient(service, tenantId, result.personId);
+  // The client's email goes in the client's own language.
+  const language = await resolveEmailLanguage(service, {
+    tenantId,
+    personId: recipient?.personId ?? result.personId,
+    tenantDefault: (tenant?.language_default as string | null) ?? null,
+  });
   const sender = (() => {
     try {
       return tenant ? resolveTenantSender(tenant as unknown as TenantSenderInput) : null;

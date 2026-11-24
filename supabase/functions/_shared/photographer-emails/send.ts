@@ -45,6 +45,8 @@ export async function sendAutomaticEmail(
      * hourly job never sends it a second time.
      */
     force?: boolean;
+    /** The language to write in. Client emails pass the client's (resolveEmailLanguage). Default: the studio's. */
+    language?: "en" | "he";
   },
   /** Transport override for tests; production uses sendHtmlEmail. */
   send: typeof sendHtmlEmail = sendHtmlEmail,
@@ -63,7 +65,7 @@ export async function sendAutomaticEmail(
     const sender = resolveTenantSender(input.tenant);
     const { html, subject } = renderPhotographerEmail({
       key: input.key,
-      language: input.tenant.language_default === "he" ? "he" : "en",
+      language: input.language ?? (input.tenant.language_default === "he" ? "he" : "en"),
       schoolName: input.tenant.name,
       primaryColor: input.tenant.primary_color ?? "#2563eb",
       accentColor: input.tenant.accent_color ?? "#dc2626",

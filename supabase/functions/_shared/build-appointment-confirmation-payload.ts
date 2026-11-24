@@ -11,6 +11,7 @@ import {
   resolveTenantAdminNotificationEmails,
 } from "./enrolment-recipient.ts";
 import { resolveEmailLanguage, type EmailLanguage } from "./resolve-email-language.ts";
+import { isolateLtr } from "./bidi.ts";
 
 const JERUSALEM_TZ = "Asia/Jerusalem";
 
@@ -73,7 +74,8 @@ function formatAppointmentWhen(
   };
   const startTime = start.toLocaleTimeString(locale, timeOptions);
   const endTime = end.toLocaleTimeString(locale, timeOptions);
-  return `${datePart}, ${startTime}–${endTime}`;
+  // The time range always reads start–end, left to right, also in a Hebrew line.
+  return `${datePart}, ${isolateLtr(`${startTime}–${endTime}`)}`;
 }
 
 function formatDeadline(deadlineDate: string | undefined, language: EmailLanguage): string | undefined {

@@ -8,6 +8,7 @@ import {
   sendRenderedEmail,
 } from "../_shared/email-send.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 interface SendAdminWaiverLinkBody {
   engagementId: string;
@@ -162,7 +163,12 @@ Deno.serve(withMonitoring("send-admin-waiver-link", async (req) => {
         return null;
       }
     })();
-    const language = tenant.language_default === "he" ? "he" : "en";
+    // The client's email goes in the client's own language.
+    const language = await resolveEmailLanguage(service, {
+      tenantId,
+      personId: engagement.person_id as string,
+      tenantDefault: tenant.language_default as string | null,
+    });
     const className = (offering?.name as string | null) ?? "your class";
 
     let emailSent = false;

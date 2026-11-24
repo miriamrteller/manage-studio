@@ -18,6 +18,7 @@ import { buildEnrolmentPayUrl } from "../enrolment-pay-url.ts";
 import { payDirectWaysText, studioPayDirect } from "../photo-shop/pay-direct.ts";
 import { PROOF_REMINDER_DAYS, proofReminderDue } from "../photo-shop/payment-proof.ts";
 import { buildClientPaymentProofReminderEmail } from "./email-copy.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 
 interface DueRow {
   id: string;
@@ -113,7 +114,11 @@ export async function remindClientPaymentProofs(service: SupabaseClient, now = n
       if (await announcementAlreadySent(service, r.tenant_id, key)) continue;
       const recipient = await resolveEnrolmentNotificationRecipient(service, r.tenant_id, target.personId);
       if (!recipient) continue;
-      const language = tenant.language_default === "en" ? "en" : "he";
+      const language = await resolveEmailLanguage(service, {
+        tenantId: r.tenant_id,
+        personId: recipient.personId,
+        tenantDefault: tenant.language_default as string | null,
+      });
       const pay = await studioPayDirect(service, r.tenant_id);
       const email = buildClientPaymentProofReminderEmail({
         language,
@@ -131,6 +136,7 @@ export async function remindClientPaymentProofs(service: SupabaseClient, now = n
           tenantId: r.tenant_id,
           to: recipient.email,
           personId: recipient.personId,
+          language,
           key,
           templateName: "payment_proof_reminder",
           ...email,

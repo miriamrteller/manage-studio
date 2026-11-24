@@ -127,7 +127,6 @@ export async function buildEnrolmentConfirmationPayload(
     { data: studentRow },
     { data: paymentRow },
     recipient,
-    language,
   ] = await Promise.all([
     service.from("tenants").select("name, language_default, primary_color, accent_color").eq("id", input.tenantId).single(),
     service
@@ -142,8 +141,13 @@ export async function buildEnrolmentConfirmationPayload(
       .eq("id", input.paymentId)
       .single(),
     resolveEnrolmentNotificationRecipient(service, input.tenantId, personId),
-    resolveEmailLanguage(service, { tenantId: input.tenantId, personId }),
   ]);
+  // The email goes in the language of the person it goes to (the parent, for a child).
+  const language = await resolveEmailLanguage(service, {
+    tenantId: input.tenantId,
+    personId: recipient?.personId ?? personId,
+    tenantDefault: (tenantRow?.language_default as string | null | undefined) ?? undefined,
+  });
 
   if (!tenantRow || !paymentRow) return null;
 

@@ -127,6 +127,11 @@ export interface NotifyJobContractSignedInput {
   evidence: SignedContractEvidence;
   /** Freshly rendered bytes; null on a replay (then fetched from storage for the attachment). */
   pdfBytes: Uint8Array | null;
+  /**
+   * The client's own email language (resolveEmailLanguage) and the job's fields in it.
+   * Unset: the client email uses the contract's language.
+   */
+  client?: { language: "he" | "en"; job: JobContractContext };
 }
 
 export interface NotifyDeps {
@@ -206,12 +211,22 @@ export async function notifyJobContractSigned(
 
     const clientEmail = (evidence.signedByEmail ?? job.clientEmail ?? "").trim().toLowerCase();
     if (clientEmail.includes("@")) {
+      // The client's email goes in the client's own language.
+      const clientLanguage = input.client?.language ?? language;
+      const clientJob = input.client?.job ?? job;
       result.client = await sendAutomaticEmail(client, {
         tenant,
         key: "contract_signed_client",
         engagementId: job.engagementId,
         to: clientEmail,
-        variables: { ...shared, recipientName: job.fields.client_name, downloadUrl: signedUrl ?? `${base}/dashboard/portal` },
+        language: clientLanguage,
+        variables: {
+          shootDate: clientJob.fields.shoot_date,
+          packageName: clientJob.fields.package,
+          signedAt: formatSignedAt(evidence.signedAt, clientLanguage),
+          recipientName: clientJob.fields.client_name,
+          downloadUrl: signedUrl ?? `${base}/dashboard/portal`,
+        },
         attachments,
       }, deps.send);
     }

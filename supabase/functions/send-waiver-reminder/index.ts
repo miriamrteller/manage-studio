@@ -34,6 +34,7 @@ import {
 import { tenantBaseUrl } from "../_shared/tenant-url.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 const BATCH_LIMIT = 100;
 
@@ -124,7 +125,12 @@ Deno.serve(withMonitoring("send-waiver-reminder", async (req) => {
     try {
       const deadline = new Date(eng.waiver_deadline);
       const msUntilDeadline = deadline.getTime() - now.getTime();
-      const language = (eng.tenants?.language_default === "he" ? "he" : "en") as "en" | "he";
+      // The client's email goes in the client's own language.
+      const language = await resolveEmailLanguage(service, {
+        tenantId: eng.tenant_id,
+        personId: eng.person_id,
+        tenantDefault: eng.tenants?.language_default ?? null,
+      });
       const personEmail = eng.people?.email;
       const sender = eng.tenants ? resolveTenantSender(eng.tenants as unknown as TenantSenderInput) : null;
       const recipientName = eng.people?.name ?? "there";

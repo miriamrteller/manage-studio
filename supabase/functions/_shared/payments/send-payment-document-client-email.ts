@@ -8,6 +8,7 @@ import {
   type TenantSenderInput,
 } from "../notification-from.ts";
 import { isOfflinePaymentMethod } from "./ypay/document.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 
 export const PAYMENT_DOCUMENT_CLIENT_EMAIL_SENT = "payment_document_client_email_sent";
 export const PAYMENT_DOCUMENT_CLIENT_EMAIL_FAILED = "payment_document_client_email_failed";
@@ -119,7 +120,11 @@ export async function sendPaymentDocumentClientEmail(
     return { sent: false, skipped: "sender_not_configured" };
   }
 
-  const language: "he" | "en" = tenant?.language_default === "en" ? "en" : "he";
+  const language = await resolveEmailLanguage(service, {
+    tenantId: params.tenantId,
+    personId: payment.person_id as string,
+    tenantDefault: (tenant?.language_default as string | null) ?? null,
+  });
   const studioName = (tenant?.name as string | null) ?? "Manage Studio";
   const amount = formatCurrency(
     payment.total_amount_minor as number,
