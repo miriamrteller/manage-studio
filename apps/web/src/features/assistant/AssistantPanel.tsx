@@ -114,6 +114,7 @@ export function AssistantPanel({ isOpen, onOpen, onClose, exchanges, setExchange
         <div className="space-y-1">
           <h2 id="assistant-title" className="font-semibold">{t('assistant.title')}</h2>
           <p className="text-xs text-gray-600">{t('assistant.ai_notice')}</p>
+          <p className="text-xs text-gray-600">{t('assistant.sensitive_notice')}</p>
         </div>
         <button type="button" onClick={onClose} className="rounded p-1 hover:bg-gray-100" aria-label={t('assistant.close')}>
           <X className="h-4 w-4" aria-hidden="true" />
