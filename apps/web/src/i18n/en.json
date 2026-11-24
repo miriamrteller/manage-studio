@@ -4155,15 +4155,10 @@
       "accentColor": "Second colour",
       "fontPair": "Fonts",
       "fontPairs": {
-        "reliable": "Reliable",
         "elegant": "Elegant",
-        "dynamic": "Dynamic",
-        "warm": "Warm",
         "bold": "Bold",
         "opalswift": "OpalSwift (default)",
         "classic": "Classic",
-        "literary": "Literary",
-        "studio": "Studio",
         "statement": "Statement",
         "soft": "Soft"
       },

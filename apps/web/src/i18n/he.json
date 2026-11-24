@@ -4213,15 +4213,10 @@
       "accentColor": "צבע משני",
       "fontPair": "צמד גופנים",
       "fontPairs": {
-        "reliable": "אמין",
         "elegant": "אלגנטי",
-        "dynamic": "דינמי",
-        "warm": "חם",
         "bold": "נועז",
         "opalswift": "OpalSwift (ברירת מחדל)",
         "classic": "קלאסי",
-        "literary": "ספרותי",
-        "studio": "סטודיו",
         "statement": "בולט",
         "soft": "רך"
       },

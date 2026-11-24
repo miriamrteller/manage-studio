@@ -46,7 +46,7 @@ describe('Branding labels in Hebrew', () => {
     for (const english of ['Settings', 'Colours', 'Main colour', 'Second colour', 'Fonts', 'Headings and text across your studio\'s pages. Each choice covers English and Hebrew.', 'Save changes']) {
       expect(screen.queryByText(english), english).toBeNull();
     }
-    expect(screen.getByRole('radio', { name: /^אמין/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^קלאסי/ })).toBeInTheDocument();
   });
 });
 
