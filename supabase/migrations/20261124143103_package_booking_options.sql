@@ -1,5 +1,5 @@
 -- =============================================================================
--- 20261124135900: Package booking options
+-- 20261124143103: Package booking options
 -- Each appointment offering (a "package" for photographers) gets:
 --   online_booking  – clients can pick a time and book it online (default on, as today)
 --   price_display   – show | from ("From ₪X") | on_request ("Price on request")

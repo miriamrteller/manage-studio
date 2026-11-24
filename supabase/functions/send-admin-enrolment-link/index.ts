@@ -154,6 +154,7 @@ Deno.serve(withMonitoring("send-admin-enrolment-link", async (req) => {
     const paymentDetails = await resolveEnrolmentPaymentEmailDetails(service, {
       tenantId,
       offeringId: engagement.offering_id as string,
+      engagementId: engagement.id as string,
       studentName: student.name as string,
       language,
       linkExpiresAt,

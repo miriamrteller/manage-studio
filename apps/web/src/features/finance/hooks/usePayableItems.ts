@@ -13,6 +13,10 @@ export type PayableItem =
 interface EngagementRow {
   id: string;
   status: string;
+  /** Class discount off the class price, every payment (sibling, extra class, early bird, client, coupon). */
+  discount_minor?: number | null;
+  /** Extra discount off the first payment only (a first-payment coupon). */
+  first_discount_minor?: number | null;
   offering: { id: string; name: string; price_minor: number | null; billing_mode: string | null } | null;
 }
 
@@ -28,10 +32,13 @@ export function openItemsFrom(
   const items: PayableItem[] = [];
   for (const e of engagements) {
     const name = e.offering?.name ?? '';
-    const amountMinor = e.offering?.price_minor ?? null;
+    const price = e.offering?.price_minor ?? null;
+    const amountMinor = price === null ? null : Math.max(0, price - (e.discount_minor ?? 0));
+    const firstAmountMinor =
+      amountMinor === null ? null : Math.max(0, amountMinor - (e.first_discount_minor ?? 0));
     const offeringId = e.offering?.id;
     if (e.status === 'pending_payment') {
-      items.push({ kind: 'first', key: `first:${e.id}`, engagementId: e.id, offeringId, name, amountMinor });
+      items.push({ kind: 'first', key: `first:${e.id}`, engagementId: e.id, offeringId, name, amountMinor: firstAmountMinor });
     } else if (e.status === 'active' && e.offering?.billing_mode === 'recurring') {
       items.push({ kind: 'monthly', key: `monthly:${e.id}`, engagementId: e.id, offeringId, name, amountMinor });
     }
@@ -53,7 +60,7 @@ export function useOpenItems(personId: string | null) {
     queryFn: async () => {
       const { data: engagements, error } = await supabase
         .from('engagements')
-        .select('id, status, offering:offerings(id, name, price_minor, billing_mode)')
+        .select('id, status, discount_minor, first_discount_minor, offering:offerings(id, name, price_minor, billing_mode)')
         .eq('tenant_id', tenant!.id)
         .eq('person_id', personId!)
         .in('status', ['pending_payment', 'active']);

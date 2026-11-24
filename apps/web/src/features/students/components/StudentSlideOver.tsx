@@ -25,6 +25,7 @@ import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
 import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
 import { MonthlyPlanSection } from '@/features/finance/components/MonthlyPlanSection';
+import { ClassDiscountLines, discountLinesFromRow } from '@/features/enrolment/components/ClassDiscountLines';
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
 import { formatCurrency } from '@shared/format';
 import { formatSavedCard } from '../lib/studentBillingAccount';
@@ -349,6 +350,14 @@ export function StudentSlideOver({
                         const classAges = offering
                           ? formatAgeRange(offering.min_age ?? null, offering.max_age ?? null)
                           : null;
+                        // Class price less the class discount set at enrolment (every payment), and
+                        // the first payment also less a first-payment coupon.
+                        const discountMinor = engagement.discount_minor ?? 0;
+                        const firstDiscountMinor = engagement.first_discount_minor ?? 0;
+                        const pricedMinor =
+                          offering ? Math.max(0, offering.price_minor - discountMinor) : undefined;
+                        const firstPricedMinor =
+                          pricedMinor === undefined ? undefined : Math.max(0, pricedMinor - firstDiscountMinor);
                         return (
                           <li key={engagement.id} className="space-y-2 py-1">
                             {engagement.status === 'admin_review' && person && (
@@ -395,10 +404,18 @@ export function StudentSlideOver({
                                   : undefined
                               }
                             />
+                            {offering && (discountMinor > 0 || firstDiscountMinor > 0) && (
+                              <ClassDiscountLines
+                                listAmountMinor={offering.price_minor}
+                                discounts={discountLinesFromRow(engagement.discount_lines)}
+                                currency={offering.currency ?? tenant?.currency ?? 'ILS'}
+                                monthly={offering.billing_mode === 'recurring'}
+                              />
+                            )}
                             {engagement.status === 'active' && offering?.billing_mode === 'recurring' && (
                               <MonthlyPlanSection
                                 engagementId={engagement.id}
-                                classPriceMinor={offering.price_minor}
+                                classPriceMinor={pricedMinor ?? offering.price_minor}
                                 currency={offering.currency ?? tenant?.currency ?? 'ILS'}
                                 paymentProvider={tenant?.payment_provider}
                                 onRecorded={invalidateFinanceCaches}
@@ -408,7 +425,7 @@ export function StudentSlideOver({
                               recordingEngagementId === engagement.id ? (
                                 <RecordPaymentModal
                                   engagementId={engagement.id}
-                                  defaultAmountMinor={offering?.price_minor}
+                                  defaultAmountMinor={firstPricedMinor}
                                   currency={offering?.currency}
                                   onRecorded={() => {
                                     invalidateFinanceCaches();

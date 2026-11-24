@@ -150,12 +150,13 @@ describe('tabs along the top of an area', () => {
     expect(tabLabels()).toEqual(['Services', 'Diary']);
   });
 
-  it('Classes: classes, levels, seasons, teachers, class cards', async () => {
+  it('Classes: classes, levels, seasons, teachers, class cards, discounts', async () => {
     await setLanguage('en');
     renderTabs('dance', '/admin/classes/seasons');
-    expect(tabLabels()).toHaveLength(5);
+    expect(tabLabels()).toHaveLength(6);
     expect(tabLabels()[0]).toBe('Classes');
     expect(tabLabels()).toContain('Class cards');
+    expect(tabLabels()).toContain('Discounts');
   });
 
   it('Settings: each section is a tab with its own address', async () => {

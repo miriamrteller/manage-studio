@@ -922,6 +922,174 @@ export type Database = {
                     }
                 ];
             };
+            class_discount_clients: {
+                Row: {
+                    created_at: string;
+                    email: string;
+                    id: string;
+                    note: string | null;
+                    tenant_id: string;
+                    unit: string;
+                    updated_at: string;
+                    updated_by: string | null;
+                    value: number;
+                };
+                Insert: {
+                    created_at?: string;
+                    email: string;
+                    id?: string;
+                    note?: string | null;
+                    tenant_id: string;
+                    unit?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                    value: number;
+                };
+                Update: {
+                    created_at?: string;
+                    email?: string;
+                    id?: string;
+                    note?: string | null;
+                    tenant_id?: string;
+                    unit?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                    value?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_discount_clients_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            class_discount_coupons: {
+                Row: {
+                    active: boolean;
+                    applies_to: string;
+                    code: string;
+                    created_at: string;
+                    id: string;
+                    max_uses: number | null;
+                    note: string | null;
+                    tenant_id: string;
+                    unit: string;
+                    updated_at: string;
+                    updated_by: string | null;
+                    valid_until: string | null;
+                    value: number;
+                };
+                Insert: {
+                    active?: boolean;
+                    applies_to?: string;
+                    code: string;
+                    created_at?: string;
+                    id?: string;
+                    max_uses?: number | null;
+                    note?: string | null;
+                    tenant_id: string;
+                    unit?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                    valid_until?: string | null;
+                    value: number;
+                };
+                Update: {
+                    active?: boolean;
+                    applies_to?: string;
+                    code?: string;
+                    created_at?: string;
+                    id?: string;
+                    max_uses?: number | null;
+                    note?: string | null;
+                    tenant_id?: string;
+                    unit?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                    valid_until?: string | null;
+                    value?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_discount_coupons_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            class_discount_settings: {
+                Row: {
+                    combine_mode: string;
+                    created_at: string;
+                    early_bird_days_before: number;
+                    early_bird_enabled: boolean;
+                    early_bird_unit: string;
+                    early_bird_value: number;
+                    extra_class_enabled: boolean;
+                    extra_class_unit: string;
+                    extra_class_value: number;
+                    max_total_percent: number;
+                    sibling_enabled: boolean;
+                    sibling_more_value: number;
+                    sibling_unit: string;
+                    sibling_value: number;
+                    tenant_id: string;
+                    updated_at: string;
+                    updated_by: string | null;
+                };
+                Insert: {
+                    combine_mode?: string;
+                    created_at?: string;
+                    early_bird_days_before?: number;
+                    early_bird_enabled?: boolean;
+                    early_bird_unit?: string;
+                    early_bird_value?: number;
+                    extra_class_enabled?: boolean;
+                    extra_class_unit?: string;
+                    extra_class_value?: number;
+                    max_total_percent?: number;
+                    sibling_enabled?: boolean;
+                    sibling_more_value?: number;
+                    sibling_unit?: string;
+                    sibling_value?: number;
+                    tenant_id: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                };
+                Update: {
+                    combine_mode?: string;
+                    created_at?: string;
+                    early_bird_days_before?: number;
+                    early_bird_enabled?: boolean;
+                    early_bird_unit?: string;
+                    early_bird_value?: number;
+                    extra_class_enabled?: boolean;
+                    extra_class_unit?: string;
+                    extra_class_value?: number;
+                    max_total_percent?: number;
+                    sibling_enabled?: boolean;
+                    sibling_more_value?: number;
+                    sibling_unit?: string;
+                    sibling_value?: number;
+                    tenant_id?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "class_discount_settings_tenant_id_fkey";
+                        columns: ["tenant_id"];
+                        isOneToOne: true;
+                        referencedRelation: "tenants";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             client_import_batches: {
                 Row: {
                     clients_count: number;
@@ -1525,7 +1693,11 @@ export type Database = {
                     cancellation_reason: string | null;
                     cancelled_at: string | null;
                     cancelled_by: string | null;
+                    coupon_id: string | null;
                     created_at: string;
+                    discount_lines: Json;
+                    discount_minor: number;
+                    first_discount_minor: number;
                     google_event_id: string | null;
                     id: string;
                     offering_id: string;
@@ -1558,7 +1730,11 @@ export type Database = {
                     cancellation_reason?: string | null;
                     cancelled_at?: string | null;
                     cancelled_by?: string | null;
+                    coupon_id?: string | null;
                     created_at?: string;
+                    discount_lines?: Json;
+                    discount_minor?: number;
+                    first_discount_minor?: number;
                     google_event_id?: string | null;
                     id?: string;
                     offering_id: string;
@@ -1591,7 +1767,11 @@ export type Database = {
                     cancellation_reason?: string | null;
                     cancelled_at?: string | null;
                     cancelled_by?: string | null;
+                    coupon_id?: string | null;
                     created_at?: string;
+                    discount_lines?: Json;
+                    discount_minor?: number;
+                    first_discount_minor?: number;
                     google_event_id?: string | null;
                     id?: string;
                     offering_id?: string;
@@ -1631,6 +1811,13 @@ export type Database = {
                         columns: ["cancelled_by"];
                         isOneToOne: false;
                         referencedRelation: "user_profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "engagements_coupon_id_fkey";
+                        columns: ["coupon_id"];
+                        isOneToOne: false;
+                        referencedRelation: "class_discount_coupons";
                         referencedColumns: ["id"];
                     },
                     {
@@ -6543,6 +6730,13 @@ export type Database = {
             advance_job_statuses: {
                 Args: {
                     p_now?: string;
+                };
+                Returns: Json;
+            };
+            apply_class_coupon: {
+                Args: {
+                    p_code: string;
+                    p_engagement_id: string;
                 };
                 Returns: Json;
             };

@@ -1,4 +1,5 @@
 import type { ConsentTemplate } from '@shared/schemas';
+import type { ClassDiscountLine } from './checkoutBootstrapTypes';
 
 export type TokenCompletionData = {
   engagementId: string;
@@ -14,5 +15,7 @@ export type TokenCompletionData = {
   template: ConsentTemplate | null;
   isMinorStudent: boolean;
   amountMinor: number;
+  listAmountMinor?: number | null;
+  discounts?: ClassDiscountLine[];
   currency: string;
 };
