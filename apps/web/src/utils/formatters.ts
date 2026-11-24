@@ -14,6 +14,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
  */
 
 export const DEFAULT_LOCALE = 'he-IL';
+
+/**
+ * The date locale for the app's language: Hebrew → he-IL, English → en-GB (24 Nov 2026
+ * audit: English pages showed US dates like 11/25/2026 and 06:45 PM from the browser).
+ */
+export function appLocale(language: string | null | undefined): string {
+  return language?.startsWith('en') ? 'en-GB' : 'he-IL';
+}
 export const ISRAEL_TIME_ZONE = 'Asia/Jerusalem';
 
 type DateInput = Date | string | number;

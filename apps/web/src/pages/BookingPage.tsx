@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { appLocale } from '@/utils/formatters';
 import { formatDuration } from '@/lib/formatDuration';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -17,19 +18,20 @@ import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { ShootRequestForm } from '@/features/scheduling/components/ShootRequestForm';
 
-function formatWhen(slot: AvailableSlot): string {
+function formatWhen(slot: AvailableSlot, language: string): string {
   const start = new Date(slot.starts_at);
-  const date = start.toLocaleDateString(undefined, {
+  const date = start.toLocaleDateString(appLocale(language), {
     timeZone: 'Asia/Jerusalem',
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-  const time = start.toLocaleTimeString([], {
+  const time = start.toLocaleTimeString(appLocale(language), {
     timeZone: 'Asia/Jerusalem',
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
   });
   return `${date} · ${time}`;
 }
@@ -297,7 +299,7 @@ export default function BookingPage() {
         <section ref={detailsRef} className="mx-auto max-w-xl scroll-mt-4 space-y-3">
           <h2 className="text-base font-semibold sm:text-lg">{t('scheduling.book.your_details')}</h2>
           <p className="text-sm text-gray-600">
-            {t('scheduling.book.selected_slot', { when: formatWhen(slot) })}
+            {t('scheduling.book.selected_slot', { when: formatWhen(slot, i18n.language) })}
           </p>
           <label className="block space-y-1">
             <span className="text-sm font-medium text-gray-700">{t('scheduling.book.name')}</span>

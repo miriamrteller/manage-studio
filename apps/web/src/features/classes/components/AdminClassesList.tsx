@@ -184,7 +184,10 @@ export function AdminClassesList() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">{t('pages.admin_classes.title', { entity: classLabels.plural })}</h1>
         <p className="text-gray-600">{t('pages.admin_classes.description', { entity: classLabels.plural.toLowerCase() })}</p>
-        <p className="text-sm text-gray-700">{t('pages.admin_classes.order_hint', { level: labels.category.singular.toLowerCase(), season: labels.season.singular.toLowerCase(), entity: classLabels.plural.toLowerCase() })}</p>
+        {/* Only while a level or a season is still missing (24 Nov 2026 audit: it showed for every studio). */}
+        {!termsData.isLoading && !levelsData.isLoading && (termsData.terms.length === 0 || levelsData.levels.length === 0) && (
+          <p className="text-sm text-gray-700">{t('pages.admin_classes.order_hint', { level: labels.category.singular.toLowerCase(), season: labels.season.singular.toLowerCase(), entity: classLabels.plural.toLowerCase() })}</p>
+        )}
       </div>
 
       <div className="flex justify-end">
