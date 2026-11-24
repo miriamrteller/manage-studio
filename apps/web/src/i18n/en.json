@@ -1,7 +1,7 @@
 {
   "common": {
     "captcha_needed": "Please complete the security check.",
-    "saveChanges": "Save Changes",
+    "saveChanges": "Save changes",
     "saving": "Saving...",
     "saved": "Saved!",
     "saveFailed": "Save failed. Please try again.",
@@ -544,7 +544,9 @@
       },
       "bookings_heading": "My bookings",
       "book_again": "Book a time",
-      "no_bookings": "No bookings yet."
+      "no_bookings": "No bookings yet.",
+      "to_pay_notice": "{{amount}} still to pay",
+      "to_pay_see": "See payments"
     },
     "admin": {
       "setup": {
@@ -564,20 +566,20 @@
         "soft_block_label": "Warning only"
       },
       "overview": {
-        "title": "Operations Overview",
-        "term_enrolments": "Season Enrolments",
-        "outstanding_payments": "Outstanding Payments",
-        "admin_review_queue": "Needs Review",
-        "revenue_mtd": "Revenue This Month",
-        "todays_classes": "Today's Classes",
+        "title": "This season",
+        "term_enrolments": "Enrolments this season",
+        "outstanding_payments": "Waiting for payment",
+        "admin_review_queue": "To review",
+        "revenue_mtd": "Money in this month",
+        "todays_classes": "Today's classes",
         "no_classes_today": "No classes scheduled for today",
         "enrolled_of_capacity": "{{enrolled}} / {{capacity}}",
         "waitlist_count": "{{count}} waiting",
-        "quick_actions": "Quick Actions",
-        "manage_classes": "Manage Classes",
-        "record_payment": "Record Payment",
-        "send_notification": "Send Notification",
-        "no_active_season": "No active season found. Please go to Settings → Seasons to set up an active season.",
+        "quick_actions": "Quick actions",
+        "manage_classes": "Manage classes",
+        "record_payment": "Record a payment",
+        "send_notification": "Send a message",
+        "no_active_season": "No season is running now. Add one under Classes › Seasons.",
         "go_to_seasons": "Go to Seasons",
         "col_time": "Time",
         "col_name": "Class",
@@ -4148,10 +4150,10 @@
       "discounts": "Discounts"
     },
     "branding": {
-      "colors": "Colors",
-      "primaryColor": "Primary Color",
-      "accentColor": "Accent Color",
-      "fontPair": "Font Pair",
+      "colors": "Colours",
+      "primaryColor": "Main colour",
+      "accentColor": "Second colour",
+      "fontPair": "Fonts",
       "fontPairs": {
         "reliable": "Reliable",
         "elegant": "Elegant",
@@ -4166,13 +4168,13 @@
         "soft": "Soft"
       },
       "logos": "Logos",
-      "lightLogo": "Light Mode Logo",
+      "lightLogo": "Logo for light backgrounds",
       "lightLogoDescription": "Displayed on light backgrounds. PNG, JPEG, SVG, or WebP (max 2MB).",
-      "darkLogo": "Dark Mode Logo",
+      "darkLogo": "Logo for dark backgrounds",
       "darkLogoDescription": "Displayed on dark backgrounds. PNG, JPEG, SVG, or WebP (max 2MB).",
       "replaceLogo": "Replace",
       "removeLogo": "Remove",
-      "uploadLogo": "Upload Logo",
+      "uploadLogo": "Upload logo",
       "uploading": "Uploading...",
       "uploadLightLogo": "Upload light mode logo",
       "uploadDarkLogo": "Upload dark mode logo",

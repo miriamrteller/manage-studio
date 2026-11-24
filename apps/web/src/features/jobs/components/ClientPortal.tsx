@@ -171,6 +171,10 @@ export function ClientPortal() {
 
       <ContactPreferencesEditor open={prefsOpen} onOpenChange={setPrefsOpen} />
 
+      {activeTab !== 'payments' && (
+        <ToPayNotice requests={requests} currency={currency} onSeeAll={() => selectTab('payments')} />
+      )}
+
       <DirectionProvider direction={direction}>
         <Tabs.Root value={activeTab} onValueChange={selectTab}>
           <Tabs.List className="flex flex-wrap gap-1 border-b border-gray-200">
@@ -196,6 +200,49 @@ export function ClientPortal() {
 }
 
 type ClientPortalTab = 'shop' | 'shoots' | 'payments' | 'gallery' | 'details';
+
+/**
+ * What is still to pay, above the tabs (24 Nov 2026 audit: a client owing money saw nothing
+ * about it until opening Payments). One open payment: Pay goes straight to it. Several:
+ * the button opens the Payments tab. Information only, never in the way.
+ */
+function ToPayNotice({
+  requests,
+  currency,
+  onSeeAll,
+}: {
+  requests: JobPaymentRequest[];
+  currency: string;
+  onSeeAll: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const open = requests.filter((r) => r.status === 'pending' || r.status === 'sent');
+  if (open.length === 0) return null;
+  const total = open.reduce((sum, r) => sum + r.amount_minor, 0);
+  const only = open.length === 1 ? open[0] : null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      <p className="font-medium text-amber-900">
+        {t('pages.client_portal.to_pay_notice', {
+          amount: formatMinor(total, open[0].currency || currency, i18n.language),
+        })}
+      </p>
+      {only ? (
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => window.location.assign(JobPaymentService.payUrlFor(only.public_token))}
+        >
+          {t('pages.jobs.client_portal.pay')}
+        </Button>
+      ) : (
+        <Button size="sm" variant="primary" onClick={onSeeAll}>
+          {t('pages.client_portal.to_pay_see')}
+        </Button>
+      )}
+    </div>
+  );
+}
 
 function useShootDate() {
   const { t, i18n } = useTranslation();
