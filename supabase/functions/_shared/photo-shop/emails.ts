@@ -30,6 +30,7 @@ import {
   studioPayDirect,
 } from "./pay-direct.ts";
 import { proofReminderDue } from "./payment-proof.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 
 interface Loaded {
   order: {
@@ -87,7 +88,15 @@ async function load(service: SupabaseClient, orderId: string): Promise<Loaded | 
 function send(
   service: SupabaseClient,
   l: Loaded,
-  p: { to: string; personId: string | null; key: string; templateName: string; subject: string; body: string },
+  p: {
+    to: string;
+    personId: string | null;
+    key: string;
+    templateName: string;
+    subject: string;
+    body: string;
+    language?: Lang;
+  },
 ): Promise<boolean> {
   return sendLoggedAnnouncement(service, {
     ...p,
@@ -98,6 +107,14 @@ function send(
 }
 
 const lang = (t: Record<string, unknown>): Lang => (t.language_default === "en" ? "en" : "he");
+
+/** Client emails go in the client's own language (see resolve-email-language.ts). */
+const clientLang = (service: SupabaseClient, l: Loaded, personId: string): Promise<Lang> =>
+  resolveEmailLanguage(service, {
+    tenantId: l.order.tenant_id,
+    personId,
+    tenantDefault: l.tenant.language_default as string | null,
+  });
 
 /** "IMG_0001.jpg" for a digital file; "IMG_0001.jpg: Canvas print, 20x30 cm" for a product. */
 export function orderLineName(i: Loaded["items"][number], language: Lang): string {
@@ -168,18 +185,20 @@ export async function notifyClientPhotoOrderPayDirect(
 
   const recipient = await resolveEnrolmentNotificationRecipient(service, l.order.tenant_id, l.personId);
   if (!recipient) return false;
+  const language = await clientLang(service, l, recipient.personId);
   const email = buildClientPayDirectEmail({
-    language: lang(l.tenant),
+    language,
     studioName: l.tenant.name as string,
     photoCount: l.order.photo_count,
-    totalFormatted: money(l),
-    ways: payDirectWaysText(lang(l.tenant), pay),
+    totalFormatted: money(l, language),
+    ways: payDirectWaysText(language, pay),
     asksForProof: asksForProof(pay),
     payUrl: payPageUrl(l),
   });
   return send(service, l, {
     to: recipient.email,
     personId: recipient.personId,
+    language,
     key,
     templateName: "photo_order_pay_direct",
     ...email,
@@ -191,8 +210,8 @@ const shootUrl = (l: Loaded) =>
 /** The order's own payment page in the client's portal (pick Bit / bank transfer, send the screenshot). */
 const payPageUrl = (l: Loaded) =>
   `${tenantBaseUrl(l.tenant as { subdomain: string; custom_domain?: string | null })}/dashboard/portal/photo-order/${l.order.engagement_id}/${l.order.id}`;
-const money = (l: Loaded) =>
-  formatCurrency(l.order.total_minor, l.order.currency, lang(l.tenant) === "he" ? "he-IL" : "en-GB");
+const money = (l: Loaded, language: Lang = lang(l.tenant)) =>
+  formatCurrency(l.order.total_minor, l.order.currency, language === "he" ? "he-IL" : "en-GB");
 
 /** Tell the studio a client sent a payment screenshot. Each screenshot is sent once. */
 export async function notifyStudioPhotoOrderProof(service: SupabaseClient, orderId: string): Promise<boolean> {
@@ -254,16 +273,17 @@ export async function remindPhotoOrderProofs(service: SupabaseClient, now = new 
       const recipient = await resolveEnrolmentNotificationRecipient(service, l.order.tenant_id, l.personId);
       if (!recipient) continue;
       const pay = await studioPayDirect(service, l.order.tenant_id);
+      const language = await clientLang(service, l, recipient.personId);
       const email = buildClientProofReminderEmail({
-        language: lang(l.tenant),
+        language,
         studioName: l.tenant.name as string,
         photoCount: l.order.photo_count,
-        totalFormatted: money(l),
-        ways: payDirectWaysText(lang(l.tenant), pay),
+        totalFormatted: money(l, language),
+        ways: payDirectWaysText(language, pay),
         asksForProof: true,
         payUrl: payPageUrl(l),
       });
-      if (await send(service, l, { to: recipient.email, personId: recipient.personId, key, templateName: "photo_order_proof_reminder", ...email })) sent += 1;
+      if (await send(service, l, { to: recipient.email, personId: recipient.personId, language, key, templateName: "photo_order_proof_reminder", ...email })) sent += 1;
     } catch (e) {
       console.error("[photo-order-proofs] reminder failed", o.id, String(e));
     }
@@ -280,8 +300,9 @@ export async function notifyClientPhotoOrderDelivered(service: SupabaseClient, o
 
   const recipient = await resolveEnrolmentNotificationRecipient(service, l.order.tenant_id, l.personId);
   if (!recipient) return false;
+  const language = await clientLang(service, l, recipient.personId);
   const email = buildClientDeliveredEmail({
-    language: lang(l.tenant),
+    language,
     studioName: l.tenant.name as string,
     photoCount: l.order.photo_count,
     downloadUrl: l.order.delivery_url,
@@ -290,6 +311,7 @@ export async function notifyClientPhotoOrderDelivered(service: SupabaseClient, o
   return send(service, l, {
     to: recipient.email,
     personId: recipient.personId,
+    language,
     key,
     templateName: "photo_order_delivered",
     ...email,

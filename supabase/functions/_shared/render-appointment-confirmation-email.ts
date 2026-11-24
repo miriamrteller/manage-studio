@@ -6,6 +6,7 @@ import {
 } from "./email-dist/i18n/email.js";
 import type { AppointmentConfirmationPayload } from "./build-appointment-confirmation-payload.ts";
 import { isHttpLink, signInBlockHtml } from "./sign-in-email-block.ts";
+import { isolate } from "./bidi.ts";
 
 type EmailLanguage = "en" | "he";
 
@@ -21,10 +22,13 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Long words and links wrap instead of running off a phone screen. */
+const WRAP = "overflow-wrap:anywhere;word-wrap:break-word;word-break:break-word;";
+
 function detailRow(label: string, value: string | undefined): string {
   if (!value) return "";
-  return `<tr><td style="padding:8px 12px;color:#6b7280;white-space:nowrap;">${escapeHtml(label)}</td>`
-    + `<td style="padding:8px 12px;color:#1f2937;">${escapeHtml(value)}</td></tr>`;
+  return `<tr><td style="padding:8px 12px;color:#6b7280;white-space:nowrap;vertical-align:top;">${escapeHtml(label)}</td>`
+    + `<td style="padding:8px 12px;color:#1f2937;${WRAP}">${escapeHtml(isolate(value))}</td></tr>`;
 }
 
 function renderDetailsTable(rows: string): string {
@@ -50,10 +54,10 @@ function renderShell(params: {
   const align = params.language === "he" ? "right" : "left";
 
   return `<!DOCTYPE html><html dir="${dir}" lang="${params.language}"><body style="margin:0;padding:24px;background:#f3f4f6;font-family:Arial,sans-serif;">
-<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px;text-align:${align};">
-  <h1 style="margin:0 0 8px;font-size:20px;color:${params.primaryColor};">${escapeHtml(params.schoolName)}</h1>
-  <p style="margin:0 0 16px;color:#374151;">${escapeHtml(params.greeting)}</p>
-  <p style="margin:0 0 16px;font-size:16px;font-weight:bold;color:#111827;">${escapeHtml(params.headline)}</p>
+<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px;text-align:${align};direction:${dir};">
+  <h1 style="margin:0 0 8px;font-size:20px;color:${params.primaryColor};${WRAP}">${escapeHtml(params.schoolName)}</h1>
+  <p style="margin:0 0 16px;color:#374151;${WRAP}">${escapeHtml(params.greeting)}</p>
+  <p style="margin:0 0 16px;font-size:16px;font-weight:bold;line-height:1.4;color:#111827;${WRAP}">${escapeHtml(params.headline)}</p>
   <h2 style="margin:24px 0 8px;font-size:14px;color:#374151;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(params.detailsHeading)}</h2>
   ${renderDetailsTable(params.detailsRows)}
   ${params.paymentHeading && params.paymentRows ? `<h2 style="margin:24px 0 8px;font-size:14px;color:#374151;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(params.paymentHeading)}</h2>${renderDetailsTable(params.paymentRows)}` : ""}
@@ -71,10 +75,11 @@ export function renderAppointmentClientConfirmationHtml(
   const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.APPOINTMENT_CONFIRMATION);
 
   const headline = payload.pendingWaiver
-    ? interpolateTemplate(str(strings.headline_pending_waiver) ?? "", { serviceName: payload.serviceName })
-    : interpolateTemplate(str(strings.headline_confirmed) ?? "", { serviceName: payload.serviceName });
+    ? interpolateTemplate(str(strings.headline_pending_waiver) ?? "", { serviceName: isolate(payload.serviceName) })
+    : interpolateTemplate(str(strings.headline_confirmed) ?? "", { serviceName: isolate(payload.serviceName) });
 
-  const greeting = interpolateTemplate(str(strings.greeting) ?? "", { recipientName: payload.recipientName });
+  // Names and services are typed by people, in either script: each stays one block.
+  const greeting = interpolateTemplate(str(strings.greeting) ?? "", { recipientName: isolate(payload.recipientName) });
 
   const detailsRows = [
     detailRow(str(strings.service_label) ?? "Service", payload.serviceName),
@@ -133,7 +138,7 @@ export function buildAppointmentClientSubject(
   const language = payload.language === "he" ? "he" : "en";
   const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.APPOINTMENT_CONFIRMATION);
   return interpolateTemplate(str(strings.subject) ?? "Your appointment at {schoolName}", {
-    schoolName: payload.schoolName,
+    schoolName: isolate(payload.schoolName),
   });
 }
 

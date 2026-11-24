@@ -13,6 +13,7 @@ import {
   getTenantEmailConfig,
 } from "../_shared/tenant-email.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 interface SendOtpEmailRequest {
   email: string;
@@ -102,7 +103,12 @@ Deno.serve(withMonitoring("send-otp-email", async (req) => {
       );
     }
 
-    const tenant = await getTenantEmailConfig(supabase, tenantId);
+    const studio = await getTenantEmailConfig(supabase, tenantId);
+    // The person's own language (their login's, else the one they booked in), else the studio's.
+    const tenant = {
+      ...studio,
+      language: await resolveEmailLanguage(supabase, { tenantId: studio.id, email, tenantDefault: studio.language }),
+    };
     const overrides = await getEmailTemplateOverrides(
       supabase,
       tenant.id,

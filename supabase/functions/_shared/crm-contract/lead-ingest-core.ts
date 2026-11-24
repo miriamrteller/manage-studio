@@ -70,6 +70,8 @@ export interface LeadWriteOptions {
   form?: LeadFormWrite | null;
   /** Named form the lead came from (lead_forms.id), stored on NEW leads only. */
   formId?: string | null;
+  /** The language the visitor's browser was in (web forms); emails to them use it. */
+  language?: "en" | "he" | null;
 }
 
 export interface LeadFormWrite {
@@ -123,6 +125,7 @@ export async function writeInboundLead(
         .update({
           last_contacted_at: opts.receivedAt,
           last_communication_note: fields.lastCommunicationNote,
+          ...(opts.language ? { language: opts.language } : {}),
           // A repeat enquiry fills in or refreshes answers; it never blanks them.
           ...(opts.form ? opts.form.columns : {}),
           ...(opts.form && Object.keys(opts.form.answers).length > 0
@@ -153,6 +156,7 @@ export async function writeInboundLead(
       campaign: opts.campaign ?? null,
       ...(opts.form ? { ...opts.form.columns, answers: opts.form.answers } : {}),
       ...(opts.formId ? { form_id: opts.formId } : {}),
+      ...(opts.language ? { language: opts.language } : {}),
     })
     .select("id")
     .single();

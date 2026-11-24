@@ -41,6 +41,7 @@ import {
   resolveQuoteNextSteps,
 } from "../_shared/jobs/booking-next-steps.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 const payloadSchema = z.object({
   token: z.string().regex(/^[0-9a-f]{64}$/),
@@ -168,18 +169,25 @@ async function sendBookingConfirmation(
     engagementId: result.engagement_id ?? null,
     tenantBase: baseUrl,
   }).catch(() => null);
+  // The client's email goes in the client's own language.
+  const language = await resolveEmailLanguage(service, {
+    tenantId: t.id,
+    email: recipient.client_email,
+    tenantDefault: t.language_default,
+  });
   const outcome = await sendAutomaticEmail(service, {
     tenant: t,
     key: "booking_confirmed",
     quoteId: result.quote_id,
     to: recipient.client_email,
+    language,
     variables: bookingConfirmedVariables(result, {
       recipientName: recipient.client_name,
       quoteUrl: `${baseUrl}/quote/${payload.token}`,
       signUrl: nextSteps.contractSignPath ? `${baseUrl}${nextSteps.contractSignPath}` : null,
       payUrl: nextSteps.depositPayPath ? `${baseUrl}${nextSteps.depositPayPath}` : null,
-      signIn: signInUrl ? signInWording(t.language_default === "he" ? "he" : "en", signInUrl) : null,
-      language: t.language_default === "he" ? "he" : "en",
+      signIn: signInUrl ? signInWording(language, signInUrl) : null,
+      language,
     }),
   });
   console.log(`[accept-quote] booking_confirmed ${outcome} for quote ${result.quote_id}`);

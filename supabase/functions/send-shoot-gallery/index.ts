@@ -50,6 +50,7 @@ import {
   planGallerySend,
   type SendGallerySkip,
 } from "../_shared/photo-shop/send-gallery.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 const MAX_SHOOTS = 100;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -92,7 +93,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
 
   // Everything for the selected shoots, limited to this studio.
   const [engagements, details, shops, photos, tenantRow, sentLog, settings] = await Promise.all([
-    service.from("engagements").select("id, status, people:person_id(name, email)")
+    service.from("engagements").select("id, status, person_id, people:person_id(name, email)")
       .eq("tenant_id", tenantId).in("id", ids),
     service.from("job_details").select("engagement_id, job_status, auto_status, gallery_url, gallery_released_at, gallery_shared_at")
       .eq("tenant_id", tenantId).in("engagement_id", ids),
@@ -119,11 +120,15 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const message = cleanGalleryMessage(body?.message, standardBody);
   const photoUrl = galleryEmailPhotoUrl(body?.photoUrl, Deno.env.get("SUPABASE_URL") ?? "", tenantId);
   const photo = photoUrl ? { url: photoUrl, alt: cleanPhotoAlt(body?.photoAlt, tenant.name) } : null;
-  const strings = getEmailStrings(language, EMAIL_TEMPLATE_NAMES.GALLERY_READY);
-  const wording = {
-    body: standardBody,
-    closing: typeof strings.closing === "string" ? strings.closing : "",
-    sign_off: typeof strings.sign_off === "string" ? strings.sign_off : "",
+  // Each client gets the email in their own language. An unchanged box means the standard
+  // wording, so it comes in the client's language too; a message she typed goes as typed.
+  const wordingFor = (lang: "en" | "he") => {
+    const strings = getEmailStrings(lang, EMAIL_TEMPLATE_NAMES.GALLERY_READY);
+    return {
+      body: String(strings.body ?? ""),
+      closing: typeof strings.closing === "string" ? strings.closing : "",
+      sign_off: typeof strings.sign_off === "string" ? strings.sign_off : "",
+    };
   };
   // "Sincerely," and a name: what she typed in the box (kept for next time), else the
   // saved one, else her own name, else the studio's.
@@ -194,11 +199,17 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
         continue;
       }
       const name = typeof engagement.people?.name === "string" ? engagement.people.name.trim() : "";
+      const clientLanguage = await resolveEmailLanguage(service, {
+        tenantId,
+        personId: typeof engagement.person_id === "string" ? engagement.person_id : null,
+        email,
+        tenantDefault: tenant.language_default,
+      });
       const variables = galleryEmailVariables({
-        recipientName: name || (language === "he" ? "לקוח/ה יקר/ה" : "client"),
+        recipientName: name || (clientLanguage === "he" ? "לקוח/ה יקר/ה" : "client"),
         galleryUrl: plan.galleryUrl,
         shopUrl: shopLink?.url ?? null,
-        wording,
+        wording: wordingFor(clientLanguage),
         message,
         photo,
         signature,
@@ -213,6 +224,7 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
         engagementId,
         to: email,
         force: true,
+        language: clientLanguage,
         variables,
       });
       if (outcome !== "sent") {

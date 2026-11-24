@@ -31,6 +31,8 @@ export interface LoggedAnnouncement {
   templateName: string;
   subject: string;
   body: string;
+  /** The language subject and body are in. Default: the studio's. Client emails pass the client's. */
+  language?: "en" | "he";
   /** Extra variables stored with the log row (e.g. the order id). */
   variables?: Record<string, unknown>;
 }
@@ -38,7 +40,7 @@ export interface LoggedAnnouncement {
 /** Sends the email and logs it. Returns true when it was sent. */
 export async function sendLoggedAnnouncement(service: SupabaseClient, p: LoggedAnnouncement): Promise<boolean> {
   const sender = resolveTenantSender(p.tenant as unknown as TenantSenderInput);
-  const language = p.tenant.language_default === "en" ? "en" : "he";
+  const language = p.language ?? (p.tenant.language_default === "en" ? "en" : "he");
   const variables = { dunning_key: p.key, ...(p.variables ?? {}), subject: p.subject, body: p.body };
   let status = "sent";
   let failure: string | null = null;

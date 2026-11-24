@@ -368,6 +368,7 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
         ? { columns: formColumns, answers: checked.answers }
         : null,
       formId: namedForm?.id ?? null,
+      language: payload.lang ?? null,
     });
 
     const optIns = payload.marketingConsent?.items ?? [];

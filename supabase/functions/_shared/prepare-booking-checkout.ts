@@ -4,6 +4,7 @@ import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
 import { requireFeature } from "./feature-gate.ts";
 import { signWaiverToken } from "./waiver-token.ts";
 import { ensureClientLogin } from "./client-login.ts";
+import { parseEmailLanguage, rememberClientLanguage, type EmailLanguage } from "./resolve-email-language.ts";
 
 export interface PrepareBookingCheckoutBody {
   subdomain: string;
@@ -11,6 +12,8 @@ export interface PrepareBookingCheckoutBody {
   client_name: string;
   client_email: string;
   client_phone?: string | null;
+  /** The language the client's browser was in; every later email to them uses it. */
+  client_language?: EmailLanguage | null;
 }
 
 export interface PrepareBookingCheckoutResponse {
@@ -31,13 +34,14 @@ export function parsePrepareBookingCheckoutBody(
   const client_name = typeof b.client_name === "string" ? b.client_name.trim() : "";
   const client_email = typeof b.client_email === "string" ? b.client_email.trim().toLowerCase() : "";
   const client_phone = typeof b.client_phone === "string" ? b.client_phone.trim() : null;
+  const client_language = parseEmailLanguage(b.client_language);
 
   if (!subdomain) return { ok: false, error: "subdomain is required" };
   if (!hold_id) return { ok: false, error: "hold_id is required" };
   if (!client_name) return { ok: false, error: "client_name is required" };
   if (!client_email || !client_email.includes("@")) return { ok: false, error: "valid client_email is required" };
 
-  return { ok: true, body: { subdomain, hold_id, client_name, client_email, client_phone } };
+  return { ok: true, body: { subdomain, hold_id, client_name, client_email, client_phone, client_language } };
 }
 
 export async function prepareBookingCheckout(
@@ -129,6 +133,8 @@ export async function prepareBookingCheckout(
     }
     personId = createdPerson.id as string;
   }
+
+  await rememberClientLanguage(service, { tenantId, personId, language: body.client_language });
 
   const billingAccountId = await ensureBillingAccountForStudent(service, tenantId, personId);
 

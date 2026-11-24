@@ -6,6 +6,7 @@ import {
   type TenantSenderInput,
 } from "../notification-from.ts";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../email-send.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 import {
   buildDunningKey,
   hasDunningNotificationBeenSent,
@@ -56,7 +57,11 @@ export async function sendPaymentDunningReminder(
     return { sent: false, skipped: "tenant_not_found" };
   }
 
-  const language = tenant.language_default === "he" ? "he" : "en";
+  const language = await resolveEmailLanguage(service, {
+    tenantId: input.tenantId,
+    personId: input.recipientPersonId ?? input.personId,
+    tenantDefault: tenant.language_default as string | null,
+  });
 
   const context = await buildDunningEmailContext(service, {
     kind: input.kind,

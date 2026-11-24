@@ -3114,6 +3114,7 @@ export type Database = {
           form_id: string | null
           id: string
           interest: string | null
+          language: string | null
           last_communication_note: string | null
           last_contacted_at: string | null
           marketing_consent: boolean
@@ -3146,6 +3147,7 @@ export type Database = {
           form_id?: string | null
           id?: string
           interest?: string | null
+          language?: string | null
           last_communication_note?: string | null
           last_contacted_at?: string | null
           marketing_consent?: boolean
@@ -3178,6 +3180,7 @@ export type Database = {
           form_id?: string | null
           id?: string
           interest?: string | null
+          language?: string | null
           last_communication_note?: string | null
           last_contacted_at?: string | null
           marketing_consent?: boolean
@@ -4006,6 +4009,7 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           id: string
+          language: string | null
           media_consent: boolean
           medical_notes: string | null
           name: string
@@ -4026,6 +4030,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           id?: string
+          language?: string | null
           media_consent?: boolean
           medical_notes?: string | null
           name: string
@@ -4046,6 +4051,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           id?: string
+          language?: string | null
           media_consent?: boolean
           medical_notes?: string | null
           name?: string

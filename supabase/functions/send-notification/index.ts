@@ -17,6 +17,7 @@ import {
   type TenantSenderInput,
 } from "../_shared/notification-from.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 interface NotificationPayload {
   tenantId: string;
@@ -220,7 +221,12 @@ Deno.serve(withMonitoring("send-notification", async (req: Request) => {
               supabase,
               payload.tenantId,
             );
-            const language = tenant.language;
+            // The client's email goes in the client's own language.
+            const language = await resolveEmailLanguage(supabase, {
+              tenantId: payload.tenantId,
+              email: payload.recipientEmail,
+              tenantDefault: tenant.language,
+            });
             const overrides = await getEmailTemplateOverrides(
               supabase,
               payload.tenantId,

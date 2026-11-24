@@ -30,6 +30,7 @@ import {
 import { type DueShootEmail, dueShootEmailVariables, isSafeLink } from "../_shared/photographer-emails/variables.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { hourlyGalleryEmailVariables } from "../_shared/photo-shop/hourly-gallery-email.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -71,7 +72,12 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
       continue;
     }
     try {
-      const language = tenant.language_default === "he" ? "he" : "en";
+      // The client's email goes in the client's own language.
+      const language = await resolveEmailLanguage(service, {
+        tenantId: row.tenant_id,
+        email: row.recipient_email,
+        tenantDefault: tenant.language_default,
+      });
       // gallery_ready: one button to the photo shop, never SmugMug (Send gallery's rules).
       const variables = row.email_key === "gallery_ready"
         ? await hourlyGalleryEmailVariables(service, row, tenant, language)
@@ -85,6 +91,7 @@ Deno.serve(withMonitoring("run-shoot-emails", async (req) => {
         key: row.email_key,
         engagementId: row.engagement_id,
         to: row.recipient_email,
+        language,
         variables,
       });
       counts[outcome] += 1;

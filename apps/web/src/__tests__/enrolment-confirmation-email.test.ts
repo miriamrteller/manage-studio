@@ -62,7 +62,9 @@ describe("renderEnrolmentConfirmationHtml", () => {
     expect(html).not.toContain("{{STUDENT_NAME}}");
     expect(html).toContain("Primary (Monthly)");
     expect(html).toContain("Hi Miriam");
-    expect(html).toContain("Your enrollment in Primary (Monthly) is confirmed!");
+    // The class name is wrapped in invisible bidi isolates (U+2068 … U+2069), so mixed
+    // Hebrew/English text keeps its order.
+    expect(html).toContain("Your enrollment in \u2068Primary (Monthly)\u2069 is confirmed!");
     expect(html).toContain("Class details");
     expect(html).toContain("padding:28px 32px");
     expect(html).not.toMatch(/Student[\s\S]*Primary \(Monthly\)/);

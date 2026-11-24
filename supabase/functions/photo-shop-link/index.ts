@@ -26,6 +26,7 @@ import { sendLoggedAnnouncement } from "../_shared/logged-announcement.ts";
 import { TENANT_SENDER_COLUMNS } from "../_shared/notification-from.ts";
 import { buildClientShopLinkEmail } from "../_shared/photo-shop/email-copy.ts";
 import { createShopLink, LINK_DAYS, sha256Hex } from "../_shared/photo-shop/shop-link.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 const FEATURE = "billing:photo_shop";
 export { LINK_DAYS, sha256Hex };
@@ -106,8 +107,15 @@ Deno.serve(withMonitoring("photo-shop-link", async (req) => {
     .maybeSingle();
   if (tenant) {
     const t = tenant as Record<string, unknown>;
+    // The client's email goes in the client's own language.
+    const language = await resolveEmailLanguage(service, {
+      tenantId: client.tenantId,
+      personId: client.personId,
+      email: client.email,
+      tenantDefault: t.language_default as string | null,
+    });
     const copy = buildClientShopLinkEmail({
-      language: t.language_default === "en" ? "en" : "he",
+      language,
       studioName: t.name as string,
       url,
       days: LINK_DAYS,
@@ -117,6 +125,7 @@ Deno.serve(withMonitoring("photo-shop-link", async (req) => {
       tenantId: client.tenantId,
       to: client.email,
       personId: client.personId,
+      language,
       key: `photo_shop_link:${engagementId}:${expiresAt}`,
       templateName: "photo_shop_link",
       variables: { engagement_id: engagementId },

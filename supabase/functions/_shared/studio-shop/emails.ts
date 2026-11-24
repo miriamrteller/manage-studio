@@ -21,6 +21,7 @@ import {
   type Lang,
   type ShopEmailLine,
 } from "./email-copy.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 
 interface Loaded {
   order: {
@@ -123,8 +124,14 @@ export async function notifyFamilyShopOrderReady(service: SupabaseClient, orderI
       ? await resolveEnrolmentNotificationRecipient(service, l.order.tenant_id, l.order.ordered_by)
       : null) ?? (await resolveEnrolmentNotificationRecipient(service, l.order.tenant_id, l.order.person_id));
   if (!recipient) return false;
+  // Client emails go in the client's own language.
+  const language = await resolveEmailLanguage(service, {
+    tenantId: l.order.tenant_id,
+    personId: recipient.personId,
+    tenantDefault: l.tenant.language_default as string | null,
+  });
   const email = buildFamilyShopOrderReadyEmail({
-    language: lang(l.tenant),
+    language,
     studioName: l.tenant.name as string,
     forName: l.forName,
     lines: l.lines,
@@ -135,6 +142,7 @@ export async function notifyFamilyShopOrderReady(service: SupabaseClient, orderI
     tenantId: l.order.tenant_id,
     to: recipient.email,
     personId: recipient.personId,
+    language,
     key,
     templateName: "shop_order_ready",
     variables: { shop_order_id: orderId },
@@ -156,8 +164,8 @@ export async function notifyIfShopOrderPaid(service: SupabaseClient, requestId: 
   }
 }
 
-const money = (l: Loaded) =>
-  formatCurrency(l.order.total_minor, l.order.currency, lang(l.tenant) === "he" ? "he-IL" : "en-GB");
+const money = (l: Loaded, language: Lang = lang(l.tenant)) =>
+  formatCurrency(l.order.total_minor, l.order.currency, language === "he" ? "he-IL" : "en-GB");
 
 /** Public Shop page: thank the buyer, with the pay link for card orders. Safe to call more than once. */
 export async function notifyBuyerShopOrderPlaced(
@@ -169,11 +177,17 @@ export async function notifyBuyerShopOrderPlaced(
   if (!l || l.order.status !== "awaiting_payment" || !l.order.contact_email) return false;
   const key = `shop_order:${orderId}:placed`;
   if (await announcementAlreadySent(service, l.order.tenant_id, key)) return false;
+  const language = await resolveEmailLanguage(service, {
+    tenantId: l.order.tenant_id,
+    personId: l.order.person_id,
+    email: l.order.contact_email,
+    tenantDefault: l.tenant.language_default as string | null,
+  });
   const email = buildBuyerShopOrderPlacedEmail({
-    language: lang(l.tenant),
+    language,
     studioName: l.tenant.name as string,
     buyerName: l.order.contact_name ?? l.forName,
-    totalFormatted: money(l),
+    totalFormatted: money(l, language),
     lines: l.lines,
     payByCash: l.order.pay_by_cash,
     payUrl: !l.order.pay_by_cash && payToken ? `${baseUrl(l.tenant)}/pay/${payToken}` : null,
@@ -183,6 +197,7 @@ export async function notifyBuyerShopOrderPlaced(
     tenantId: l.order.tenant_id,
     to: l.order.contact_email,
     personId: l.order.person_id,
+    language,
     key,
     templateName: "shop_order_placed",
     variables: { shop_order_id: orderId },

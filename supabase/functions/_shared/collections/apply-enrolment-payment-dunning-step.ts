@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
 import { formatDate } from "../email-dist/format.js";
 import { buildEnrolmentPayUrl } from "../enrolment-pay-url.ts";
 import { resolveEnrolmentNotificationRecipient } from "../enrolment-recipient.ts";
+import { resolveEmailLanguage } from "../resolve-email-language.ts";
 import { resolveTenantSender, TENANT_SENDER_COLUMNS, type TenantSenderInput } from "../notification-from.ts";
 import { EMAIL_TEMPLATE_NAMES, sendRenderedEmail } from "../email-send.ts";
 import {
@@ -286,7 +287,11 @@ async function cancelEngagementForDunning(
     .single();
 
   const className = (offering?.name as string) ?? "your class";
-  const language = tenant?.language_default === "he" ? "he" : "en";
+  const language = await resolveEmailLanguage(service, {
+    tenantId: cancelled.tenant_id as string,
+    personId: recipient?.personId ?? (cancelled.person_id as string),
+    tenantDefault: (tenant?.language_default as string | null) ?? null,
+  });
   const locale = language === "he" ? "he-IL" : "en-GB";
   const dunningKey = buildDunningKey("enrolment_unpaid", input.engagementId, 3);
 

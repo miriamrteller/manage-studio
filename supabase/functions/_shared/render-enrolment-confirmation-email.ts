@@ -11,6 +11,7 @@ import {
   getEmailStrings,
   interpolateTemplate,
 } from "./email-dist/i18n/email.js";
+import { isolate } from "./bidi.ts";
 
 export interface RenderEnrolmentConfirmationInput {
   language: EnrolmentConfirmationLanguage;
@@ -99,9 +100,10 @@ function buildHeadline(
       : str(strings.enrollment_confirmed);
 
   // All four keys are bundled for en and he, so `template` is always set.
+  // Class and child names are typed by people, in either script: each stays one block.
   return interpolateTemplate(template ?? "", {
-    className: input.className,
-    studentName: input.studentName,
+    className: isolate(input.className),
+    studentName: isolate(input.studentName),
   });
 }
 

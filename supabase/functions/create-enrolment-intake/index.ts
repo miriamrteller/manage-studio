@@ -3,6 +3,7 @@ import { createServiceClient } from "../_shared/edge-runtime/supabase.ts";
 import { signWaiverToken } from "../_shared/waiver-token.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
 import { ensureClientLogin } from "../_shared/client-login.ts";
+import { rememberClientLanguage } from "../_shared/resolve-email-language.ts";
 
 interface GuardianInput {
   name: string;
@@ -29,6 +30,8 @@ interface CreateEngagementBody {
   studentPersonId: string;
   offeringId: string;
   seasonId: string;
+  /** The language the client's browser was in; later emails to them use it. */
+  clientLanguage?: string;
 }
 
 type IntakeBody = CreateFamilyBody | CreateEngagementBody;
@@ -228,6 +231,11 @@ Deno.serve(withMonitoring("create-enrolment-intake", async (req) => {
           payerPersonId = accountHolder.person_id as string;
         }
       }
+
+      // Emails to this family go out in the language they enrolled in.
+      await Promise.all([...new Set([studentPersonId, payerPersonId])].map((personId) =>
+        rememberClientLanguage(service, { tenantId, personId, language: body.clientLanguage })
+      ));
 
       let billingAccountId: string | null = null;
       const { data: existingBilling } = await service

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { currentClientLanguage } from '@/lib/clientLanguage';
 import type { Tenant } from '@shared/schemas';
 
 export interface GuestFamilyIntakeInput {
@@ -141,6 +142,7 @@ export class EnrolmentIntakeService {
         studentPersonId: input.studentPersonId,
         offeringId: input.offeringId,
         seasonId: input.seasonId,
+        clientLanguage: currentClientLanguage(),
       },
     });
 

@@ -23,6 +23,7 @@ import {
 } from "../_shared/contract-pdf/job-contract-signing.ts";
 import { AUTOMATIC_EMAIL_TENANT_COLUMNS } from "../_shared/photographer-emails/send.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 // PDF policy (see _shared/contract-pdf/evidence.ts):
 // - Dance waivers: V1 behaviour — the waiver_evidence row IS the tamper-evident
@@ -415,9 +416,19 @@ Deno.serve(withMonitoring("accept-waiver", async (req) => {
       }
       // Signed copy to the client and the photographer (idempotent per shoot; never fails the signing).
       if (contractTenant) {
+        // The contract is in the studio's language; the client's email goes in theirs.
+        const clientLanguage = await resolveEmailLanguage(service, {
+          tenantId,
+          personId: jobContract.personId,
+          tenantDefault: contractTenant.language_default,
+        });
+        const clientJob = clientLanguage === contractLanguage
+          ? jobContract
+          : await loadJobContractContext(service, { tenantId, engagementId: jobContract.engagementId, language: clientLanguage });
         await notifyJobContractSigned(service, {
           tenant: contractTenant,
           language: contractLanguage,
+          ...(clientJob ? { client: { language: clientLanguage, job: clientJob } } : {}),
           job: jobContract,
           evidence: replay
             ? {

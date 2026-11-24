@@ -11,6 +11,7 @@ import {
 import { shootCancelledVariables } from "../_shared/photographer-emails/variables.ts";
 import { syncBookingEventDelete } from "../_shared/sync-booking-event.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { resolveEmailLanguage } from "../_shared/resolve-email-language.ts";
 
 /**
  * Admin "Cancel shoot". In one step:
@@ -125,12 +126,17 @@ Deno.serve(withMonitoring("cancel-job", async (req) => {
       );
       if (tenant && recipient) {
         const automaticTenant = tenant as unknown as AutomaticEmailTenant;
-        const language = automaticTenant.language_default === "he" ? "he" : "en";
+        const language = await resolveEmailLanguage(service, {
+          tenantId,
+          personId: recipient.personId,
+          tenantDefault: automaticTenant.language_default,
+        });
         const outcome = await sendAutomaticEmail(service, {
           tenant: automaticTenant,
           key: "shoot_cancelled",
           engagementId: body.engagement_id,
           to: recipient.email,
+          language,
           variables: shootCancelledVariables(
             { recipientName: recipient.name, startsAt: engagement.booked_starts_at as string | null },
             language,
