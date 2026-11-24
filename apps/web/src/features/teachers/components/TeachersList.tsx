@@ -279,7 +279,7 @@ export function TeachersList() {
       <OwnClassesOnlySetting />
 
       <div className="flex justify-end">
-        <Button variant="primary" onClick={() => setIsAdding(true)}>
+        <Button variant="primary" data-tour="teachers-add" onClick={() => setIsAdding(true)}>
           {t('teachers.add')}
         </Button>
       </div>

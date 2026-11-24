@@ -193,7 +193,11 @@ function ReplyView({
   onLeave: () => void;
 }) {
   const { t } = useTranslation();
-  const { showMe, prefill } = reply;
+  const { prefill } = reply;
+  // "Show me" whenever the answer comes from a guide, also for a question that only asks for
+  // information: it opens the page and walks the steps, so the admin learns where things are
+  // (owner, 24 Nov 2026). Nothing opens by itself.
+  const showMe = reply.showMe ?? reply.guideIds[0] ?? null;
   return (
     <div className="space-y-2 text-sm">
       <p className="whitespace-pre-line" dir="auto">{reply.answer}</p>

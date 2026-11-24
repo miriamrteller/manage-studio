@@ -47,15 +47,21 @@ describe('help guides', () => {
   });
 
   it('only shows a kind of business its own guides', () => {
-    expect(helpTopicsFor('photographer').length).toBe(HELP_TOPICS.length);
-    expect(helpTopicsFor('dance-studio')).toEqual([]);
+    const photographer = helpTopicsFor('photographer');
+    const dance = helpTopicsFor('dance-studio');
+    expect(photographer.length).toBeGreaterThan(0);
+    expect(dance.map((x) => x.id)).toContain('new_class');
+    expect(photographer.some((x) => dance.includes(x))).toBe(false);
+    expect(photographer.length + dance.length).toBe(HELP_TOPICS.length);
+    expect(helpTopicsFor('generic')).toEqual([]);
     expect(helpTopicsFor(null)).toEqual([]);
   });
 
   it('links each guide to an admin page that exists in the router', () => {
     const router = routerSource as string;
     for (const { id, path } of HELP_TOPICS) {
-      expect(router.includes(`path: "${path.slice(1)}"`), `${id} → ${path}`).toBe(true);
+      const route = path.slice(1);
+      expect(router.includes(`path: "${route}"`) || router.includes(`path: '${route}'`), `${id} → ${path}`).toBe(true);
     }
   });
 });
@@ -69,14 +75,14 @@ describe('HelpPage', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { level: 1, name: 'help.title' })).toBeTruthy();
-    expect(screen.getAllByRole('link', { name: 'help.open_page' })).toHaveLength(HELP_TOPICS.length);
+    expect(screen.getAllByRole('link', { name: 'help.open_page' })).toHaveLength(helpTopicsFor('photographer').length);
     expect(screen.getAllByText('help.topics.packages.steps.1').length).toBe(1);
     fireEvent.click(screen.getByRole('button', { name: 'help.ask_button' }));
     expect(openReportProblem).toHaveBeenCalledWith('help');
   });
 
   it('says so when there are no guides for this kind of business yet', () => {
-    vertical = 'dance-studio';
+    vertical = 'generic';
     render(
       <MemoryRouter>
         <HelpPage />

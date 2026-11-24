@@ -111,6 +111,21 @@ describe('Ask OpalSwift panel', () => {
     );
   });
 
+  it('offers Show me for a question that only asks for information, and opens nothing by itself', async () => {
+    askAssistant.mockResolvedValue({
+      ok: true,
+      remaining: 19,
+      reply: { answer: 'Seasons are under Classes.', guideIds: ['seasons'], showMe: null, unknown: false, unknownReason: null, prefill: null },
+    });
+    const onShowMe = vi.fn();
+    render(<Harness onShowMe={onShowMe} />);
+    ask('Where are my seasons?');
+    await screen.findByText('Seasons are under Classes.');
+    expect(screen.getByTestId('where').textContent).toBe('/admin null');
+    fireEvent.click(screen.getByRole('button', { name: 'assistant.show_me' }));
+    expect(onShowMe).toHaveBeenCalledWith('seasons');
+  });
+
   it('stops asking at the daily limit', async () => {
     askAssistant.mockResolvedValue({ ok: false, code: 'daily_limit' });
     render(<Harness onShowMe={() => {}} />);
@@ -118,6 +133,13 @@ describe('Ask OpalSwift panel', () => {
     expect(await screen.findByText('assistant.errors.daily_limit')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('assistant.question_label'), { target: { value: 'again' } });
     await waitFor(() => expect((screen.getByRole('button', { name: 'assistant.ask' }) as HTMLButtonElement).disabled).toBe(true));
+  });
+
+  it('says so when the whole platform has used up today\'s questions', async () => {
+    askAssistant.mockResolvedValue({ ok: false, code: 'platform_limit' });
+    render(<Harness onShowMe={() => {}} />);
+    ask('one');
+    expect(await screen.findByText('assistant.errors.platform_limit')).toBeTruthy();
   });
 
   it('sends a package prefill to Packages', () => {

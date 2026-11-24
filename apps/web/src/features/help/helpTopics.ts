@@ -8,8 +8,9 @@ import { safeVertical, type VerticalId } from '@shared/index';
  * so a photographer never sees class-studio steps. `path` is the page the
  * guide's "Open this page" button goes to.
  *
- * These guides are also meant to be the only source the planned in-app
- * assistant answers from, so keep them short, factual and in step with the
+ * These guides are the only source Ask OpalSwift answers from (a copy is
+ * generated into supabase/functions/_shared/help-guides.ts by
+ * scripts/build-help-guides.mjs), so keep them short, factual and in step with the
  * screens: a PR that changes a flow updates its guide in both languages.
  */
 export type HelpTopic = {
@@ -34,6 +35,20 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
   { id: 'client_view', verticals: ['photographer'], path: '/admin/shop/photos' },
   { id: 'import_clients', verticals: ['photographer'], path: '/admin/people/import' },
   { id: 'automatic_emails', verticals: ['photographer'], path: '/admin/projects/quotes' },
+  // Dance studios (classes, seasons, parents enrolling children).
+  { id: 'seasons', verticals: ['dance-studio'], path: '/admin/classes/seasons' },
+  { id: 'levels', verticals: ['dance-studio'], path: '/admin/classes/levels' },
+  { id: 'new_class', verticals: ['dance-studio'], path: '/admin/classes' },
+  { id: 'teachers', verticals: ['dance-studio'], path: '/admin/classes/teachers' },
+  { id: 'parents_enrol', verticals: ['dance-studio'], path: '/classes' },
+  { id: 'enrol_student', verticals: ['dance-studio'], path: '/admin/people' },
+  { id: 'class_payments', verticals: ['dance-studio'], path: '/admin/finance/payments' },
+  { id: 'class_discounts', verticals: ['dance-studio'], path: '/admin/finance/discounts' },
+  { id: 'class_cards', verticals: ['dance-studio'], path: '/admin/classes/cards' },
+  { id: 'signed_forms', verticals: ['dance-studio'], path: '/admin/settings/waivers' },
+  { id: 'register', verticals: ['dance-studio'], path: '/admin/classes' },
+  { id: 'email_class', verticals: ['dance-studio'], path: '/admin/classes' },
+  { id: 'class_emails', verticals: ['dance-studio'], path: '/admin/notifications' },
 ];
 
 /** The guides for one kind of business, in reading order. */

@@ -40,6 +40,11 @@ const TOUR_DETAIL: Record<string, TourStep[]> = {
   import_clients: [{ path: '/admin/people', target: 'people-import' }, { path: '/admin/people/import' }],
   automatic_emails: [{ path: '/admin/projects/quotes', target: 'quotes-automatic' }],
   send_gallery: [{ path: '/admin/projects' }],
+  // Dance studios.
+  seasons: [{ path: '/admin/classes/seasons' }, { path: '/admin/classes/seasons', target: 'seasons-add' }],
+  new_class: [{ path: '/admin/classes', target: 'classes-add' }],
+  teachers: [{ path: '/admin/classes/teachers', target: 'teachers-add' }],
+  class_payments: [{ path: '/admin/finance/payments' }, { path: '/admin/finance/payments', target: 'payments-record' }],
 };
 
 /**

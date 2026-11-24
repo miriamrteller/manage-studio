@@ -191,7 +191,7 @@ export function AdminClassesList() {
       </div>
 
       <div className="flex justify-end">
-        <Button variant="primary" onClick={() => setIsCreating(true)}>
+        <Button variant="primary" data-tour="classes-add" onClick={() => setIsCreating(true)}>
           {t('pages.admin_classes.create_button', { entity: classLabels.singular })}
         </Button>
       </div>
