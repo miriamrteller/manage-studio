@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { errorBodyFrom } from '@/features/crm/components/InquiryForm';
+import type { ClassCouponResult } from '@/features/enrolment/lib/checkoutBootstrapTypes';
 
 /**
  * Studio shop orders (beta, flag billing:studio_shop). Families order in the portal and pay
@@ -52,7 +53,10 @@ export interface ShopOrder {
   person_name: string;
   ordered_by_name?: string | null;
   status: ShopOrderStatus;
+  /** Before discounts; what is paid is total_minor - discount_minor. */
   total_minor: number;
+  /** A client discount or coupon on the order's payment. */
+  discount_minor?: number;
   currency: string;
   created_at: string;
   paid_at: string | null;
@@ -86,6 +90,16 @@ export interface GuestCheckoutInput {
   /** Honeypot: always empty for people. */
   website: string;
   elapsedMs: number;
+  /** Optional coupon code: comes off the order; a code that doesn't work never stops it. */
+  couponCode?: string;
+}
+
+export interface GuestCheckoutResult {
+  orderId: string | null;
+  payToken: string | null;
+  /** What is paid, after any discount (null from an older server). */
+  totalMinor: number | null;
+  coupon: ClassCouponResult | null;
 }
 
 export interface CartLine {
@@ -145,7 +159,13 @@ export const ShopOrdersService = {
    * The public Shop page's checkout (anyone). Card: returns the pay link token. Paying the
    * studio directly: the order is sent in. Errors come back as "place_shop_order: <code>".
    */
-  async guestCheckout(input: GuestCheckoutInput): Promise<{ orderId: string | null; payToken: string | null }> {
+  /** The public Shop page offers a coupon box only when the studio has a code. Never an error. */
+  async studioOffersCoupons(tenantId: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('studio_offers_coupons', { p_tenant_id: tenantId });
+    return !error && data === true;
+  },
+
+  async guestCheckout(input: GuestCheckoutInput): Promise<GuestCheckoutResult> {
     const { data, error } = await supabase.functions.invoke('studio-shop-checkout', {
       body: {
         subdomain: input.subdomain,
@@ -157,15 +177,28 @@ export const ShopOrdersService = {
         captchaToken: input.captchaToken,
         website: input.website,
         elapsedMs: input.elapsedMs,
+        couponCode: input.couponCode?.trim() || null,
       },
     });
-    const body = (data ?? {}) as { ok?: boolean; orderId?: string | null; payToken?: string | null; error?: string };
+    const body = (data ?? {}) as {
+      ok?: boolean;
+      orderId?: string | null;
+      payToken?: string | null;
+      totalMinor?: number;
+      coupon?: ClassCouponResult;
+      error?: string;
+    };
     if (error || !body.ok) {
       const errBody = (await errorBodyFrom(error, data)) as { error?: unknown } | null;
       const code = typeof errBody?.error === 'string' && /^\w+$/.test(errBody.error) ? errBody.error : 'failed';
       throw new Error(`place_shop_order: ${code}`);
     }
-    return { orderId: body.orderId ?? null, payToken: body.payToken ?? null };
+    return {
+      orderId: body.orderId ?? null,
+      payToken: body.payToken ?? null,
+      totalMinor: typeof body.totalMinor === 'number' ? body.totalMinor : null,
+      coupon: body.coupon ?? null,
+    };
   },
 
   async cancelOrder(orderId: string): Promise<void> {

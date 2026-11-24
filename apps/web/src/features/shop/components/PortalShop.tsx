@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { formatMinor } from '@/features/jobs/lib/jobPaymentFormat';
+import { ShopOrderTotal } from './ShopOrderTotal';
 import { useStudioShopEnabled } from '../hooks/useStudioShop';
 import { StudioShopService } from '../services/studioShopService';
 import {
@@ -301,7 +302,7 @@ function MyOrder({ order: o, onChanged }: { order: ShopOrder; onChanged: () => P
     <li className="space-y-1 rounded-lg border p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium">{t('portal_shop.order_for', { name: o.person_name })}</span>
-        <span>{formatMinor(o.total_minor, o.currency, i18n.language)}</span>
+        <ShopOrderTotal order={o} />
       </div>
       <p className="text-muted-foreground">
         {o.lines

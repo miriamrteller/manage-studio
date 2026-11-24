@@ -9,6 +9,7 @@
     "private.class_session_places_taken",
     "private.class_session_starts_at",
     "private.coupon_uses",
+    "private.quote_client_discounts",
     "private.shop_engagement_id",
     "private.shop_offering_id",
     "public.accept_quote",

@@ -573,3 +573,167 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.apply_request_coupon(TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.apply_request_coupon(TEXT, TEXT) TO service_role;
+
+-- ---------------------------------------------------------------------------
+-- The discount shows wherever the price does: the quote page, shop order
+-- lists and the public Shop page's coupon box.
+-- ---------------------------------------------------------------------------
+
+-- The client's own discount for a quote, so the quote page can show the deposit and
+-- balance after it (worked out on the page as optional extras are ticked). Matched
+-- on the same emails the payment requests use. NULL when there is none.
+CREATE OR REPLACE FUNCTION private.quote_client_discounts(p_quote UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SET search_path = public
+AS $$
+DECLARE
+  v_q      quotes%ROWTYPE;
+  v_person UUID;
+  v_emails TEXT[] := '{}'::TEXT[];
+  v_email  TEXT;
+  v_rules  JSONB;
+  v_max    INT;
+BEGIN
+  SELECT * INTO v_q FROM quotes WHERE id = p_quote;
+  IF NOT FOUND OR NOT private.discounts_on(v_q.tenant_id) THEN
+    RETURN NULL;
+  END IF;
+  SELECT e.person_id INTO v_person FROM engagements e WHERE e.id = v_q.engagement_id;
+  IF v_person IS NULL THEN
+    SELECT a.person_id INTO v_person FROM accounts a WHERE a.id = v_q.account_id;
+  END IF;
+  IF v_person IS NOT NULL THEN
+    v_emails := private.person_contact_emails(v_person);
+  END IF;
+  SELECT lower(btrim(client_email)) INTO v_email FROM quote_client_contact(p_quote);
+  IF v_email IS NOT NULL AND v_email <> '' THEN
+    v_emails := v_emails || v_email;
+  END IF;
+  IF cardinality(v_emails) = 0 THEN
+    RETURN NULL;
+  END IF;
+  SELECT jsonb_agg(jsonb_build_object('unit', c.unit, 'value', c.value) ORDER BY c.unit, c.value)
+  INTO v_rules
+  FROM class_discount_clients c
+  WHERE c.tenant_id = v_q.tenant_id AND c.email = ANY(v_emails);
+  IF v_rules IS NULL THEN
+    RETURN NULL;
+  END IF;
+  SELECT max_total_percent INTO v_max FROM class_discount_settings WHERE tenant_id = v_q.tenant_id;
+  RETURN jsonb_build_object('rules', v_rules, 'max_total_percent', COALESCE(v_max, 30));
+END;
+$$;
+REVOKE ALL ON FUNCTION private.quote_client_discounts(UUID) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION get_public_quote(p_token TEXT, p_tenant_id UUID)
+RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_q      quotes%ROWTYPE;
+  v_status TEXT;
+BEGIN
+  IF p_token IS NULL OR char_length(p_token) <> 64 THEN RETURN NULL; END IF;
+  SELECT * INTO v_q FROM quotes WHERE public_token = p_token AND tenant_id = p_tenant_id;
+  -- Drafts are invisible: the admin has not sent them yet.
+  IF NOT FOUND OR v_q.status = 'draft' THEN RETURN NULL; END IF;
+
+  -- valid_until is information only: a sent quote stays open after the date.
+  v_status := v_q.status;
+
+  RETURN jsonb_build_object(
+    'status', v_status, 'title', v_q.title, 'currency', v_q.currency,
+    'shoot_date', v_q.shoot_date, 'valid_until', v_q.valid_until, 'notes', v_q.notes,
+    'deposit_percent', v_q.deposit_percent, 'balance_max_installments', v_q.balance_max_installments,
+    'required_minor', v_q.required_minor, 'optional_selected_minor', v_q.optional_selected_minor,
+    'total_minor', v_q.total_minor, 'deposit_minor', v_q.deposit_minor, 'balance_minor', v_q.balance_minor,
+    'accepted_at', v_q.accepted_at,
+    'client_name', (SELECT client_name FROM quote_client_contact(v_q.id)),
+    'client_discount', private.quote_client_discounts(v_q.id),
+    'lines', quote_lines_json(v_q.id));
+END;
+$$;
+
+-- What came off a shop order: its payment requests' discounts.
+CREATE OR REPLACE FUNCTION private.shop_order_discount_minor(p_order UUID)
+RETURNS INT
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT COALESCE(sum(r.discount_minor), 0)::INT
+  FROM job_payment_requests r
+  WHERE r.shop_order_id = p_order AND r.status <> 'cancelled';
+$$;
+REVOKE ALL ON FUNCTION private.shop_order_discount_minor(UUID) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION get_my_shop_orders()
+RETURNS JSONB LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'id', o.id, 'person_id', o.person_id, 'person_name', p.name, 'status', o.status,
+           'total_minor', o.total_minor, 'currency', o.currency, 'created_at', o.created_at,
+           'discount_minor', private.shop_order_discount_minor(o.id),
+           'paid_at', o.paid_at, 'ready_at', o.ready_at, 'collected_at', o.collected_at,
+           'refunded', o.refunded_at IS NOT NULL,
+           'pay_token', (SELECT r.public_token FROM job_payment_requests r
+                          WHERE r.shop_order_id = o.id AND r.status IN ('pending', 'sent') LIMIT 1),
+           'lines', private.shop_order_lines_json(o.id))
+           ORDER BY o.created_at DESC), '[]'::jsonb)
+    FROM shop_orders o JOIN people p ON p.id = o.person_id
+   WHERE o.tenant_id = get_my_tenant_id()
+     AND private.studio_shop_enabled(o.tenant_id)
+     AND o.status <> 'cancelled'
+     AND (o.person_id = get_my_person_id()
+          OR o.ordered_by = get_my_person_id()
+          OR (p.account_id IS NOT NULL AND p.account_id IN (SELECT get_my_account_ids())));
+$$;
+REVOKE ALL ON FUNCTION get_my_shop_orders() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION get_my_shop_orders() TO authenticated;
+
+CREATE OR REPLACE FUNCTION get_studio_shop_orders()
+RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_tenant_id UUID := get_my_tenant_id();
+BEGIN
+  IF v_tenant_id IS NULL OR NOT photo_shop_is_admin(v_tenant_id) THEN
+    RAISE EXCEPTION 'get_studio_shop_orders: access denied' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  RETURN (
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+             'id', o.id, 'person_id', o.person_id, 'person_name', p.name,
+             'ordered_by_name', ob.name, 'status', o.status,
+             'total_minor', o.total_minor, 'currency', o.currency, 'created_at', o.created_at,
+             'discount_minor', private.shop_order_discount_minor(o.id),
+             'paid_at', o.paid_at, 'ready_at', o.ready_at, 'collected_at', o.collected_at,
+             'cancelled_at', o.cancelled_at, 'refunded', o.refunded_at IS NOT NULL,
+             'pay_by_cash', o.pay_by_cash, 'guest', o.guest,
+             'contact_email', COALESCE(o.contact_email, p.email), 'contact_phone', o.contact_phone,
+             'request_id', (SELECT r.id FROM job_payment_requests r
+                             WHERE r.shop_order_id = o.id AND r.status IN ('pending', 'sent') LIMIT 1),
+             'lines', private.shop_order_lines_json(o.id))
+             ORDER BY o.created_at DESC), '[]'::jsonb)
+      FROM shop_orders o
+      JOIN people p ON p.id = o.person_id
+      LEFT JOIN people ob ON ob.id = o.ordered_by
+     WHERE o.tenant_id = v_tenant_id
+       AND (o.status <> 'cancelled' OR o.cancelled_at > now() - interval '30 days')
+  );
+END;
+$$;
+REVOKE ALL ON FUNCTION get_studio_shop_orders() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION get_studio_shop_orders() TO authenticated;
+
+-- The public Shop page offers a coupon box only when the studio has a code switched on.
+-- Says only whether there is one, never which.
+CREATE OR REPLACE FUNCTION public.studio_offers_coupons(p_tenant_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT private.discounts_on(p_tenant_id)
+     AND EXISTS (SELECT 1 FROM class_discount_coupons c WHERE c.tenant_id = p_tenant_id AND c.active);
+$$;
+REVOKE ALL ON FUNCTION public.studio_offers_coupons(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.studio_offers_coupons(UUID) TO anon, authenticated, service_role;

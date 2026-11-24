@@ -330,6 +330,53 @@ BEGIN
 END;
 $$;
 
+-- The discount shows wherever the price does: the quote page, shop orders, and the
+-- public Shop page's coupon box.
+DO $$
+DECLARE
+  v mids%ROWTYPE;
+  w sids%ROWTYPE;
+  q quotes%ROWTYPE;
+  j JSONB;
+  o UUID;
+  r job_payment_requests%ROWTYPE;
+  other UUID := gen_random_uuid();
+BEGIN
+  SELECT * INTO v FROM mids;
+  SELECT * INTO w FROM sids;
+
+  -- A quote for the shoot's client carries their own discount for the page to show.
+  INSERT INTO quotes (tenant_id, engagement_id, status, deposit_percent)
+  VALUES (v.studio, w.shoot, 'sent', 30) RETURNING * INTO q;
+  j := get_public_quote(q.public_token, v.studio);
+  IF j->'client_discount' IS NULL OR NOT (j->'client_discount'->'rules') @> '[{"unit":"amount","value":5000}]'::jsonb
+     OR (j->'client_discount'->>'max_total_percent')::int <> 30 THEN
+    RAISE EXCEPTION 'FAIL quote page client discount: %', j->'client_discount';
+  END IF;
+  -- ...and none when discounts are switched off.
+  INSERT INTO tenant_feature_overrides (tenant_id, feature_key, is_enabled, set_by)
+  VALUES (v.studio, 'billing:discounts', false, 'operator');
+  IF jsonb_typeof(get_public_quote(q.public_token, v.studio)->'client_discount') <> 'null' THEN
+    RAISE EXCEPTION 'FAIL quote discount while switched off';
+  END IF;
+  IF public.studio_offers_coupons(v.studio) THEN RAISE EXCEPTION 'FAIL coupons offered while switched off'; END IF;
+  DELETE FROM tenant_feature_overrides WHERE tenant_id = v.studio AND feature_key = 'billing:discounts';
+
+  -- A shop order: its payment request's discount is what came off the order.
+  INSERT INTO shop_orders (tenant_id, person_id, engagement_id, total_minor)
+  VALUES (v.studio, v.p2, w.shoot, 10000) RETURNING id INTO o;
+  INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor, shop_order_id)
+  VALUES (v.studio, w.shoot, 'Leotard', 10000, o) RETURNING * INTO r;
+  IF r.amount_minor <> 7000 OR private.shop_order_discount_minor(o) <> 3000 THEN
+    RAISE EXCEPTION 'FAIL shop order discount: request %, order discount %', r.amount_minor, private.shop_order_discount_minor(o);
+  END IF;
+
+  -- The public Shop page offers a coupon box only when the studio has a code.
+  IF NOT public.studio_offers_coupons(v.studio) THEN RAISE EXCEPTION 'FAIL studio with codes offers none'; END IF;
+  IF public.studio_offers_coupons(other) THEN RAISE EXCEPTION 'FAIL unknown studio offers coupons'; END IF;
+END;
+$$;
+
 -- A client email must be lower case; a coupon code upper case.
 DO $$
 BEGIN

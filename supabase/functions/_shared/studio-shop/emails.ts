@@ -49,7 +49,7 @@ async function load(service: SupabaseClient, orderId: string): Promise<Loaded | 
     .eq("id", orderId)
     .maybeSingle();
   if (!order) return null;
-  const [{ data: lines }, { data: tenant }, { data: person }] = await Promise.all([
+  const [{ data: lines }, { data: tenant }, { data: person }, { data: requests }] = await Promise.all([
     service
       .from("shop_order_lines")
       .select("product_name, variant_label, quantity")
@@ -61,10 +61,15 @@ async function load(service: SupabaseClient, orderId: string): Promise<Loaded | 
       .eq("id", order.tenant_id)
       .maybeSingle(),
     service.from("people").select("name").eq("id", order.person_id).maybeSingle(),
+    // A client discount or coupon comes off the order's payment request: the emails show what is paid.
+    service.from("job_payment_requests").select("discount_minor, status").eq("shop_order_id", orderId),
   ]);
+  const discountMinor = (requests ?? [])
+    .filter((r) => r.status !== "cancelled")
+    .reduce((sum, r) => sum + (Number(r.discount_minor) || 0), 0);
   if (!tenant) return null;
   return {
-    order: order as Loaded["order"],
+    order: { ...(order as Loaded["order"]), total_minor: Math.max(0, (order.total_minor as number) - discountMinor) },
     lines: (lines ?? []).map((l) => ({
       name: l.product_name as string,
       size: l.variant_label as string,

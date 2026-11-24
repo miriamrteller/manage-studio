@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatMinor } from '@/features/jobs/lib/jobPaymentFormat';
 import { useStudioShopOrders } from '../hooks/useStudioShop';
 import { sizeLabel, type ShopOrder, type ShopOrderStatus } from '../services/shopOrdersService';
+import { ShopOrderTotal } from './ShopOrderTotal';
 
 /** The order the studio works through: what to get ready first, then what waits for collection. */
 const GROUPS: ShopOrderStatus[] = ['paid', 'ready', 'awaiting_payment', 'collected', 'cancelled'];
@@ -96,7 +96,7 @@ function OrderRow({
             <Badge variant="secondary">{t('studio_shop.orders.paying_direct')}</Badge>
           )}
         </div>
-        <span className="font-medium">{formatMinor(o.total_minor, o.currency, i18n.language)}</span>
+        <ShopOrderTotal order={o} className="font-medium" />
       </div>
       {o.guest && (o.contact_email || o.contact_phone) && (
         <p className="text-muted-foreground" dir="ltr">

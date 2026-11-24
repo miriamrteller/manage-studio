@@ -26,6 +26,9 @@ import {
 } from '@/features/settings/lib/classDiscounts';
 import { ClassDiscountLines, discountLinesFromRow } from '@/features/enrolment/components/ClassDiscountLines';
 import { CouponCodeBox } from '@/features/enrolment/components/ClassCouponBox';
+import { quoteDiscountPreview } from '@/features/quotes/lib/quoteDiscount';
+import { QuoteTotalsSummary } from '@/features/quotes/components/QuoteTotalsSummary';
+import { ShopOrderTotal } from '@/features/shop/components/ShopOrderTotal';
 import { openItemsFrom } from '@/features/finance/hooks/usePayableItems';
 
 const TENANT = '00000000-0000-0000-0000-0000000000aa';
@@ -218,5 +221,38 @@ describe('discounts on every sale (pay page)', () => {
     fireEvent.change(screen.getByLabelText('Coupon code'), { target: { value: 'SHOOT10' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(await screen.findByText('Coupon applied. The price is updated.')).toBeInTheDocument();
+  });
+});
+
+describe('the discount wherever the price shows', () => {
+  it('quote page: a fixed client discount comes off the deposit once; a percentage off both', () => {
+    const fixed = quoteDiscountPreview({ depositMinor: 20000, balanceMinor: 35000 }, { rules: [{ unit: 'amount', value: 5000 }], max_total_percent: 30 });
+    expect(fixed).toEqual({ discountMinor: 5000, depositAfterMinor: 15000, balanceAfterMinor: 35000, totalAfterMinor: 50000 });
+    const pct = quoteDiscountPreview({ depositMinor: 20000, balanceMinor: 35000 }, { rules: [{ unit: 'percent', value: 10 }], max_total_percent: 30 });
+    expect(pct?.discountMinor).toBe(5500);
+    // within the studio's maximum on each payment
+    const capped = quoteDiscountPreview({ depositMinor: 10000, balanceMinor: 0 }, { rules: [{ unit: 'amount', value: 5000 }], max_total_percent: 30 });
+    expect(capped?.depositAfterMinor).toBe(7000);
+    expect(quoteDiscountPreview({ depositMinor: 100, balanceMinor: 100 }, null)).toBeNull();
+  });
+
+  it('quote totals show the discount and the deposit and balance after it', () => {
+    render(
+      <QuoteTotalsSummary
+        totals={{ requiredMinor: 55000, optionalSelectedMinor: 0, totalMinor: 55000, depositMinor: 20000, balanceMinor: 35000, pretaxMinor: 47009, vatMinor: 7991, vatRate: 0.17 }}
+        currency="ILS"
+        depositPercent={30}
+        discount={{ discountMinor: 5000, depositAfterMinor: 15000, balanceAfterMinor: 35000, totalAfterMinor: 50000 }}
+      />,
+    );
+    expect(screen.getByText('Your discount')).toBeInTheDocument();
+    expect(screen.getByText('Total after your discount')).toBeInTheDocument();
+    expect(screen.getByText(/150/)).toBeInTheDocument();
+  });
+
+  it('shop orders show what is paid, with the discount beside it', () => {
+    render(<ShopOrderTotal order={{ total_minor: 10000, discount_minor: 3000, currency: 'ILS' }} />);
+    expect(screen.getByText(/70/)).toBeInTheDocument();
+    expect(screen.getByText(/30.*discount/)).toBeInTheDocument();
   });
 });

@@ -2141,7 +2141,9 @@
         "total": "Total",
         "deposit": "Deposit ({{percent}}%)",
         "balance": "Balance (due on the shoot date)",
-        "vat_note": "Prices include VAT. The tax document shows the breakdown."
+        "vat_note": "Prices include VAT. The tax document shows the breakdown.",
+        "your_discount": "Your discount",
+        "total_after_discount": "Total after your discount"
       },
       "send": {
         "title": "Send to client",
@@ -2346,7 +2348,8 @@
       "not_emailed": "The order is marked ready, but we couldn't email the family (no email address on file). Please let them know.",
       "paying_direct": "Paying you directly",
       "record_cash": "Record cash payment",
-      "from_shop_page": "Shop page order"
+      "from_shop_page": "Shop page order",
+      "discount_off": "{{amount}} discount"
     }
   },
   "photo_shop_admin": {
@@ -5547,7 +5550,10 @@
       "too_many": "Too many orders from this email just now. Please try again later.",
       "switched_off": "The shop is closed right now.",
       "failed": "Something went wrong. Please try again."
-    }
+    },
+    "coupon_note": "The code comes off when you place the order. If it doesn't work, the order still goes through.",
+    "coupon_applied": "Your coupon came off the price.",
+    "sent_total": "To pay: {{total}}"
   },
   "clients_import": {
     "title": "Import from a spreadsheet",

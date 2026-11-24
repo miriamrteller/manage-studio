@@ -8433,6 +8433,10 @@ export type Database = {
           is_on: boolean
         }[]
       }
+      studio_offers_coupons: {
+        Args: { p_tenant_id: string }
+        Returns: boolean
+      }
       tenant_has_succeeded_payment: {
         Args: { p_tenant_id: string }
         Returns: boolean
