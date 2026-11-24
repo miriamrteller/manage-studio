@@ -12,7 +12,9 @@ import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { ConsentTemplate } from '@shared/schemas';
 import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
 import { TermPriceSummary } from '@/features/enrolment/components/TermPriceSummary';
-import type { PayPlan } from '@/features/enrolment/lib/checkoutBootstrapTypes';
+import { ClassDiscountLines } from './ClassDiscountLines';
+import { ClassCouponBox } from './ClassCouponBox';
+import type { CheckoutChargePayload, PayPlan } from '../lib/checkoutBootstrapTypes';
 
 interface TokenCompletionViewProps {
   engagementId: string;
@@ -43,7 +45,9 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
   });
 
   const context = bootstrap.context;
-  const charge = bootstrap.charge;
+  // A coupon code the parent typed gives a new charge at the lower price.
+  const [couponCharge, setCouponCharge] = useState<CheckoutChargePayload | null>(null);
+  const charge = couponCharge ?? bootstrap.charge;
 
   useEffect(() => {
     if (tokenStripped || !tokenInUrl || !context) return;
@@ -238,14 +242,30 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
           term={context.termPrice}
           currency={context.currency}
           busy={bootstrap.isFetching}
-          onChoose={(plan) => setPayPlan(plan)}
-        />
+          onChoose={(plan) => {
+            setCouponCharge(null);
+            setPayPlan(plan);
+          }}
+          payNowMinor={couponCharge?.amountMinor ?? context.amountMinor}
+        >
+          <ClassDiscountLines
+            listAmountMinor={couponCharge ? couponCharge.listAmountMinor : context.listAmountMinor}
+            discounts={couponCharge ? couponCharge.discounts : context.discounts}
+            currency={context.currency}
+          />
+        </TermPriceSummary>
       ) : (
         <div className="rounded-lg border border-gray-200 p-4 space-y-2">
           <p className="font-medium">{context.className}</p>
+          <ClassDiscountLines
+            listAmountMinor={couponCharge ? couponCharge.listAmountMinor : context.listAmountMinor}
+            discounts={couponCharge ? couponCharge.discounts : context.discounts}
+            currency={context.currency}
+            monthly={context.billingMode === 'recurring' && context.billingInterval === 'monthly'}
+          />
           <p className="text-sm text-gray-600">
             {t('pages.admin_enrol.amount_due')}:{' '}
-            {formatOfferingPrice(t, context.amountMinor, context.currency, i18n.language, {
+            {formatOfferingPrice(t, couponCharge?.amountMinor ?? context.amountMinor, context.currency, i18n.language, {
               billing_mode: context.billingMode,
               billing_interval: context.billingInterval,
             })}
@@ -255,9 +275,17 @@ export function TokenCompletionView({ engagementId, effectiveToken }: TokenCompl
           )}
         </div>
       )}
+      {charge.couponsOffered && (
+        <ClassCouponBox
+          classId={context.offeringId}
+          engagementId={context.engagementId}
+            enrolmentToken={effectiveToken}
+          onCharge={setCouponCharge}
+        />
+      )}
 
       <CheckoutPaymentShell
-        key={context.termPrice?.plan ?? 'price'}
+        key={`${context.termPrice?.plan ?? 'price'}-${charge.amountMinor ?? 'none'}`}
         classId={context.offeringId}
         engagementId={context.engagementId}
         enrolmentToken={effectiveToken}

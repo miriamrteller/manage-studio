@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Engagement } from '@shared/schemas';
 import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
@@ -6,6 +7,8 @@ import { StepBackButton } from './StepBackButton';
 import { EnrolmentTermsConsent } from './EnrolmentTermsConsent';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import { monthlyHintKey } from '../lib/monthlyHint';
+import { ClassDiscountLines } from './ClassDiscountLines';
+import { ClassCouponBox } from './ClassCouponBox';
 
 export interface StepCheckoutProps {
   enrolmentData: Partial<Engagement>;
@@ -25,7 +28,7 @@ export interface StepCheckoutProps {
 export function StepCheckout({
   enrolmentData,
   checkoutEnrolmentId,
-  checkoutCharge,
+  checkoutCharge: preparedCharge,
   checkoutError,
   isPreparing,
   requireAuth,
@@ -36,6 +39,9 @@ export function StepCheckout({
   canGoBack = true,
 }: StepCheckoutProps) {
   const { t, i18n } = useTranslation();
+  // A coupon code the parent typed gives a new charge at the lower price.
+  const [couponCharge, setCouponCharge] = useState<CheckoutChargePayload | null>(null);
+  const checkoutCharge = couponCharge ?? preparedCharge;
 
   if (!enrolmentData.offering_id || !enrolmentData.season_id) {
     return (
@@ -76,6 +82,12 @@ export function StepCheckout({
       <p className="text-sm text-muted-foreground">{t('enrolment.checkout_desc')}</p>
       {checkoutCharge?.amountMinor != null && checkoutCharge.currency && (
         <div className="rounded-lg bg-muted/40 px-3 py-2 space-y-1">
+          <ClassDiscountLines
+            listAmountMinor={checkoutCharge.listAmountMinor}
+            discounts={checkoutCharge.discounts}
+            currency={checkoutCharge.currency}
+            monthly={isMonthly}
+          />
           <p className="text-sm font-medium">
             {t('enrolment.checkout_total')}:{' '}
             {formatOfferingPrice(
@@ -92,6 +104,13 @@ export function StepCheckout({
           {isMonthly && (
             <p className="text-xs text-muted-foreground">{t(monthlyHintKey(checkoutCharge?.paymentProvider))}</p>
           )}
+          {checkoutCharge.couponsOffered && (
+            <ClassCouponBox
+              classId={enrolmentData.offering_id}
+              engagementId={checkoutEnrolmentId}
+              onCharge={setCouponCharge}
+            />
+          )}
         </div>
       )}
       <EnrolmentTermsConsent
@@ -101,6 +120,7 @@ export function StepCheckout({
         acceptedByRole={acceptedByRole}
       >
         <EnrolmentPaymentForm
+          key={checkoutCharge?.amountMinor ?? 'none'}
           classId={enrolmentData.offering_id}
           engagementId={checkoutEnrolmentId}
           requireAuth={requireAuth}

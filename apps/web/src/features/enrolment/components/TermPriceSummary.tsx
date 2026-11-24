@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@shared/format';
 import type { PayPlan, TermPriceView } from '../lib/checkoutBootstrapTypes';
@@ -13,12 +14,18 @@ export function TermPriceSummary({
   currency,
   onChoose,
   busy,
+  payNowMinor,
+  children,
 }: {
   className: string;
   term: TermPriceView;
   currency: string;
   onChoose: (plan: PayPlan) => void;
   busy: boolean;
+  /** What is paid now after a coupon or a client's own discount (default: the plan's first payment). */
+  payNowMinor?: number;
+  /** Coupon and client discount lines, shown above what is paid now. */
+  children?: ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const money = (minor: number) => formatCurrency(minor, currency, i18n.language);
@@ -91,8 +98,9 @@ export function TermPriceSummary({
           {t('enrolment.term_price.trial', { amount: money(term.trialCreditMinor) })}
         </p>
       )}
+      {children}
       <p className="font-medium">
-        {t('enrolment.term_price.pay_now', { amount: money(term.firstPaymentMinor[term.plan]) })}
+        {t('enrolment.term_price.pay_now', { amount: money(payNowMinor ?? term.firstPaymentMinor[term.plan]) })}
       </p>
     </div>
   );

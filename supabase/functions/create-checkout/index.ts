@@ -9,6 +9,7 @@ interface CreateCheckoutBody {
   pay_with?: "card" | "bit";
   pay_plan?: "monthly" | "upfront";
   is_mobile?: boolean;
+  coupon_code?: string;
 }
 
 Deno.serve(withMonitoring("create-checkout", async (req) => {
@@ -32,12 +33,13 @@ Deno.serve(withMonitoring("create-checkout", async (req) => {
       pay_with: body.pay_with === "bit" ? "bit" : undefined,
       ...(body.pay_plan === "monthly" || body.pay_plan === "upfront" ? { pay_plan: body.pay_plan } : {}),
       is_mobile: body.is_mobile === true,
+      ...(typeof body.coupon_code === "string" ? { coupon_code: body.coupon_code } : {}),
     });
     if (!result.ok) {
       return jsonResponse({ error: result.error }, result.status);
     }
 
-    const { charge } = result;
+    const { charge, coupon } = result;
     return jsonResponse({
       clientSecret: charge.clientSecret,
       paymentIntentId: charge.paymentIntentId,
@@ -52,6 +54,12 @@ Deno.serve(withMonitoring("create-checkout", async (req) => {
       alreadyPaid: charge.alreadyPaid,
       offlineInstructions: charge.offlineInstructions ?? null,
       onlinePaymentNotSetUp: charge.onlinePaymentNotSetUp ?? false,
+      billingMode: charge.billingMode ?? null,
+      billingInterval: charge.billingInterval ?? null,
+      ...(charge.listAmountMinor != null ? { listAmountMinor: charge.listAmountMinor } : {}),
+      ...(charge.discounts ? { discounts: charge.discounts } : {}),
+      ...(charge.couponsOffered ? { couponsOffered: true } : {}),
+      ...(coupon ? { coupon } : {}),
     });
   } catch (error) {
     console.error("[create-checkout]", error);

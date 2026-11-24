@@ -254,7 +254,7 @@ describe('menu per vertical', () => {
       '/admin',
       '/admin/leads', '/admin/leads/get', '/admin/leads/settings',
       '/admin/people', '/admin/people/families',
-      '/admin/classes', '/admin/classes/levels', '/admin/classes/seasons', '/admin/classes/teachers', '/admin/classes/cards',
+      '/admin/classes', '/admin/classes/levels', '/admin/classes/seasons', '/admin/classes/teachers', '/admin/classes/cards', '/admin/classes/discounts',
       ...bookings,
       '/admin/shop/studio',
       ...finance,

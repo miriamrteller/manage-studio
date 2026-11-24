@@ -1,11 +1,18 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
 import { ensureBillingAccountForStudent } from "./ensure-billing-account.ts";
+import {
+  engagementDiscountFromRow,
+  firstPaymentDiscount,
+  priceAfterDiscount,
+  type EngagementDiscount,
+} from "./payments/class-discount.ts";
+import { applyClassCoupon, studioHasClassCoupons, type ClassCouponResult } from "./payments/class-coupon.ts";
 import { buildChargeMetadata } from "./payments/providers/mock.ts";
 import type { ChargeMetadata } from "./payments/types.ts";
 import { createServiceClient, requireAuthUser } from "./edge-runtime/supabase.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
-import { loadTermPrice, saveTermPlan } from "./payments/term-price.ts";
+import { loadTermPrice, saveTermPlan, termClassDiscount } from "./payments/term-price.ts";
 import type { PayPlan, TermPriceSnapshot } from "./email-dist/termPricing.js";
 import { extractWaiverToken, verifyWaiverToken } from "./waiver-token.ts";
 
@@ -15,6 +22,8 @@ export interface CheckoutRequestBody {
   enrolment_token?: string;
   /** Term-priced class: monthly payments (default) or the whole term up front. */
   pay_plan?: PayPlan;
+  /** A coupon code the parent typed. A bad code never stops checkout: it is reported in `coupon`. */
+  coupon_code?: string;
 }
 
 export interface ResolvedCheckoutSession {
@@ -48,6 +57,13 @@ export interface ResolvedCheckoutSession {
   totalMinor: number;
   vatRate: number;
   currency: string;
+  /** The class price before the automatic class discount. */
+  listMinor: number;
+  discount: EngagementDiscount;
+  /** The studio has coupon codes for classes, so checkout offers a box to type one. */
+  couponsOffered: boolean;
+  /** The result of the coupon code in the request, if there was one. */
+  coupon: ClassCouponResult | null;
   metadata: ChargeMetadata;
   idempotencyKey: string;
   /** Set for a term-priced class: the calculation and the plan this charge is for. */
@@ -124,7 +140,7 @@ export async function resolveCheckoutSession(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, billing_account_id, pay_plan")
+    .select("id, tenant_id, person_id, offering_id, status, billing_account_id, pay_plan, discount_minor, first_discount_minor, discount_lines")
     .eq("id", body.engagement_id)
     .single();
 
@@ -192,12 +208,31 @@ export async function resolveCheckoutSession(
 
   const { data: offering, error: offeringError } = await service
     .from("offerings")
-    .select("id, tenant_id, price_minor, currency, billing_mode, billing_interval")
+    .select("id, tenant_id, price_minor, currency, billing_mode, billing_interval, offering_type")
     .eq("id", body.offering_id)
     .single();
 
   if (offeringError || !offering || offering.tenant_id !== tenantId) {
     return { ok: false, status: 404, error: "Offering not found" };
+  }
+
+  const isClass = offering.offering_type === "class";
+  let couponsOffered = false;
+  let coupon: ClassCouponResult | null = null;
+  let discountRow: Record<string, unknown> = engagement;
+  if (isClass) {
+    couponsOffered = await studioHasClassCoupons(service, tenantId);
+    if (couponsOffered && typeof body.coupon_code === "string" && body.coupon_code.trim()) {
+      coupon = await applyClassCoupon(service, engagement.id as string, body.coupon_code);
+      if (coupon.ok) {
+        const { data: fresh } = await service
+          .from("engagements")
+          .select("discount_minor, first_discount_minor, discount_lines")
+          .eq("id", engagement.id)
+          .single();
+        if (fresh) discountRow = fresh;
+      }
+    }
   }
 
   // Term pricing: what is paid now depends on the plan; the calculation is kept on the enrolment.
@@ -208,8 +243,14 @@ export async function resolveCheckoutSession(
       body.pay_plan ?? ((engagement.pay_plan as PayPlan | null) === "upfront" ? "upfront" : "monthly");
     termPrice = await saveTermPlan(service, body.engagement_id, loadedTerm, plan);
   }
+
+  const classDiscount = engagementDiscountFromRow(discountRow);
+  const discount = termPrice ? termClassDiscount(classDiscount) : classDiscount;
   const pricing = resolveOfferingPrice({
-    price_minor: termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number),
+    price_minor: priceAfterDiscount(
+      termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number),
+      firstPaymentDiscount(discount),
+    ),
   });
 
   const currency = (offering.currency ?? tenant.currency ?? "ILS").toUpperCase();
@@ -260,6 +301,10 @@ export async function resolveCheckoutSession(
       totalMinor: pricing.totalMinor,
       vatRate: pricing.vatRate,
       currency,
+      listMinor: termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number),
+      discount,
+      couponsOffered,
+      coupon,
       metadata,
       idempotencyKey: `engagement-${body.engagement_id}-${pricing.totalMinor}-${currency}${termPrice ? `-${termPrice.plan}` : ""}`,
       termPrice,

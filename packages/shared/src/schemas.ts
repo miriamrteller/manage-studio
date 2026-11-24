@@ -422,6 +422,21 @@ export const EngagementSchema = z.object({
   pay_plan: z.enum(['monthly', 'upfront']).nullable().optional(),
   /** Term pricing: the calculation the family saw (see termPricing.ts). */
   term_price: z.record(z.string(), z.unknown()).nullable().optional(),
+  /** Class discount off the class price, set by the database at enrolment (per month for monthly classes). */
+  discount_minor: z.number().int().nonnegative().optional(),
+  /** A first-payment coupon: comes off the first payment only. */
+  first_discount_minor: z.number().int().nonnegative().optional(),
+  coupon_id: UUIDSchema.nullable().optional(),
+  discount_lines: z
+    .array(
+      z.object({
+        kind: z.enum(['sibling', 'extra_class', 'early_bird', 'client', 'coupon']),
+        amount_minor: z.number().int().positive(),
+        first_only: z.boolean().optional(),
+        code: z.string().optional(),
+      }),
+    )
+    .optional(),
   created_at: TimestampSchema,
   updated_at: TimestampSchema.optional(),
 });

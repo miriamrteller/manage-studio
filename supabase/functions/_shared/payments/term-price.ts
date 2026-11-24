@@ -10,6 +10,7 @@ import {
 } from "../email-dist/termPricing.js";
 import { isSkippedHolidayIsoDate } from "../holidays.ts";
 import { parseClassReminders } from "../class-reminders.ts";
+import { NO_DISCOUNT, type EngagementDiscount } from "./class-discount.ts";
 
 /**
  * Term pricing loader (owner decision, 24 Nov 2026): gathers what packages/shared termPricing
@@ -240,4 +241,19 @@ export function termAmountNote(t: TermPriceSnapshot): string {
   if (t.sisterPct > 0) parts.push(`sister ${t.sisterPct}% off`);
   parts.push(`${t.months.length} monthly payments`);
   return parts.join(", ");
+}
+
+/**
+ * Class discounts (Settings › Discounts) on a term-priced enrolment. The term's own rules already
+ * give the early price and the sister discount, so the class discount's sibling, extra-class and
+ * early-bird lines are left out (never two discounts for the same thing). A client's own discount
+ * and a coupon still count: off the first payment, and an every-payment one off each monthly payment.
+ */
+export function termClassDiscount(discount: EngagementDiscount): EngagementDiscount {
+  const lines = discount.lines.filter((l) => l.kind === "client" || l.kind === "coupon");
+  const firstDiscountMinor = lines.filter((l) => l.firstOnly).reduce((s, l) => s + l.amountMinor, 0);
+  const discountMinor = lines.filter((l) => !l.firstOnly).reduce((s, l) => s + l.amountMinor, 0);
+  return discountMinor === 0 && firstDiscountMinor === 0
+    ? NO_DISCOUNT
+    : { discountMinor, firstDiscountMinor, lines };
 }

@@ -262,6 +262,15 @@ export const navigationConfig: NavItem[] = [
     area: 'classes',
   },
   {
+    // Class discounts: sibling, extra class, early bird, per-client and coupon codes.
+    path: '/admin/classes/discounts',
+    needs: 'teaches_classes',
+    labelKey: 'settings.tabs.discounts',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'classes',
+  },
+  {
     path: '/admin/projects',
     labelKey: 'nav.jobs',
     requiredRoles: ['tenant_admin'],
@@ -637,6 +646,7 @@ const PAGE_HINTS: Record<string, string> = {
   '/admin/classes/seasons': 'seasons',
   '/admin/classes/teachers': 'teachers',
   '/admin/classes/cards': 'class_cards',
+  '/admin/classes/discounts': 'discounts',
   '/admin/projects': 'projects',
   '/admin/bookings/diary': 'diary',
   '/admin/bookings/packages': 'packages',

@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
 import { resolveOfferingPrice } from "./email-dist/pricing.js";
+import { engagementDiscountFromRow, firstPaymentDiscount, hasDiscount, priceAfterDiscount } from "./payments/class-discount.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
 import { pickActiveConsentTemplate } from "./studio-legal.ts";
 import type { EnrolmentCompletionContext, TermPriceView } from "./checkout-bootstrap-types.ts";
-import { loadTermPrice, savedTermPrice } from "./payments/term-price.ts";
+import { loadTermPrice, savedTermPrice, termClassDiscount } from "./payments/term-price.ts";
 import type { TermPriceSnapshot } from "./email-dist/termPricing.js";
 import {
   resolveEnrolmentWaiverGateFromRows,
@@ -52,7 +53,7 @@ export async function loadEnrolmentCompletionContext(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at")
+    .select("id, tenant_id, person_id, offering_id, status, waiver_evidence_id, booked_starts_at, booked_ends_at, discount_minor, first_discount_minor, discount_lines")
     .eq("id", engagementId)
     .eq("tenant_id", tenantId)
     .single();
@@ -119,8 +120,12 @@ export async function loadEnrolmentCompletionContext(
   } else if (saved) {
     termPrice = termPriceView(saved);
   }
+  // A term-priced class keeps only a client's own discount and a coupon (see termClassDiscount).
+  const classDiscount = engagementDiscountFromRow(engagement);
+  const discount = termPrice ? termClassDiscount(classDiscount) : classDiscount;
+  const listMinor = termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number);
   const pricing = resolveOfferingPrice({
-    price_minor: termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number),
+    price_minor: priceAfterDiscount(listMinor, firstPaymentDiscount(discount)),
   });
 
   let template: WaiverTemplateRow | null = null;
@@ -215,6 +220,9 @@ export async function loadEnrolmentCompletionContext(
       template: template as Record<string, unknown> | null,
       isMinorStudent,
       amountMinor: pricing.totalMinor,
+      ...(hasDiscount(discount)
+        ? { listAmountMinor: listMinor, discounts: discount.lines }
+        : {}),
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
       billingMode: (offering.billing_mode as string | null) ?? null,
       billingInterval: (offering.billing_interval as string | null) ?? null,
@@ -260,6 +268,8 @@ export function flattenCompletionContext(context: EnrolmentCompletionContext): R
     template: context.template,
     isMinorStudent: context.isMinorStudent,
     amountMinor: context.amountMinor,
+    listAmountMinor: context.listAmountMinor ?? null,
+    discounts: context.discounts ?? [],
     currency: context.currency,
     billingMode: context.billingMode ?? null,
     billingInterval: context.billingInterval ?? null,

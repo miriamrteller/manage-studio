@@ -2,6 +2,7 @@ import { z } from "npm:zod@4.6.7";
 import { handleOptions, jsonResponse, internalError } from "../_shared/edge-runtime/cors.ts";
 import { createServiceClient, requireAuthUser } from "../_shared/edge-runtime/supabase.ts";
 import { resolveOfferingPrice } from "../_shared/email-dist/pricing.js";
+import { engagementDiscountFromRow, firstPaymentDiscount, priceAfterDiscount } from "../_shared/payments/class-discount.ts";
 import { finalisePayment } from "../_shared/payments/finalise-payment.ts";
 import { recordManualRenewal } from "../_shared/payments/record-manual-renewal.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
@@ -9,7 +10,7 @@ import { sendNoDocumentPaymentConfirmation } from "../_shared/payments/send-paym
 import { paidAtFor } from "../_shared/payments/paid-on.ts";
 import { recordStandalonePayment, StandalonePaymentSchema } from "../_shared/payments/record-standalone-payment.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
-import { loadTermPrice, saveTermPlan, savedTermPrice } from "../_shared/payments/term-price.ts";
+import { loadTermPrice, saveTermPlan, savedTermPrice, termClassDiscount } from "../_shared/payments/term-price.ts";
 
 const RecordPaymentBodySchema = z.object({
   engagement_id: z.string().guid(),
@@ -94,7 +95,7 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, billing_account_id, status")
+    .select("id, tenant_id, person_id, offering_id, billing_account_id, status, discount_minor, first_discount_minor, discount_lines")
     .eq("id", body.engagement_id)
     .single();
 
@@ -168,8 +169,14 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
       term = await saveTermPlan(service, body.engagement_id, loaded, plan);
     }
   }
+  // The enrolment's first payment: the class price (or the term's first payment) less its class
+  // discount and a first-payment coupon.
+  const classDiscount = engagementDiscountFromRow(engagement);
   const pricing = resolveOfferingPrice({
-    price_minor: term ? term.firstPaymentMinor[term.plan] : (offering.price_minor as number),
+    price_minor: priceAfterDiscount(
+      term ? term.firstPaymentMinor[term.plan] : (offering.price_minor as number),
+      firstPaymentDiscount(term ? termClassDiscount(classDiscount) : classDiscount),
+    ),
   });
 
   const totalMinor = body.amount_minor ?? pricing.totalMinor;

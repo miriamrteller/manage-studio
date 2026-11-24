@@ -1,6 +1,7 @@
 {
   "$comment": "Studio shop guest orders are paid through one hidden offering per studio (offering_type 'shop') and a hidden engagement per buyer (status 'shop'); see supabase/migrations/20261122192657_studio_shop_guest_checkout.sql. App and portal reads are hidden by row policies. Server code is not, so every database function and Edge Function query that reads offerings or engagements is listed here after a review: it either looks rows up by id, filters on a status or offering type that 'shop' is not, only touches shoots (job_details), or is noted below. apps/web/src/__tests__/shop-hidden-records-guard.test.ts fails when a new one appears: review it, then add it here.",
   "database_functions": [
+    "private.apply_class_discounts",
     "private.can_take_register",
     "private.class_card_take",
     "private.class_card_type_offering_check",
@@ -11,6 +12,7 @@
     "public.accept_quote",
     "public.add_job_photo_shop_photos",
     "public.advance_job_statuses",
+    "public.apply_class_coupon",
     "public.approve_age_review_engagement",
     "public.assert_age_ineligible_for_offering",
     "public.cancel_active_engagement",

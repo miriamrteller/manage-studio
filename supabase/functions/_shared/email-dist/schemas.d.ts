@@ -285,8 +285,8 @@ export declare const OfferingSchema: z.ZodObject<{
     price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     early_price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     status: z.ZodDefault<z.ZodEnum<{
-        active: "active";
         full: "full";
+        active: "active";
         cancelled: "cancelled";
     }>>;
     waiver_required: z.ZodDefault<z.ZodBoolean>;
@@ -396,6 +396,21 @@ export declare const EngagementSchema: z.ZodObject<{
         upfront: "upfront";
     }>>>;
     term_price: z.ZodOptional<z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
+    discount_minor: z.ZodOptional<z.ZodNumber>;
+    first_discount_minor: z.ZodOptional<z.ZodNumber>;
+    coupon_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    discount_lines: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        kind: z.ZodEnum<{
+            client: "client";
+            sibling: "sibling";
+            extra_class: "extra_class";
+            early_bird: "early_bird";
+            coupon: "coupon";
+        }>;
+        amount_minor: z.ZodNumber;
+        first_only: z.ZodOptional<z.ZodBoolean>;
+        code: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>>>;
     created_at: z.ZodString;
     updated_at: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
@@ -724,13 +739,13 @@ export type ConsentTemplate = z.infer<typeof ConsentTemplateSchema>;
 /** Minimal consent template fields required for the waiver signing UI. */
 export declare const WaiverSigningConsentTemplateSchema: z.ZodObject<{
     id: z.ZodString;
+    name: z.ZodString;
     language: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
         en: "en";
         he: "he";
     }>>>;
-    content: z.ZodString;
-    name: z.ZodString;
     version: z.ZodNumber;
+    content: z.ZodString;
 }, z.core.$strip>;
 export type WaiverSigningConsentTemplate = z.infer<typeof WaiverSigningConsentTemplateSchema>;
 export declare const WaiverViewedRequestSchema: z.ZodObject<{
