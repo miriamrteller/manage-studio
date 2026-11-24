@@ -1,0 +1,36 @@
+/*
+ * Wide lists on a phone: each row becomes a card, each cell a labelled line
+ * (data-label), so the row's buttons are on screen without sideways scrolling
+ * (24 Nov 2026 audit: the Leads "Send quote" button was off the screen).
+ * Only the look changes: the markup stays a table.
+ */
+@media (max-width: 639px) {
+  .stack-on-phone table,
+  .stack-on-phone tbody,
+  .stack-on-phone tr,
+  .stack-on-phone td {
+    display: block;
+    width: 100%;
+  }
+  .stack-on-phone thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .stack-on-phone tbody tr {
+    border-bottom: 1px solid rgb(229 231 235);
+    padding: 0.75rem 0;
+  }
+  .stack-on-phone td {
+    padding: 0.25rem 0.75rem;
+  }
+  .stack-on-phone td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    color: rgb(107 114 128);
+  }
+}
