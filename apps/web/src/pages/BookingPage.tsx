@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatDuration } from '@/lib/formatDuration';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -249,7 +250,7 @@ export default function BookingPage() {
                     <div className="font-medium leading-snug">{o.name}</div>
                     <div className="text-xs text-gray-500 sm:text-sm">
                       {[
-                        o.duration_mins ? t('scheduling.book.duration_mins', { count: o.duration_mins }) : null,
+                        o.duration_mins ? formatDuration(o.duration_mins, i18n.language) : null,
                         priceText(o),
                       ]
                         .filter(Boolean)
@@ -347,7 +348,7 @@ function EnquireList({
   offerings: BookableOffering[];
   priceText: (o: BookableOffering) => string | null;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="space-y-2" data-testid="enquire-packages">
       <h2 className="text-base font-semibold sm:text-lg">{t('scheduling.book.enquire_title')}</h2>
@@ -357,7 +358,7 @@ function EnquireList({
           <li key={o.id} className="rounded-md border border-gray-200 bg-white px-3 py-2.5">
             <div className="font-medium leading-snug" dir="auto">{o.name}</div>
             <div className="text-xs text-gray-500 sm:text-sm">
-              {[o.duration_mins ? t('scheduling.book.duration_mins', { count: o.duration_mins }) : null, priceText(o)]
+              {[o.duration_mins ? formatDuration(o.duration_mins, i18n.language) : null, priceText(o)]
                 .filter(Boolean)
                 .join(' · ')}
             </div>

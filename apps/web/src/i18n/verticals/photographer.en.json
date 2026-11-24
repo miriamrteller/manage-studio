@@ -157,6 +157,9 @@
     },
     "book": {
       "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and the photographer will reply with a quote."
+    },
+    "appointments": {
+      "service": "Package"
     }
   },
   "settings": {

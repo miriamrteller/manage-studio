@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useWorkModes } from '@/hooks/useWorkModes';
 import { formatCurrency } from '@shared/format';
 import type { PaymentLogRow } from '@shared/schemas';
 import {
@@ -15,6 +17,8 @@ interface PaymentsLogTableProps {
 
 export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
   const { t, i18n } = useTranslation();
+  // Project studios: the last column opens the shoot (24 Nov 2026 audit: it showed a raw "active").
+  const { projects, classes } = useWorkModes();
 
   return (
     <div className="card overflow-x-auto">
@@ -36,7 +40,7 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
         <tbody>
           {rows.map((row) => {
             const payer = getPayerDisplay(row, t('finance.payments.family_payment'));
-            const dateLabel = row.paid_at?.slice(0, 10) ?? row.created_at.slice(0, 10);
+            const dateLabel = formatPaymentDate(row.paid_at ?? row.created_at, i18n.language);
 
             return (
               <tr
@@ -67,12 +71,48 @@ export function PaymentsLogTable({ rows, onRowClick }: PaymentsLogTableProps) {
                 <td className="px-3 py-2">
                   <PaymentDocumentCell row={row} />
                 </td>
-                <td className="px-3 py-2">{row.engagement?.status ?? '—'}</td>
+                <td className="px-3 py-2">
+                  <EngagementCell engagement={row.engagement} linkToShoot={projects && !classes} />
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** "24 Nov 2026" / "24 בנוב׳ 2026", not 2026-11-24 (24 Nov 2026 audit). */
+export function formatPaymentDate(value: string, language: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  return date.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Jerusalem',
+  });
+}
+
+function EngagementCell({
+  engagement,
+  linkToShoot,
+}: {
+  engagement: PaymentLogRow['engagement'];
+  linkToShoot: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!engagement) return <>—</>;
+  const status = t(`pages.portal.enrolment_status.${engagement.status}`, { defaultValue: engagement.status });
+  if (!linkToShoot || !engagement.id) return <>{status}</>;
+  return (
+    <Link
+      to={`/admin/projects/${engagement.id}`}
+      className="underline"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {t('common.view')}
+    </Link>
   );
 }
