@@ -124,6 +124,8 @@ export const FEATURES = {
         photoShop: 'billing:photo_shop',
         /** Studio shop: families buy the studio's uniforms and items, paid through the child's class. Beta, opt-in only. */
         studioShop: 'billing:studio_shop',
+        /** Discounts: per-client discounts, coupon codes and class discounts, on every kind of sale. On for every studio. */
+        discounts: 'billing:discounts',
         /** Takbull keys and Test connection on Settings -> Payments. Testing only, opt-in only. */
         takbullTesting: 'billing:takbull_testing',
     },

@@ -118,6 +118,8 @@ export declare const FEATURES: {
         readonly photoShop: "billing:photo_shop";
         /** Studio shop: families buy the studio's uniforms and items, paid through the child's class. Beta, opt-in only. */
         readonly studioShop: "billing:studio_shop";
+        /** Discounts: per-client discounts, coupon codes and class discounts, on every kind of sale. On for every studio. */
+        readonly discounts: "billing:discounts";
         /** Takbull keys and Test connection on Settings -> Payments. Testing only, opt-in only. */
         readonly takbullTesting: "billing:takbull_testing";
     };

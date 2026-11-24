@@ -19,9 +19,10 @@ const QUERY_KEY = 'class-discount-settings';
 const COLUMNS = Object.keys(DEFAULT_CLASS_DISCOUNTS).join(', ');
 
 /**
- * Classes → Discounts: automatic class discounts (sibling, extra class, early bird).
- * All come switched off with suggested amounts filled in. The discount is worked out
- * when a child is enrolled and shown to the parent before paying.
+ * Finance → Discounts: how discounts add up and the studio's maximum, for every studio.
+ * Studios with classes also get the automatic class discounts (sibling, extra class,
+ * early bird), all switched off with suggested amounts filled in. The discount is worked
+ * out when a child is enrolled and shown to the parent before paying.
  */
 export function ClassDiscountSettings() {
   const { t } = useTranslation();
@@ -68,9 +69,7 @@ export function ClassDiscountSettings() {
   });
 
   if (!tenant) return null;
-  if (!tenant.profile?.teachesClasses) {
-    return <p className="text-sm text-muted-foreground">{t('settings.class_discounts.classes_only')}</p>;
-  }
+  const classes = Boolean(tenant.profile?.teachesClasses);
 
   const set = <K extends keyof ClassDiscountForm>(key: K, value: ClassDiscountForm[K]) => {
     setSaved(false);
@@ -163,20 +162,23 @@ export function ClassDiscountSettings() {
     <section className="space-y-5" aria-labelledby={`${id}-title`}>
       <div className="space-y-1">
         <h2 id={`${id}-title`} className="text-lg font-semibold text-foreground">
-          {t('settings.class_discounts.title')}
+          {t(classes ? 'settings.class_discounts.title' : 'settings.class_discounts.general_title')}
         </h2>
-        <p className="text-sm text-muted-foreground">{t('settings.class_discounts.intro')}</p>
+        <p className="text-sm text-muted-foreground">
+          {classes && `${t('settings.class_discounts.intro')} `}
+          {t('settings.class_discounts.general_intro')}
+        </p>
       </div>
 
-      {rule(
+      {classes && rule(
         'sibling',
         <>
           {valueInput('sibling_value', t('settings.class_discounts.sibling_second'), form.sibling_unit)}
           {valueInput('sibling_more_value', t('settings.class_discounts.sibling_more'), form.sibling_unit)}
         </>,
       )}
-      {rule('extra_class', valueInput('extra_class_value', t('settings.class_discounts.value'), form.extra_class_unit))}
-      {rule(
+      {classes && rule('extra_class', valueInput('extra_class_value', t('settings.class_discounts.value'), form.extra_class_unit))}
+      {classes && rule(
         'early_bird',
         <>
           {valueInput('early_bird_value', t('settings.class_discounts.value'), form.early_bird_unit)}

@@ -244,7 +244,7 @@ describe('menu per vertical', () => {
     '/admin/settings?tab=invoicing', '/admin/settings?tab=legal', '/admin/settings?tab=security',
   ];
   const finance = [
-    '/admin/finance', '/admin/finance/payments', '/admin/finance/expenses', '/admin/finance/expenses/categories',
+    '/admin/finance', '/admin/finance/payments', '/admin/finance/discounts', '/admin/finance/expenses', '/admin/finance/expenses/categories',
     '/admin/finance/import', '/admin/finance/accounts',
   ];
   const bookings = ['/admin/bookings/packages', '/admin/bookings/diary'];
@@ -254,7 +254,7 @@ describe('menu per vertical', () => {
       '/admin',
       '/admin/leads', '/admin/leads/get', '/admin/leads/settings',
       '/admin/people', '/admin/people/families',
-      '/admin/classes', '/admin/classes/levels', '/admin/classes/seasons', '/admin/classes/teachers', '/admin/classes/cards', '/admin/classes/discounts',
+      '/admin/classes', '/admin/classes/levels', '/admin/classes/seasons', '/admin/classes/teachers', '/admin/classes/cards',
       ...bookings,
       '/admin/shop/studio',
       ...finance,

@@ -262,15 +262,6 @@ export const navigationConfig: NavItem[] = [
     area: 'classes',
   },
   {
-    // Class discounts: sibling, extra class, early bird, per-client and coupon codes.
-    path: '/admin/classes/discounts',
-    needs: 'teaches_classes',
-    labelKey: 'settings.tabs.discounts',
-    requiredRoles: ['tenant_admin'],
-    sectionKey: 'main',
-    area: 'classes',
-  },
-  {
     path: '/admin/projects',
     labelKey: 'nav.jobs',
     requiredRoles: ['tenant_admin'],
@@ -336,6 +327,16 @@ export const navigationConfig: NavItem[] = [
   {
     path: '/admin/finance/payments',
     labelKey: 'finance.payments.title',
+    requiredRoles: ['tenant_admin'],
+    sectionKey: 'main',
+    area: 'finance',
+  },
+  {
+    // Discounts: per-client discounts and coupon codes for every sale; studios with classes
+    // also get sibling, extra class and early bird. Own switch, on for every studio.
+    path: '/admin/finance/discounts',
+    featureKey: FEATURES.billing.discounts,
+    labelKey: 'settings.tabs.discounts',
     requiredRoles: ['tenant_admin'],
     sectionKey: 'main',
     area: 'finance',
@@ -646,7 +647,6 @@ const PAGE_HINTS: Record<string, string> = {
   '/admin/classes/seasons': 'seasons',
   '/admin/classes/teachers': 'teachers',
   '/admin/classes/cards': 'class_cards',
-  '/admin/classes/discounts': 'discounts',
   '/admin/projects': 'projects',
   '/admin/bookings/diary': 'diary',
   '/admin/bookings/packages': 'packages',
@@ -655,6 +655,7 @@ const PAGE_HINTS: Record<string, string> = {
   '/admin/shop/studio': 'studio_shop',
   '/admin/finance': 'finance',
   '/admin/finance/payments': 'payments',
+  '/admin/finance/discounts': 'discounts',
   '/admin/finance/expenses': 'expenses',
   '/admin/finance/expenses/categories': 'expense_categories',
   '/admin/finance/import': 'import',

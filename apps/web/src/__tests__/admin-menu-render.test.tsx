@@ -150,13 +150,20 @@ describe('tabs along the top of an area', () => {
     expect(tabLabels()).toEqual(['Services', 'Diary']);
   });
 
-  it('Classes: classes, levels, seasons, teachers, class cards, discounts', async () => {
+  it('Classes: classes, levels, seasons, teachers, class cards', async () => {
     await setLanguage('en');
     renderTabs('dance', '/admin/classes/seasons');
-    expect(tabLabels()).toHaveLength(6);
+    expect(tabLabels()).toHaveLength(5);
     expect(tabLabels()[0]).toBe('Classes');
     expect(tabLabels()).toContain('Class cards');
-    expect(tabLabels()).toContain('Discounts');
+    expect(tabLabels()).not.toContain('Discounts');
+  });
+
+  it('Finance has Discounts for every studio, not only classes', async () => {
+    await setLanguage('en');
+    renderTabs('photographer', '/admin/finance/discounts');
+    expect(screen.getByRole('link', { name: 'Discounts' })).toHaveAttribute('href', '/admin/finance/discounts');
+    expect(screen.getByRole('link', { name: 'Discounts' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('Settings: each section is a tab with its own address', async () => {

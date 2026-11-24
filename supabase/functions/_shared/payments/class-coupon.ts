@@ -2,9 +2,10 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.
 import type { ClassCouponResult } from "../checkout-bootstrap-types.ts";
 
 /**
- * Coupon codes for classes (class_discount_coupons). A parent types a code at
- * checkout; public.apply_class_coupon checks it and puts it on the enrolment.
- * A bad code never stops checkout: the parent sees why and pays the full price.
+ * Coupon codes (class_discount_coupons; the name is historical, they work on every
+ * sale). A client types a code at checkout: public.apply_class_coupon puts it on an
+ * enrolment or booking, public.apply_request_coupon on a payment request (/pay).
+ * A bad code never stops payment: the client sees why and pays the full price.
  */
 export type { ClassCouponResult };
 type ClassCouponReason = Extract<ClassCouponResult, { ok: false }>["reason"];
@@ -38,8 +39,33 @@ export async function applyClassCoupon(
   return parseClassCouponResult(data);
 }
 
-/** True when the studio has at least one coupon switched on (checkout then offers the code box). */
+export async function applyRequestCoupon(
+  service: SupabaseClient,
+  token: string,
+  code: string,
+): Promise<ClassCouponResult> {
+  const { data, error } = await service.rpc("apply_request_coupon", {
+    p_token: token,
+    p_code: code.slice(0, 80),
+  });
+  if (error) {
+    console.error("[apply_request_coupon]", error.message);
+    return { ok: false, reason: "error" };
+  }
+  return parseClassCouponResult(data);
+}
+
+/** The studio has discounts switched on (feature billing:discounts, on for every studio by default). */
+export async function studioDiscountsOn(service: SupabaseClient, tenantId: string): Promise<boolean> {
+  const { data, error } = await service.rpc("get_tenant_features", { p_tenant_id: tenantId });
+  // Can't tell: leave discounts on (the database checks again when a code is applied).
+  if (error || !Array.isArray(data)) return true;
+  return (data as string[]).includes("billing:discounts");
+}
+
+/** True when the studio has discounts on and at least one coupon switched on (checkout then offers the code box). */
 export async function studioHasClassCoupons(service: SupabaseClient, tenantId: string): Promise<boolean> {
+  if (!(await studioDiscountsOn(service, tenantId))) return false;
   const { count, error } = await service
     .from("class_discount_coupons")
     .select("id", { count: "exact", head: true })

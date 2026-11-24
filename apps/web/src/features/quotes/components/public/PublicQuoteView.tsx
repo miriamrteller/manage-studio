@@ -7,6 +7,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { BackToPortalButton } from '@/features/jobs/components/BackToPortalButton';
 import { safePayPath, safeSignPath } from '@/features/jobs/lib/bookingFlowPaths';
 import { QuoteTotalsSummary } from '../QuoteTotalsSummary';
+import { quoteDiscountPreview } from '../../lib/quoteDiscount';
 import { formatQuoteDate } from '../../lib/quoteFormat';
 import {
   acceptPublicQuote, declinePublicQuote, fetchPublicQuote, type AcceptQuoteResponse, type PublicQuote,
@@ -56,6 +57,8 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
     [quote.lines, quote.deposit_percent, selected],
   );
 
+  const discount = useMemo(() => quoteDiscountPreview(totals, quote.client_discount), [totals, quote.client_discount]);
+
   // "Accept and pay deposit" is one button (owner, 13 Nov 2026): accepting goes straight
   // on to the pay page. Signing the contract is offered there, never in the way.
   const withDeposit = totals.depositMinor > 0;
@@ -96,7 +99,12 @@ function QuoteBody({ quote, token, tenantId, language, onSettled }: QuoteBodyPro
         <PublicQuoteLines lines={quote.lines} currency={quote.currency} selected={selected} onToggle={open ? toggle : null} />
       </section>
       <section className="card p-4">
-        <QuoteTotalsSummary totals={totals} currency={quote.currency} depositPercent={quote.deposit_percent} />
+        <QuoteTotalsSummary
+          totals={totals}
+          currency={quote.currency}
+          depositPercent={quote.deposit_percent}
+          discount={discount}
+        />
       </section>
       <div role="status" aria-live="polite">
         {quote.status === 'accepted' && <p className="alert-success">{t('pages.public_quote.accepted')}</p>}

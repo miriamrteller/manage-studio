@@ -15,6 +15,7 @@ import {
   ShopOrdersService,
   shopOrderErrorCode,
   sizeLabel,
+  type GuestCheckoutResult,
   type GuestPayBy,
   type PublicCatalogueItem,
   type PublicCatalogueVariant,
@@ -50,7 +51,12 @@ export default function PublicShopPage() {
   const items = catalogue.data ?? [];
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [sent, setSent] = useState<GuestPayBy | null>(null);
+  const [sent, setSent] = useState<{ payBy: GuestPayBy; result: GuestCheckoutResult; currency: string } | null>(null);
+  const coupons = useQuery({
+    queryKey: ['studio-shop', 'offers-coupons', tenant?.id],
+    queryFn: () => ShopOrdersService.studioOffersCoupons(tenant!.id),
+    enabled: !!tenant?.id,
+  });
   const addToCart = (item: PublicCatalogueItem, variant: PublicCatalogueVariant, quantity: number) =>
     setCart((prev) => {
       const at = prev.findIndex((c) => c.variant.id === variant.id);
@@ -60,11 +66,12 @@ export default function PublicShopPage() {
       return next;
     });
 
-  const onPlaced = async (payBy: GuestPayBy, payToken: string | null) => {
+  const onPlaced = async (payBy: GuestPayBy, result: GuestCheckoutResult) => {
+    const currency = cart[0]?.item.currency ?? 'ILS';
     setCart([]);
     await queryClient.invalidateQueries({ queryKey });
-    if (payBy === 'card' && payToken) navigate(`/pay/${payToken}`);
-    else setSent(payBy);
+    if (payBy === 'card' && result.payToken) navigate(`/pay/${result.payToken}`);
+    else setSent({ payBy, result, currency });
   };
 
   return (
@@ -79,7 +86,19 @@ export default function PublicShopPage() {
       {sent ? (
         <div className="card space-y-2 p-4" role="status">
           <h2 className="text-lg font-semibold">{t('public_shop.sent_title')}</h2>
-          <p>{sent === 'studio' ? t('public_shop.sent_studio') : t('public_shop.sent')}</p>
+          <p>{sent.payBy === 'studio' ? t('public_shop.sent_studio') : t('public_shop.sent')}</p>
+          {sent.result.coupon && (
+            <p className="text-sm">
+              {sent.result.coupon.ok
+                ? t('public_shop.coupon_applied')
+                : t(`class_discounts.coupon_reason_${sent.result.coupon.reason}`)}
+            </p>
+          )}
+          {typeof sent.result.totalMinor === 'number' && (
+            <p className="font-medium">
+              {t('public_shop.sent_total', { total: formatMinor(sent.result.totalMinor, sent.currency, i18n.language) })}
+            </p>
+          )}
           <Button variant="outline" size="sm" onClick={() => setSent(null)}>
             {t('public_shop.shop_again')}
           </Button>
@@ -135,6 +154,7 @@ export default function PublicShopPage() {
                 subdomain={tenant.subdomain}
                 cart={cart}
                 onPlaced={onPlaced}
+                couponsOffered={coupons.data === true}
                 onStockChanged={() => queryClient.invalidateQueries({ queryKey })}
               />
             </div>
@@ -150,11 +170,14 @@ function Checkout({
   cart,
   onPlaced,
   onStockChanged,
+  couponsOffered,
 }: {
   subdomain: string;
   cart: CartItem[];
-  onPlaced: (payBy: GuestPayBy, payToken: string | null) => Promise<void>;
+  onPlaced: (payBy: GuestPayBy, result: GuestCheckoutResult) => Promise<void>;
   onStockChanged: () => void;
+  /** The studio has a coupon code: offer an optional box for it. */
+  couponsOffered: boolean;
 }) {
   const { t } = useTranslation();
   const id = useId();
@@ -164,6 +187,8 @@ function Checkout({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [payBy, setPayBy] = useState<GuestPayBy>('card');
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [shownAt] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
@@ -183,9 +208,10 @@ function Checkout({
         captchaToken: captcha.token,
         website: honeypot,
         elapsedMs: Date.now() - shownAt,
+        couponCode: couponOpen ? couponCode : undefined,
       }),
     onMutate: () => setError(null),
-    onSuccess: ({ payToken }) => onPlaced(payBy, payToken),
+    onSuccess: (result) => onPlaced(payBy, result),
     onError: (err) => {
       captcha.reset();
       const code = shopOrderErrorCode(err);
@@ -229,6 +255,31 @@ function Checkout({
           </label>
         ))}
       </fieldset>
+      {couponsOffered &&
+        (couponOpen ? (
+          <div className="space-y-1">
+            <label htmlFor={`${id}-coupon`} className="block text-sm font-medium">
+              {t('class_discounts.coupon_label')}
+            </label>
+            <Input
+              id={`${id}-coupon`}
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+              dir="ltr"
+              className="max-w-[12rem]"
+              aria-describedby={`${id}-coupon-note`}
+            />
+            <span id={`${id}-coupon-note`} className="block text-xs text-muted-foreground">
+              {t('public_shop.coupon_note')}
+            </span>
+          </div>
+        ) : (
+          <button type="button" className="text-sm underline text-muted-foreground" onClick={() => setCouponOpen(true)}>
+            {t('class_discounts.coupon_open')}
+          </button>
+        ))}
       <p className="text-sm text-muted-foreground">
         {t('public_shop.collect_note')}
         {payBy === 'card' ? ` ${t('public_shop.card_note')}` : ''}

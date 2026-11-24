@@ -5,7 +5,9 @@
  * signed in or not, and collects at the studio (owner, 22 Nov 2026).
  *   { subdomain, name, email, phone?, lines: [{ variant_id, quantity }], payBy: "card" | "studio",
  *     captchaToken?, website? (honeypot), elapsedMs? }
- *   → { ok: true, orderId, payToken? }   payToken only for card: the usual /pay/:token page.
+ *     couponCode? (optional: comes off the order; a code that doesn't work never stops it)
+ *   → { ok: true, orderId, payToken?, totalMinor, coupon? }   payToken only for card: the usual
+ *     /pay/:token page. totalMinor is what is paid, after any discount.
  *   → { error: code }                     sold_out, item_not_found, switched_off, ...
  *
  * The buyer is the studio's client with that email, or a new client (place_guest_shop_order).
@@ -24,6 +26,7 @@ import { verifyTurnstile } from "../_shared/turnstile.ts";
 import { leadCaptchaPasses } from "../_shared/crm-contract/lead-capture-guard.ts";
 import { ensureClientLogin } from "../_shared/client-login.ts";
 import { notifyBuyerShopOrderPlaced, notifyStudioShopOrderSentIn } from "../_shared/studio-shop/emails.ts";
+import { applyRequestCoupon, type ClassCouponResult } from "../_shared/payments/class-coupon.ts";
 
 const BodySchema = z.object({
   subdomain: z.string().min(1).max(100),
@@ -38,6 +41,7 @@ const BodySchema = z.object({
   captchaToken: z.string().max(4000).nullable().optional(),
   website: z.string().max(200).nullable().optional(),
   elapsedMs: z.number().nonnegative().optional(),
+  couponCode: z.string().trim().max(80).nullable().optional(),
 });
 
 /** Database errors raised as "place_shop_order: <code>" → a stable code for the page. */
@@ -101,7 +105,27 @@ Deno.serve(withMonitoring("studio-shop-checkout", async (req) => {
       if (code === "failed") console.error("[studio-shop-checkout] order failed", error.message);
       return jsonResponse({ error: code }, code === "failed" ? 500 : 409);
     }
-    const result = data as { order_id: string; pay_token: string | null };
+    const result = data as { order_id: string; pay_token: string | null; total_minor: number };
+
+    // The coupon comes off the order's payment request before any email goes out.
+    let coupon: ClassCouponResult | undefined;
+    if (body.couponCode && result.pay_token) {
+      try {
+        coupon = await applyRequestCoupon(service, result.pay_token, body.couponCode);
+      } catch (err) {
+        console.error("[studio-shop-checkout] coupon:", err instanceof Error ? err.message : err);
+        coupon = { ok: false, reason: "error" };
+      }
+    }
+    let totalMinor = Number(result.total_minor) || 0;
+    if (result.pay_token) {
+      const { data: request } = await service
+        .from("job_payment_requests")
+        .select("amount_minor")
+        .eq("public_token", result.pay_token)
+        .maybeSingle();
+      if (request) totalMinor = request.amount_minor as number;
+    }
 
     // Never in the way of the order: a failure here only means no login or no email yet.
     try {
@@ -122,6 +146,8 @@ Deno.serve(withMonitoring("studio-shop-checkout", async (req) => {
       ok: true,
       orderId: result.order_id,
       payToken: body.payBy === "card" ? result.pay_token : null,
+      totalMinor,
+      coupon,
     });
   } catch (err) {
     console.error("[studio-shop-checkout]", err);

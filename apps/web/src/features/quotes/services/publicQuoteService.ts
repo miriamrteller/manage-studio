@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { QuoteClientDiscount } from '../lib/quoteDiscount';
 import { publicAcceptSchema, type PublicAcceptInput, type QuoteStatus } from '../lib/quoteSchemas';
 
 /** What a client sees on /quote/:token (get_public_quote — no internals). */
@@ -25,6 +26,8 @@ export interface PublicQuote {
   balance_minor: number;
   accepted_at: string | null;
   client_name: string | null;
+  /** The client's own discount (Finance → Discounts), or null. */
+  client_discount?: QuoteClientDiscount | null;
   lines: PublicQuoteLine[];
 }
 

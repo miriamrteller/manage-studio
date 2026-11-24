@@ -2141,7 +2141,9 @@
         "total": "Total",
         "deposit": "Deposit ({{percent}}%)",
         "balance": "Balance (due on the shoot date)",
-        "vat_note": "Prices include VAT. The tax document shows the breakdown."
+        "vat_note": "Prices include VAT. The tax document shows the breakdown.",
+        "your_discount": "Your discount",
+        "total_after_discount": "Total after your discount"
       },
       "send": {
         "title": "Send to client",
@@ -2346,7 +2348,8 @@
       "not_emailed": "The order is marked ready, but we couldn't email the family (no email address on file). Please let them know.",
       "paying_direct": "Paying you directly",
       "record_cash": "Record cash payment",
-      "from_shop_page": "Shop page order"
+      "from_shop_page": "Shop page order",
+      "discount_off": "{{amount}} discount"
     }
   },
   "photo_shop_admin": {
@@ -2501,7 +2504,7 @@
       "settings_security": "How you sign in, and keeping your account safe.",
       "forms": "Forms clients sign, like waivers or contracts.",
       "payment_setup": "The provider that takes payments and issues invoices.",
-      "discounts": "Sibling, extra class, early bird and per-client discounts, and coupon codes."
+      "discounts": "Per-client discounts and coupon codes for every sale, plus sibling, extra class and early bird discounts for classes."
     }
   },
   "platform_billing": {
@@ -4696,7 +4699,6 @@
     "class_discounts": {
       "title": "Class discounts",
       "intro": "Switch on the discounts you offer. They are worked out automatically when a child is enrolled, and the parent sees each one before paying. For monthly classes, the discount applies every month.",
-      "classes_only": "Discounts are for classes. Switch on classes under Settings → Features to use them.",
       "sibling_title": "Siblings",
       "sibling_switch": "Give a sibling discount",
       "sibling_hint": "For the 2nd child in a family who enrols this season, with a separate amount for the 3rd child and more. Children count as siblings when they are in the same family or share a parent's email.",
@@ -4717,7 +4719,7 @@
       "combine_add_up": "Add them up, up to the maximum below",
       "combine_biggest": "Give only the biggest one",
       "max_total": "Maximum total discount (%)",
-      "existing_unchanged": "Changes apply to new enrolments. Enrolments already made keep their price.",
+      "existing_unchanged": "Changes apply to new enrolments and new payment requests. Ones already made keep their price.",
       "saved": "Saved",
       "fix_fields": "Please check the highlighted fields.",
       "invalid_percent": "Enter a whole number from 1 to 90.",
@@ -4729,14 +4731,14 @@
       "note": "Note (only you see it)",
       "remove": "Remove",
       "clients_title": "Discounts for particular clients",
-      "clients_hint": "Give one family its own discount. It is matched by email (the child's or a parent's) when the child is enrolled, and counts with the other discounts, up to your maximum.",
+      "clients_hint": "Give one client or family its own discount. It is matched by email (the client's, or a parent's for a child) and comes off every sale, up to your maximum. A fixed amount comes off once per sale.",
       "clients_email": "Email",
       "clients_add": "Add client discount",
       "clients_empty": "No client discounts yet.",
       "invalid_email": "Enter an email address.",
       "duplicate_email": "This email already has a discount.",
       "coupons_title": "Coupon codes",
-      "coupons_hint": "Parents can type a code at checkout. Without a code they pay the usual price.",
+      "coupons_hint": "Clients can type a code when they pay. Without a code they pay the usual price.",
       "coupon_code": "Code",
       "coupon_applies": "The discount comes off",
       "coupon_first_payment": "The first payment only (a one-month discount)",
@@ -4754,7 +4756,9 @@
       "coupons_on_top": "A coupon comes on top of the other discounts, up to your maximum total discount.",
       "invalid_code": "Use 2 to 40 letters or numbers, no spaces.",
       "duplicate_code": "You already have this code.",
-      "invalid_uses": "Enter a whole number above zero, or leave it empty."
+      "invalid_uses": "Enter a whole number above zero, or leave it empty.",
+      "general_title": "How discounts add up",
+      "general_intro": "Client discounts and coupon codes come off every kind of sale: bookings, packages, shoots, the photo shop and the clothes shop. The client sees each discount before paying."
     }
   },
   "accessibility": {
@@ -5546,7 +5550,10 @@
       "too_many": "Too many orders from this email just now. Please try again later.",
       "switched_off": "The shop is closed right now.",
       "failed": "Something went wrong. Please try again."
-    }
+    },
+    "coupon_note": "The code comes off when you place the order. If it doesn't work, the order still goes through.",
+    "coupon_applied": "Your coupon came off the price.",
+    "sent_total": "To pay: {{total}}"
   },
   "clients_import": {
     "title": "Import from a spreadsheet",
@@ -5847,8 +5854,9 @@
     "coupon_reason_expired": "This code has expired.",
     "coupon_reason_used_up": "This code has already been used as many times as allowed.",
     "coupon_reason_at_maximum": "Your discounts are already at the most this studio gives, so this code doesn't add anything.",
-    "coupon_reason_not_payable": "This enrolment is no longer waiting for payment.",
-    "coupon_reason_not_class": "Coupon codes are for classes.",
-    "coupon_reason_error": "Couldn't check the code just now. You can still pay as normal."
+    "coupon_reason_not_payable": "This is no longer waiting for payment.",
+    "coupon_reason_not_class": "This code can't be used here.",
+    "coupon_reason_error": "Couldn't check the code just now. You can still pay as normal.",
+    "price": "Price"
   }
 }

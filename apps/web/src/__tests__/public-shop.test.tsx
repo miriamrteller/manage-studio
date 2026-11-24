@@ -20,6 +20,7 @@ const state = vi.hoisted(() => ({
   known: { name: '', email: '', phone: '' },
   tenantIds: [] as string[],
   checkout: vi.fn(),
+  coupons: false,
 }));
 
 vi.mock('@/hooks/useSignedInPrefill', async (orig) => {
@@ -41,6 +42,7 @@ vi.mock('@/features/shop/services/shopOrdersService', async (orig) => {
         return state.items;
       },
       guestCheckout: (input: GuestCheckoutInput) => state.checkout(input),
+      studioOffersCoupons: async () => state.coupons,
     },
   };
 });
@@ -80,6 +82,7 @@ describe('PublicShopPage', () => {
     state.items = [leotard, shoes, net];
     state.known = { name: '', email: '', phone: '' };
     state.tenantIds = [];
+    state.coupons = false;
     state.checkout.mockReset().mockResolvedValue({ orderId: 'o1', payToken: 'tok' });
   });
 
@@ -134,6 +137,27 @@ describe('PublicShopPage', () => {
     expect(await screen.findByText('Thank you, your order is in')).toBeTruthy();
     expect(screen.getByText(/Pay the studio directly by cash, bank transfer/)).toBeTruthy();
     expect((state.checkout.mock.calls[0][0] as GuestCheckoutInput).payBy).toBe('studio');
+  });
+
+  it('paying the studio directly can take a coupon code; the page says what is left to pay', async () => {
+    state.coupons = true;
+    state.checkout.mockResolvedValue({ orderId: 'o3', payToken: null, totalMinor: 1350, coupon: { ok: true, amountMinor: 150, firstOnly: false } });
+    show();
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Hair net to cart' }));
+    fill();
+    fireEvent.click(screen.getByLabelText('Pay the studio directly (cash, bank transfer or other)'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Have a coupon code?' }));
+    fireEvent.change(screen.getByLabelText('Coupon code'), { target: { value: 'save10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Place order' }));
+    expect(await screen.findByText('Your coupon came off the price.')).toBeTruthy();
+    expect(screen.getByText(/^To pay:/).textContent).toMatch(/13/);
+    expect((state.checkout.mock.calls[0][0] as GuestCheckoutInput).couponCode).toBe('save10');
+  });
+
+  it('no coupon box when the studio has no codes', async () => {
+    show();
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Hair net to cart' }));
+    expect(screen.queryByRole('button', { name: 'Have a coupon code?' })).toBeNull();
   });
 
   it('prefills what we know about a signed-in visitor', async () => {

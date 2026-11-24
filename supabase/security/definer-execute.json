@@ -33,7 +33,8 @@
       "legal_document_is_public",
       "record_consents",
       "record_legal_acceptance",
-      "release_scheduling_hold"
+      "release_scheduling_hold",
+      "studio_offers_coupons"
     ]
   },
   "authenticated": {
@@ -176,6 +177,8 @@
       "advance_job_statuses",
       "apply_class_coupon",
       "apply_class_discounts",
+      "apply_request_coupon",
+      "apply_request_discounts",
       "assign_studio_owner",
       "claim_automatic_email",
       "cleanup_expired_otps",
