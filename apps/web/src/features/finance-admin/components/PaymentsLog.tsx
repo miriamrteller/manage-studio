@@ -81,7 +81,7 @@ export function PaymentsLog() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">{t('finance.payments.title')}</h1>
-        <Button variant="primary" aria-expanded={recording} onClick={() => setRecording((v) => !v)}>
+        <Button variant="primary" data-tour="payments-record" aria-expanded={recording} onClick={() => setRecording((v) => !v)}>
           {t('finance.record_payment.open')}
         </Button>
       </div>

@@ -124,7 +124,7 @@ export const TermsList = () => {
             className="min-w-48"
           />
         </div>
-        <Button variant="primary" onClick={() => setIsCreating(true)}>
+        <Button variant="primary" data-tour="seasons-add" onClick={() => setIsCreating(true)}>
           {t('common.add_entity', { entity: labels.season.singular })}
         </Button>
       </div>

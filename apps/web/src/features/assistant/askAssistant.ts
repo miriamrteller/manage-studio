@@ -29,14 +29,14 @@ export interface AssistantTurn {
 }
 
 /** Why there is no reply; each has its own message in assistant.errors.*. */
-export type AssistantErrorCode = 'daily_limit' | 'not_configured' | 'feature_off' | 'no_guides' | 'unavailable';
+export type AssistantErrorCode = 'daily_limit' | 'platform_limit' | 'not_configured' | 'feature_off' | 'no_guides' | 'unavailable';
 
 export type AskResult =
   | { ok: true; reply: AssistantReply; remaining: number | null }
   | { ok: false; code: AssistantErrorCode };
 
 const ROUTE_PATTERN = /^\/[A-Za-z0-9/_-]*$/;
-const KNOWN: ReadonlySet<string> = new Set(['daily_limit', 'not_configured', 'feature_off', 'no_guides']);
+const KNOWN: ReadonlySet<string> = new Set(['daily_limit', 'platform_limit', 'not_configured', 'feature_off', 'no_guides']);
 
 /** Asks the studio's question. Read-only: the server never changes anything. */
 export async function askAssistant(input: {

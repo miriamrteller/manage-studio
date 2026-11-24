@@ -8,6 +8,8 @@ import {
   buildSystemPrompt,
   buildUserContent,
   DAILY_QUESTION_LIMIT,
+  MAX_REPLY_TOKENS,
+  PLATFORM_DAILY_LIMIT,
   GUIDED_SKINS,
   guideIdsFor,
   parseReply,
@@ -73,7 +75,8 @@ Deno.serve(withMonitoring("assistant-chat", async (req) => {
   }
 
   const { data: tenant } = await service.from("tenants").select("skin").eq("id", tenantId).single();
-  if (!GUIDED_SKINS.has((tenant?.skin as string | undefined) ?? "")) {
+  const skin = (tenant?.skin as string | undefined) ?? "";
+  if (!GUIDED_SKINS.has(skin)) {
     return jsonResponse({ error: "no_guides" }, 409);
   }
 
@@ -88,11 +91,22 @@ Deno.serve(withMonitoring("assistant-chat", async (req) => {
     return jsonResponse({ error: "daily_limit", limit: DAILY_QUESTION_LIMIT }, 429);
   }
 
+  // Spending cap for the whole platform (owner, 24 Nov 2026: keep the AI bill tiny until
+  // paying studios use it). Fails closed: if the count can't be read, no question is sent.
+  const { count: platformCount, error: platformError } = await service
+    .from("audit_log")
+    .select("id", { count: "exact", head: true })
+    .eq("action", AUDIT_ACTION)
+    .gte("created_at", startOfUtcDay(new Date()));
+  if (platformError || (platformCount ?? 0) >= PLATFORM_DAILY_LIMIT) {
+    return jsonResponse({ error: "platform_limit" }, 429);
+  }
+
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY")?.trim();
   if (!apiKey) return jsonResponse({ error: "not_configured" }, 503);
 
   const language = body.language;
-  const guideIds = guideIdsFor(language);
+  const guideIds = guideIdsFor(language, skin);
   const history = (body.history ?? []).map((turn) => ({ role: turn.role, content: turn.text }));
   // History must start with the person and alternate; drop anything that doesn't.
   while (history.length && history[0].role !== "user") history.shift();
@@ -102,8 +116,9 @@ Deno.serve(withMonitoring("assistant-chat", async (req) => {
   try {
     message = await client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
-      system: [{ type: "text", text: buildSystemPrompt(language), cache_control: { type: "ephemeral" } }],
+      // Answers are about 120 words; this caps the cost of a runaway reply.
+      max_tokens: MAX_REPLY_TOKENS,
+      system: [{ type: "text", text: buildSystemPrompt(language, skin), cache_control: { type: "ephemeral" } }],
       messages: [...history, { role: "user", content: buildUserContent(body.question, body.route) }],
       output_config: {
         effort: "low",
@@ -116,7 +131,7 @@ Deno.serve(withMonitoring("assistant-chat", async (req) => {
   }
 
   const text = message.content.find((block): block is Anthropic.TextBlock => block.type === "text")?.text ?? "";
-  const reply = message.stop_reason === "refusal" ? null : parseReply(text, guideIds);
+  const reply = message.stop_reason === "refusal" ? null : parseReply(text, guideIds, skin);
 
   // Counts toward the limit even when the reply was unusable: the tokens were spent.
   await service.from("audit_log").insert({

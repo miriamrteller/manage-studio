@@ -2,6 +2,7 @@ import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.t
 import {
   buildSystemPrompt,
   buildUserContent,
+  GUIDED_SKINS,
   guideIdsFor,
   parseReply,
   replyJsonSchema,
@@ -9,7 +10,7 @@ import {
   startOfUtcDay,
 } from "./assistant.ts";
 
-const ids = guideIdsFor("en");
+const ids = guideIdsFor("en", "photographer");
 const emptyPrefill = {
   kind: "none", client_name: "", client_email: "", client_phone: "", package_name: "",
   date: "", time: "", location: "", name: "", price: "", duration_hours: "",
@@ -18,15 +19,34 @@ const reply = (over: Record<string, unknown>) =>
   JSON.stringify({ answer: "Open Shoots.", guide_ids: [], show_me: "", unknown: false, unknown_reason: "", prefill: emptyPrefill, ...over });
 
 Deno.test("English and Hebrew have the same guides", () => {
-  assertEquals(guideIdsFor("he").sort(), [...ids].sort());
+  assertEquals(guideIdsFor("he", "photographer").sort(), [...ids].sort());
   assert(ids.includes("new_shoot"));
+  assertEquals(guideIdsFor("he", "dance-studio").sort(), guideIdsFor("en", "dance-studio").sort());
+});
+
+Deno.test("each kind of business gets only its own guides", () => {
+  const dance = guideIdsFor("en", "dance-studio");
+  assert(dance.includes("new_class"));
+  assert(!dance.includes("new_shoot"));
+  assert(!ids.includes("new_class"));
+  assertEquals(guideIdsFor("en", "generic"), []);
+  assert(GUIDED_SKINS.has("photographer") && GUIDED_SKINS.has("dance-studio") && !GUIDED_SKINS.has("generic"));
+  const prompt = buildSystemPrompt("en", "dance-studio");
+  assert(prompt.includes('<guide id="new_class">'));
+  assert(!prompt.includes('<guide id="new_shoot">'));
+  assert(prompt.includes("a dance studio"));
+});
+
+Deno.test("no form filling for a dance studio", () => {
+  const raw = reply({ prefill: { ...emptyPrefill, kind: "package", name: "Ballet" } });
+  assertEquals(parseReply(raw, guideIdsFor("en", "dance-studio"), "dance-studio")?.prefill, null);
 });
 
 Deno.test("the system prompt carries every guide and the read-only rule", () => {
-  const prompt = buildSystemPrompt("en");
+  const prompt = buildSystemPrompt("en", "photographer");
   for (const id of ids) assert(prompt.includes(`<guide id="${id}">`), id);
   assert(prompt.includes("You can only read and explain"));
-  assert(buildSystemPrompt("he").includes("Hebrew"));
+  assert(buildSystemPrompt("he", "photographer").includes("Hebrew"));
 });
 
 Deno.test("the question is wrapped, the page is only a path", () => {

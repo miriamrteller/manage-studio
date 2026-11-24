@@ -5823,6 +5823,134 @@
           "They cover: quote sent, booking confirmed, a reminder two days before the shoot, gallery ready, and a review request five days after the gallery.",
           "For the review request, add your review link (for example your Google reviews). Without a link, that email isn't sent."
         ]
+      },
+      "seasons": {
+        "title": "Add a season",
+        "summary": "A season (for example September to June) holds your classes and their dates.",
+        "steps": [
+          "Open Classes, then Seasons.",
+          "Press Add Season.",
+          "Type the season name, the start date and the end date.",
+          "Save. Choose this season when you add or edit a class."
+        ]
+      },
+      "levels": {
+        "title": "Add class levels",
+        "summary": "Levels (for example Beginners, Intermediate) group your classes. They are optional.",
+        "steps": [
+          "Open Classes, then Class Levels.",
+          "Press Add Level and type the level name.",
+          "Save. Choose the level on each class, under Details we filled in for you."
+        ]
+      },
+      "new_class": {
+        "title": "Add a class",
+        "summary": "Each class has a day, a time and a price. Parents enrol in it online.",
+        "steps": [
+          "Open Classes and press Add class.",
+          "Type the class name, the day of the week, the start time and the amount families pay.",
+          "Check Details we filled in for you: season, location, level, teacher, how many places, ages, monthly or one-time payment, whether it shows on your public class list and whether it needs a signed form. Change anything that's wrong.",
+          "Press Create. The class shows on your Classes page for parents to enrol."
+        ]
+      },
+      "teachers": {
+        "title": "Add a teacher",
+        "summary": "Teachers sign in to see their classes and take the register.",
+        "steps": [
+          "Open Classes, then Teachers, and press Add teacher.",
+          "Type their name, and the email they will sign in with. Leave the email empty if they don't need to sign in.",
+          "Save, then send them the sign-in link: press Copy link or Send on WhatsApp.",
+          "Choose the teacher on each of their classes. Teachers see only their own classes unless you switch off Teachers see only their own classes."
+        ]
+      },
+      "parents_enrol": {
+        "title": "How parents enrol online",
+        "summary": "Parents enrol and pay on your studio's website, without you.",
+        "steps": [
+          "Your website's Classes page lists every class that shows on your public class list.",
+          "The parent presses Enrol on a class, fills in their own and their child's details, and pays.",
+          "If the class needs a signed form, the parent gets an email with a link to sign it after paying.",
+          "The child then shows on your Students page and in the class."
+        ]
+      },
+      "enrol_student": {
+        "title": "Enrol a student yourself",
+        "summary": "For a parent who asked you to do it, or who pays you in cash.",
+        "steps": [
+          "Open Students. For a child who is already here, open them and press Enrol in class. For a new child, press Enrol new student and fill in their details.",
+          "Choose the class.",
+          "Press Enrol and email the pay link. The parent pays, and signs the form if needed, online.",
+          "Paid you in cash or by bank transfer? Press Other ways to pay, choose the method and press Confirm enrolment as paid."
+        ]
+      },
+      "class_payments": {
+        "title": "Record a cash or bank payment",
+        "summary": "Money you received outside the website.",
+        "steps": [
+          "Open Finance, then Payments received.",
+          "Press Record a payment.",
+          "Choose who paid and what it's for. The amount is filled in from the price; change it if a different amount was paid.",
+          "Choose the method (cash or bank transfer) and press Record payment."
+        ]
+      },
+      "class_discounts": {
+        "title": "Sibling and other discounts",
+        "summary": "Discounts are worked out by themselves, and the parent sees each one before paying.",
+        "steps": [
+          "Open Finance, then Discounts.",
+          "Switch on the ones you give: Give a sibling discount, Give a discount on each extra class, Give an early bird discount. Set each amount, then press Save.",
+          "For one family only, press Add client discount and type the parent's email.",
+          "For a code parents type when they pay, add it under Coupon codes."
+        ]
+      },
+      "class_cards": {
+        "title": "Sell class cards",
+        "summary": "Clients pay once for a set of classes, for example 10, and use one each time they come.",
+        "steps": [
+          "Open Classes, then Class cards.",
+          "Switch on Sell class cards.",
+          "Press Add a 10-class card (or Add a 5-class card). Check the price, how long it is valid and the classes it can be used for.",
+          "Press Save card."
+        ]
+      },
+      "signed_forms": {
+        "title": "Signed forms",
+        "summary": "Ask for a signed form (for example a health declaration) on a class, and see who signed.",
+        "steps": [
+          "Open Classes and edit the class. Under Details we filled in for you, set Needs a signed form to Yes, and save.",
+          "Parents are asked to sign after paying. It never stops anyone paying.",
+          "To see who signed, open Settings, then Forms to sign, and look under Signed forms.",
+          "Press Export CSV to download the list."
+        ]
+      },
+      "register": {
+        "title": "Take the register",
+        "summary": "Mark who came to each class.",
+        "steps": [
+          "Open Classes and press Register on the class.",
+          "Check the class date.",
+          "Press Here or Not here for each student, or Mark the rest as here. Each press is saved straight away."
+        ]
+      },
+      "email_class": {
+        "title": "Email a class",
+        "summary": "Send one email to everyone in a class.",
+        "steps": [
+          "Open Classes and press Email participants on the class.",
+          "Type the subject and the message.",
+          "Press See who will receive this, and untick anyone to skip.",
+          "Press Send email."
+        ]
+      },
+      "class_emails": {
+        "title": "Automatic class emails",
+        "summary": "A reminder on the morning of each class, and a notice when there is no class.",
+        "steps": [
+          "Open Classes, press Email participants on any class, then open the Automatic emails tab.",
+          "Tick Morning-of reminder and write what to wear, in English and Hebrew.",
+          "Holidays are skipped by themselves. For another day off, choose the date under Add a date and press Add.",
+          "Press Save."
+        ]
       }
     }
   },
@@ -5883,14 +6011,14 @@
     "title": "Ask OpalSwift",
     "ai_notice": "Answers are written by AI from OpalSwift's help guides and can be wrong. It can't change anything for you: you always press Save yourself.",
     "sensitive_notice": "Please don't type sensitive details into the chat, such as health information, ID numbers or card details.",
-    "empty": "Ask how to do something in OpalSwift, for example how to send a quote or connect SmugMug.",
+    "empty": "Ask how to do something in OpalSwift, and it answers from the help guides.",
     "question_label": "Your question",
     "placeholder": "How do I…?",
     "ask": "Ask",
     "asking": "Looking in the guides…",
     "you": "You",
     "sources": "From the guides:",
-    "show_me": "Show me how",
+    "show_me": "Show me",
     "fill_in": "Fill it in for me",
     "fill_in_done": "The form is filled in. Check it and change anything that's wrong. Nothing is saved until you press Save or Create.",
     "gap_noted": "There's no guide for this yet. We've noted your question so one gets written.",
@@ -5899,6 +6027,7 @@
     "close": "Close",
     "errors": {
       "daily_limit": "You've used today's questions. You can ask again tomorrow, or look in Help.",
+      "platform_limit": "Ask OpalSwift has answered all the questions it can today. Please try again tomorrow, or look in Help.",
       "not_configured": "Ask OpalSwift isn't ready yet. Please look in Help for now.",
       "feature_off": "Ask OpalSwift isn't switched on for your studio.",
       "no_guides": "There are no guides for your kind of business yet.",
