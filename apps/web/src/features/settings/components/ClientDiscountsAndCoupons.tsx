@@ -220,7 +220,7 @@ export function ClientDiscountsSection() {
   );
 }
 
-/** Coupon codes parents type at checkout; prefilled as 10% off the first payment only. */
+/** Coupon codes parents type at checkout; prefilled as 10% off every payment. */
 export function CouponsSection() {
   const { t } = useTranslation();
   const tenant = useTenant();
@@ -355,7 +355,7 @@ export function CouponsSection() {
         </div>
         <fieldset className="space-y-1">
           <legend className="text-sm font-medium">{t('settings.class_discounts.coupon_applies')}</legend>
-          {(['first_payment', 'every_month'] as const).map((value) => (
+          {(['every_month', 'first_payment'] as const).map((value) => (
             <label key={value} className="flex items-start gap-2 text-sm">
               <input
                 type="radio"

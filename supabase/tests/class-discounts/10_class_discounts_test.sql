@@ -144,7 +144,7 @@ UPDATE people SET account_id = (SELECT fam2 FROM mids) WHERE id IN (SELECT b FRO
 
 INSERT INTO class_discount_settings (tenant_id, sibling_enabled) SELECT studio, true FROM mids;
 INSERT INTO class_discount_clients (tenant_id, email, unit, value) SELECT studio, 'c@example.test', 'amount', 5000 FROM mids;
-INSERT INTO class_discount_coupons (id, tenant_id, code, unit, value) SELECT welcome, studio, 'WELCOME', 'percent', 10 FROM mids;
+INSERT INTO class_discount_coupons (id, tenant_id, code, unit, value, applies_to) SELECT welcome, studio, 'WELCOME', 'percent', 10, 'first_payment' FROM mids;
 INSERT INTO class_discount_coupons (id, tenant_id, code, unit, value, applies_to, max_uses)
 SELECT monthly, studio, 'MONTHLY', 'amount', 2000, 'every_month', 1 FROM mids;
 INSERT INTO class_discount_coupons (tenant_id, code, unit, value, valid_until) SELECT studio, 'OLD', 'percent', 10, current_date - 1 FROM mids;
@@ -231,6 +231,16 @@ BEGIN
   INSERT INTO engagements (tenant_id, person_id, offering_id, season_id, status, coupon_id, first_discount_minor)
   VALUES (v.studio, v.d, v.o1, v.season, 'pending_payment', v.welcome, 9999) RETURNING * INTO e;
   PERFORM pg_temp.expect_first('caller coupon ignored', e.id, 0, NULL);
+END;
+$$;
+
+-- A coupon comes off every payment unless set as a one-month discount.
+DO $$
+BEGIN
+  INSERT INTO class_discount_coupons (tenant_id, code, value) SELECT studio, 'PLAIN', 5 FROM mids;
+  IF (SELECT applies_to FROM class_discount_coupons WHERE code = 'PLAIN') <> 'every_month' THEN
+    RAISE EXCEPTION 'FAIL coupon default is not every payment';
+  END IF;
 END;
 $$;
 
