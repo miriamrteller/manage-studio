@@ -45,7 +45,7 @@ export function suggestCustomDomain(t: DomainHints | null | undefined): string {
 
 const KNOWN_CODES = new Set([
   'dns_not_ready', 'dns_not_pointing', 'ownership_txt_missing', 'caa_blocked', 'hostname_blocked',
-  'hostname_missing', 'expired_unactivated', 'opalswift_connects',
+  'hostname_missing', 'expired_unactivated', 'opalswift_connects', 'turnstile_full',
   'empty', 'invalid', 'too_long', 'path_or_port', 'ip_address', 'wildcard', 'unknown_suffix', 'apex',
   'www', 'reserved', 'blocked_domain', 'hostname_taken', 'already_has_domain', 'no_domain',
   'confirm_mismatch', 'managed_by_opalswift', 'cloudflare_unavailable', 'not_configured', 'not_enabled',

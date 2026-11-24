@@ -36,7 +36,17 @@
     // Studio custom domains on zones in this Cloudflare account (path A in
     // docs/deployment/CUSTOM-DOMAIN.md). Exact hostname only: never the apex or www,
     // which stay on the studio's own website.
-    { "pattern": "app.creativeballetacademy.com/*", "zone_name": "creativeballetacademy.com" }
+    { "pattern": "app.creativeballetacademy.com/*", "zone_name": "creativeballetacademy.com" },
+
+    // Self-serve custom domains (Cloudflare for SaaS on opalswift.com): a studio's
+    // own address CNAMEs to proxy-fallback.opalswift.com and arrives on this zone
+    // with its own Host, so only a catch-all route reaches this Worker (Cloudflare's
+    // recommendation; per-hostname routes would need a deploy per studio).
+    // BEFORE this ships, the apex must have a dashboard route with Worker = None
+    // (opalswift.com/* → None): the more specific route wins and keeps the marketing
+    // site (Pages) out of the app. www and every *.opalswift.com host already match
+    // the more specific *.opalswift.com/* route above. docs/deployment/CUSTOM-DOMAIN.md.
+    { "pattern": "*/*", "zone_name": "opalswift.com" }
   ],
 
   "observability": {
