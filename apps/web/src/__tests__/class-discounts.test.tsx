@@ -239,7 +239,7 @@ describe('the discount wherever the price shows', () => {
   it('quote totals show the discount and the deposit and balance after it', () => {
     render(
       <QuoteTotalsSummary
-        totals={{ requiredMinor: 55000, optionalSelectedMinor: 0, totalMinor: 55000, depositMinor: 20000, balanceMinor: 35000, pretaxMinor: 47009, vatMinor: 7991, vatRate: 0.17 }}
+        totals={{ requiredMinor: 55000, optionalSelectedMinor: 0, totalMinor: 55000, depositMinor: 20000, balanceMinor: 35000, pretaxMinor: 47009, vatMinor: 7991, vatRate: 0.17, mode: 'gross' }}
         currency="ILS"
         depositPercent={30}
         discount={{ discountMinor: 5000, depositAfterMinor: 15000, balanceAfterMinor: 35000, totalAfterMinor: 50000 }}
