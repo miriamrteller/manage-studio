@@ -17,6 +17,7 @@ import { readInquiryTags } from '../lib/inquiryTags';
 import { validateLeadAnswers, type NamedFormPublic } from '@shared/index';
 import { useLeadFormQuestions } from '../hooks/useLeadFormQuestions';
 import { LeadQuestionFields } from './LeadQuestionFields';
+import { useBookableOfferings } from '@/features/home/useBookableOfferings';
 
 /**
  * Public enquiry form — the "website" capture channel, and via ?src= tags the
@@ -42,6 +43,11 @@ export function InquiryForm({
   const [searchParams] = useSearchParams();
   const { src, campaign } = readInquiryTags(searchParams);
   const captcha = useCaptcha();
+  // "Enquire" on a package (price on request, or not bookable online): /inquire?package=<id>.
+  // The package is filled in from the studio's own list; an unknown id is ignored.
+  const packageParam = namedForm ? null : searchParams.get('package');
+  const { offerings: packages } = useBookableOfferings(Boolean(packageParam));
+  const aboutPackage = packageParam ? (packages.find((o) => o.id === packageParam) ?? null) : null;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -119,6 +125,7 @@ export function InquiryForm({
           captchaToken: captcha.token,
           answers: questions.length > 0 ? pickAnswers(answers, questions.map((q) => q.key)) : null,
           formSlug: namedForm?.slug ?? null,
+          packageId: aboutPackage?.id ?? null,
           invite: invite.token,
           website: honeypot || null,
           elapsedMs: Date.now() - shownAt,
@@ -173,6 +180,11 @@ export function InquiryForm({
         <p className="text-sm text-muted-foreground whitespace-pre-line" dir="auto">
           {namedIntro || t('pages.crm.inquire.subtitle')}
         </p>
+        {aboutPackage && (
+          <p className="text-sm font-medium" dir="auto" data-testid="enquiry-package">
+            {t('pages.crm.inquire.about_package', { name: aboutPackage.name })}
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" aria-label={t('pages.crm.inquire.title')}>

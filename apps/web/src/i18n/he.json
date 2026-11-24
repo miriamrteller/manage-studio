@@ -377,7 +377,8 @@
       "all_classes": "כל ה{{items}}",
       "book_title": "קביעת תור אונליין",
       "minutes": "{{count}} דק׳",
-      "contact_title": "יצירת קשר"
+      "contact_title": "יצירת קשר",
+      "cta_enquire": "לפנייה"
     },
     "booking_flow": {
       "after_sign": {
@@ -1014,7 +1015,8 @@
         "submit": "שליחה",
         "sent_title": "תודה!",
         "sent_message": "קיבלנו את הפנייה ונחזור אליכם בהקדם.",
-        "error": "משהו השתבש בשליחת הפנייה. נסו שוב."
+        "error": "משהו השתבש בשליחת הפנייה. נסו שוב.",
+        "about_package": "בנושא: {{name}}"
       },
       "tabs": {
         "label": "אזורי הלידים",
@@ -3068,7 +3070,10 @@
       "request_sent_message": "תודה! לא חויבתם. {{studio}} יאשרו את {{day}} וישלחו לכם במייל את הפרטים ואת הדרך לתשלום.",
       "request_sent_message_generic": "תודה! לא חויבתם. הצלם/ת יאשרו את {{day}} וישלחו לכם במייל את הפרטים ואת הדרך לתשלום.",
       "request_error": "לא הצלחנו לשלוח את הבקשה. נסו שוב.",
-      "request_date_in_past": "היום הזה כבר עבר. בחרו יום אחר."
+      "request_date_in_past": "היום הזה כבר עבר. בחרו יום אחר.",
+      "enquire_title": "אפשר לשאול על אלה",
+      "enquire_hint": "את אלה אי אפשר להזמין אונליין. שלחו פנייה ונחזור אליכם.",
+      "enquire": "לפנייה"
     },
     "appointments": {
       "title": "פגישות",

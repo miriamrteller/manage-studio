@@ -117,6 +117,15 @@ describe('homepage per business type', () => {
     expect(screen.getAllByRole('button').map((b) => b.textContent)[0]).toBe('Book');
   });
 
+  it('beautician: a package not bookable online shows with Enquire (package filled in)', async () => {
+    h.bookable = [SERVICE, { ...SERVICE, id: 's2', name: 'Bridal', online_booking: false, price_display: 'on_request', price_minor: null }];
+    renderHome('beautician', { enabled_features: ['scheduling:booking.client'] });
+    expect(await screen.findByText('Bridal')).toBeInTheDocument();
+    expect(screen.getByText(/Price on request/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Enquire' })).toHaveAttribute('href', '/inquire?package=s2');
+    expect(screen.getByRole('link', { name: 'Book' })).toHaveAttribute('href', '/book/s1');
+  });
+
   it('beautician without booking: enquiry is the main button and no services section', () => {
     h.bookable = [SERVICE];
     renderHome('beautician');

@@ -20,6 +20,7 @@ import {
 } from '@/lib/studioSections';
 import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import { useWorkModes } from '@/hooks/useWorkModes';
+import { enquirePath } from '@/lib/enquirePath';
 import type { PublicOffering } from '@/schemas';
 
 const VERTICAL_ICON = { dance: Music, generic: Store, photographer: Camera, beautician: Sparkles } as const;
@@ -71,8 +72,9 @@ export default function HomePage() {
       : t(`pages.home.cta_${cta.kind}`);
 
   const classPreview = ((classes as PublicOffering[]) ?? []).slice(0, PREVIEW_COUNT);
-  // A shoot request lists every package; instant booking only those bookable online.
-  const services = offerings.filter((o) => takesRequests || o.online_booking).slice(0, SERVICE_COUNT);
+  // Every package shows; one that can't be booked instantly online gets Enquire (package filled in).
+  const services = offerings.slice(0, SERVICE_COUNT);
+  const canBook = (o: { online_booking: boolean }) => takesRequests || o.online_booking;
   const profile = legal?.profile ?? {};
   const address = legal?.published ? profile.address : undefined;
   const phone = legal?.published ? profile.phone : undefined;
@@ -145,8 +147,11 @@ export default function HomePage() {
                     .filter(Boolean)
                     .join(' · ')}
                 </p>
-                <Link to={`/book/${s.id}`} className="mt-3 inline-block font-medium underline">
-                  {t('pages.home.cta_book')}
+                <Link
+                  to={canBook(s) ? `/book/${s.id}` : enquirePath(s.id)}
+                  className="mt-3 inline-block font-medium underline"
+                >
+                  {canBook(s) ? t('pages.home.cta_book') : t('pages.home.cta_enquire')}
                 </Link>
               </li>
             ))}
