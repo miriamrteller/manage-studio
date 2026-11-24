@@ -584,6 +584,28 @@
         "col_location": "Location",
         "col_occupancy": "Occupancy",
         "col_waitlist": "Waitlist"
+      },
+      "needs_you": {
+        "title": "Needs you",
+        "nothing": "Nothing needs you right now. New enquiries, quotes and payments will show here.",
+        "enrolments_to_review_one": "1 enrolment to review",
+        "enrolments_to_review_other": "{{count}} enrolments to review",
+        "enrolments_awaiting_payment_one": "1 enrolment waiting for payment",
+        "enrolments_awaiting_payment_other": "{{count}} enrolments waiting for payment",
+        "new_leads_one": "1 new enquiry to answer",
+        "new_leads_other": "{{count}} new enquiries to answer",
+        "follow_ups_one": "1 lead to get back to today",
+        "follow_ups_other": "{{count}} leads to get back to today",
+        "quotes_waiting_one": "1 quote waiting for the client's answer",
+        "quotes_waiting_other": "{{count}} quotes waiting for clients' answers",
+        "coming_up_one": "1 {{thing}} in the next 7 days",
+        "coming_up_other": "{{count}} {{things}} in the next 7 days",
+        "galleries_to_send_one": "1 gallery to send",
+        "galleries_to_send_other": "{{count}} galleries to send",
+        "orders_to_deliver_one": "1 paid photo order to deliver",
+        "orders_to_deliver_other": "{{count}} paid photo orders to deliver",
+        "money_owed_one": "{{amount}} still to collect, from 1 client",
+        "money_owed_other": "{{amount}} still to collect, from {{count}} clients"
       }
     },
     "login": {
