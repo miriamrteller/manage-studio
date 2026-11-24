@@ -20,6 +20,19 @@ export interface AppointmentService {
   status: string;
   /** Photos the package includes in the photo shop (beta). */
   photos_included: number;
+  /** Clients can pick a free time and book it online (instant booking). */
+  online_booking: boolean;
+  /** How the price shows to clients. */
+  price_display: PriceDisplay;
+  /** Deposit percent for quotes made from this package; null = the usual 30%. */
+  deposit_percent: number | null;
+}
+
+export const PRICE_DISPLAYS = ['show', 'from', 'on_request'] as const;
+export type PriceDisplay = (typeof PRICE_DISPLAYS)[number];
+
+export function safePriceDisplay(raw: unknown): PriceDisplay {
+  return (PRICE_DISPLAYS as readonly unknown[]).includes(raw) ? (raw as PriceDisplay) : 'show';
 }
 
 const ServiceInputSchema = z.object({
@@ -31,6 +44,9 @@ const ServiceInputSchema = z.object({
   is_public: z.boolean().optional(),
   status: z.enum(['active', 'cancelled']).optional(),
   photos_included: z.number().int().min(0).max(10000).optional(),
+  online_booking: z.boolean().optional(),
+  price_display: z.enum(PRICE_DISPLAYS).optional(),
+  deposit_percent: z.number().int().min(0).max(100).nullable().optional(),
 });
 
 export type ServiceInput = z.input<typeof ServiceInputSchema>;
@@ -46,6 +62,9 @@ function toService(row: Record<string, unknown>): AppointmentService {
     is_public: Boolean(row.is_public),
     status: (row.status as string) ?? 'active',
     photos_included: (row.photos_included as number | null) ?? 0,
+    online_booking: row.online_booking === undefined ? true : Boolean(row.online_booking),
+    price_display: safePriceDisplay(row.price_display),
+    deposit_percent: (row.deposit_percent as number | null | undefined) ?? null,
   };
 }
 

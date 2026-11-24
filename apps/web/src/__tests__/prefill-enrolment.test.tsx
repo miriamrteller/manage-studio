@@ -48,7 +48,7 @@ vi.mock('@/features/scheduling/hooks/useIsNarrowViewport', () => ({ useIsNarrowV
 vi.mock('@/features/scheduling/bookingService', () => ({
   BookingService: {
     listBookableOfferings: async () => [
-      { id: 'off-1', name: 'Private lesson', duration_mins: 60, price_minor: 10000, currency: 'ILS' },
+      { id: 'off-1', name: 'Private lesson', duration_mins: 60, price_minor: 10000, currency: 'ILS', online_booking: true, price_display: 'show' },
     ],
   },
 }));

@@ -131,6 +131,21 @@ describe('row 9: new quote from a lead or a shoot', () => {
     expect(prefill.lines[0]).toMatchObject({ offering_id: packages[1].id, unit_price_minor: 45000 });
   });
 
+  it("a package's own deposit percent goes into the new quote; otherwise the usual 30%", () => {
+    const withDeposit = [{ ...packages[0], deposit_percent: 50 }, packages[1]];
+    const prefill = quotePrefillFromSource({
+      lead: { name: 'Dana', offering_id: packages[0].id, event_date: null },
+      packages: withDeposit,
+    });
+    expect(prefill.deposit_percent).toBe(50);
+    expect(newQuoteDraft({ leadId: 'l1', engagementId: null }, new Date(), prefill).deposit_percent).toBe(50);
+    const plain = quotePrefillFromSource({
+      lead: { name: 'Dana', offering_id: packages[1].id, event_date: null },
+      packages: withDeposit,
+    });
+    expect(newQuoteDraft({ leadId: 'l1', engagementId: null }, new Date(), plain).deposit_percent).toBe(30);
+  });
+
   it('what is unknown stays blank (never blocks)', () => {
     const prefill = quotePrefillFromSource({
       lead: { name: 'Avi', offering_id: null, event_date: 'next spring' },
