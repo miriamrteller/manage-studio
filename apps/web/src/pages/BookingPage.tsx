@@ -8,6 +8,7 @@ import { useFillWhenEmpty, useSignedInPrefill } from '@/hooks/useSignedInPrefill
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookingCalendar } from '@/features/scheduling/components/BookingCalendar';
+import { enquirePath } from '@/lib/enquirePath';
 import { BookingService, type AvailableSlot, type BookableOffering } from '@/features/scheduling/bookingService';
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,11 @@ export default function BookingPage() {
     () => (offeringsQuery.data ?? []).filter((o) => takesRequests || o.online_booking),
     [offeringsQuery.data, takesRequests],
   );
+  // Instant booking: packages that can't be booked online (or price on request) get an Enquire link instead.
+  const enquireOnly = useMemo(
+    () => (takesRequests ? [] : (offeringsQuery.data ?? []).filter((o) => !o.online_booking)),
+    [offeringsQuery.data, takesRequests],
+  );
   const priceText = (o: BookableOffering) =>
     formatPackagePrice(t, o.price_minor, o.price_display, o.currency || 'ILS', i18n.language);
   const activeOffering = useMemo(
@@ -78,6 +84,11 @@ export default function BookingPage() {
   // Resolve selection from the URL once offerings load. Invalid / disabled deep
   // links fall back to the first bookable service and clean the URL.
   useEffect(() => {
+    // A link to a package that can't be booked online goes to the enquiry form with it filled in.
+    if (offeringParam && enquireOnly.some((o) => o.id === offeringParam)) {
+      navigate(enquirePath(offeringParam), { replace: true });
+      return;
+    }
     if (offerings.length === 0) return;
 
     if (offeringParam && offerings.some((o) => o.id === offeringParam)) {
@@ -96,7 +107,7 @@ export default function BookingPage() {
     setSelectedOffering((prev) =>
       prev && offerings.some((o) => o.id === prev) ? prev : offerings[0].id,
     );
-  }, [offerings, offeringParam, navigate]);
+  }, [offerings, enquireOnly, offeringParam, navigate]);
 
   function selectOffering(id: string) {
     setSelectedOffering(id);
@@ -153,6 +164,8 @@ export default function BookingPage() {
               <Link className="underline" to="/inquire">{t('scheduling.book.photographer_enquire')}</Link>
             </p>
           </>
+        ) : enquireOnly.length > 0 ? (
+          <EnquireList offerings={enquireOnly} priceText={priceText} />
         ) : (
           <p className="text-gray-600">{t('scheduling.book.not_enabled')}</p>
         )}
@@ -273,6 +286,12 @@ export default function BookingPage() {
         )}
       </section>
 
+      {enquireOnly.length > 0 && (
+        <section className="border-t border-gray-200 pt-4 sm:pt-5">
+          <EnquireList offerings={enquireOnly} priceText={priceText} />
+        </section>
+      )}
+
       {slot && (
         <section ref={detailsRef} className="mx-auto max-w-xl scroll-mt-4 space-y-3">
           <h2 className="text-base font-semibold sm:text-lg">{t('scheduling.book.your_details')}</h2>
@@ -316,6 +335,38 @@ export default function BookingPage() {
           </Button>
         </section>
       )}
+    </div>
+  );
+}
+
+/** Packages that can't be booked online: each with an Enquire link that fills the package in. */
+function EnquireList({
+  offerings,
+  priceText,
+}: {
+  offerings: BookableOffering[];
+  priceText: (o: BookableOffering) => string | null;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-2" data-testid="enquire-packages">
+      <h2 className="text-base font-semibold sm:text-lg">{t('scheduling.book.enquire_title')}</h2>
+      <p className="text-sm text-gray-500">{t('scheduling.book.enquire_hint')}</p>
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {offerings.map((o) => (
+          <li key={o.id} className="rounded-md border border-gray-200 bg-white px-3 py-2.5">
+            <div className="font-medium leading-snug" dir="auto">{o.name}</div>
+            <div className="text-xs text-gray-500 sm:text-sm">
+              {[o.duration_mins ? t('scheduling.book.duration_mins', { count: o.duration_mins }) : null, priceText(o)]
+                .filter(Boolean)
+                .join(' · ')}
+            </div>
+            <Link className="mt-1 inline-block text-sm font-medium underline" to={enquirePath(o.id)}>
+              {t('scheduling.book.enquire')}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
