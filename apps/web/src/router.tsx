@@ -86,6 +86,7 @@ const HelpPage = lazy(() => import("./pages/HelpPage"));
 const LeadSettingsPage = lazy(() => import("./pages/LeadSettingsPage"));
 const PersonPage = lazy(() => import("./pages/PersonPage"));
 const ClassCardsSettingsPage = lazy(() => import("./pages/ClassCardsSettingsPage"));
+const ClassDiscountsPage = lazy(() => import("./pages/ClassDiscountsPage"));
 const GetLeadsPage = lazy(() => import("./pages/GetLeadsPage"));
 const AdminQuotesPage = lazy(() => import("./pages/AdminQuotesPage"));
 const AdminQuoteEditorPage = lazy(() => import("./pages/AdminQuoteEditorPage"));
@@ -254,6 +255,7 @@ const router = createBrowserRouter([
           { path: "admin/classes/seasons", element: <AdminRoute><TermsPage /></AdminRoute> },
           { path: "admin/classes/teachers", element: <AdminRoute><TeachersPage /></AdminRoute> },
           { path: "admin/classes/cards", element: <AdminRoute><ClassCardsSettingsPage /></AdminRoute> },
+          { path: "admin/classes/discounts", element: <AdminRoute><ClassDiscountsPage /></AdminRoute> },
           // Projects (shoots) and quotes
           { path: "admin/projects", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/projects/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
