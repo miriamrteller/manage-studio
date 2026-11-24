@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { formatDuration } from '@/lib/formatDuration';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { FEATURES } from '@shared/index';
@@ -202,7 +203,7 @@ export default function BookingServicesPage() {
               <p className="truncate font-medium">{svc.name}</p>
               <p className="text-sm text-gray-500">
                 {[
-                  `${svc.duration_mins} ${t('scheduling.services.duration_suffix')}`,
+                  formatDuration(svc.duration_mins, i18n.language),
                   formatPackagePrice(t, svc.price_minor, svc.price_display, svc.currency || 'ILS', i18n.language),
                   projects && svc.deposit_percent !== null
                     ? t('scheduling.services.deposit_list', { percent: svc.deposit_percent })

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { formatDuration } from '@/lib/formatDuration';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Camera, Mail, MapPin, Music, Phone, Sparkles, Store } from 'lucide-react';
@@ -142,7 +143,7 @@ export default function HomePage() {
               <li key={s.id} className="rounded-xl border border-border p-4">
                 <h3 dir="auto" className="font-semibold">{s.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {[s.duration_mins ? t('pages.home.minutes', { count: s.duration_mins }) : null,
+                  {[s.duration_mins ? formatDuration(s.duration_mins, i18n.language) : null,
                     formatPackagePrice(t, s.price_minor, s.price_display, s.currency || currency, locale)]
                     .filter(Boolean)
                     .join(' · ')}
