@@ -11,6 +11,7 @@ import { JOB_STATUS_BADGE, jobStatusKey } from '../lib/jobStatus';
 import { JobCreateForm, type JobCreatePrefill } from './JobCreateForm';
 import { JobGalleryRowLink } from './JobGalleryLink';
 import { SendGalleryBulkBar, SendGalleryButton } from './SendGallery';
+import { hasGalleryToSend } from '../lib/galleryToSend';
 import { useGalleryLastSent } from '../hooks/useSendShootGallery';
 import { usePhotoShopEnabled, useShootGalleryNames } from '../hooks/usePhotoShop';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -94,7 +95,6 @@ export function JobsList() {
           </Button>
         </div>
       </div>
-      <p className="text-sm text-muted-foreground">{t('pages.jobs.subtitle')}</p>
 
       {showForm && <JobCreateForm prefill={prefill} onCreated={() => setShowForm(false)} />}
 
@@ -166,10 +166,9 @@ export function JobsList() {
                 </th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.client')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.package')}</th>
-                {shopOn && <th className="px-3 py-2 text-start">{t('pages.jobs.smugmug_gallery')}</th>}
                 <th className="px-3 py-2 text-start">{t('pages.jobs.when')}</th>
-                <th className="px-3 py-2 text-start">{t('pages.jobs.location')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.status')}</th>
+                <th className="px-3 py-2 text-start">{t('pages.jobs.gallery')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.jobs.contract')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.people.project_quote')}</th>
                 <th className="px-3 py-2 text-start">{t('pages.people.still_to_pay')}</th>
@@ -198,30 +197,24 @@ export function JobsList() {
                     )}
                   </td>
                   <td className="px-3 py-2">{job.package_name ?? '—'}</td>
-                  {shopOn && (
-                    <td className="px-3 py-2">
-                      <GalleryNameCell name={summaryOf(job).galleryName} />
-                    </td>
-                  )}
                   <td className="px-3 py-2">
                     {job.booked_starts_at
                       ? formatAppointmentWhen(job.booked_starts_at, i18n.language)
                       : t('pages.jobs.unscheduled')}
+                    {job.location && (
+                      <div className="text-xs text-muted-foreground" dir="auto">
+                        {job.location}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-3 py-2">{job.location ?? '—'}</td>
                   <td className="px-3 py-2">
                     <JobStatusBadge status={job.job_status} />
                   </td>
                   <td className="px-3 py-2">
+                    <GalleryCell job={job} summary={summaryOf(job)} shopOn={shopOn} />
+                  </td>
+                  <td className="px-3 py-2">
                     {job.waiver_evidence_id ? t('pages.jobs.contract_signed') : t('pages.jobs.contract_unsigned')}
-                    <div>
-                      <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
-                    </div>
-                    {job.job_status !== 'cancelled' && (
-                      <div className="mt-1">
-                        <SendGalleryButton engagementId={job.engagement_id} lastSentAt={summaryOf(job).lastSentAt} />
-                      </div>
-                    )}
                   </td>
                   <td className="px-3 py-2">
                     <QuoteCell quote={summaryOf(job).quote} />
@@ -245,6 +238,22 @@ interface ProjectRowSummary {
   lastSentAt: string | null;
   quote: QuoteSummary | undefined;
   openMinor: number;
+}
+
+function GalleryCell({ job, summary, shopOn }: { job: JobRow; summary: ProjectRowSummary; shopOn: boolean }) {
+  const canSend = hasGalleryToSend(job, summary.galleryName);
+  if (!canSend && !job.gallery_url && !summary.galleryName) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="space-y-1">
+      {shopOn && summary.galleryName && <GalleryNameCell name={summary.galleryName} />}
+      <div>
+        <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
+      </div>
+      {canSend && <SendGalleryButton engagementId={job.engagement_id} lastSentAt={summary.lastSentAt} />}
+    </div>
+  );
 }
 
 function GalleryNameCell({ name }: { name: string | null }) {
@@ -337,7 +346,9 @@ function JobCard({
         </dd>
       </dl>
       <JobGalleryRowLink url={job.gallery_url} clientName={job.client_name} />
-      {!cancelled && <SendGalleryButton engagementId={job.engagement_id} lastSentAt={summary.lastSentAt} />}
+      {hasGalleryToSend(job, summary.galleryName) && (
+        <SendGalleryButton engagementId={job.engagement_id} lastSentAt={summary.lastSentAt} />
+      )}
     </li>
   );
 }
