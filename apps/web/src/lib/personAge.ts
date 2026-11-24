@@ -1,3 +1,4 @@
+import { appLocale } from '@/utils/formatters';
 import type { TFunction } from 'i18next';
 
 /** Parse YYYY-MM-DD as a local calendar date (avoids UTC timezone drift). */
@@ -59,7 +60,7 @@ export function formatPersonDateOfBirthDisplay(
   const age = ageAt(dateOfBirth);
   if (Number.isNaN(age)) return null;
   if (isAdultAge(age)) return t('pages.students.age_adult');
-  return parseLocalDate(dateOfBirth).toLocaleDateString(locale);
+  return parseLocalDate(dateOfBirth).toLocaleDateString(appLocale(locale));
 }
 
 export function enrolmentShowingForAgeMessage(studentAge: number, t: TFunction): string {

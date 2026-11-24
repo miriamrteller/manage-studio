@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { appLocale } from '@/utils/formatters';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { buildPaymentLink } from '../lib/adminEnrolmentService';
@@ -34,7 +35,7 @@ export function StepConfirmation({
   closeLabel,
   onClose,
 }: StepConfirmationProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   if (adminDoneMessage) {
@@ -159,7 +160,7 @@ export function StepConfirmation({
         </p>
         <p>
           <strong>{t('pages.enrolment.date_label')}:</strong>{' '}
-          {new Date(enrolment.created_at).toLocaleDateString()}
+          {new Date(enrolment.created_at).toLocaleDateString(appLocale(i18n.language))}
         </p>
       </div>
 

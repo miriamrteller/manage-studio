@@ -1,4 +1,5 @@
 import { useWorkModes } from '@/hooks/useWorkModes';
+import { appLocale } from '@/utils/formatters';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -351,7 +352,7 @@ export function ParentPortal() {
                   <tr key={payment.id} className="border-t border-gray-100">
                     <td className="px-4 py-2 text-gray-700">
                       {payment.paid_at
-                        ? new Date(payment.paid_at).toLocaleDateString()
+                        ? new Date(payment.paid_at).toLocaleDateString(appLocale(i18n.language))
                         : '—'}
                     </td>
                     <td className="px-4 py-2 font-medium text-gray-900">
