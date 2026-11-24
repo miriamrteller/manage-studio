@@ -12,6 +12,9 @@ import { BackToPortalButton } from './BackToPortalButton';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { isPhoneBrowser } from '@/lib/tenantProviderRouting';
 import { PayDirectChoice } from '@/features/pay-direct/PayDirectChoice';
+import { ClassDiscountLines } from '@/features/enrolment/components/ClassDiscountLines';
+import { CouponCodeBox } from '@/features/enrolment/components/ClassCouponBox';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   token: string;
@@ -36,6 +39,7 @@ export function PublicPayRequest({ token, result }: Props) {
   const location = useLocation();
   const signPath = safeSignPath((location.state as { signPath?: unknown } | null)?.signPath);
 
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['public-pay-request', token],
     queryFn: () => JobPaymentService.publicRequest(token, 'get'),
@@ -90,6 +94,12 @@ export function PublicPayRequest({ token, result }: Props) {
           <p className="text-lg font-medium">
             <bdi>{request.label}</bdi>
           </p>
+          <ClassDiscountLines
+            listAmountMinor={request.listAmountMinor}
+            discounts={request.discounts}
+            currency={request.currency}
+            priceLabelKey="class_discounts.price"
+          />
           <p className="text-2xl font-semibold" dir="ltr">
             {formatMinor(request.amountMinor, request.currency, language)}
           </p>
@@ -114,6 +124,15 @@ export function PublicPayRequest({ token, result }: Props) {
             <p className="text-sm text-muted-foreground">{t('pages.pay.notCollectable')}</p>
           )}
 
+          {collectable && !awaitingWebhook && request.couponsOffered && (
+            <CouponCodeBox
+              onApply={async (code) => {
+                const res = await JobPaymentService.applyPublicCoupon(token, code);
+                if (res.coupon?.ok) queryClient.setQueryData(['public-pay-request', token], { request: res.request });
+                return res.coupon ?? null;
+              }}
+            />
+          )}
           {collectable && !awaitingWebhook && !onlineAvailable && (
             <p className="text-sm" role="note">{t('pages.pay.payStudioDirectly', { studio: request.studio.name })}</p>
           )}

@@ -5,8 +5,8 @@
  * Fakes only.
  * Run: pnpm -C apps/web test class-discounts.test.tsx
  */
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { makeGrowFakeService } from './helpers/growFakeService';
 import { pickMonthAmount, resolveMonthAmount } from '../../../../supabase/functions/_shared/payments/month-amount.ts';
 import {
@@ -25,6 +25,7 @@ import {
   rowToForm,
 } from '@/features/settings/lib/classDiscounts';
 import { ClassDiscountLines, discountLinesFromRow } from '@/features/enrolment/components/ClassDiscountLines';
+import { CouponCodeBox } from '@/features/enrolment/components/ClassCouponBox';
 import { openItemsFrom } from '@/features/finance/hooks/usePayableItems';
 
 const TENANT = '00000000-0000-0000-0000-0000000000aa';
@@ -188,5 +189,34 @@ describe('client discounts and coupon codes', () => {
     expect(screen.getByText('Your discount')).toBeInTheDocument();
     expect(screen.getByText('Coupon WELCOME (first payment)')).toBeInTheDocument();
     expect(screen.getByText(/After the first payment: .*180.* a month\./)).toBeInTheDocument();
+  });
+});
+
+describe('discounts on every sale (pay page)', () => {
+  it('a shoot or shop payment shows "Price" and the client discount', () => {
+    render(
+      <ClassDiscountLines
+        listAmountMinor={20000}
+        discounts={discountLinesFromRow([{ kind: 'client', amount_minor: 5000 }])}
+        currency="ILS"
+        priceLabelKey="class_discounts.price"
+      />,
+    );
+    expect(screen.getByText('Price')).toBeInTheDocument();
+    expect(screen.queryByText('Class price')).toBeNull();
+    expect(screen.getByText('Your discount')).toBeInTheDocument();
+  });
+
+  it('the coupon box sends the code and says why a code did not work', async () => {
+    const onApply = vi.fn().mockResolvedValueOnce({ ok: false, reason: 'not_found' }).mockResolvedValueOnce({ ok: true, amountMinor: 1000, firstOnly: false });
+    render(<CouponCodeBox onApply={onApply} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Have a coupon code?' }));
+    fireEvent.change(screen.getByLabelText('Coupon code'), { target: { value: 'nope' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(await screen.findByText(/couldn't find that code/)).toBeInTheDocument();
+    expect(onApply).toHaveBeenCalledWith('nope');
+    fireEvent.change(screen.getByLabelText('Coupon code'), { target: { value: 'SHOOT10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(await screen.findByText('Coupon applied. The price is updated.')).toBeInTheDocument();
   });
 });

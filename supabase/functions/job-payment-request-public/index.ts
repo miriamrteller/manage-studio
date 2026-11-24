@@ -5,6 +5,9 @@ import { createJobPaymentRequestCharge } from "../_shared/jobs/create-request-ch
 import { jobOnlinePaymentSupported } from "../_shared/provider-pairing.ts";
 import { loadJobPaymentRequestByToken } from "../_shared/jobs/load-request.ts";
 import { withMonitoring } from "../_shared/monitoring.ts";
+import { parseDiscountLines } from "../_shared/payments/class-discount.ts";
+import { applyRequestCoupon, studioHasClassCoupons } from "../_shared/payments/class-coupon.ts";
+import { isCollectable } from "../_shared/jobs/payment-request-state.ts";
 
 /**
  * Public pay page backend for /pay/:token (no session — the token IS the capability).
@@ -12,13 +15,16 @@ import { withMonitoring } from "../_shared/monitoring.ts";
  *   get           → what the client sees: studio, label, amount, due date, status.
  *   create_charge → hosted YPay page URL for this request (refused unless collectable).
  *   status        → poll after returning from the hosted page.
+ *   apply_coupon  → a coupon code the client typed; a bad code is reported, never an error.
  *
  * Deliberately narrow: no person/finance rows leave this function, only the
  * request's own public facts. Tokens are 48 hex chars and unguessable.
  */
 const BodySchema = z.object({
   token: z.string().min(16).max(128),
-  action: z.enum(["get", "create_charge", "status"]).default("get"),
+  action: z.enum(["get", "create_charge", "status", "apply_coupon"]).default("get"),
+  /** apply_coupon: the code the client typed. */
+  code: z.string().max(80).optional(),
   /** Takbull: pay with Bit; on a phone the answer opens the Bit app. */
   pay_with: z.enum(["card", "bit"]).optional(),
   is_mobile: z.boolean().optional(),
@@ -38,8 +44,14 @@ Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
 
   try {
     const service = createServiceClient();
-    const request = await loadJobPaymentRequestByToken(service, body.token);
+    let request = await loadJobPaymentRequestByToken(service, body.token);
     if (!request) return jsonResponse({ error: "Payment request not found" }, 404);
+
+    let coupon = null;
+    if (body.action === "apply_coupon") {
+      coupon = await applyRequestCoupon(service, body.token, body.code ?? "");
+      if (coupon.ok) request = (await loadJobPaymentRequestByToken(service, body.token)) ?? request;
+    }
 
     const { data: tenant } = await service
       .from("tenants")
@@ -58,6 +70,11 @@ Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
       id: request.id,
       label: request.label,
       amountMinor: request.amount_minor,
+      /** Before discounts, with each discount as its own line; only when there is a discount. */
+      listAmountMinor: request.list_amount_minor ?? null,
+      discounts: request.list_amount_minor != null ? parseDiscountLines(request.discount_lines) : [],
+      /** The studio has coupon codes: the page offers a box to type one. */
+      couponsOffered: isCollectable(request.status) && (await studioHasClassCoupons(service, request.tenant_id)),
       currency: request.currency,
       dueDate: request.due_date,
       status: request.status,
@@ -79,6 +96,9 @@ Deno.serve(withMonitoring("job-payment-request-public", async (req) => {
 
     if (body.action === "get" || body.action === "status") {
       return jsonResponse({ request: publicView });
+    }
+    if (body.action === "apply_coupon") {
+      return jsonResponse({ request: publicView, coupon });
     }
 
     const charge = await createJobPaymentRequestCharge(service, request, {

@@ -216,11 +216,12 @@ export async function resolveCheckoutSession(
     return { ok: false, status: 404, error: "Offering not found" };
   }
 
-  const isClass = offering.offering_type === "class";
+  // Classes and bookings take coupon codes (not the hidden shop records).
+  const takesCoupons = offering.offering_type === "class" || offering.offering_type === "appointment";
   let couponsOffered = false;
   let coupon: ClassCouponResult | null = null;
   let discountRow: Record<string, unknown> = engagement;
-  if (isClass) {
+  if (takesCoupons) {
     couponsOffered = await studioHasClassCoupons(service, tenantId);
     if (couponsOffered && typeof body.coupon_code === "string" && body.coupon_code.trim()) {
       coupon = await applyClassCoupon(service, engagement.id as string, body.coupon_code);

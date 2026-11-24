@@ -1,6 +1,6 @@
 # Class discounts and seasons: plan
 
-Status: discounts built (pull request #413); holidays and seasons still plan only. Owner decisions from 10 and 24 Nov 2026 are marked "Decided".
+Status: discounts built (pull requests #413, #528, and every sale in the follow-up); holidays and seasons still plan only. Owner decisions from 10 and 24 Nov 2026 are marked "Decided".
 
 ## Today (main, 10 Nov 2026)
 
@@ -14,7 +14,7 @@ Status: discounts built (pull request #413); holidays and seasons still plan onl
 - **Decided:** discounts add up in a fixed order, with a maximum total the studio sets. A studio can switch to "only the biggest discount".
 - **Decided:** if a sibling leaves mid-season, the other child keeps the sibling discount until the season ends.
 - **Decided (24 Nov):** usually a discount goes by email: siblings share a parent's email, and a studio can give a particular client a discount by email. Sometimes it is a coupon code. The studio picks per coupon whether it comes off the first payment only or every payment. **Corrected (24 Nov, owner):** a discount belongs to the sale, so on a monthly class every discount comes off every payment; first payment only is just for a coupon set as a one-month discount. Coupons are prefilled as every payment (migration `20261124151421_class_coupons_every_month.sql` switched any saved with the old default).
-- Classes → Discounts (חוגים > הנחות), only for studios that teach classes. Each rule has an on/off switch and an amount (percentage or shekels), prefilled and editable. All rules start switched off.
+- ~~Classes → Discounts, only for studios that teach classes.~~ **Decided (24 Nov, owner):** discounts are for every OpalSwift studio, with their own feature switch (`billing:discounts`, on for every studio; the platform owner can switch it off per studio). The page is Finance → Discounts (כספים > הנחות), `/admin/finance/discounts` (the old Classes address redirects). Studios without classes see how discounts add up, the maximum, client discounts and coupon codes; studios with classes also see the class rules. Each rule has an on/off switch and an amount (percentage or shekels), prefilled and editable. All rules start switched off.
 - **Built (first version):**
   - The database works the discount out once, when the enrolment is made, and stores it on the enrolment (`engagements.discount_minor`, `discount_lines`; migration `20261124140000_class_discounts.sql`). A later rule change, or a sibling leaving, never changes a price already given.
   - Sibling: the 2nd child of a family (same family account, or sharing a parent's email: the child's own, the family's main contact's or any family member's) to enrol in a class that season gets the sibling amount; the 3rd child and more get the second amount. The order is each child's first class enrolment in the season, so the first child's extra class does not count as a sibling one.
@@ -24,6 +24,12 @@ Status: discounts built (pull request #413); holidays and seasons still plan onl
   - A discount for a particular client (`class_discount_clients`): matched on the child's or a parent's email when the child is enrolled. It counts with the other discounts, within the maximum.
   - Coupon codes (`class_discount_coupons`): percentage or amount, off every payment (default) or the first payment only (a one-month discount), with an optional expiry date and limit on uses, and an on/off switch. At checkout a "Have a coupon code?" link opens a box; a code that doesn't work says why and the parent pays as before. A valid code (`public.apply_class_coupon`) comes on top of the other discounts, within the maximum, and replaces any earlier code on that enrolment. A first-payment coupon is stored in `engagements.first_discount_minor` and monthly charges leave it out.
   - Parents see the class price and each discount as its own line before paying. Admins see the same lines on the student's enrolment.
+- **Built (every sale, 24 Nov):** migration `20261124152000_discounts_for_every_sale.sql`.
+  - Bookings and packages (appointments): the client discount comes off when booked, and the checkout has the coupon box. Sibling, extra class and early bird stay class-only.
+  - Shoots and quotes, the photo shop, the clothes shop and class cards: every payment request (`job_payment_requests`) gets the client discount when it is made, and the pay page (`/pay/...`) shows the price, each discount and a coupon box (`public.apply_request_coupon`). The request keeps `list_amount_minor`, `discount_minor`, `discount_lines` and `coupon_id`.
+  - A sale is one shoot (all its deposit and balance requests), or one shop order, or one class card. A percentage comes off every payment of the sale; a fixed amount comes off once per sale. A percentage coupon typed on one payment of a shoot also comes off its other unpaid and later payments. The studio's maximum applies to each payment.
+  - If the studio changes an unpaid request's amount by hand, that amount wins and the discount is cleared.
+  - Known gaps: the quote page and shop order totals still show the price before discount (the pay page shows the discount); clothes shop orders paid in person have no coupon box (the client discount still comes off).
 - **Later:** the whole-season-up-front discount needs a "pay monthly or the whole season" choice at checkout, which does not exist yet.
 
 ### Tax and legal questions (lawyer list row 48)
@@ -34,6 +40,7 @@ Status: discounts built (pull request #413); holidays and seasons still plan onl
 2. Lawyer: the parent sees the class price, each discount and the total before paying. Is that enough for price display rules?
 3. Accountant: a first-payment coupon makes the first month cheaper than the rest. Anything to show differently on that receipt?
 4. Lawyer: do coupon codes need written terms (expiry, one per enrolment, no cash value)?
+5. Accountant and lawyer (row 49): discounts now come off every kind of sale (bookings, shoots and quotes, photo shop, clothes shop, class cards). Same questions for those receipts and the pay page lines.
 
 ## Holidays and seasons
 

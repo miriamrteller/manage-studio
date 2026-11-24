@@ -244,6 +244,92 @@ BEGIN
 END;
 $$;
 
+-- Every kind of sale: a booking gets the client's own discount; shoot payment
+-- requests get it too, and a coupon typed on the pay page.
+CREATE TEMP TABLE sids AS SELECT
+  gen_random_uuid() AS appt, gen_random_uuid() AS shoot, gen_random_uuid() AS shoot2,
+  gen_random_uuid() AS pct, gen_random_uuid() AS fixed;
+INSERT INTO offerings (id, tenant_id, name, offering_type, duration_mins, price_minor)
+SELECT s.appt, m.studio, 'Shoot', 'appointment', 60, 50000 FROM sids s, mids m;
+INSERT INTO class_discount_coupons (id, tenant_id, code, unit, value)
+SELECT pct, (SELECT studio FROM mids), 'SHOOT10', 'percent', 10 FROM sids
+UNION ALL SELECT fixed, (SELECT studio FROM mids), 'FIFTY', 'amount', 5000 FROM sids;
+
+DO $$
+DECLARE
+  v mids%ROWTYPE;
+  w sids%ROWTYPE;
+  e engagements%ROWTYPE;
+  r1 job_payment_requests%ROWTYPE;
+  r2 job_payment_requests%ROWTYPE;
+  r3 job_payment_requests%ROWTYPE;
+BEGIN
+  SELECT * INTO v FROM mids;
+  SELECT * INTO w FROM sids;
+
+  -- A booking for a client with a discount (Kid C's email: 50.00 off).
+  e := pg_temp.enrol(v.c, w.appt, 10);
+  PERFORM pg_temp.expect('booking: client discount', e, 5000, 'client:5000');
+  PERFORM pg_temp.expect_reason('coupon on a booking', public.apply_class_coupon(e.id, 'SHOOT10'), 'ok');
+  SELECT * INTO e FROM engagements WHERE id = e.id;
+  PERFORM pg_temp.expect('booking: coupon every payment', e, 10000, 'client:5000,coupon:5000');
+
+  -- A shoot paid by requests (deposit and balance): a fixed client discount comes off once.
+  INSERT INTO class_discount_clients (tenant_id, email, unit, value) VALUES (v.studio, 'parent@example.test', 'amount', 5000);
+  INSERT INTO engagements (id, tenant_id, person_id, offering_id, status)
+  VALUES (w.shoot, v.studio, v.p2, w.appt, 'active');
+  INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor)
+  VALUES (v.studio, w.shoot, 'Deposit', 20000) RETURNING * INTO r1;
+  INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor)
+  VALUES (v.studio, w.shoot, 'Balance', 35000) RETURNING * INTO r2;
+  IF r1.amount_minor <> 15000 OR r1.list_amount_minor <> 20000 OR r2.amount_minor <> 35000 OR r2.discount_minor <> 0 THEN
+    RAISE EXCEPTION 'FAIL fixed client discount once per shoot: % / %', r1.amount_minor, r2.amount_minor;
+  END IF;
+
+  -- A percentage coupon on the pay page comes off every unpaid payment of the shoot
+  -- (the deposit already has 50.00 off, so the 30% maximum leaves 10.00 for the coupon).
+  PERFORM pg_temp.expect_reason('coupon on the pay page', public.apply_request_coupon(r2.public_token, 'shoot10'), 'ok');
+  SELECT * INTO r1 FROM job_payment_requests WHERE id = r1.id;
+  SELECT * INTO r2 FROM job_payment_requests WHERE id = r2.id;
+  IF r2.amount_minor <> 31500 OR r1.amount_minor <> 14000 OR r1.coupon_id <> w.pct THEN
+    RAISE EXCEPTION 'FAIL percent coupon on every payment: deposit %, balance %', r1.amount_minor, r2.amount_minor;
+  END IF;
+  -- ...and on a payment added later.
+  INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor)
+  VALUES (v.studio, w.shoot, 'Extra prints', 10000) RETURNING * INTO r3;
+  IF r3.amount_minor <> 9000 THEN
+    RAISE EXCEPTION 'FAIL coupon carries to a later payment: %', r3.amount_minor;
+  END IF;
+
+  -- Editing an unpaid request's amount by hand: the studio's amount wins.
+  UPDATE job_payment_requests SET amount_minor = 12000 WHERE id = r3.id;
+  SELECT * INTO r3 FROM job_payment_requests WHERE id = r3.id;
+  IF r3.amount_minor <> 12000 OR r3.discount_minor <> 0 OR r3.list_amount_minor IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL hand-edited amount keeps a stale discount';
+  END IF;
+  -- Nobody changes the discount fields by hand.
+  UPDATE job_payment_requests SET discount_minor = 0, discount_lines = '[]' WHERE id = r2.id;
+  SELECT * INTO r2 FROM job_payment_requests WHERE id = r2.id;
+  IF r2.discount_minor <> 3500 THEN RAISE EXCEPTION 'FAIL request discount changed by hand'; END IF;
+
+  PERFORM pg_temp.expect_reason('pay page: unknown code', public.apply_request_coupon(r2.public_token, 'NOPE'), 'not_found');
+  PERFORM pg_temp.expect_reason('pay page: unknown token', public.apply_request_coupon('nope', 'SHOOT10'), 'not_payable');
+
+  -- Discounts switched off for the studio: nothing applies.
+  INSERT INTO tenant_feature_overrides (tenant_id, feature_key, is_enabled, set_by)
+  VALUES (v.studio, 'billing:discounts', false, 'operator');
+  INSERT INTO engagements (id, tenant_id, person_id, offering_id, status)
+  VALUES (w.shoot2, v.studio, v.p1, w.appt, 'active');
+  INSERT INTO job_payment_requests (tenant_id, engagement_id, label, amount_minor)
+  VALUES (v.studio, w.shoot2, 'Deposit', 15000) RETURNING * INTO r1;
+  IF r1.amount_minor <> 15000 OR r1.discount_minor <> 0 THEN RAISE EXCEPTION 'FAIL discounts off still discount'; END IF;
+  PERFORM pg_temp.expect_reason('switched off: coupon', public.apply_request_coupon(r1.public_token, 'SHOOT10'), 'not_found');
+  e := pg_temp.enrol(v.p1, v.o1, 11);
+  PERFORM pg_temp.expect('switched off: enrolment', e, 0, '');
+  DELETE FROM tenant_feature_overrides WHERE tenant_id = v.studio AND feature_key = 'billing:discounts';
+END;
+$$;
+
 -- A client email must be lower case; a coupon code upper case.
 DO $$
 BEGIN

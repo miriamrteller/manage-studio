@@ -255,7 +255,7 @@ const router = createBrowserRouter([
           { path: "admin/classes/seasons", element: <AdminRoute><TermsPage /></AdminRoute> },
           { path: "admin/classes/teachers", element: <AdminRoute><TeachersPage /></AdminRoute> },
           { path: "admin/classes/cards", element: <AdminRoute><ClassCardsSettingsPage /></AdminRoute> },
-          { path: "admin/classes/discounts", element: <AdminRoute><ClassDiscountsPage /></AdminRoute> },
+          { path: "admin/classes/discounts", element: <Navigate to="/admin/finance/discounts" replace /> },
           // Projects (shoots) and quotes
           { path: "admin/projects", element: <AdminRoute><JobsPage /></AdminRoute> },
           { path: "admin/projects/quotes", element: <AdminRoute><AdminQuotesPage /></AdminRoute> },
@@ -271,6 +271,7 @@ const router = createBrowserRouter([
           // Finance
           { path: "admin/finance", element: <AdminRoute><FinanceHubPage /></AdminRoute> },
           { path: "admin/finance/payments", element: <AdminRoute><PaymentsLogPage /></AdminRoute> },
+          { path: "admin/finance/discounts", element: <AdminRoute><ClassDiscountsPage /></AdminRoute> },
           { path: "admin/finance/expenses", element: <AdminRoute><ExpensesPage /></AdminRoute> },
           { path: "admin/finance/expenses/categories", element: <AdminRoute><ExpenseCategoriesPage /></AdminRoute> },
           { path: "admin/finance/import", element: <AdminRoute><FinanceImportPage /></AdminRoute> },

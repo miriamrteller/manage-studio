@@ -176,6 +176,8 @@
       "advance_job_statuses",
       "apply_class_coupon",
       "apply_class_discounts",
+      "apply_request_coupon",
+      "apply_request_discounts",
       "assign_studio_owner",
       "claim_automatic_email",
       "cleanup_expired_otps",

@@ -17,11 +17,16 @@ export interface JobPaymentRequestRow {
   public_token: string;
   due_reminder_sent_at: string | null;
   overdue_reminder_sent_at: string | null;
+  /** Before discounts; null when there is no discount. amount_minor is what the client pays. */
+  list_amount_minor?: number | null;
+  discount_minor?: number;
+  discount_lines?: unknown;
 }
 
 export const JOB_PAYMENT_REQUEST_COLUMNS =
   "id, tenant_id, engagement_id, label, amount_minor, currency, due_date, status, payment_id, " +
-  "sent_at, paid_at, max_installments, public_token, due_reminder_sent_at, overdue_reminder_sent_at";
+  "sent_at, paid_at, max_installments, public_token, due_reminder_sent_at, overdue_reminder_sent_at, " +
+  "list_amount_minor, discount_minor, discount_lines";
 
 function coerceRow(data: Record<string, unknown>): JobPaymentRequestRow {
   const status = data.status;

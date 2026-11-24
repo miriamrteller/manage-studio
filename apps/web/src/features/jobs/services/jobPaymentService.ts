@@ -1,4 +1,5 @@
 import { BaseService } from '@/services/base.service';
+import type { ClassCouponResult, ClassDiscountLine } from '@/features/enrolment/lib/checkoutBootstrapTypes';
 import type { ManualPaymentMethod } from '@/features/finance/lib/manualPaymentMethods';
 import { supabase } from '@/lib/supabase';
 import { functionInvokeErrorMessage, parseFunctionInvokeBody } from '@/lib/parseFunctionInvokeError';
@@ -179,6 +180,14 @@ export class JobPaymentService extends BaseService {
     return data as JobGalleryState;
   }
 
+  /** Public pay page: a coupon code the client typed. A bad code comes back as a reason, never an error. */
+  static async applyPublicCoupon(
+    token: string,
+    code: string,
+  ): Promise<{ request: PublicJobPaymentRequest; coupon?: ClassCouponResult }> {
+    return invoke('job-payment-request-public', { token, action: 'apply_coupon', code }, 'Payment request unavailable');
+  }
+
   /** Public pay page (no session). */
   static async publicRequest(
     token: string,
@@ -206,6 +215,12 @@ export interface PublicJobPaymentRequest {
   id: string;
   label: string;
   amountMinor: number;
+  /** Before discounts; set only when there is a discount. */
+  listAmountMinor?: number | null;
+  /** Each discount behind amountMinor (the client's own discount, a coupon). */
+  discounts?: ClassDiscountLine[];
+  /** The studio has coupon codes: the page offers a box to type one. */
+  couponsOffered?: boolean;
   currency: string;
   dueDate: string | null;
   status: JobPaymentRequestStatus;

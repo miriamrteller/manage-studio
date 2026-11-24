@@ -13,12 +13,15 @@ export function ClassDiscountLines({
   discounts,
   currency,
   monthly = false,
+  priceLabelKey = 'class_discounts.class_price',
 }: {
   listAmountMinor: number | null | undefined;
   discounts: ClassDiscountLine[] | null | undefined;
   currency: string;
   /** The discount is per month (monthly classes). */
   monthly?: boolean;
+  /** The first line's label: "Class price" by default, "Price" for other sales. */
+  priceLabelKey?: string;
 }) {
   const { t, i18n } = useTranslation();
   if (!discounts || discounts.length === 0 || listAmountMinor == null) return null;
@@ -39,7 +42,7 @@ export function ClassDiscountLines({
     <div className="space-y-0.5" data-testid="class-discount-lines">
       <dl className="space-y-0.5 text-sm">
         <div className="flex justify-between gap-4">
-          <dt>{t('class_discounts.class_price')}</dt>
+          <dt>{t(priceLabelKey)}</dt>
           <dd>{money(listAmountMinor)}</dd>
         </div>
         {discounts.map((line) => (

@@ -2468,14 +2468,18 @@ export type Database = {
         Row: {
           amount_minor: number
           class_card_id: string | null
+          coupon_id: string | null
           created_at: string
           created_by: string | null
           currency: string
+          discount_lines: Json
+          discount_minor: number
           due_date: string | null
           due_reminder_sent_at: string | null
           engagement_id: string
           id: string
           label: string
+          list_amount_minor: number | null
           max_installments: number
           overdue_reminder_sent_at: string | null
           paid_at: string | null
@@ -2492,14 +2496,18 @@ export type Database = {
         Insert: {
           amount_minor: number
           class_card_id?: string | null
+          coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
+          discount_lines?: Json
+          discount_minor?: number
           due_date?: string | null
           due_reminder_sent_at?: string | null
           engagement_id: string
           id?: string
           label: string
+          list_amount_minor?: number | null
           max_installments?: number
           overdue_reminder_sent_at?: string | null
           paid_at?: string | null
@@ -2516,14 +2524,18 @@ export type Database = {
         Update: {
           amount_minor?: number
           class_card_id?: string | null
+          coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
+          discount_lines?: Json
+          discount_minor?: number
           due_date?: string | null
           due_reminder_sent_at?: string | null
           engagement_id?: string
           id?: string
           label?: string
+          list_amount_minor?: number | null
           max_installments?: number
           overdue_reminder_sent_at?: string | null
           paid_at?: string | null
@@ -2543,6 +2555,13 @@ export type Database = {
             columns: ["class_card_id"]
             isOneToOne: false
             referencedRelation: "class_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_payment_requests_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "class_discount_coupons"
             referencedColumns: ["id"]
           },
           {
@@ -6787,6 +6806,10 @@ export type Database = {
       advance_job_statuses: { Args: { p_now?: string }; Returns: Json }
       apply_class_coupon: {
         Args: { p_code: string; p_engagement_id: string }
+        Returns: Json
+      }
+      apply_request_coupon: {
+        Args: { p_code: string; p_token: string }
         Returns: Json
       }
       approve_age_review_engagement: {
