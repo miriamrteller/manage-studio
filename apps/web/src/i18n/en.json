@@ -2976,7 +2976,21 @@
       "packages_subtitle": "What clients can book with you, each with its price. These show on your Book page.",
       "add_named": "Add {{item}}",
       "edit_named": "Edit {{item}}",
-      "none_named": "Nothing here yet. Press “Add {{item}}” to add your first one."
+      "none_named": "Nothing here yet. Press “Add {{item}}” to add your first one.",
+      "price_display": "How the price shows",
+      "online_booking": "Clients can book a time online",
+      "online_booking_hint": "When this is off, clients can't book this online.",
+      "enquiry_only": "Not bookable online",
+      "deposit_percent": "Deposit (%)",
+      "deposit_percent_hint": "Used for quotes for this package. We filled in the usual 30%.",
+      "deposit_list": "Deposit {{percent}}%"
+    },
+    "price_display": {
+      "show": "Show the price",
+      "from": "“From” the price",
+      "on_request": "Price on request",
+      "from_label": "From {{amount}}",
+      "on_request_label": "Price on request"
     },
     "book": {
       "photographer_note": "This studio doesn’t take online bookings. Send an enquiry instead and you’ll get a quote back.",

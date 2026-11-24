@@ -14,6 +14,8 @@ export interface QuoteDraftPrefill {
   title: string | null;
   shoot_date: string | null;
   lines: QuoteLineDraft[];
+  /** The package's own deposit percent, when it has one. */
+  deposit_percent?: number | null;
 }
 
 export interface QuoteSourceLead {
@@ -65,7 +67,12 @@ export function quotePrefillFromSource(source: {
   }
 
   const title = [packageName, clientName].filter(Boolean).join(' – ') || null;
-  return { title, shoot_date: shootDate, lines };
+  return {
+    title,
+    shoot_date: shootDate,
+    lines,
+    ...(pkg?.deposit_percent != null ? { deposit_percent: pkg.deposit_percent } : {}),
+  };
 }
 
 export function newQuoteDraft(
@@ -82,7 +89,7 @@ export function newQuoteDraft(
     shoot_date: prefill?.shoot_date ?? null,
     valid_until: isoDateInJerusalem(validUntil),
     notes: null,
-    deposit_percent: DEFAULT_DEPOSIT_PERCENT,
+    deposit_percent: prefill?.deposit_percent ?? DEFAULT_DEPOSIT_PERCENT,
     balance_max_installments: 1,
     send_contract_on_accept: false,
     lines: prefill?.lines ?? [],

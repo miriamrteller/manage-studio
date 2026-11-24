@@ -11,7 +11,7 @@ import { BookingCalendar } from '@/features/scheduling/components/BookingCalenda
 import { BookingService, type AvailableSlot, type BookableOffering } from '@/features/scheduling/bookingService';
 import { useIsNarrowViewport } from '@/features/scheduling/hooks/useIsNarrowViewport';
 import { cn } from '@/lib/utils';
-import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
+import { formatPackagePrice } from '@/lib/formatPackagePrice';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { ShootRequestForm } from '@/features/scheduling/components/ShootRequestForm';
 
@@ -63,7 +63,13 @@ export default function BookingPage() {
     enabled: !!subdomain,
   });
 
-  const offerings = useMemo(() => offeringsQuery.data ?? [], [offeringsQuery.data]);
+  // Instant booking only offers packages that can be booked online; a shoot request lists them all.
+  const offerings = useMemo(
+    () => (offeringsQuery.data ?? []).filter((o) => takesRequests || o.online_booking),
+    [offeringsQuery.data, takesRequests],
+  );
+  const priceText = (o: BookableOffering) =>
+    formatPackagePrice(t, o.price_minor, o.price_display, o.currency || 'ILS', i18n.language);
   const activeOffering = useMemo(
     () => offerings.find((o) => o.id === selectedOffering) ?? null,
     [offerings, selectedOffering],
@@ -196,10 +202,7 @@ export default function BookingPage() {
             {offerings[0].duration_mins
               ? ` · ${t('scheduling.book.duration_mins', { count: offerings[0].duration_mins })}`
               : ''}
-            {' · '}
-            {formatOfferingPrice(t, offerings[0].price_minor, offerings[0].currency || 'ILS', i18n.language, {
-              billing_mode: 'one_time',
-            })}
+            {priceText(offerings[0]) ? ` · ${priceText(offerings[0])}` : ''}
           </p>
         ) : (
         <div className="space-y-2">
@@ -232,17 +235,12 @@ export default function BookingPage() {
                   >
                     <div className="font-medium leading-snug">{o.name}</div>
                     <div className="text-xs text-gray-500 sm:text-sm">
-                      {o.duration_mins
-                        ? t('scheduling.book.duration_mins', { count: o.duration_mins })
-                        : ''}
-                      {' · '}
-                      {formatOfferingPrice(
-                        t,
-                        o.price_minor,
-                        o.currency || 'ILS',
-                        i18n.language,
-                        { billing_mode: 'one_time' },
-                      )}
+                      {[
+                        o.duration_mins ? t('scheduling.book.duration_mins', { count: o.duration_mins }) : null,
+                        priceText(o),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </div>
                   </button>
                 </li>

@@ -3459,6 +3459,7 @@ export type Database = {
           currency: string
           day_of_week: number | null
           delivery_mode: string
+          deposit_percent: number | null
           duration_mins: number | null
           early_price_per_class_minor: number | null
           end_time: string | null
@@ -3470,7 +3471,9 @@ export type Database = {
           min_age: number | null
           name: string
           offering_type: string
+          online_booking: boolean
           photos_included: number
+          price_display: string
           price_minor: number
           price_per_class_minor: number | null
           renewal_policy: string
@@ -3492,6 +3495,7 @@ export type Database = {
           currency?: string
           day_of_week?: number | null
           delivery_mode?: string
+          deposit_percent?: number | null
           duration_mins?: number | null
           early_price_per_class_minor?: number | null
           end_time?: string | null
@@ -3503,7 +3507,9 @@ export type Database = {
           min_age?: number | null
           name: string
           offering_type?: string
+          online_booking?: boolean
           photos_included?: number
+          price_display?: string
           price_minor?: number
           price_per_class_minor?: number | null
           renewal_policy?: string
@@ -3525,6 +3531,7 @@ export type Database = {
           currency?: string
           day_of_week?: number | null
           delivery_mode?: string
+          deposit_percent?: number | null
           duration_mins?: number | null
           early_price_per_class_minor?: number | null
           end_time?: string | null
@@ -3536,7 +3543,9 @@ export type Database = {
           min_age?: number | null
           name?: string
           offering_type?: string
+          online_booking?: boolean
           photos_included?: number
+          price_display?: string
           price_minor?: number
           price_per_class_minor?: number | null
           renewal_policy?: string
@@ -7150,6 +7159,8 @@ export type Database = {
           id: string
           location: string
           name: string
+          online_booking: boolean
+          price_display: string
           price_minor: number
         }[]
       }
