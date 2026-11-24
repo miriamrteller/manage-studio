@@ -323,6 +323,10 @@ export const OfferingSchema = z.object({
   billing_mode: z.enum(['one_time', 'recurring']).default('one_time'),
   delivery_mode: z.enum(['scheduled', 'intangible']).default('scheduled'),
   billing_interval: z.enum(['monthly', 'quarterly', 'annual']).nullable().optional(),
+  /** Term pricing: price of one class; set = families pay the term's classes, up front or monthly. */
+  price_per_class_minor: z.number().int().positive().nullable().optional(),
+  /** Term pricing: price of one class for families who enrolled by the studio's early date. */
+  early_price_per_class_minor: z.number().int().positive().nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
   waiver_required: z.boolean().default(true),
   location: z.string().max(500).nullable().optional(),
@@ -414,6 +418,10 @@ export const EngagementSchema = z.object({
   payment_dunning_attempt_count: z.number().int().nonnegative().default(0).optional(),
   payment_dunning_next_at: TimestampSchema.nullable().optional(),
   waiver_evidence_id: UUIDSchema.nullable().optional(),
+  /** Term pricing: monthly payments or the whole term up front (null = not term-priced). */
+  pay_plan: z.enum(['monthly', 'upfront']).nullable().optional(),
+  /** Term pricing: the calculation the family saw (see termPricing.ts). */
+  term_price: z.record(z.string(), z.unknown()).nullable().optional(),
   /** Class discount off the class price, set by the database at enrolment (per month for monthly classes). */
   discount_minor: z.number().int().nonnegative().optional(),
   /** A first-payment coupon: comes off the first payment only. */

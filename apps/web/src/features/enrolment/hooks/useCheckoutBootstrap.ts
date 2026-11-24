@@ -5,6 +5,7 @@ import type {
   CheckoutBootstrapPhase,
   CheckoutChargePayload,
   EnrolmentCompletionContext,
+  PayPlan,
   PrepareEnrolmentCheckoutBody,
 } from '../lib/checkoutBootstrapTypes';
 
@@ -19,6 +20,8 @@ export function useCheckoutBootstrap(params: {
   waiverEvidenceId?: string | null;
   ageOverrideConfirmed?: boolean;
   ageOverrideReason?: string | null;
+  /** Term-priced class: the plan the family picked (null = keep the saved one, monthly by default). */
+  payPlan?: PayPlan | null;
   enabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -31,6 +34,7 @@ export function useCheckoutBootstrap(params: {
           engagement_id: params.engagementId,
           ...(params.offeringId ? { offering_id: params.offeringId } : {}),
           ...(params.enrolmentToken ? { enrolment_token: params.enrolmentToken } : {}),
+          ...(params.payPlan ? { pay_plan: params.payPlan } : {}),
         }
       : params.mode === 'create_engagement' &&
           params.personId &&
@@ -64,7 +68,9 @@ export function useCheckoutBootstrap(params: {
       params.enrolmentToken ?? null,
       params.waiverEvidenceId ?? null,
       params.ageOverrideConfirmed ?? false,
+      params.payPlan ?? null,
     ],
+    placeholderData: (previous) => previous,
     queryFn: () =>
       fetchCheckoutBootstrap(body!, {
         enrolmentToken: params.enrolmentToken,
@@ -82,6 +88,7 @@ export function useCheckoutBootstrap(params: {
     charge: (data?.charge ?? null) as CheckoutChargePayload | null,
     blockReason: data?.blockReason,
     isLoading: queryEnabled && query.isPending,
+    isFetching: query.isFetching,
     loadError: query.error instanceof Error ? query.error.message : null,
     refetch: query.refetch,
   };

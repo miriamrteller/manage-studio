@@ -15,9 +15,10 @@ import queryClient from '@/lib/query-client';
 import { formatOfferingPrice } from '@/lib/formatOfferingPrice';
 import type { Engagement } from '@shared/schemas';
 import { monthlyHintKey } from '@/features/enrolment/lib/monthlyHint';
+import { TermPriceSummary } from '@/features/enrolment/components/TermPriceSummary';
 import { ClassDiscountLines } from './ClassDiscountLines';
 import { ClassCouponBox } from './ClassCouponBox';
-import type { CheckoutChargePayload } from '../lib/checkoutBootstrapTypes';
+import type { CheckoutChargePayload, PayPlan } from '../lib/checkoutBootstrapTypes';
 
 interface AuthenticatedCompletionViewProps {
   engagementId: string | undefined;
@@ -31,10 +32,12 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
   const [linkingWaiver, setLinkingWaiver] = useState(false);
   const [paid, setPaid] = useState(false);
 
+  const [payPlan, setPayPlan] = useState<PayPlan | null>(null);
   const bootstrap = useCheckoutBootstrap({
     phase: 'pay',
     mode: 'existing_engagement',
     engagementId,
+    payPlan,
     enabled: !!tenant?.id && !!engagementId && !!user,
   });
 
@@ -183,35 +186,55 @@ export function AuthenticatedCompletionView({ engagementId }: AuthenticatedCompl
     <div className="max-w-lg mx-auto space-y-6">
       <h1 className="text-2xl font-bold">{t('pages.enrol_pay.title')}</h1>
 
-      <div className="rounded-lg border border-gray-200 p-4 space-y-2">
-        <p className="font-medium">{context.className}</p>
-        <ClassDiscountLines
-          listAmountMinor={couponCharge ? couponCharge.listAmountMinor : context.listAmountMinor}
-          discounts={couponCharge ? couponCharge.discounts : context.discounts}
+      {context.termPrice ? (
+        <TermPriceSummary
+          className={context.className}
+          term={context.termPrice}
           currency={context.currency}
-          monthly={context.billingMode === 'recurring' && context.billingInterval === 'monthly'}
-        />
-        <p className="text-sm text-gray-600">
-          {t('pages.admin_enrol.amount_due')}:{' '}
-          {formatOfferingPrice(t, couponCharge?.amountMinor ?? context.amountMinor, context.currency, i18n.language, {
-            billing_mode: context.billingMode,
-            billing_interval: context.billingInterval,
-          })}
-        </p>
-        {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
-          <p className="text-xs text-gray-500">{t(monthlyHintKey(charge?.paymentProvider))}</p>
-        )}
-        {charge.couponsOffered && (
-          <ClassCouponBox
-            classId={context.offeringId}
-            engagementId={context.engagementId}
-            onCharge={setCouponCharge}
+          busy={bootstrap.isFetching}
+          onChoose={(plan) => {
+            setCouponCharge(null);
+            setPayPlan(plan);
+          }}
+          payNowMinor={couponCharge?.amountMinor ?? context.amountMinor}
+        >
+          <ClassDiscountLines
+            listAmountMinor={couponCharge ? couponCharge.listAmountMinor : context.listAmountMinor}
+            discounts={couponCharge ? couponCharge.discounts : context.discounts}
+            currency={context.currency}
           />
-        )}
-      </div>
+        </TermPriceSummary>
+      ) : (
+        <div className="rounded-lg border border-gray-200 p-4 space-y-2">
+          <p className="font-medium">{context.className}</p>
+          <ClassDiscountLines
+            listAmountMinor={couponCharge ? couponCharge.listAmountMinor : context.listAmountMinor}
+            discounts={couponCharge ? couponCharge.discounts : context.discounts}
+            currency={context.currency}
+            monthly={context.billingMode === 'recurring' && context.billingInterval === 'monthly'}
+          />
+          <p className="text-sm text-gray-600">
+            {t('pages.admin_enrol.amount_due')}:{' '}
+            {formatOfferingPrice(t, couponCharge?.amountMinor ?? context.amountMinor, context.currency, i18n.language, {
+              billing_mode: context.billingMode,
+              billing_interval: context.billingInterval,
+            })}
+          </p>
+          {context.billingMode === 'recurring' && context.billingInterval === 'monthly' && (
+            <p className="text-xs text-gray-500">{t(monthlyHintKey(charge?.paymentProvider))}</p>
+          )}
+        </div>
+      )}
+      {charge.couponsOffered && (
+        <ClassCouponBox
+          classId={context.offeringId}
+          engagementId={context.engagementId}
+          onCharge={setCouponCharge}
+        />
+      )}
 
       <CheckoutPaymentShell
-        key={charge.amountMinor ?? 'none'}
+        key={`${context.termPrice?.plan ?? 'price'}-${charge.amountMinor ?? 'none'}`}
         classId={context.offeringId}
         engagementId={context.engagementId}
         charge={charge}

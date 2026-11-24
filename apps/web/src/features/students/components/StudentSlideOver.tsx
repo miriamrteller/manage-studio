@@ -24,6 +24,7 @@ import { AgeReviewAdminPanel } from './AgeReviewAdminPanel';
 import { CancelEnrolmentDialog } from './CancelEnrolmentDialog';
 import { formatAgeRange } from '@/features/enrolment/lib/check-requirements';
 import { RecordPaymentModal } from '@/features/finance/components/RecordPaymentModal';
+import { termFirstPaymentMinor } from '@/features/enrolment/lib/termFirstPayment';
 import { MonthlyPlanSection } from '@/features/finance/components/MonthlyPlanSection';
 import { ClassDiscountLines, discountLinesFromRow } from '@/features/enrolment/components/ClassDiscountLines';
 import { RefundPaymentModal } from '@/features/finance/components/RefundPaymentModal';
@@ -356,8 +357,18 @@ export function StudentSlideOver({
                         const firstDiscountMinor = engagement.first_discount_minor ?? 0;
                         const pricedMinor =
                           offering ? Math.max(0, offering.price_minor - discountMinor) : undefined;
+                        // Term pricing: the family's first payment for their plan, less only a client's
+                        // own discount or a coupon (the term's rules already give sister and early prices).
+                        const termFirst = termFirstPaymentMinor(engagement);
+                        const termOffMinor = (engagement.discount_lines ?? [])
+                          .filter((line) => line.kind === 'client' || line.kind === 'coupon')
+                          .reduce((sum, line) => sum + line.amount_minor, 0);
                         const firstPricedMinor =
-                          pricedMinor === undefined ? undefined : Math.max(0, pricedMinor - firstDiscountMinor);
+                          termFirst !== null
+                            ? Math.max(0, termFirst - termOffMinor)
+                            : pricedMinor === undefined
+                              ? undefined
+                              : Math.max(0, pricedMinor - firstDiscountMinor);
                         return (
                           <li key={engagement.id} className="space-y-2 py-1">
                             {engagement.status === 'admin_review' && person && (
@@ -404,7 +415,7 @@ export function StudentSlideOver({
                                   : undefined
                               }
                             />
-                            {offering && (discountMinor > 0 || firstDiscountMinor > 0) && (
+                            {offering && termFirst === null && (discountMinor > 0 || firstDiscountMinor > 0) && (
                               <ClassDiscountLines
                                 listAmountMinor={offering.price_minor}
                                 discounts={discountLinesFromRow(engagement.discount_lines)}
@@ -412,7 +423,10 @@ export function StudentSlideOver({
                                 monthly={offering.billing_mode === 'recurring'}
                               />
                             )}
-                            {engagement.status === 'active' && offering?.billing_mode === 'recurring' && (
+                            {engagement.status === 'active' && engagement.pay_plan === 'upfront' && (
+                              <p className="text-sm text-muted-foreground">{t('finance.monthly_plan.term_paid')}</p>
+                            )}
+                            {engagement.status === 'active' && offering?.billing_mode === 'recurring' && engagement.pay_plan !== 'upfront' && (
                               <MonthlyPlanSection
                                 engagementId={engagement.id}
                                 classPriceMinor={pricedMinor ?? offering.price_minor}

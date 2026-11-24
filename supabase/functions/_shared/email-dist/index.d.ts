@@ -4,6 +4,7 @@ export * from './config/studio-profile.js';
 export * from './config/skins.js';
 export * from './format.js';
 export * from './pricing.js';
+export * from './termPricing.js';
 export * from './quote-pricing.js';
 export * from './jobPayments.js';
 export * from './photoShop.js';

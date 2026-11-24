@@ -12,12 +12,16 @@ import { buildChargeMetadata } from "./payments/providers/mock.ts";
 import type { ChargeMetadata } from "./payments/types.ts";
 import { createServiceClient, requireAuthUser } from "./edge-runtime/supabase.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
+import { loadTermPrice, saveTermPlan, termClassDiscount } from "./payments/term-price.ts";
+import type { PayPlan, TermPriceSnapshot } from "./email-dist/termPricing.js";
 import { extractWaiverToken, verifyWaiverToken } from "./waiver-token.ts";
 
 export interface CheckoutRequestBody {
   offering_id: string;
   engagement_id: string;
   enrolment_token?: string;
+  /** Term-priced class: monthly payments (default) or the whole term up front. */
+  pay_plan?: PayPlan;
   /** A coupon code the parent typed. A bad code never stops checkout: it is reported in `coupon`. */
   coupon_code?: string;
 }
@@ -62,6 +66,8 @@ export interface ResolvedCheckoutSession {
   coupon: ClassCouponResult | null;
   metadata: ChargeMetadata;
   idempotencyKey: string;
+  /** Set for a term-priced class: the calculation and the plan this charge is for. */
+  termPrice: TermPriceSnapshot | null;
 }
 
 type CheckoutError = { ok: false; status: number; error: string };
@@ -134,7 +140,7 @@ export async function resolveCheckoutSession(
 
   const { data: engagement, error: engagementError } = await service
     .from("engagements")
-    .select("id, tenant_id, person_id, offering_id, status, billing_account_id, discount_minor, first_discount_minor, discount_lines")
+    .select("id, tenant_id, person_id, offering_id, status, billing_account_id, pay_plan, discount_minor, first_discount_minor, discount_lines")
     .eq("id", body.engagement_id)
     .single();
 
@@ -229,9 +235,22 @@ export async function resolveCheckoutSession(
     }
   }
 
-  const discount = engagementDiscountFromRow(discountRow);
+  // Term pricing: what is paid now depends on the plan; the calculation is kept on the enrolment.
+  let termPrice: TermPriceSnapshot | null = null;
+  const loadedTerm = await loadTermPrice(service, body.engagement_id);
+  if (loadedTerm) {
+    const plan: PayPlan =
+      body.pay_plan ?? ((engagement.pay_plan as PayPlan | null) === "upfront" ? "upfront" : "monthly");
+    termPrice = await saveTermPlan(service, body.engagement_id, loadedTerm, plan);
+  }
+
+  const classDiscount = engagementDiscountFromRow(discountRow);
+  const discount = termPrice ? termClassDiscount(classDiscount) : classDiscount;
   const pricing = resolveOfferingPrice({
-    price_minor: priceAfterDiscount(offering.price_minor as number, firstPaymentDiscount(discount)),
+    price_minor: priceAfterDiscount(
+      termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number),
+      firstPaymentDiscount(discount),
+    ),
   });
 
   const currency = (offering.currency ?? tenant.currency ?? "ILS").toUpperCase();
@@ -282,12 +301,13 @@ export async function resolveCheckoutSession(
       totalMinor: pricing.totalMinor,
       vatRate: pricing.vatRate,
       currency,
-      listMinor: offering.price_minor as number,
+      listMinor: termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number),
       discount,
       couponsOffered,
       coupon,
       metadata,
-      idempotencyKey: `engagement-${body.engagement_id}-${pricing.totalMinor}-${currency}`,
+      idempotencyKey: `engagement-${body.engagement_id}-${pricing.totalMinor}-${currency}${termPrice ? `-${termPrice.plan}` : ""}`,
+      termPrice,
     },
   };
 }

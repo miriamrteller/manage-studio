@@ -10,6 +10,7 @@ import { sendNoDocumentPaymentConfirmation } from "../_shared/payments/send-paym
 import { paidAtFor } from "../_shared/payments/paid-on.ts";
 import { recordStandalonePayment, StandalonePaymentSchema } from "../_shared/payments/record-standalone-payment.ts";
 import { enqueueDocument } from "../_shared/enqueue-document.ts";
+import { loadTermPrice, saveTermPlan, savedTermPrice, termClassDiscount } from "../_shared/payments/term-price.ts";
 
 const RecordPaymentBodySchema = z.object({
   engagement_id: z.string().guid(),
@@ -154,11 +155,27 @@ Deno.serve(withMonitoring("record-payment", async (req) => {
     return jsonResponse({ error: "Offering or tenant not found" }, 404);
   }
 
-  // The enrolment's first payment: the class price less its class discount (and a first-payment coupon).
+  // Term pricing: the amount the family was shown for their plan. When the family never opened
+  // the payment page, the plan is worked out now: the up-front amount means the whole term,
+  // anything else monthly payments.
+  let term = await savedTermPrice(service, body.engagement_id);
+  if (!term) {
+    const loaded = await loadTermPrice(service, body.engagement_id);
+    if (loaded) {
+      const plan =
+        body.amount_minor != null && body.amount_minor === loaded.price.firstPaymentMinor.upfront
+          ? "upfront"
+          : "monthly";
+      term = await saveTermPlan(service, body.engagement_id, loaded, plan);
+    }
+  }
+  // The enrolment's first payment: the class price (or the term's first payment) less its class
+  // discount and a first-payment coupon.
+  const classDiscount = engagementDiscountFromRow(engagement);
   const pricing = resolveOfferingPrice({
     price_minor: priceAfterDiscount(
-      offering.price_minor as number,
-      firstPaymentDiscount(engagementDiscountFromRow(engagement)),
+      term ? term.firstPaymentMinor[term.plan] : (offering.price_minor as number),
+      firstPaymentDiscount(term ? termClassDiscount(classDiscount) : classDiscount),
     ),
   });
 

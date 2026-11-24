@@ -282,6 +282,8 @@ export declare const OfferingSchema: z.ZodObject<{
         quarterly: "quarterly";
         annual: "annual";
     }>>>;
+    price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    early_price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     status: z.ZodDefault<z.ZodEnum<{
         full: "full";
         active: "active";
@@ -389,6 +391,11 @@ export declare const EngagementSchema: z.ZodObject<{
     payment_dunning_attempt_count: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     payment_dunning_next_at: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     waiver_evidence_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    pay_plan: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        monthly: "monthly";
+        upfront: "upfront";
+    }>>>;
+    term_price: z.ZodOptional<z.ZodNullable<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
     discount_minor: z.ZodOptional<z.ZodNumber>;
     first_discount_minor: z.ZodOptional<z.ZodNumber>;
     coupon_id: z.ZodOptional<z.ZodNullable<z.ZodString>>;

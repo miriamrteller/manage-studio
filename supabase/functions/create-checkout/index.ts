@@ -7,6 +7,7 @@ interface CreateCheckoutBody {
   engagement_id: string;
   enrolment_token?: string;
   pay_with?: "card" | "bit";
+  pay_plan?: "monthly" | "upfront";
   is_mobile?: boolean;
   coupon_code?: string;
 }
@@ -30,6 +31,7 @@ Deno.serve(withMonitoring("create-checkout", async (req) => {
       engagement_id: body.engagement_id,
       enrolment_token: body.enrolment_token,
       pay_with: body.pay_with === "bit" ? "bit" : undefined,
+      ...(body.pay_plan === "monthly" || body.pay_plan === "upfront" ? { pay_plan: body.pay_plan } : {}),
       is_mobile: body.is_mobile === true,
       ...(typeof body.coupon_code === "string" ? { coupon_code: body.coupon_code } : {}),
     });

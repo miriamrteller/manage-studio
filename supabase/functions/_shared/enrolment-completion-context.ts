@@ -3,7 +3,9 @@ import { resolveOfferingPrice } from "./email-dist/pricing.js";
 import { engagementDiscountFromRow, firstPaymentDiscount, hasDiscount, priceAfterDiscount } from "./payments/class-discount.ts";
 import { resolveAllowedTokenRecipientEmails } from "./token-recipient.ts";
 import { pickActiveConsentTemplate } from "./studio-legal.ts";
-import type { EnrolmentCompletionContext } from "./checkout-bootstrap-types.ts";
+import type { EnrolmentCompletionContext, TermPriceView } from "./checkout-bootstrap-types.ts";
+import { loadTermPrice, savedTermPrice, termClassDiscount } from "./payments/term-price.ts";
+import type { TermPriceSnapshot } from "./email-dist/termPricing.js";
 import {
   resolveEnrolmentWaiverGateFromRows,
   type WaiverTemplateRow,
@@ -107,9 +109,23 @@ export async function loadEnrolmentCompletionContext(
     return { ok: false, error: "Tenant not found", status: 404 };
   }
 
-  const discount = engagementDiscountFromRow(engagement);
+  // Term pricing: the calculation the family sees, for the plan picked so far (monthly by default).
+  let termPrice: TermPriceView | null = null;
+  const saved = await savedTermPrice(service, engagement.id as string);
+  if (engagement.status === "pending_payment") {
+    const loaded = await loadTermPrice(service, engagement.id as string);
+    if (loaded) {
+      termPrice = termPriceView({ ...loaded.price, plan: saved?.plan ?? "monthly", trialPaymentId: loaded.trialPaymentId });
+    }
+  } else if (saved) {
+    termPrice = termPriceView(saved);
+  }
+  // A term-priced class keeps only a client's own discount and a coupon (see termClassDiscount).
+  const classDiscount = engagementDiscountFromRow(engagement);
+  const discount = termPrice ? termClassDiscount(classDiscount) : classDiscount;
+  const listMinor = termPrice ? termPrice.firstPaymentMinor[termPrice.plan] : (offering.price_minor as number);
   const pricing = resolveOfferingPrice({
-    price_minor: priceAfterDiscount(offering.price_minor as number, firstPaymentDiscount(discount)),
+    price_minor: priceAfterDiscount(listMinor, firstPaymentDiscount(discount)),
   });
 
   let template: WaiverTemplateRow | null = null;
@@ -205,13 +221,33 @@ export async function loadEnrolmentCompletionContext(
       isMinorStudent,
       amountMinor: pricing.totalMinor,
       ...(hasDiscount(discount)
-        ? { listAmountMinor: offering.price_minor as number, discounts: discount.lines }
+        ? { listAmountMinor: listMinor, discounts: discount.lines }
         : {}),
       currency: (offering.currency ?? tenant.currency ?? "ILS").toUpperCase(),
       billingMode: (offering.billing_mode as string | null) ?? null,
       billingInterval: (offering.billing_interval as string | null) ?? null,
       appointment,
+      termPrice,
     },
+  };
+}
+
+/** The part of a term price snapshot that the family's page shows. */
+export function termPriceView(t: TermPriceSnapshot): TermPriceView {
+  return {
+    classCount: t.classCount,
+    listPerClassMinor: t.listPerClassMinor,
+    perClassMinor: t.perClassMinor,
+    early: t.early,
+    sisterPct: t.sisterPct,
+    termTotalMinor: t.termTotalMinor,
+    months: t.months,
+    monthlyMinor: t.monthlyMinor,
+    upfrontPct: t.upfrontPct,
+    upfrontMinor: t.upfrontMinor,
+    trialCreditMinor: t.trialCreditMinor,
+    firstPaymentMinor: { monthly: t.firstPaymentMinor.monthly, upfront: t.firstPaymentMinor.upfront },
+    plan: t.plan,
   };
 }
 
@@ -238,5 +274,6 @@ export function flattenCompletionContext(context: EnrolmentCompletionContext): R
     billingMode: context.billingMode ?? null,
     billingInterval: context.billingInterval ?? null,
     appointment: context.appointment ?? null,
+    termPrice: context.termPrice ?? null,
   };
 }

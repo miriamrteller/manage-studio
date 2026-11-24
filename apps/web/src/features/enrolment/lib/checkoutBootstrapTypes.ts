@@ -9,6 +9,7 @@ export type PrepareEnrolmentCheckoutBody =
       engagement_id: string;
       offering_id?: string;
       enrolment_token?: string;
+      pay_plan?: PayPlan;
     }
   | {
       phase: 'pay';
@@ -19,7 +20,27 @@ export type PrepareEnrolmentCheckoutBody =
       waiver_evidence_id?: string;
       age_override_confirmed?: boolean;
       age_override_reason?: string | null;
+      pay_plan?: PayPlan;
     };
+
+export type PayPlan = 'monthly' | 'upfront';
+
+/** Term-priced class: the calculation shown to the family (see packages/shared termPricing.ts). */
+export interface TermPriceView {
+  classCount: number;
+  listPerClassMinor: number;
+  perClassMinor: number;
+  early: boolean;
+  sisterPct: number;
+  termTotalMinor: number;
+  months: string[];
+  monthlyMinor: number;
+  upfrontPct: number;
+  upfrontMinor: number;
+  trialCreditMinor: number;
+  firstPaymentMinor: { monthly: number; upfront: number };
+  plan: PayPlan;
+}
 
 export interface CheckoutChargePayload {
   clientSecret: string | null;
@@ -80,6 +101,8 @@ export interface EnrolmentCompletionContext {
   billingInterval?: string | null;
   /** Set when this engagement is an appointment booking (booked_starts_at). */
   appointment?: AppointmentCalendarDetails | null;
+  /** Term-priced class: the calculation and the plan picked so far. */
+  termPrice?: TermPriceView | null;
 }
 
 export type BootstrapBlockReason =

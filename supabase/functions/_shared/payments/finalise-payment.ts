@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.105.3";
+import { monthAfter, savedTermPrice, termAmountNote, termClassDiscount } from "./term-price.ts";
+import { loadEngagementDiscount, priceAfterDiscount } from "./class-discount.ts";
 import { getEnv } from "../edge-runtime/env.ts";
 import { enqueueDocument } from "../enqueue-document.ts";
 import { engagementHasSignedWaiver } from "../engagement-waiver.ts";
@@ -380,6 +382,26 @@ async function ensureRecurringScheduleStub(
     .eq("id", offering.offering_id)
     .single();
   if (offeringRow?.billing_mode !== "recurring") return;
+
+  // Term pricing: the whole term paid up front needs no monthly plan; monthly payments are the
+  // term's equal payments, one per month with a class, and stop after the last one.
+  const term = await savedTermPrice(service, engagementId);
+  if (term) {
+    if (term.plan === "upfront" || term.months.length < 2) return;
+    // A client's own discount or an every-payment coupon also comes off each monthly payment.
+    const everyMonthOff = termClassDiscount(await loadEngagementDiscount(service, engagementId)).discountMinor;
+    await service.from("billing_schedules").insert({
+      tenant_id: tenantId,
+      engagement_id: engagementId,
+      billing_account_id: billingAccountId,
+      next_billing_date: monthAfter(term.months[0]),
+      last_period: term.months[term.months.length - 1],
+      amount_minor: priceAfterDiscount(term.monthlyMinor, everyMonthOff),
+      amount_note: termAmountNote(term),
+      status: "active",
+    });
+    return;
+  }
 
   const now = new Date();
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
