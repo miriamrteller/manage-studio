@@ -17,16 +17,16 @@ describe('AccountMenu: one "My account" button on client and parent pages', () =
     render(<AccountMenu onPreferences={onPreferences} />);
     expect(screen.getAllByRole('button')).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'nav.my_account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pages.portal_dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'pages.portal.notification_preferences' }));
     expect(onPreferences).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'pages.portal.login_password' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'nav.my_account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pages.portal_dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'pages.portal.login_password' }));
     expect(screen.getByText('password-dialog')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'nav.my_account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pages.portal_dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'login_email.change_title' }));
     expect(screen.getByText('email-dialog')).toBeTruthy();
   });

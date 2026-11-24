@@ -218,30 +218,36 @@ describe('JobsList', () => {
     shop.galleries = new Map();
   });
 
-  it('shows the linked SmugMug gallery name in the table and on the phone card', async () => {
+  it('shows the linked SmugMug gallery name in the Gallery column and on the phone card', async () => {
     shop.on = true;
     shop.galleries = new Map([['e1', 'Pat & Sam wedding']]);
     const first = renderInApp(<JobsList />, { path: '/admin/projects' });
-    expect(screen.getByRole('columnheader', { name: 'SmugMug gallery' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Gallery' })).toBeInTheDocument();
     expect(screen.getAllByText('Pat & Sam wedding').length).toBe(2); // card + table row
     first.unmount();
 
     await setLanguage('he');
     renderInApp(<JobsList />, { path: '/admin/projects' });
-    expect(screen.getByRole('columnheader', { name: 'גלריה ב-SmugMug' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'גלריה' })).toBeInTheDocument();
   });
 
-  it('no gallery linked: a dash in the table, nothing on the phone card', () => {
+  it('no gallery linked: nothing named on the phone card', () => {
     shop.on = true;
     renderInApp(<JobsList />, { path: '/admin/projects' });
-    expect(screen.getByRole('columnheader', { name: 'SmugMug gallery' })).toBeInTheDocument();
     const cards = screen.getAllByRole('list').find((l) => l.className.includes('sm:hidden')) as HTMLElement;
     expect(within(cards).queryByText('SmugMug gallery')).toBeNull();
   });
 
-  it('no gallery column without the photo shop', () => {
+  it('a gallery column without the photo shop too, never a SmugMug one', () => {
     renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.getByRole('columnheader', { name: 'Gallery' })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'SmugMug gallery' })).toBeNull();
+  });
+
+  it('an enquiry with no gallery offers no Send gallery', () => {
+    state.job = job({ job_status: 'enquiry', gallery_url: null });
+    renderInApp(<JobsList />, { path: '/admin/projects' });
+    expect(screen.queryByRole('button', { name: /^Send gallery/ })).toBeNull();
   });
 
   it('renders a stacked card per shoot for phones next to the sm+ table', () => {

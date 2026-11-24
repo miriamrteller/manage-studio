@@ -6,6 +6,8 @@ import { ChangeLoginEmailDialog } from '@/components/shared/ChangeLoginEmail';
 
 /**
  * One 'My account' button on the client and parent pages (13 Nov 2026: fewer buttons).
+ * Labelled "My account" for every studio (not nav.my_account, which photographers read as
+ * "My bookings"): it opens account settings, not bookings (24 Nov 2026 audit).
  * It opens a short list: messages and reminders, password, login email.
  * The contact-preferences dialog stays with the page, which opens it from other places too.
  */
@@ -47,7 +49,7 @@ export function AccountMenu({ onPreferences }: { onPreferences: () => void }) {
         aria-controls={listId}
         onClick={() => setOpen((v) => !v)}
       >
-        {t('nav.my_account')}
+        {t('pages.portal_dashboard')}
       </Button>
       {open && (
         <ul

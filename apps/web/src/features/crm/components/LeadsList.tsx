@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import '@/styles/stack-on-phone.css';
 import { useWorkModes } from '@/hooks/useWorkModes';
 import { SendLeadLinkButton } from './SendLeadLinkButton';
 import { followUpState } from '../lib/followUp';
@@ -495,7 +496,7 @@ export function LeadsList() {
       )}
 
       {leads.length > 0 && (
-        <div className="card overflow-x-auto">
+        <div className="card overflow-x-auto stack-on-phone">
           <table className="w-full text-sm">
             <thead>
               <tr>
@@ -547,14 +548,14 @@ export function LeadsList() {
                       />
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t('pages.crm.leads.contact')} className="px-3 py-2">
                     <div className="space-y-0.5">
                       {lead.email && <div dir="ltr">{lead.email}</div>}
                       {lead.phone && <div dir="ltr">{lead.phone}</div>}
                       {!lead.email && !lead.phone && '—'}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t('pages.crm.leads.channel')} className="px-3 py-2">
                     {t(`pages.crm.leads.channel_${lead.channel}`)}
                     {lead.form_id && formNames.get(lead.form_id) && (
                       <span className="block text-xs text-muted-foreground" dir="auto">
@@ -567,11 +568,11 @@ export function LeadsList() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t('pages.crm.leads.interest')} className="px-3 py-2">
                     {lead.interest ?? '—'}
                     <LeadAnswers lead={lead} lang={lang} />
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t('pages.crm.leads.stage')} className="px-3 py-2">
                     <label className="sr-only" htmlFor={`lead-stage-${lead.id}`}>
                       {t('pages.crm.leads.stage')}
                     </label>
@@ -591,8 +592,8 @@ export function LeadsList() {
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-2">{formatDate(lead.last_contacted_at, i18n.language)}</td>
-                  <td className="px-3 py-2">
+                  <td data-label={t('pages.crm.leads.last_contacted')} className="px-3 py-2">{formatDate(lead.last_contacted_at, i18n.language)}</td>
+                  <td data-label={t('pages.crm.leads.follow_up')} className="px-3 py-2">
                     {formatDate(lead.next_follow_up_at, i18n.language)}
                     {followUpState(lead, today) === 'overdue' && (
                       <span className="block text-xs font-medium text-red-700">{t('pages.crm.leads.overdue')}</span>
@@ -602,7 +603,7 @@ export function LeadsList() {
                     )}
                   </td>
                   {canConvert && (
-                    <td className="px-3 py-2">
+                    <td data-label={t('pages.crm.leads.next_step')} className="px-3 py-2">
                       {lead.converted_account_id ? (
                         <span className="text-xs text-muted-foreground">{t('pages.crm.leads.converted')}</span>
                       ) : (
@@ -625,7 +626,7 @@ export function LeadsList() {
                     </td>
                   )}
                   {linkKind && (
-                    <td className="px-3 py-2">
+                    <td data-label={t('pages.crm.leads.next_step')} className="px-3 py-2">
                       {lead.converted_account_id || lead.stage === 'won' || lead.stage === 'lost' ? null : (
                         <SendLeadLinkButton
                           kind={linkKind}
