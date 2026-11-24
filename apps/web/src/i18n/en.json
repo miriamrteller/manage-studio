@@ -4739,7 +4739,7 @@
       "coupons_hint": "Parents can type a code at checkout. Without a code they pay the usual price.",
       "coupon_code": "Code",
       "coupon_applies": "The discount comes off",
-      "coupon_first_payment": "The first payment only",
+      "coupon_first_payment": "The first payment only (a one-month discount)",
       "coupon_every_month": "Every payment (every month for monthly classes)",
       "coupon_more": "Expiry date and limit (optional)",
       "coupon_valid_until": "Valid until",

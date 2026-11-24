@@ -176,12 +176,12 @@ export interface CouponInput {
   note: string;
 }
 
-/** Prefilled: 10% off the first payment only (owner decision, 24 Nov 2026). */
+/** Prefilled: 10% off every payment; first payment only is for a one-month discount (owner, 24 Nov 2026). */
 export const DEFAULT_COUPON_INPUT: CouponInput = {
   code: '',
   unit: 'percent',
   value: '10',
-  applies_to: 'first_payment',
+  applies_to: 'every_month',
   valid_until: '',
   max_uses: '',
   note: '',

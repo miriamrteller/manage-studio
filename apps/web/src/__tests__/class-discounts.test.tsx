@@ -165,10 +165,10 @@ describe('client discounts and coupon codes', () => {
       .toEqual({ ok: false, invalid: ['email', 'value'] });
   });
 
-  it('coupon: prefilled as 10% off the first payment, code in capitals', () => {
-    expect(DEFAULT_COUPON_INPUT.applies_to).toBe('first_payment');
+  it('coupon: prefilled as 10% off every payment, code in capitals', () => {
+    expect(DEFAULT_COUPON_INPUT.applies_to).toBe('every_month');
     expect(couponToRow({ ...DEFAULT_COUPON_INPUT, code: ' welcome ' }))
-      .toEqual({ ok: true, row: { code: 'WELCOME', unit: 'percent', value: 10, applies_to: 'first_payment', valid_until: null, max_uses: null, note: null } });
+      .toEqual({ ok: true, row: { code: 'WELCOME', unit: 'percent', value: 10, applies_to: 'every_month', valid_until: null, max_uses: null, note: null } });
     expect(couponToRow({ ...DEFAULT_COUPON_INPUT, code: 'a b', max_uses: '0' }))
       .toEqual({ ok: false, invalid: ['code', 'max_uses'] });
   });
