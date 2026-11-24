@@ -55,6 +55,12 @@ function ask(text: string) {
 describe('Ask OpalSwift panel', () => {
   beforeEach(() => askAssistant.mockReset());
 
+  it('says answers can be wrong and not to type sensitive details', () => {
+    render(<Harness onShowMe={() => {}} />);
+    expect(screen.getByText('assistant.ai_notice')).toBeTruthy();
+    expect(screen.getByText('assistant.sensitive_notice')).toBeTruthy();
+  });
+
   it('shows the answer with its guides, fills the form in and starts the tour', async () => {
     askAssistant.mockResolvedValue({
       ok: true,
