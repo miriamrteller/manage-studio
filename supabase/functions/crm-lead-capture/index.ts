@@ -93,6 +93,12 @@ const payloadSchema = z.object({
     })
     .nullable()
     .optional(),
+  /**
+   * "Enquire" on a package that can't be booked online (or price on request):
+   * the lead gets that package (offering_id + interest). Not the studio's own
+   * active package = ignored, never the enquiry.
+   */
+  packageId: z.string().guid().nullable().optional(),
   /** The language the visitor used the form in (for the thank-you email). */
   lang: z.enum(["en", "he"]).nullable().optional(),
   /** Honeypot — humans never see it, bots fill it. */
@@ -324,17 +330,30 @@ Deno.serve(withMonitoring("crm-lead-capture", async (req) => {
       };
     }
 
+    let enquiryPackage: { id: string; name: string } | null = null;
+    if (payload.packageId && !shoot) {
+      const { data: pkg } = await service
+        .from("offerings")
+        .select("id, name")
+        .eq("tenant_id", leadTenant.id)
+        .eq("id", payload.packageId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (pkg) enquiryPackage = { id: pkg.id as string, name: pkg.name as string };
+    }
+
     const fields = {
       name: payload.name.trim(),
       email,
       phone: nonEmpty(payload.phone),
-      interest: nonEmpty(payload.interest) ?? shoot?.packageName ?? null,
+      interest: nonEmpty(payload.interest) ?? shoot?.packageName ?? enquiryPackage?.name ?? null,
       lastCommunicationNote: nonEmpty(payload.message),
     };
 
     const formColumns = {
       ...(namedForm?.offering_id && !checked.columns.offering_id ? { offering_id: namedForm.offering_id } : {}),
       ...checked.columns,
+      ...(enquiryPackage && !checked.columns.offering_id && !namedForm?.offering_id ? { offering_id: enquiryPackage.id } : {}),
       ...(shoot ? { event_date: shoot.date, ...(shoot.offeringId ? { offering_id: shoot.offeringId } : {}) } : {}),
     };
 
