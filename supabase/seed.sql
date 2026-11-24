@@ -47,7 +47,7 @@ VALUES (
   'invoice4u',
   'professional',
   'dance-studio',
-  'elegant'  -- font_pair: NULL means the 'reliable' default, so seeding one exercises the branded path
+  'elegant'  -- font_pair: NULL means the 'opalswift' default, so seeding one exercises the branded path
 ) ON CONFLICT (subdomain) DO UPDATE SET
   name = EXCLUDED.name,
   language_default = EXCLUDED.language_default,
@@ -978,10 +978,10 @@ BEGIN
 
   -- font_pair per vertical (DL-DESIGN-009). provision_tenant does not take one,
   -- so these two are set after the fact; creativeballet carries its own in the
-  -- INSERT above. Everything else stays NULL on purpose — NULL is the 'reliable'
+  -- INSERT above. Everything else stays NULL on purpose — NULL is the 'opalswift'
   -- default, and leaving most tenants there keeps that path exercised too.
-  UPDATE tenants SET font_pair = 'dynamic' WHERE subdomain = 'belladance';
-  UPDATE tenants SET font_pair = 'warm'    WHERE subdomain = 'velvetbeauty';
+  UPDATE tenants SET font_pair = 'soft'    WHERE subdomain = 'belladance';
+  UPDATE tenants SET font_pair = 'classic' WHERE subdomain = 'velvetbeauty';
 
 END $$;
 

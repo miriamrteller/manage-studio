@@ -1,18 +1,7 @@
 import { useEffect } from 'react';
 import { useTenant } from './useTenant';
 
-export type FontPairId =
-  | 'opalswift'
-  | 'reliable'
-  | 'elegant'
-  | 'dynamic'
-  | 'warm'
-  | 'bold'
-  | 'classic'
-  | 'literary'
-  | 'studio'
-  | 'statement'
-  | 'soft';
+export type FontPairId = 'opalswift' | 'classic' | 'elegant' | 'soft' | 'bold' | 'statement';
 
 export type FontPair = {
   id: FontPairId;
@@ -30,19 +19,17 @@ export type FontPair = {
 export const DEFAULT_FONT_PAIR: FontPairId = 'opalswift';
 
 /**
- * Tenant-selectable font pairs. Every family listed here is self-hosted —
- * bundled via the @fontsource imports in src/fonts.ts — so adding a pair
- * means adding its weight imports there too. Nothing is fetched from
- * fonts.googleapis.com at runtime. Every pair covers Hebrew.
+ * Tenant-selectable font pairs: a short list of clearly different looks
+ * (owner, 24 Nov 2026: the old list had too many similar options). Every
+ * family listed here is self-hosted — bundled via the @fontsource imports in
+ * src/fonts.ts — so adding a pair means adding its weight imports there too.
+ * Nothing is fetched from fonts.googleapis.com at runtime. Every pair covers
+ * Hebrew. Listed in the order the settings page shows them.
  */
 export const FONT_PAIRS: Record<FontPairId, FontPair> = {
-  // The marketing site's pairing: Rubik headings, Inter / Heebo body.
+  // Modern sans. The marketing site's pairing: Rubik headings, Inter / Heebo body.
   opalswift: { id: 'opalswift', name: 'OpalSwift', en: 'Inter', he: 'Heebo', heading: { en: 'Rubik', he: 'Rubik' } },
-  reliable: { id: 'reliable', name: 'Reliable', en: 'Inter', he: 'Heebo' },
-  elegant: { id: 'elegant', name: 'Elegant', en: 'Crimson Text', he: 'Frank Ruhl Libre' },
-  dynamic: { id: 'dynamic', name: 'Dynamic', en: 'Poppins', he: 'Assistant' },
-  warm: { id: 'warm', name: 'Warm', en: 'Source Sans 3', he: 'Rubik' },
-  bold: { id: 'bold', name: 'Bold', en: 'Oswald', he: 'Miriam Libre' },
+  // Serif headings over a clean sans body.
   classic: {
     id: 'classic',
     name: 'Classic',
@@ -50,23 +37,9 @@ export const FONT_PAIRS: Record<FontPairId, FontPair> = {
     he: 'Assistant',
     heading: { en: 'Frank Ruhl Libre', he: 'Frank Ruhl Libre' },
   },
-  literary: { id: 'literary', name: 'Literary', en: 'Crimson Text', he: 'Noto Serif Hebrew' },
-  studio: {
-    id: 'studio',
-    name: 'Studio',
-    en: 'Inter',
-    he: 'Assistant',
-    heading: { en: 'Secular One', he: 'Secular One' },
-    headingSingleWeight: true,
-  },
-  statement: {
-    id: 'statement',
-    name: 'Statement',
-    en: 'Source Sans 3',
-    he: 'Heebo',
-    heading: { en: 'Suez One', he: 'Suez One' },
-    headingSingleWeight: true,
-  },
+  // Serif throughout.
+  elegant: { id: 'elegant', name: 'Elegant', en: 'Crimson Text', he: 'Frank Ruhl Libre' },
+  // Rounded, friendly headings.
   soft: {
     id: 'soft',
     name: 'Soft',
@@ -75,11 +48,39 @@ export const FONT_PAIRS: Record<FontPairId, FontPair> = {
     heading: { en: 'Varela Round', he: 'Varela Round' },
     headingSingleWeight: true,
   },
+  // Tall, condensed and strong.
+  bold: { id: 'bold', name: 'Bold', en: 'Oswald', he: 'Miriam Libre' },
+  // Heavy slab headings.
+  statement: {
+    id: 'statement',
+    name: 'Statement',
+    en: 'Source Sans 3',
+    he: 'Heebo',
+    heading: { en: 'Suez One', he: 'Suez One' },
+    headingSingleWeight: true,
+  },
+};
+
+/**
+ * Pairs that were removed, and the kept pair closest to each, so a studio that
+ * still has an old value stored looks (almost) the same. The migration
+ * 20261124204900_fewer_font_pairs.sql moves stored values the same way.
+ */
+export const RETIRED_FONT_PAIRS: Record<string, FontPairId> = {
+  reliable: 'opalswift', // same Inter / Heebo body
+  warm: 'opalswift', // plain sans with Rubik
+  studio: 'opalswift', // Inter body, sans headings
+  dynamic: 'soft', // same Poppins / Assistant body
+  literary: 'elegant', // same Crimson Text, serif Hebrew
 };
 
 /** A stored font_pair, or the default when none (or an unknown one) is stored. */
 export function resolveFontPair(pairId: string | null | undefined): FontPair {
-  return pairId && pairId in FONT_PAIRS ? FONT_PAIRS[pairId as FontPairId] : FONT_PAIRS[DEFAULT_FONT_PAIR];
+  if (pairId && Object.prototype.hasOwnProperty.call(FONT_PAIRS, pairId)) return FONT_PAIRS[pairId as FontPairId];
+  if (pairId && Object.prototype.hasOwnProperty.call(RETIRED_FONT_PAIRS, pairId)) {
+    return FONT_PAIRS[RETIRED_FONT_PAIRS[pairId]];
+  }
+  return FONT_PAIRS[DEFAULT_FONT_PAIR];
 }
 
 const LATIN_FALLBACKS =
