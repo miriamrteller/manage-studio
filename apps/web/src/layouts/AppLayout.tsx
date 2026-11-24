@@ -12,6 +12,7 @@ import {
 } from '../components/Navigation';
 import { cn } from '../lib/utils';
 import { LegalFooterLinks } from '../components/LegalFooterLinks';
+import { AssistantProvider } from '@/features/assistant/AssistantContext';
 import { ReportProblemProvider } from '../components/ReportProblem';
 import { currentStudioDisplayName } from '../lib/studioDisplayName';
 
@@ -112,7 +113,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <ReportProblemProvider>
       <NavDrawerProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
+        <AssistantProvider>
+          <AppLayoutContent>{children}</AppLayoutContent>
+        </AssistantProvider>
       </NavDrawerProvider>
     </ReportProblemProvider>
   );

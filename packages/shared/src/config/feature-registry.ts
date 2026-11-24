@@ -56,6 +56,8 @@ export const FEATURES = {
     customDomains: 'platform:domains.custom',
     /** Visual theme customization */
     themeCustomizer: 'platform:themes.customize',
+    /** "Ask OpalSwift": read-only AI help for studio admins (beta, per-studio switch) */
+    assistantHelp: 'platform:assistant.help',
   },
 
   // People and family management

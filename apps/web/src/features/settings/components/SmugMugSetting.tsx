@@ -212,13 +212,13 @@ function SmugMugForm() {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" variant="primary" isLoading={save.isPending} disabled={!canSave} onClick={() => save.mutate()}>
+        <Button size="sm" variant="primary" data-tour="smugmug-save" isLoading={save.isPending} disabled={!canSave} onClick={() => save.mutate()}>
           {t('settings.smugmug.save')}
         </Button>
         <Button size="sm" variant="outline" isLoading={test.isPending} disabled={!hasKeys} onClick={() => test.mutate()}>
           {t('settings.smugmug.test')}
         </Button>
-        <Button size="sm" variant={connected ? 'outline' : 'secondary'} isLoading={connect.isPending} disabled={!hasKeys}
+        <Button size="sm" variant={connected ? 'outline' : 'secondary'} data-tour="smugmug-connect" isLoading={connect.isPending} disabled={!hasKeys}
           onClick={() => connect.mutate()}>
           {connected ? t('settings.smugmug.reconnect') : t('settings.smugmug.connect')}
         </Button>

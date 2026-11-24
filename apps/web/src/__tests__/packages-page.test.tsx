@@ -33,11 +33,11 @@ vi.mock('@/features/scheduling/servicesService', async (orig) => {
 import i18n from '@/i18n/i18n';
 import BookingServicesPage from '@/pages/BookingServicesPage';
 
-function renderIt() {
+function renderIt(state?: unknown) {
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[{ pathname: '/admin/bookings/packages', state }]}>
           <BookingServicesPage />
         </MemoryRouter>
       </QueryClientProvider>
@@ -60,6 +60,14 @@ async function openAdd() {
 }
 
 describe('Packages page', () => {
+  it('Ask OpalSwift "Fill it in for me": the new package opens filled in and is saved only by the admin', async () => {
+    renderIt({ newPackage: { name: 'Family', price: '900', durationHours: '1.5' } });
+    expect(await screen.findByLabelText(/^Name|name$/i)).toHaveValue('Family');
+    expect(screen.getByLabelText('Price')).toHaveValue(900);
+    expect(screen.getByLabelText(/^Duration/)).toHaveValue(90);
+    expect(h.create).not.toHaveBeenCalled();
+  });
+
   it('Projects: deposit starts at the usual 30%, price display is saved, no online switch', async () => {
     await openAdd();
     expect(screen.getByLabelText(/^Deposit \(%\)/)).toHaveValue(30);

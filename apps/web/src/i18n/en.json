@@ -5882,5 +5882,38 @@
     "coupon_reason_not_class": "This code can't be used here.",
     "coupon_reason_error": "Couldn't check the code just now. You can still pay as normal.",
     "price": "Price"
+  },
+  "assistant": {
+    "button": "Ask OpalSwift",
+    "title": "Ask OpalSwift",
+    "ai_notice": "Answers are written by AI from OpalSwift's help guides and can be wrong. It can't change anything for you: you always press Save yourself.",
+    "empty": "Ask how to do something in OpalSwift, for example how to send a quote or connect SmugMug.",
+    "question_label": "Your question",
+    "placeholder": "How do I…?",
+    "ask": "Ask",
+    "asking": "Looking in the guides…",
+    "you": "You",
+    "sources": "From the guides:",
+    "show_me": "Show me how",
+    "fill_in": "Fill it in for me",
+    "fill_in_done": "The form is filled in. Check it and change anything that's wrong. Nothing is saved until you press Save or Create.",
+    "gap_noted": "There's no guide for this yet. We've noted your question so one gets written.",
+    "remaining_one": "{{count}} question left today",
+    "remaining_other": "{{count}} questions left today",
+    "close": "Close",
+    "errors": {
+      "daily_limit": "You've used today's questions. You can ask again tomorrow, or look in Help.",
+      "not_configured": "Ask OpalSwift isn't ready yet. Please look in Help for now.",
+      "feature_off": "Ask OpalSwift isn't switched on for your studio.",
+      "no_guides": "There are no guides for your kind of business yet.",
+      "unavailable": "Something went wrong. Please try again in a moment."
+    },
+    "tour": {
+      "step": "Step {{n}} of {{total}}",
+      "back": "Back",
+      "next": "Next",
+      "done": "Done",
+      "end": "End tour"
+    }
   }
 }

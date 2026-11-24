@@ -266,7 +266,7 @@ export default function AdminAppointmentsPage() {
       )}
 
       {requests.length > 0 && (
-        <section className="space-y-3" aria-labelledby="diary-requests">
+        <section className="space-y-3" aria-labelledby="diary-requests" data-tour="diary-requests">
           <h2 id="diary-requests" className="text-lg font-semibold">
             {t('scheduling.diary.requests_title')}
           </h2>

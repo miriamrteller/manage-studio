@@ -46,6 +46,12 @@ export function JobsList() {
   const navigate = useNavigate();
   const prefill = (location.state as { newShoot?: JobCreatePrefill } | null)?.newShoot ?? null;
   const [showForm, setShowForm] = useState(prefill !== null);
+  // A new prefill while already here (e.g. Ask OpalSwift's "Fill it in for me"): open the form again.
+  const [prefillKey, setPrefillKey] = useState(location.key);
+  if (prefill && prefillKey !== location.key) {
+    setPrefillKey(location.key);
+    setShowForm(true);
+  }
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
 
   const visible = useMemo(
@@ -90,13 +96,13 @@ export function JobsList() {
           <Button variant="outline" onClick={() => navigate('/admin/people/import')}>
             {t('clients_import.button_shoots')}
           </Button>
-          <Button variant="primary" onClick={() => setShowForm((open) => !open)}>
+          <Button variant="primary" data-tour="shoots-new" onClick={() => setShowForm((open) => !open)}>
             {showForm ? t('common.cancel') : t('pages.jobs.new')}
           </Button>
         </div>
       </div>
 
-      {showForm && <JobCreateForm prefill={prefill} onCreated={() => setShowForm(false)} />}
+      {showForm && <JobCreateForm key={prefillKey} prefill={prefill} onCreated={() => setShowForm(false)} />}
 
       <div className="flex items-center gap-2">
         <label htmlFor="job-status-filter" className="text-sm font-medium">

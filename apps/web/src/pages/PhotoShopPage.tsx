@@ -44,7 +44,7 @@ export default function PhotoShopPage() {
       <Tabs value={tab} onValueChange={go}>
         <TabsList>
           {TABS.map((k) => (
-            <TabsTrigger key={k} value={k}>{t(`photo_shop_admin.tabs.${k}`)}</TabsTrigger>
+            <TabsTrigger key={k} value={k} data-tour={`photo-shop-tab-${k}`}>{t(`photo_shop_admin.tabs.${k}`)}</TabsTrigger>
           ))}
         </TabsList>
         <TabsContent value="overview" className="pt-4">

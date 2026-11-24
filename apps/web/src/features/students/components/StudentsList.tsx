@@ -264,7 +264,7 @@ export function StudentsList() {
         }
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => navigate('/admin/people/import')}>
+            <Button variant="outline" data-tour="people-import" onClick={() => navigate('/admin/people/import')}>
               {t('clients_import.button')}
             </Button>
             {canAdd && (

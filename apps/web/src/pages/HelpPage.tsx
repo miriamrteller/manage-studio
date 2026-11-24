@@ -4,27 +4,30 @@ import { Button } from '@/components/ui/button';
 import { useReportProblem } from '@/components/ReportProblem';
 import { useTenant } from '@/hooks/useTenant';
 import { helpTopicsFor } from '@/features/help/helpTopics';
+import { useAssistant } from '@/features/assistant/AssistantContext';
 
 /**
  * Admin → Help (/admin/help): short how-to guides for the studio's kind of
  * business, en + he, each with a button to the page it is about, and
- * "Ask OpalSwift a question" (the Send feedback dialog, on Help).
+ * "Ask OpalSwift a question" (Ask OpalSwift when the studio has it, else Send feedback on Help).
  */
 export default function HelpPage() {
   const { t } = useTranslation();
   const tenant = useTenant();
   const { canReport, openReportProblem } = useReportProblem();
+  // With Ask OpalSwift on, the question goes to it; otherwise to Send feedback (Help).
+  const { canAsk, openAssistant } = useAssistant();
   const topics = helpTopicsFor(tenant?.vertical);
   const steps = (id: string): string[] => {
     const value = t(`help.topics.${id}.steps`, { returnObjects: true }) as unknown;
     return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
   };
 
-  const ask = canReport ? (
+  const ask = canReport || canAsk ? (
     <section aria-labelledby="help-ask" className="card space-y-2 p-4">
       <h2 id="help-ask" className="text-lg font-semibold">{t('help.ask_title')}</h2>
       <p className="text-muted-foreground">{t('help.ask_text')}</p>
-      <Button type="button" onClick={() => openReportProblem('help')}>
+      <Button type="button" onClick={() => (canAsk ? openAssistant() : openReportProblem('help'))}>
         {t('help.ask_button')}
       </Button>
     </section>
