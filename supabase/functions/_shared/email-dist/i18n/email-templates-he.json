@@ -42,10 +42,10 @@
     "welcome": {
         "preview": "ברוכים הבאים ל{enrolledClassName} - {schoolName}",
         "greeting": "ברוכים הבאים, {recipientName}!",
-        "confirmation": "הרשמתך ל{enrolledClassName} בתקופת {enrolledTermName} אושרה בהצלחה!",
+        "confirmation": "הרשמתך ל{enrolledClassName} בעונת {enrolledTermName} אושרה בהצלחה!",
         "class_details_heading": "פרטי הכיתה:",
         "class_name_label": "כיתה:",
-        "class_term_label": "תקופה:",
+        "class_term_label": "עונה:",
         "next_steps_heading": "הצעדים הבאים:",
         "next_steps_text": "אתה יכול כעת להציג את לוח הזמנים של הכיתה שלך ולנהל את ההרשמה שלך דרך לוח הבקרה של חשבונך.",
         "cta_button": "צפה בלוח הבקרה",
