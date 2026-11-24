@@ -298,7 +298,9 @@ describe('PortalDashboard — photographer tenant renders ClientPortal', () => {
   it('no shoots yet: friendly empty state, still no child setup', () => {
     portal.client = { self: clientData().self, shoots: [], requests: [], bookings: [] };
     renderInApp(<PortalDashboard />, { path: '/dashboard/portal' });
-    expect(screen.getByText(baseValue('pages.client_portal.no_shoots'))).toBeInTheDocument();
+    expect(
+      screen.getByText("You don't have any shoots booked yet. We'll add your shoot here as soon as it's confirmed."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(baseValue('pages.portal.myself_setup_cta'))).toBeNull();
   });
 
