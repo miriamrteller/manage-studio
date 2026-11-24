@@ -5887,6 +5887,7 @@
     "button": "Ask OpalSwift",
     "title": "Ask OpalSwift",
     "ai_notice": "Answers are written by AI from OpalSwift's help guides and can be wrong. It can't change anything for you: you always press Save yourself.",
+    "sensitive_notice": "Please don't type sensitive details into the chat, such as health information, ID numbers or card details.",
     "empty": "Ask how to do something in OpalSwift, for example how to send a quote or connect SmugMug.",
     "question_label": "Your question",
     "placeholder": "How do I…?",
