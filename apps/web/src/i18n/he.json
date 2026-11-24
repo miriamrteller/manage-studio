@@ -551,7 +551,9 @@
       },
       "bookings_heading": "התורים שלי",
       "book_again": "לקביעת תור",
-      "no_bookings": "עדיין אין תורים."
+      "no_bookings": "עדיין אין תורים.",
+      "to_pay_notice": "נשאר לשלם {{amount}}",
+      "to_pay_see": "לתשלומים"
     },
     "admin": {
       "setup": {
@@ -571,11 +573,11 @@
         "soft_block_label": "אזהרה בלבד"
       },
       "overview": {
-        "title": "סקירת פעילות",
+        "title": "העונה הנוכחית",
         "term_enrolments": "הרשמות לעונה",
-        "outstanding_payments": "תשלומים ממתינים",
-        "admin_review_queue": "תור לבדיקת מנהל",
-        "revenue_mtd": "הכנסות מתחילת החודש",
+        "outstanding_payments": "ממתינים לתשלום",
+        "admin_review_queue": "לבדיקה",
+        "revenue_mtd": "הכנסות החודש",
         "todays_classes": "שיעורים היום",
         "no_classes_today": "אין שיעורים מתוכננים להיום",
         "enrolled_of_capacity": "{{enrolled}} / {{capacity}}",
@@ -584,7 +586,7 @@
         "manage_classes": "ניהול שיעורים",
         "record_payment": "רישום תשלום",
         "send_notification": "שליחת הודעה",
-        "no_active_season": "לא נמצאה עונה פעילה. עברו להגדרות ← עונות כדי להגדיר עונה פעילה.",
+        "no_active_season": "אין כרגע עונה פעילה. מוסיפים עונה בשיעורים › עונות.",
         "go_to_seasons": "מעבר לעונות",
         "col_time": "שעה",
         "col_name": "שיעור",

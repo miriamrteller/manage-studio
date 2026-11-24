@@ -145,6 +145,27 @@ describe('ClientPortal tabs', () => {
     expect(screen.getByText('Pat Client')).toBeInTheDocument();
   });
 
+  it('money still to pay shows above the tabs, with Pay', async () => {
+    state.gallery = null;
+    state.data = {
+      ...data(),
+      requests: [
+        { id: 'r1', engagement_id: 'e1', label: 'Balance', amount_minor: 140000, currency: 'ILS', status: 'sent', due_date: '2026-11-20', public_token: 'tok' },
+        { id: 'r2', engagement_id: 'e1', label: 'Deposit', amount_minor: 60000, currency: 'ILS', status: 'paid', due_date: null, public_token: 'tok2' },
+      ],
+    } as unknown as ClientPortalData;
+    renderInApp(<ClientPortal />, { path: '/dashboard/portal' });
+    expect(await screen.findByText(/1,400 still to pay/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Pay' }).length).toBeGreaterThan(0);
+  });
+
+  it('nothing to pay: no notice', async () => {
+    state.gallery = null;
+    renderInApp(<ClientPortal />, { path: '/dashboard/portal' });
+    await screen.findByRole('tab', { name: 'My shoots' });
+    expect(screen.queryByText(/still to pay/)).toBeNull();
+  });
+
   it('Hebrew tab names', async () => {
     await setLanguage('he');
     renderInApp(<ClientPortal />, { path: '/dashboard/portal' });
