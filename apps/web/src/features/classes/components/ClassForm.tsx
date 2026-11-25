@@ -40,6 +40,7 @@ const ClassFormSchema = z.object({
   price_major: z.number().nonnegative('Price must be >= 0'),
   price_per_class_major: z.union([z.number().positive(), z.nan()]).nullable().optional(),
   early_price_per_class_major: z.union([z.number().positive(), z.nan()]).nullable().optional(),
+  min_price_per_class_major: z.union([z.number().positive(), z.nan()]).nullable().optional(),
   currency: z.string().optional(),
   day_of_week: z
     .union([z.number().int().min(0).max(6), z.nan()])
@@ -102,6 +103,8 @@ function toFormValues(
     price_per_class_major: classItem?.price_per_class_minor != null ? classItem.price_per_class_minor / 100 : null,
     early_price_per_class_major:
       classItem?.early_price_per_class_minor != null ? classItem.early_price_per_class_minor / 100 : null,
+    min_price_per_class_major:
+      classItem?.min_price_per_class_minor != null ? classItem.min_price_per_class_minor / 100 : null,
     currency: classItem?.currency || defaultCurrency,
     day_of_week: classItem?.day_of_week ?? null,
     start_time: classItem?.start_time || '09:00',
@@ -135,6 +138,7 @@ function toClassPayload(values: OfferingFormValues): Partial<Offering> {
     price_minor: Math.round(values.price_major * 100),
     price_per_class_minor: majorToMinorOrNull(values.price_per_class_major),
     early_price_per_class_minor: majorToMinorOrNull(values.early_price_per_class_major),
+    min_price_per_class_minor: majorToMinorOrNull(values.min_price_per_class_major),
     currency: values.currency,
     day_of_week: Number.isNaN(values.day_of_week) ? null : values.day_of_week ?? null,
     start_time: values.start_time,
@@ -466,6 +470,16 @@ export function ClassForm({
               placeholder={t('form.class.price_per_class_placeholder')}
               error={form.formState.errors.early_price_per_class_major?.message}
               {...form.register('early_price_per_class_major', { valueAsNumber: true })}
+            />
+            <FormInput
+              htmlFor="min_price_per_class_major"
+              label={t('form.class.min_price_per_class')}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder={t('form.class.min_price_per_class_placeholder')}
+              error={form.formState.errors.min_price_per_class_major?.message}
+              {...form.register('min_price_per_class_major', { valueAsNumber: true })}
             />
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

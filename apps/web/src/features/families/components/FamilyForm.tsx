@@ -63,6 +63,17 @@ export const FamilyForm = ({ family, onSubmit, isLoading }: FamilyFormProps) => 
         {...form.register('name')}
       />
 
+      {!isCreating && (
+        <FormInput
+          htmlFor="early_price_until"
+          label={t('form.family.early_price_until')}
+          helperText={t('form.family.early_price_until_help')}
+          type="date"
+          error={form.formState.errors.early_price_until?.message}
+          {...form.register('early_price_until', { setValueAs: (v: string) => (v ? v : null) })}
+        />
+      )}
+
       <div className="flex gap-2 pt-4">
         <Button
           type="submit"

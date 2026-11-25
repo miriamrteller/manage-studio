@@ -11,11 +11,20 @@
  *  - sisters: a percentage off from the Nth girl of the same family (default: the second);
  * then the up-front discount on the term total, and a paid trial class taken off the first payment.
  *
+ * Owner rules (25 Nov 2026): discounts combine, but a class never costs less than the class's
+ * lowest price per class (e.g. ₪50 / ₪60), checked after every discount and after rounding.
+ * Founding Families can be limited to the first term; a family marked "keeps the early price
+ * until" a date (the first families who signed up) keeps it for terms starting until then.
+ *
  * Pure: the caller loads the rows and passes the class dates (see termClassDates).
  */
 function roundTo(value, step) {
     const s = Math.max(1, Math.round(step));
     return Math.round(value / s) * s;
+}
+function ceilTo(value, step) {
+    const s = Math.max(1, Math.round(step));
+    return Math.ceil(value / s) * s;
 }
 function floorTo(value, step) {
     const s = Math.max(1, Math.round(step));
@@ -27,23 +36,37 @@ export function computeTermPrice(input) {
     if (!(input.pricePerClassMinor > 0) || input.classDates.length === 0)
         return null;
     const firstClass = input.classDates[0];
-    const early = input.earlyPricePerClassMinor != null &&
-        input.earlyPricePerClassMinor > 0 &&
-        rules.early_enrol_by != null &&
+    const hasEarlyPrice = input.earlyPricePerClassMinor != null && input.earlyPricePerClassMinor > 0;
+    const byStudioRule = rules.early_enrol_by != null &&
         input.familyFirstEnrolledOn != null &&
         input.familyFirstEnrolledOn <= rules.early_enrol_by &&
         (rules.early_until == null || firstClass <= rules.early_until);
+    const byFamily = input.familyEarlyUntil != null && firstClass <= input.familyEarlyUntil;
+    const early = hasEarlyPrice && (byStudioRule || byFamily);
     const base = early ? input.earlyPricePerClassMinor : input.pricePerClassMinor;
     const sisterPct = rules.sibling_discount_pct > 0 && input.sisterPosition >= Math.max(2, rules.sibling_from)
         ? rules.sibling_discount_pct
         : 0;
-    const perClassMinor = Math.round(base * (1 - sisterPct / 100));
+    const minPer = input.minPricePerClassMinor != null && input.minPricePerClassMinor > 0
+        ? Math.min(input.minPricePerClassMinor, input.pricePerClassMinor)
+        : null;
+    const discounted = Math.round(base * (1 - sisterPct / 100));
+    const perClassMinor = minPer != null ? Math.max(minPer, discounted) : discounted;
+    let atLowestPrice = minPer != null && discounted < minPer;
     const classCount = input.classDates.length;
     const termTotalMinor = perClassMinor * classCount;
+    const lowestTotal = minPer != null ? minPer * classCount : 0;
     const months = [...new Set(input.classDates.map((d) => d.slice(0, 7)))];
-    const monthlyMinor = roundTo(termTotalMinor / months.length, rules.round_minor);
+    let monthlyMinor = roundTo(termTotalMinor / months.length, rules.round_minor);
+    if (monthlyMinor * months.length < lowestTotal) {
+        monthlyMinor = ceilTo(lowestTotal / months.length, rules.round_minor);
+    }
     const upfrontPct = Math.max(0, rules.upfront_discount_pct);
-    const upfrontMinor = floorTo(termTotalMinor * (1 - upfrontPct / 100), rules.round_minor);
+    let upfrontMinor = floorTo(termTotalMinor * (1 - upfrontPct / 100), rules.round_minor);
+    if (upfrontMinor < lowestTotal) {
+        upfrontMinor = Math.min(termTotalMinor, ceilTo(lowestTotal, rules.round_minor));
+        atLowestPrice = true;
+    }
     const credit = Math.max(0, input.trialCreditMinor);
     const less = (amount) => Math.max(0, amount - credit);
     return {
@@ -52,6 +75,8 @@ export function computeTermPrice(input) {
         perClassMinor,
         early,
         sisterPct,
+        minPerClassMinor: minPer,
+        atLowestPrice,
         termTotalMinor,
         months,
         monthlyMinor,

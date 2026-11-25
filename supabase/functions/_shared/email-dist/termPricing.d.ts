@@ -10,6 +10,11 @@
  *  - sisters: a percentage off from the Nth girl of the same family (default: the second);
  * then the up-front discount on the term total, and a paid trial class taken off the first payment.
  *
+ * Owner rules (25 Nov 2026): discounts combine, but a class never costs less than the class's
+ * lowest price per class (e.g. ₪50 / ₪60), checked after every discount and after rounding.
+ * Founding Families can be limited to the first term; a family marked "keeps the early price
+ * until" a date (the first families who signed up) keeps it for terms starting until then.
+ *
  * Pure: the caller loads the rows and passes the class dates (see termClassDates).
  */
 export type PayPlan = 'monthly' | 'upfront';
@@ -31,6 +36,10 @@ export interface TermPriceInput {
     rules: TermPricingRules;
     pricePerClassMinor: number;
     earlyPricePerClassMinor: number | null;
+    /** A class never costs less than this after all discounts (null = no floor). */
+    minPricePerClassMinor?: number | null;
+    /** The family keeps the early price for terms starting on or before this date (null = studio rule only). */
+    familyEarlyUntil?: string | null;
     /** The term's remaining class dates for this class (sorted YYYY-MM-DD). */
     classDates: string[];
     /** The family's earliest enrolment date (YYYY-MM-DD, Israel), for the early price. */
@@ -48,6 +57,10 @@ export interface TermPrice {
     perClassMinor: number;
     early: boolean;
     sisterPct: number;
+    /** The class's lowest price per class (null = none). */
+    minPerClassMinor?: number | null;
+    /** True when the lowest price per class stopped a discount (per class or up front). */
+    atLowestPrice?: boolean;
     /** classCount × perClassMinor. */
     termTotalMinor: number;
     /** Months with a class, YYYY-MM, in order: one monthly payment each. */

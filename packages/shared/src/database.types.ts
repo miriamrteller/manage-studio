@@ -101,6 +101,7 @@ export type Database = {
       accounts: {
         Row: {
           created_at: string
+          early_price_until: string | null
           id: string
           name: string | null
           person_id: string
@@ -108,6 +109,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          early_price_until?: string | null
           id?: string
           name?: string | null
           person_id: string
@@ -115,6 +117,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          early_price_until?: string | null
           id?: string
           name?: string | null
           person_id?: string
@@ -3491,6 +3494,7 @@ export type Database = {
           max_age: number | null
           max_capacity: number
           min_age: number | null
+          min_price_per_class_minor: number | null
           name: string
           offering_type: string
           online_booking: boolean
@@ -3527,6 +3531,7 @@ export type Database = {
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
+          min_price_per_class_minor?: number | null
           name: string
           offering_type?: string
           online_booking?: boolean
@@ -3563,6 +3568,7 @@ export type Database = {
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
+          min_price_per_class_minor?: number | null
           name?: string
           offering_type?: string
           online_booking?: boolean

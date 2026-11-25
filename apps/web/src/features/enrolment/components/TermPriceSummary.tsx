@@ -41,9 +41,11 @@ export function TermPriceSummary({
       plan: 'upfront',
       label: t('enrolment.term_price.upfront', { amount: money(term.upfrontMinor) }),
       detail:
-        term.upfrontPct > 0
-          ? t('enrolment.term_price.upfront_detail', { pct: term.upfrontPct })
-          : t('enrolment.term_price.upfront_detail_plain'),
+        term.upfrontPct > 0 && term.atLowestPrice && term.minPerClassMinor
+          ? t('enrolment.term_price.upfront_detail_lowest', { price: money(term.minPerClassMinor) })
+          : term.upfrontPct > 0
+            ? t('enrolment.term_price.upfront_detail', { pct: term.upfrontPct })
+            : t('enrolment.term_price.upfront_detail_plain'),
     },
   ];
 
@@ -66,6 +68,11 @@ export function TermPriceSummary({
         {term.sisterPct > 0 && (
           <p className="text-gray-600">{t('enrolment.term_price.sister', { pct: term.sisterPct })}</p>
         )}
+        {term.atLowestPrice && term.minPerClassMinor ? (
+          <p className="text-gray-600">
+            {t('enrolment.term_price.lowest', { price: money(term.minPerClassMinor) })}
+          </p>
+        ) : null}
       </div>
 
       <fieldset className="space-y-2" disabled={busy}>

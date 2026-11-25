@@ -247,6 +247,8 @@
     "cancel": "Cancel",
     "family": {
       "name": "Family Name",
+      "early_price_until": "Founding family: keeps the early price for terms starting until",
+      "early_price_until_help": "For families promised the early price for longer than your usual rule. Leave empty for the usual rule.",
       "contact_person_name": "Primary Contact Name",
       "contact_email": "Contact Email",
       "contact_phone": "Contact Phone",
@@ -307,6 +309,8 @@
       "waiver_required_help": "If yes, each person is asked to sign your form after paying. It never stops anyone paying, and a paid place is never cancelled for a missing form. Off unless you switch it on.",
       "price_per_class": "Price per class (term pricing)",
       "early_price_per_class": "Early enrolment price per class",
+      "min_price_per_class": "Lowest price per class, after all discounts",
+      "min_price_per_class_placeholder": "Leave empty for no lowest price",
       "price_per_class_placeholder": "Leave empty for a monthly price"
     },
     "requirement": {
@@ -3828,6 +3832,8 @@
       "upfront": "The whole term now: {{amount}}",
       "upfront_detail": "{{pct}}% off for paying the term up front.",
       "upfront_detail_plain": "One payment for the whole term.",
+      "upfront_detail_lowest": "Already at the lowest price for this class ({{price}} a class).",
+      "lowest": "Lowest price for this class: {{price}} a class.",
       "trial": "Your trial class ({{amount}}) is taken off this payment.",
       "pay_now": "To pay now: {{amount}}"
     }

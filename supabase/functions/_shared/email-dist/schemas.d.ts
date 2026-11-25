@@ -194,6 +194,7 @@ export declare const AccountSchema: z.ZodObject<{
     tenant_id: z.ZodString;
     name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     person_id: z.ZodString;
+    early_price_until: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     created_at: z.ZodString;
 }, z.core.$strip>;
 export type Account = z.infer<typeof AccountSchema>;
@@ -284,6 +285,7 @@ export declare const OfferingSchema: z.ZodObject<{
     }>>>;
     price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     early_price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    min_price_per_class_minor: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     status: z.ZodDefault<z.ZodEnum<{
         full: "full";
         active: "active";

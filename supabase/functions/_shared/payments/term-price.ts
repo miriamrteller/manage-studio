@@ -61,7 +61,7 @@ export async function loadTermPrice(
 
   const { data: offering } = await service
     .from("offerings")
-    .select("price_per_class_minor, early_price_per_class_minor, day_of_week, season_id")
+    .select("price_per_class_minor, early_price_per_class_minor, min_price_per_class_minor, day_of_week, season_id")
     .eq("id", engagement.offering_id)
     .maybeSingle();
   const pricePerClass = (offering?.price_per_class_minor as number | null | undefined) ?? null;
@@ -108,7 +108,14 @@ export async function loadTermPrice(
   let familyIds = [engagement.person_id as string];
   let childIds = new Set<string>([engagement.person_id as string]);
   const accountId = (person?.account_id as string | null) ?? null;
+  let familyEarlyUntil: string | null = null;
   if (accountId) {
+    const { data: account } = await service
+      .from("accounts")
+      .select("early_price_until")
+      .eq("id", accountId)
+      .maybeSingle();
+    familyEarlyUntil = (account?.early_price_until as string | null | undefined) ?? null;
     const { data: members } = await service
       .from("account_members")
       .select("person_id, role")
@@ -190,6 +197,8 @@ export async function loadTermPrice(
     rules,
     pricePerClassMinor: pricePerClass,
     earlyPricePerClassMinor: (offering?.early_price_per_class_minor as number | null | undefined) ?? null,
+    minPricePerClassMinor: (offering?.min_price_per_class_minor as number | null | undefined) ?? null,
+    familyEarlyUntil,
     classDates,
     familyFirstEnrolledOn,
     sisterPosition,
@@ -239,6 +248,7 @@ export function termAmountNote(t: TermPriceSnapshot): string {
   const parts = [`Term: ${t.classCount} classes × ${(t.perClassMinor / 100).toFixed(t.perClassMinor % 100 ? 2 : 0)}`];
   if (t.early) parts.push("early enrolment price");
   if (t.sisterPct > 0) parts.push(`sister ${t.sisterPct}% off`);
+  if (t.atLowestPrice) parts.push("lowest price per class");
   parts.push(`${t.months.length} monthly payments`);
   return parts.join(", ");
 }

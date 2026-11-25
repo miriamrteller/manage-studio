@@ -240,6 +240,8 @@ export function termPriceView(t: TermPriceSnapshot): TermPriceView {
     perClassMinor: t.perClassMinor,
     early: t.early,
     sisterPct: t.sisterPct,
+    minPerClassMinor: t.minPerClassMinor ?? null,
+    atLowestPrice: t.atLowestPrice ?? false,
     termTotalMinor: t.termTotalMinor,
     months: t.months,
     monthlyMinor: t.monthlyMinor,
