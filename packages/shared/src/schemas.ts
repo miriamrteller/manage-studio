@@ -233,6 +233,8 @@ export const AccountSchema = z.object({
   tenant_id: UUIDSchema,
   name: z.string().nullable().optional(),
   person_id: UUIDSchema,
+  /** Founding family: keeps the early price per class for terms starting until this date (YYYY-MM-DD). */
+  early_price_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   created_at: TimestampSchema,
 });
 
@@ -327,6 +329,8 @@ export const OfferingSchema = z.object({
   price_per_class_minor: z.number().int().positive().nullable().optional(),
   /** Term pricing: price of one class for families who enrolled by the studio's early date. */
   early_price_per_class_minor: z.number().int().positive().nullable().optional(),
+  /** Term pricing: a class never costs less than this after all discounts (owner rule, 25 Nov 2026). */
+  min_price_per_class_minor: z.number().int().positive().nullable().optional(),
   status: z.enum(['active', 'cancelled', 'full']).default('active'),
   waiver_required: z.boolean().default(true),
   location: z.string().max(500).nullable().optional(),

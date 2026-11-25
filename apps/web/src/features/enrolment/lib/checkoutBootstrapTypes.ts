@@ -32,6 +32,9 @@ export interface TermPriceView {
   perClassMinor: number;
   early: boolean;
   sisterPct: number;
+  /** The class's lowest price per class, and whether it stopped a discount (25 Nov 2026). */
+  minPerClassMinor?: number | null;
+  atLowestPrice?: boolean;
   termTotalMinor: number;
   months: string[];
   monthlyMinor: number;

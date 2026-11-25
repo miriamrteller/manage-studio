@@ -94,6 +94,7 @@ export type Database = {
             accounts: {
                 Row: {
                     created_at: string;
+                    early_price_until: string | null;
                     id: string;
                     name: string | null;
                     person_id: string;
@@ -101,6 +102,7 @@ export type Database = {
                 };
                 Insert: {
                     created_at?: string;
+                    early_price_until?: string | null;
                     id?: string;
                     name?: string | null;
                     person_id: string;
@@ -108,6 +110,7 @@ export type Database = {
                 };
                 Update: {
                     created_at?: string;
+                    early_price_until?: string | null;
                     id?: string;
                     name?: string | null;
                     person_id?: string;
@@ -3477,6 +3480,7 @@ export type Database = {
                     deposit_percent: number | null;
                     duration_mins: number | null;
                     early_price_per_class_minor: number | null;
+                    min_price_per_class_minor: number | null;
                     end_time: string | null;
                     id: string;
                     is_public: boolean;
@@ -3513,6 +3517,7 @@ export type Database = {
                     deposit_percent?: number | null;
                     duration_mins?: number | null;
                     early_price_per_class_minor?: number | null;
+                    min_price_per_class_minor?: number | null;
                     end_time?: string | null;
                     id?: string;
                     is_public?: boolean;
@@ -3549,6 +3554,7 @@ export type Database = {
                     deposit_percent?: number | null;
                     duration_mins?: number | null;
                     early_price_per_class_minor?: number | null;
+                    min_price_per_class_minor?: number | null;
                     end_time?: string | null;
                     id?: string;
                     is_public?: boolean;
