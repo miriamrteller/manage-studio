@@ -3480,7 +3480,6 @@ export type Database = {
                     deposit_percent: number | null;
                     duration_mins: number | null;
                     early_price_per_class_minor: number | null;
-                    min_price_per_class_minor: number | null;
                     end_time: string | null;
                     id: string;
                     is_public: boolean;
@@ -3488,6 +3487,7 @@ export type Database = {
                     max_age: number | null;
                     max_capacity: number;
                     min_age: number | null;
+                    min_price_per_class_minor: number | null;
                     name: string;
                     offering_type: string;
                     online_booking: boolean;
@@ -3517,7 +3517,6 @@ export type Database = {
                     deposit_percent?: number | null;
                     duration_mins?: number | null;
                     early_price_per_class_minor?: number | null;
-                    min_price_per_class_minor?: number | null;
                     end_time?: string | null;
                     id?: string;
                     is_public?: boolean;
@@ -3525,6 +3524,7 @@ export type Database = {
                     max_age?: number | null;
                     max_capacity?: number;
                     min_age?: number | null;
+                    min_price_per_class_minor?: number | null;
                     name: string;
                     offering_type?: string;
                     online_booking?: boolean;
@@ -3554,7 +3554,6 @@ export type Database = {
                     deposit_percent?: number | null;
                     duration_mins?: number | null;
                     early_price_per_class_minor?: number | null;
-                    min_price_per_class_minor?: number | null;
                     end_time?: string | null;
                     id?: string;
                     is_public?: boolean;
@@ -3562,6 +3561,7 @@ export type Database = {
                     max_age?: number | null;
                     max_capacity?: number;
                     min_age?: number | null;
+                    min_price_per_class_minor?: number | null;
                     name?: string;
                     offering_type?: string;
                     online_booking?: boolean;
