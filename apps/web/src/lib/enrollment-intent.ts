@@ -26,11 +26,32 @@ function hasIntentPayload(intent: EnrollmentIntent): boolean {
   );
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A class picked from a link, e.g. a studio's own website:
+ * /enrol?class=<offering id>&term=<season id>. Ids only; anything else is ignored.
+ */
+export function intentFromSearch(search: string | null | undefined): EnrollmentIntent | null {
+  if (!search) return null;
+  const params = new URLSearchParams(search);
+  const classId = params.get('class')?.trim();
+  if (!classId || !UUID.test(classId)) return null;
+  const seasonId = params.get('term')?.trim();
+  return { classId, ...(seasonId && UUID.test(seasonId) ? { seasonId } : {}) };
+}
+
 export function readEnrollmentIntent(
   routeState: EnrollmentIntent | null | undefined,
+  search?: string | null,
 ): EnrollmentIntent | null {
   if (routeState && hasIntentPayload(routeState)) {
     return routeState;
+  }
+
+  const fromLink = intentFromSearch(search);
+  if (fromLink) {
+    return fromLink;
   }
 
   const stored = sessionStorage.getItem('enrollmentIntent');
