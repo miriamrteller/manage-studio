@@ -40,7 +40,7 @@ export default function EnrolPage() {
     [navigate, user],
   );
   const [resumeState, setResumeState] = useState<EnrolmentResumeState | null>(null);
-  const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null);
+  const intent = readEnrollmentIntent(location.state as EnrollmentIntent | null, location.search);
   const resumeKey =
     location.state && typeof location.state === 'object' && 'resumeKey' in location.state
       ? (location.state as { resumeKey?: string }).resumeKey
