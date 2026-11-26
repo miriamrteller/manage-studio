@@ -84,7 +84,9 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   const service = createServiceClient();
   const { data: profile } = await service
     .from("user_profiles")
-    .select("tenant_id, role, people:person_id(name)")
+    // No embed: user_profiles.person_id has no foreign key to people, so an embed
+    // fails the whole lookup (and every send with "forbidden").
+    .select("tenant_id, role, person_id")
     .eq("id", auth.user.id)
     .single();
   const roles = (profile?.role as string[] | null) ?? [];
@@ -134,8 +136,13 @@ Deno.serve(withMonitoring("send-shoot-gallery", async (req) => {
   // saved one, else her own name, else the studio's.
   const typedSignature = cleanSignature(body?.signature);
   const savedSignature = cleanSignature((settings.data as { email_signature?: unknown } | null)?.email_signature);
-  // deno-lint-ignore no-explicit-any
-  const adminName = cleanSignature((profile as any)?.people?.name);
+  let adminName: string | null = null;
+  const personId = typeof profile?.person_id === "string" ? profile.person_id : null;
+  if (!typedSignature && !savedSignature && personId) {
+    const { data: person } = await service.from("people").select("name")
+      .eq("id", personId).eq("tenant_id", tenantId).maybeSingle();
+    adminName = cleanSignature((person as { name?: unknown } | null)?.name);
+  }
   const signature = typedSignature ?? savedSignature ?? adminName ?? cleanSignature(tenant.name);
   if (typedSignature && typedSignature !== savedSignature) {
     const { error } = await service.from("tenant_photo_shop_settings")

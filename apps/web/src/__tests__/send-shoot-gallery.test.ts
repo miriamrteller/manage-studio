@@ -410,3 +410,11 @@ describe('the real gallery email: one button, never SmugMug (owner, 22 Nov 2026)
     })).toBeNull();
   });
 });
+
+it('send-shoot-gallery reads the admin without a people embed (no foreign key: it made every send "forbidden")', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const source = readFileSync(resolve(process.cwd(), '../../supabase/functions/send-shoot-gallery/index.ts'), 'utf8');
+  const profileRead = source.slice(source.indexOf('.from("user_profiles")'), source.indexOf('.eq("id", auth.user.id)'));
+  expect(profileRead).not.toContain('people:');
+});
