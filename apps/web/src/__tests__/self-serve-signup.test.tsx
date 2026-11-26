@@ -18,6 +18,7 @@ const h = vi.hoisted(() => ({
   signInWithOtp: vi.fn(),
   getSession: vi.fn(),
   signOut: vi.fn(),
+  stopAutoRefresh: vi.fn(async () => {}),
   assign: vi.fn(),
 }));
 
@@ -32,7 +33,7 @@ vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: h.rpc,
     functions: { invoke: h.invoke },
-    auth: { signInWithOtp: h.signInWithOtp, getSession: h.getSession, signOut: h.signOut },
+    auth: { signInWithOtp: h.signInWithOtp, getSession: h.getSession, signOut: h.signOut, stopAutoRefresh: h.stopAutoRefresh },
   },
 }));
 
@@ -203,7 +204,9 @@ describe('self-serve signup: wizard', () => {
     expect(h.assign).toHaveBeenCalledWith(
       'https://harbour-yoga.opalswift.com/auth/session-handoff#access_token=at-1&refresh_token=rt-1&token_type=bearer',
     );
-    expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    // The studio address takes over this session: it must not be ended on the server.
+    expect(h.signOut).not.toHaveBeenCalled();
+    expect(h.stopAutoRefresh).toHaveBeenCalled();
   });
 
   it('business email (clients see this): starts as the account email; a different one is sent with the studio', async () => {

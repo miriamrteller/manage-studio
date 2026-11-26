@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { tenantOrigin } from '@/lib/tenantUrl';
+import { dropSavedSession } from '@/lib/inactivity/signOutForInactivity';
 import { functionError, type StudioSetupRequest } from '@/features/platform/services/studioSetupService';
 
 /**
@@ -89,13 +90,24 @@ export function studioHandoffUrl(subdomain: string, session: Pick<Session, 'acce
 /**
  * Open a studio's own address signed in, from app.<root> (the studio card on
  * the welcome page, "Go to your studio" after signup). The studio's address
- * takes over this session; it is dropped here (local only, not a sign-out of
- * the account) so the two hosts never refresh the same token, which would end
- * both sessions. Without a session, the studio's sign-in page opens.
+ * takes over this session, so this host stops refreshing it and forgets its
+ * saved copy, so the two hosts never refresh the same token.
+ *
+ * Never call signOut here, not even with scope 'local': that still asks the
+ * server to end this session, and the studio address is about to use that very
+ * session. It then fails with "Session not found" and the person is sent back to
+ * sign in, again and again. Without a session, the studio's sign-in page opens.
  */
 export async function openStudioSignedIn(subdomain: string): Promise<void> {
   const { data } = await supabase.auth.getSession();
   const url = studioHandoffUrl(subdomain, data.session);
-  if (data.session) await supabase.auth.signOut({ scope: 'local' });
+  if (data.session) {
+    try {
+      await supabase.auth.stopAutoRefresh();
+    } catch {
+      // Nothing to stop: the saved copy is still dropped below.
+    }
+    dropSavedSession();
+  }
   window.location.assign(url);
 }

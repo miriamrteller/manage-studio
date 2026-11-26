@@ -2,8 +2,9 @@
 /**
  * Opening a studio from app.opalswift.com lands signed in: the studio cards
  * hand the session to <studio>/auth/session-handoff (sessions are per
- * address), and drop it locally here so two addresses never refresh one
- * token. The handoff page speaks en + he and never keeps tokens in the URL.
+ * address), and forget it here without ending it on the server, so two
+ * addresses never refresh one token and the studio's copy still works. The
+ * handoff page speaks en + he and never keeps tokens in the URL.
  * Run: pnpm -C apps/web test studio-link-handoff.test.tsx
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -16,12 +17,13 @@ const h = vi.hoisted(() => ({
   session: { access_token: 'acc.tok', refresh_token: 'ref-tok' } as null | { access_token: string; refresh_token: string },
   getSession: vi.fn(),
   signOut: vi.fn(async () => ({ error: null })),
+  stopAutoRefresh: vi.fn(async () => {}),
   user: { id: 'u1', role: ['super_admin'], full_name: 'Miriam T' } as unknown,
   studios: [] as unknown[],
   handoff: { ok: true } as { ok: boolean; message?: string },
   cleared: vi.fn(),
 }));
-vi.mock('@/lib/supabase', () => ({ supabase: { auth: { getSession: h.getSession, signOut: h.signOut } } }));
+vi.mock('@/lib/supabase', () => ({ supabase: { auth: { getSession: h.getSession, signOut: h.signOut, stopAutoRefresh: h.stopAutoRefresh } } }));
 vi.mock('@/hooks/useAuth', () => ({ useAuthSession: () => ({ session: { user: { id: 'u1' } }, isLoading: false }) }));
 vi.mock('@/hooks/useCurrentUser', () => ({ useCurrentUser: () => ({ user: h.user, isLoading: false }) }));
 vi.mock('@/features/platform-shell/useMyStudios', () => ({ useMyStudios: () => ({ data: h.studios, isLoading: false }) }));
@@ -73,12 +75,17 @@ function renderWelcome() {
 }
 
 describe('opening a studio from app.opalswift.com', () => {
-  it('hands the session to the studio address and drops it here (local only)', async () => {
+  it('hands the session to the studio address and forgets it here without ending it', async () => {
+    localStorage.setItem('sb-proj-auth-token', '{"access_token":"acc.tok"}');
     await openStudioSignedIn('creativeballet');
     expect(assign).toHaveBeenCalledWith(
       'https://creativeballet.opalswift.com/auth/session-handoff#access_token=acc.tok&refresh_token=ref-tok&token_type=bearer',
     );
-    expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    // signOut (even scope 'local') ends the session on the server, so the
+    // studio address would get "Session not found" with the tokens it was handed.
+    expect(h.signOut).not.toHaveBeenCalled();
+    expect(h.stopAutoRefresh).toHaveBeenCalled();
+    expect(localStorage.getItem('sb-proj-auth-token')).toBeNull();
   });
 
   it('without a session: the studio sign-in, nothing to drop', async () => {
@@ -86,6 +93,7 @@ describe('opening a studio from app.opalswift.com', () => {
     await openStudioSignedIn('creativeballet');
     expect(assign).toHaveBeenCalledWith('https://creativeballet.opalswift.com/login');
     expect(h.signOut).not.toHaveBeenCalled();
+    expect(h.stopAutoRefresh).not.toHaveBeenCalled();
   });
 
   it('the studio link on the welcome page opens it signed in', async () => {
