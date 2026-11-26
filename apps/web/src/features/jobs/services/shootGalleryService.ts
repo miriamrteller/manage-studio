@@ -106,13 +106,16 @@ export const ShootGalleryService = {
     if (savedName) return savedName;
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) return null;
+    // Two reads: user_profiles.person_id has no foreign key to people, so no embed.
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('people:person_id(name)')
+      .select('person_id')
       .eq('id', auth.user.id)
       .maybeSingle();
-    const people = (profile as { people?: { name?: string | null } | Array<{ name?: string | null }> | null } | null)?.people;
-    const name = (Array.isArray(people) ? people[0]?.name : people?.name)?.trim();
+    const personId = (profile as { person_id?: string | null } | null)?.person_id;
+    if (!personId) return null;
+    const { data: person } = await supabase.from('people').select('name').eq('id', personId).maybeSingle();
+    const name = (person as { name?: string | null } | null)?.name?.trim();
     return name || null;
   },
 
